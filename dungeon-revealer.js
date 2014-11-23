@@ -4,7 +4,7 @@ var settings = {
   fogOpacity: 1,
   fogRGB: "0,0,0",
   defaultLineWidth: 10,
-  mapImage: '//i.imgur.com/GOKuatj.jpg',
+  mapImage: 'map.png',
   shadowImage: null,
 };
 
@@ -158,13 +158,13 @@ function getOptimalDimensions(width, height, maxWidth, maxHeight) {
   widthCompressionRatio = maxWidth/width;
   heightCompressionRatio = maxHeight/height;
   if (widthCompressionRatio < 1 || heightCompressionRatio < 1) {
-    if (widthCompressionRatio < heightCompressionRatio)
+    if (widthCompressionRatio < heightCompressionRatio) {
       bestCompressionRatio = widthCompressionRatio;
     } else {
       bestCompressionRatio = heightCompressionRatio;
     }
-  	d.width = d.width * bestCompressionRatio;
-		d.height = d.height * bestCompressionRatio;
+  	d.width = parseInt(d.width * bestCompressionRatio);
+		d.height = parseInt(d.height * bestCompressionRatio);
   }
 	return d;
 }
@@ -173,7 +173,7 @@ function setUp() {
   var dimensions;
   console.log("Setting up");
 
-  dimensions = getOptimalDimensions(width, height, settings.maxWidth, settings.maxHeight);
+  dimensions = getOptimalDimensions(img.width, img.height, settings.maxWidth, settings.maxHeight);
   width = dimensions.width;
   height = dimensions.height;
   console.log(width, height);
