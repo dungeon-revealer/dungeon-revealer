@@ -1,11 +1,11 @@
 var settings = {
-  maxWidth: 600,
-  maxHeight: 200,
+  maxWidth: 500,
+  maxHeight: 500,
   fogOpacity: 1,
   fogRGB: "0,0,0",
-  defaultLineWidth: 10,
+  defaultLineWidth: 15,
   mapImage: 'map.png',
-  shadowImage: null,
+  shadowImage: null, // for future feature
 };
 
 var width,
@@ -56,26 +56,6 @@ function midPointBtw(p1, p2) {
   };
 }
 
-
-/*
-function getShadowImageCanvas() {
-    var shadowCanvas = document.createElement("canvas"),
-  	  shadowContext = shadowCanvas.getContext('2d');
-
-  shadowCanvas.width = width;
-  shadowCanvas.height = height;
-  shadowContext.drawImage(getImageCanvas(), 0,0, width, height);
-  shadowContext.fillStyle = "rgba(" + fogRGB + ", " + fogOpacity + ")";
-  shadowContext.fillRect(0, 0, width, height);
-
-  return shadowCanvas;
-}
-function getShadowImagePattern() {
-  return dmContext.createPattern(getShadowImageCanvas(), 'repeat');
-}*/
-
-
-
 //document.addEventListener('DOMContentLoaded', function(){});
 img.onload = function() {
   setUp();
@@ -117,8 +97,6 @@ function clearBoard(context) {
   resetBoard(context, 'clear');
 }
 
-
-// Still doesn't work right if the canvas has a border
 function getMouseCoordinates(e) {
   var viewportOffset = dmCanvas.getBoundingClientRect(),
       borderTop = parseInt($(dmCanvas).css('border-top-width')),
@@ -130,9 +108,11 @@ function getMouseCoordinates(e) {
 }
 
 function stopDrawing() {
+  if (isDrawing) {
+    createPreview();
+  }
   isDrawing = false;
   points.length = 0;
-  createPreview();
 }
 
 function createPlayerMapImage(bottomCanvas, topCanvas) {
@@ -286,9 +266,11 @@ function setUpEvents() {
   });
   shadowButton.addEventListener("click", function() {
       fogBoard(dmContext);
+      //createPlayerMapImage(mapCanvas, dmCanvas);
   });
   clearButton.addEventListener("click", function() {
       clearBoard(dmContext);
+      //createPlayerMapImage(mapCanvas, dmCanvas);
   });
   enlargeBrushButton.addEventListener("click", function() {
       // If the new width would be over 200, set it to 200
