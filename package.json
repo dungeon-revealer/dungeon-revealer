@@ -1,0 +1,30 @@
+{
+  "name": "dungeon-revealer",
+  "version": "1.0.0",
+  "description": "Game map revealer for tabletop RPGs",
+  "main": "dungeon-revealer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apclary/dungeon-revealer.git"
+  },
+  "keywords": [
+    "dnd",
+    "d&d",
+    "map",
+    "revealer",
+    "dungeon",
+    "dungeon-revealer"
+  ],
+  "author": "apclary",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/apclary/dungeon-revealer/issues"
+  },
+  "homepage": "https://github.com/apclary/dungeon-revealer",
+  "dependencies": {
+    "express": "^4.10.4"
+  }
+}

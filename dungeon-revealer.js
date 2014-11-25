@@ -60,7 +60,7 @@ function midPointBtw(p1, p2) {
 img.onload = function() {
   setUp();
 };
-img.crossOrigin = "Anonymous";
+img.crossOrigin = "Anonymous"; // to prevent tainted canvas errors
 img.src = mapImage;
 function createImageCanvas(img) {
   var imageCanvas = document.createElement("canvas"),
@@ -164,7 +164,8 @@ function setUp() {
   mapCanvas = document.getElementById('mapCanvas');
   mapContext = mapCanvas.getContext('2d');
 
-brush = (function() {
+// Need to move this somewhere else
+brush = (function(context, settings) {
   var brushTypes = ["clear", "fog"],
       currentBrushType = brushTypes[0],
       currentPattern = null,
@@ -184,16 +185,16 @@ brush = (function() {
           console.log("nothing: ");
           console.log(currentBrushType);
         }
-        dmContext.strokeStyle = getCurrent();
+        context.strokeStyle = getCurrent();
       },
       getPattern = function(brushType) {
         if (brushType === brushTypes[0]) {
-    		 dmContext.globalCompositeOperation = 'destination-out';
+    		 context.globalCompositeOperation = 'destination-out';
           //return dmContext.createPattern(getImageCanvas(), 'repeat');
-          return 'rgba('+fogRGB+','+fogOpacity+')';
+          return 'rgba('+settings.fogRGB+','+settings.fogOpacity+')';
         } else if (brushType === brushTypes[1]) {
-          dmContext.globalCompositeOperation = 'source-over';
-          return 'rgba('+fogRGB+','+fogOpacity+')';
+          context.globalCompositeOperation = 'source-over';
+          return 'rgba('+settings.fogRGB+','+settings.fogOpacity+')';
           //return dmContext.createPattern(getShadowImageCanvas(), 'repeat');
         }
 
@@ -210,7 +211,7 @@ brush = (function() {
     getCurrent: getCurrent,
     getPattern: getPattern
   }
-})();
+})(dmContext, settings);
 
 
 
