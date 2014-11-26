@@ -7,6 +7,7 @@
     <link href="style.css" rel="stylesheet" type="text/css" media="all">
   </head>
   <body>
+
     <div class="navbar navbar-inverse">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-inverse-collapse">
@@ -20,34 +21,49 @@
         <ul class="nav navbar-nav">
           <li class="active"><a href="#">Active</a></li>
           <li><a href="#">Link</a></li>
-          <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a href="#">Action</a></li>
-              <li><a href="#">Another action</a></li>
-              <li><a href="#">Something else here</a></li>
-              <li class="divider"></li>
-              <li class="dropdown-header">Dropdown header</li>
-              <li><a href="#">Separated link</a></li>
-              <li><a href="#">One more separated link</a></li>
-            </ul>
-          </li>
         </ul>
         <ul class="nav navbar-nav navbar-right">
           <li><a href="#">Link</a></li>
-          <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a href="#">Action</a></li>
-              <li><a href="#">Another action</a></li>
-              <li><a href="#">Something else here</a></li>
-              <li class="divider"></li>
-              <li><a href="#">Separated link</a></li>
-            </ul>
-          </li>
         </ul>
       </div>
     </div>
+
+
+    <div class="btn-toolbar">
+      <div class="btn-group">
+        <a href="#" class="btn btn-default">Shroud All</a>
+        <a href="#" class="btn btn-default">Clear All</a>
+        <a href="#" class="btn btn-default">4</a>
+      </div>
+
+      <div class="btn-group">
+        <a href="#" class="btn btn-default">Shroud Brush</a>
+        <a href="#" class="btn btn-default">Shrink Brush</a>
+        <a href="#" class="btn btn-default">Enlarge Brush</a>
+      </div>
+
+      <div class="btn-group">
+        <a href="#" class="btn btn-default">Preview</a>
+        <a href="#" class="btn btn-default">Send</a>
+      </div>
+
+      <div class="btn-group">
+        <a href="#" class="btn btn-default">8</a>
+        <div class="btn-group">
+          <a href="#" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+            Dropdown
+            <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a href="#">Dropdown link</a></li>
+            <li><a href="#">Dropdown link</a></li>
+            <li><a href="#">Dropdown link</a></li>
+           </ul>
+        </div>
+      </div>
+    </div>
+
+
 
     <div id="menu">
       <button id="change" name="Change" type="button">Shroud Brush</button>
