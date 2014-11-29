@@ -11,6 +11,5 @@ var server = app.listen(app.get('port'), function() {
       message = 'Listening at ' + host + ':' + port;
 
       console.log(message);
-      debug('Express server listening on port ' + server.address().port);
       debug(message);
 });

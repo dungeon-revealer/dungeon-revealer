@@ -13,5 +13,18 @@
     "serve-favicon": "~2.1.3",
     "debug": "~2.0.0",
     "jade": "~1.6.0"
-  }
+  },
+  "description": "dungeon-revealer ================",
+  "main": "app.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apclary/dungeon-revealer.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/apclary/dungeon-revealer/issues"
+  },
+  "homepage": "https://github.com/apclary/dungeon-revealer"
 }
