@@ -5,5 +5,12 @@ var app = require('../app');
 app.set('port', process.env.PORT || 3000);
 
 var server = app.listen(app.get('port'), function() {
-  debug('Express server listening on port ' + server.address().port);
+
+  var host = server.address().address,
+      port = server.address().port,
+      message = 'Listening at ' + host + ':' + port;
+
+      console.log(message);
+      debug('Express server listening on port ' + server.address().port);
+      debug(message);
 });

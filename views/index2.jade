@@ -1,0 +1,61 @@
+!!! 5
+html(lang='en')
+head
+    meta(charset='utf-8')
+    title Dungeon Revealer
+    link(href='bootstrap.min.css', rel='stylesheet', type='text/css', media='all')
+    link(href='style.css', rel='stylesheet', type='text/css', media='all')
+  body
+    .navbar.navbar-inverse
+      .navbar-header
+        button.navbar-toggle(type='button', data-toggle='collapse', data-target='.navbar-inverse-collapse')
+          span.icon-bar
+          span.icon-bar
+          span.icon-bar
+        a.navbar-brand(href='#') Dungeon Revealer
+      .navbar-collapse.collapse.navbar-inverse-collapse
+        ul.nav.navbar-nav
+          li.active
+            a(href='#') Active
+          li
+            a(href='#') Link
+        ul.nav.navbar-nav.navbar-right
+          li
+            a(href='#') Link
+    .btn-toolbar
+      .btn-group
+        a.btn.btn-default(href='#') Shroud All
+        a.btn.btn-default(href='#') Clear All
+        a.btn.btn-default(href='#') 4
+      .btn-group
+        a.btn.btn-default(href='#') Shroud Brush
+        a.btn.btn-default(href='#') Shrink Brush
+        a.btn.btn-default(href='#') Enlarge Brush
+      .btn-group
+        a.btn.btn-default(href='#') Preview
+        a.btn.btn-default(href='#') Send
+      .btn-group
+        a.btn.btn-default(href='#') 8
+        .btn-group
+          a.btn.btn-default.dropdown-toggle(href='#', data-toggle='dropdown', aria-expanded='false')
+            | Dropdown
+            span.caret
+          ul.dropdown-menu
+            li
+              a(href='#') Dropdown link
+            li
+              a(href='#') Dropdown link
+            li
+              a(href='#') Dropdown link
+    #menu
+      button#change(name='Change', type='button') Shroud Brush
+      button#shadowButton(type='button') Shadow All
+      button#clearButton(type='button') Clear All
+      button#enlargeBrushButton(name='Enlarge Brush', type='button') Enlarge Brush
+      button#shrinkBrushButton(name='Shrink Brush', type='button') Shrink Brush
+      button#previewButton(name='Preview', type='button') Preview
+      button#removePreviewButton(name='Remove Preview', type='button') Remove Preview
+      button#sendButton(name='Send', type='button') Send
+    script(src='//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js')
+    script(src='https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js', type='text/javascript')
+    script(src='dungeon-revealer.js')
