@@ -17,16 +17,20 @@ var routes = require('./routes/index');
 var users = require('./routes/users');
 
 var app = express();
+//app.set('env', 'something');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-// uncomment after placing your favicon in /public
-//app.use(favicon(__dirname + '/public/favicon.ico'));
+// Not sure why this is needed, Chrome seems to grab the favicon just fine anyway
+// Maybe for cross-browser support
+app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(logger('dev'));
+// Needed to handle JSON posts
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+// Cookie parsing needed for sessions
 app.use(cookieParser());
 // Consider all URLs under /public/ as static files, and return them raw.
 app.use(express.static(path.join(__dirname, 'public')));

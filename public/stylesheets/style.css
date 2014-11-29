@@ -1,8 +1,32 @@
+@font-face {
+    font-family: "folkard";
+    src: url("/fonts/folkard.woff") format('woff');
+}
+
 #dmCanvas {
   opacity: 0.5;
 }
 
 #preview {
   float: right;
+}
+
+.splash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  z-index: 100;
+  background-image: url('/images/DungeonEntranceMedium.jpg');
+  background-size: 100%;
+}
+
+.title-text {
+  margin-top: 10%;
+  margin-left: 10%;
+  color: white;
+  font-family: folkard;
+  font-size: 600%;
 }
 
