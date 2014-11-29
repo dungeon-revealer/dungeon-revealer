@@ -1,0 +1,97 @@
+Ragnarok Press License Agreement
+
+By using or installing this software, you agree to be bound by the terms of this Agreement. 
+
+1: License Grant 
+
+Number of Users: In consideration for the license fee paid, Ragnarok Press grants to you only, the
+Licensee, the non-exclusive, nontransferable right to use and display the Scriptorium product
+purchased through this service. If you are using this product for your work, this agreement
+applies to your employer.  Scriptorium software or image collections may be used on one CPU
+at your site connected to any number of printers or other image producing devices at that own
+site.
+
+Third Parties: You may send a copy of any font or image for which you hold a license along with
+your documents to a commercial printer or other service bureau to enable the editing or printing
+of your document, provided that such party agrees to erase those fonts or images from their
+storage media and accepts liability for any misuse or appropriation of the font or image. You may
+also "embed" TrueType format fonts within your documents for the viewing, editing, and
+printing of those documents.
+
+Modifications. You may not modify, adapt, translate, reverse engineer, decompile, disassemble, or
+create derivative works based on the Scriptorium product without prior written consent from
+Ragnarok Press.
+
+Backups: You may make one (1) copy of this Scriptorium product solely for backup purposes
+provided the copyright and trademark notices are reproduced in their entirety on the backup
+copy.
+
+Rights Reservation. Ragnarok Press reserves all rights not specifically granted to Licensee.
+
+
+2: Copyright
+
+This Scriptorium product and the accompanying materials are copyrighted and contain
+proprietary information and trade secrets of Ragnarok Press. Unauthorized copying of the product
+even if modified, merged, or included with other software, or of the written materials, is expressly
+forbidden. You may be held legally responsible for any infringement of Ragnarok Press
+intellectual property rights that is caused or encouraged by your failure to abide by the terms of
+this Agreement.
+
+
+3: Termination 
+
+This Agreement is effective until terminated. This Agreement will terminate automatically without
+notice from Ragnarok Press if you fail to comply with any provision contained herein. Upon
+termination, you must destroy the written materials, the Scriptorium roduct, and all copies of them, in
+part and in whole, including modified copies, if any. 
+
+
+4: Upgrades 
+
+Ragnarok Press periodical updates many Scriptorium products.  As a licensed user you are entitled
+to upgrades at a discounted upgrade price.
+
+
+5. Limited Warranty 
+
+Ragnarok Press warrants the Bitstream Product to be free from defects in materials and
+workmanship under normal use for a period of thirty (30) days from the date of delivery as shown
+on your invoice. Ragnarok Press entire liability and your exclusive remedy as to a defective
+product shall be, at Ragnarok Press option, either return of purchase price or replacement of any
+such product that is returned to Ragnarok Press with a copy of the invoice. Ragnarok Press shall
+have no responsibility to replace the product or refund the purchase price if failure results from
+accident, abuse or misapplication, or if any product is lost or damaged due to theft, fire, or
+negligence. Any replacement product will be warranted for thirty (30) days.
+
+In all other ways this product is provided "as is". Ragnarok Press does not make any warranty of
+any kind, either expressed or implied, including, but not limited to the implied warranties of
+merchantability and fitness for a particular purpose.  Ragnarok Press does not warrant that the
+functions contained in the Bitstream Product will meet your requirements or that the operation of
+the software will be uninterrupted or error free.
+
+Under no circumstances and under no legal theory, tort, contract, or otherwise, shall Ragnarok
+Press or its suppliers or resellers be liable to you or any other person for any indirect, special,
+incidental, or consequential damages of any character including, without limitation, damages for
+loss of goodwill, work stoppage, computer failure or malfunction, or any and all other commercial
+damages or losses.
+
+This Agreement represents the complete agreement concerning this license between the parties
+and supersedes all prior agreements and representations between them. It may be amended only
+by a writing executed by both parties. If any provision of this Agreement is held to be
+unenforceable for any reason, such provision shall be reformed only to the extent necessary to
+make it enforceable.  This Agreement shall be governed by and construed under the laws of the
+State of Texas.
+
+
+If you have any questions concerning this Agreement, or if you desire to contact Ragnarok 
+Press for any reason, please contact us in writing at:
+
+Ragnarok Press
+POB 140333
+Austin, TX  78714
+
+or through our website at:
+
+http://www.ragnarokpress.com/scriptorium
+
