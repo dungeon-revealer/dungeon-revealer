@@ -37,6 +37,7 @@ console.log(generate_key());
 app.use('/', routes);
 app.use('/users', users);
 
+
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
     var err = new Error('Not Found');
@@ -68,7 +69,34 @@ app.use(function(err, req, res, next) {
     });
 });
 
+function getName(req, res) {
+  if (req.session.name) {
+    return res.json({ name: req.session.name });
+  }
+  else {
+    return res.json({ name: '' });
+  }
+}
+
+function setName(req, res) {
+  if(!req.body.hasOwnProperty('name')) {
+    res.statusCode = 400;
+    return res.json({ error: 'Invalid message' });
+  }
+  else {
+    req.session.name = req.body.name;
+    return res.json({ name: req.body.name });
+  }
+}
+
+function logout(req, res) {
+  req.session = null;
+  return res.json({});
+}
 
 
+app.get('/name', getName);
+app.post('/name', setName);
+app.get('/logout', logout);
 
 module.exports = app;
