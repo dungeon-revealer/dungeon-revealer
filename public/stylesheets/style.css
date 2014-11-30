@@ -19,7 +19,10 @@
   width: 100vw;
   z-index: 100;
   background-image: url('/images/DungeonEntranceMedium.jpg');
-  background-size: 100%;
+  /*background-size: cover;*/
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: center;
 }
 
 .title-text {
@@ -28,5 +31,11 @@
   color: white;
   font-family: folkard;
   font-size: 600%;
+}
+
+@media (max-width:480px) {
+  .title-text {
+    font-size: 20vw;
+  }
 }
 
