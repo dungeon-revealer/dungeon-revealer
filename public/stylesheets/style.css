@@ -3,12 +3,26 @@
     src: url("/fonts/folkard.woff") format('woff');
 }
 
+@font-face {
+    font-family: "perigord";
+    src: url("/fonts/perigord.woff") format('woff');
+}
+
+@font-face {
+    font-family: "cardinal";
+    src: url("/fonts/cardinal.woff") format('woff');
+}
+
 #dmCanvas {
   opacity: 0.5;
 }
 
 #preview {
   float: right;
+}
+
+#app {
+  display: none;
 }
 
 .splash {
@@ -29,7 +43,7 @@
   margin-top: 10%;
   margin-left: 10%;
   color: white;
-  font-family: folkard;
+  font-family: folkard, palitino, serif;
   font-size: 600%;
 }
 
