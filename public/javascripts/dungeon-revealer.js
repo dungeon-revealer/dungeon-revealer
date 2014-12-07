@@ -14,9 +14,7 @@ var width,
     fogOpacity = settings.fogOpacity,
     fogRGB = settings.fogRGB,
     mapImage = settings.mapImage,
-    img = new Image(),
-    changeButton = document.getElementById('change'),
-    sendButton = document.getElementById('sendButton');
+    img = new Image();
 
 var isDrawing, points = [];
 var brush;
@@ -42,7 +40,12 @@ function createCanvases() {
   container.style.position = "relative";
   container.style.top = "0";
   container.style.left = "0";
-  document.getElementById('app').appendChild(container);
+  container.style.margin = "auto";
+  //container.style.margin-right = "auto";
+  container.style.width = width + 'px';
+  container.style.height = height + 'px';
+
+  document.getElementById('map-wrapper').appendChild(container);
 
   createCanvas('mapCanvas', 1)
   createCanvas('dmCanvas', 2);
@@ -133,7 +136,7 @@ function createPlayerMapImage(bottomCanvas, topCanvas) {
   var mergedCanvas = mergeCanvas(bottomCanvas, topCanvas),
       mergedImage = convertCanvasToImage(mergedCanvas);
   mergedImage.id = 'preview';
-  document.querySelector('#app').appendChild(mergedImage);
+  document.querySelector('#map-wrapper').appendChild(mergedImage);
 }
 
 function getOptimalDimensions(width, height, maxWidth, maxHeight) {
@@ -263,38 +266,40 @@ function setUpEvents() {
     dmContext.stroke();
   };
 
-  changeButton.addEventListener("click", function() {
-    if (changeButton.innerHTML === "Clear Brush") {
-      changeButton.innerHTML = "Shadow Brush";
+
+  $('#btn-toggle-brush').click(function() {
+    var toggleButton = this;
+    if (toggleButton.innerHTML === "Clear Brush") {
+      toggleButton.innerHTML = "Shadow Brush";
     } else {
-      changeButton.innerHTML = "Clear Brush";
+      toggleButton.innerHTML = "Clear Brush";
     }
     brush.toggle();
   });
-  shadowButton.addEventListener("click", function() {
+  $('#btn-shroud-all').click(function() {
       fogBoard(dmContext);
       //createPlayerMapImage(mapCanvas, dmCanvas);
   });
-  clearButton.addEventListener("click", function() {
+  $('#btn-clear-all').click(function() {
       clearBoard(dmContext);
       //createPlayerMapImage(mapCanvas, dmCanvas);
   });
-  enlargeBrushButton.addEventListener("click", function() {
+
+  $('#btn-enlarge-brush').click(function() {
       // If the new width would be over 200, set it to 200
       lineWidth = (lineWidth * 2 > 200) ? 200 : lineWidth * 2;
   });
-  shrinkBrushButton.addEventListener("click", function() {
+
+  $('#btn-shrink-brush').click(function() {
       // If the new width would be less than 1, set it to 1
       lineWidth = (lineWidth / 2 < 1) ? 1 : lineWidth / 2;
   });
-  previewButton.addEventListener("click", function() {
+
+  $('#btn-preview').click(function() {
     createPreview();
   });
-  removePreviewButton.addEventListener("click", function() {
-    removePreview();
-  });
 
-  $('#sendButton').click(function() {
+  $('#btn-send').click(function() {
     var imageData = document.getElementById('preview').src;
 
     var jqxhr = $.post('upload',

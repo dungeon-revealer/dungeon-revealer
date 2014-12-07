@@ -40,53 +40,33 @@
         </div>
       </div>
 
+      <div id="map-wrapper"></div>
 
-      <div class="btn-toolbar">
-        <div class="btn-group">
-          <a href="#" class="btn btn-default">Shroud All</a>
-          <a href="#" class="btn btn-default">Clear All</a>
-          <a href="#" class="btn btn-default">4</a>
-        </div>
-
-        <div class="btn-group">
-          <a href="#" class="btn btn-default">Shroud Brush</a>
-          <a href="#" class="btn btn-default">Shrink Brush</a>
-          <a href="#" class="btn btn-default">Enlarge Brush</a>
-        </div>
-
-        <div class="btn-group">
-          <a href="#" class="btn btn-default">Preview</a>
-          <a href="#" class="btn btn-default">Send</a>
-        </div>
-
-        <div class="btn-group">
-          <a href="#" class="btn btn-default">8</a>
+      <div class="toolbar-wrapper">
+        <div class="btn-toolbar">
           <div class="btn-group">
-            <a href="#" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-              Dropdown
-              <span class="caret"></span>
-            </a>
-            <ul class="dropdown-menu">
-              <li><a href="#">Dropdown link</a></li>
-              <li><a href="#">Dropdown link</a></li>
-              <li><a href="#">Dropdown link</a></li>
-             </ul>
+            <a href="#" id="btn-shroud-all" class="btn btn-default">Shroud All</a>
+            <a href="#" id="btn-clear-all"  class="btn btn-default">Clear All</a>
           </div>
+
+          <div class="btn-group">
+            <a href="#" id="btn-toggle-brush"  class="btn btn-default">Shroud Brush</a>
+            <a href="#" id="btn-shrink-brush"  class="btn btn-default">Shrink Brush</a>
+            <a href="#" id="btn-enlarge-brush" class="btn btn-default">Enlarge Brush</a>
+          </div>
+
+          <div class="btn-group">
+            <a href="#" id="btn-preview" class="btn btn-default">Preview</a>
+            <a href="#" id="btn-send" class="btn btn-default">Send</a>
+          </div>
+
         </div>
       </div>
 
 
 
-      <div id="menu">
-        <button id="change" name="Change" type="button">Shroud Brush</button>
-        <button id="shadowButton" type="button">Shadow All</button>
-        <button id="clearButton" type="button">Clear All</button>
-        <button id="enlargeBrushButton" name="Enlarge Brush" type="button">Enlarge Brush</button>
-        <button id="shrinkBrushButton" name="Shrink Brush" type="button">Shrink Brush</button>
-        <button id="previewButton" name="Preview" type="button">Preview</button>
-        <button id="removePreviewButton" name="Remove Preview" type="button">Remove Preview</button>
-        <button id="sendButton" name="Send" type="button">Send</button>
-      </div>
+
+
     </div>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>

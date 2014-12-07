@@ -1,4 +1,5 @@
 var express = require('express');
+var app = express();
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -7,6 +8,8 @@ var session = require('cookie-session');
 var bodyParser = require('body-parser');
 var crypto = require('crypto');
 var fs = require('fs');
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
 
 var generate_key = function() {
     var sha = crypto.createHash('sha256');
@@ -17,7 +20,7 @@ var generate_key = function() {
 var routes = require('./routes/index');
 var users = require('./routes/users');
 
-var app = express();
+
 //app.set('env', 'something');
 
 // view engine setup
@@ -144,5 +147,11 @@ function logout(req, res) {
 app.get('/name', getName);
 app.post('/name', setName);
 app.get('/logout', logout);
+
+io.on('connection', function(socket){
+  socket.on('chat message', function(msg){
+    io.emit('chat message', msg);
+  });
+});
 
 module.exports = app;

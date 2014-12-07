@@ -19,11 +19,24 @@
     src: url("/fonts/KnightsTemplar.woff") format('woff');
 }
 
+
+#map-wrapper {
+}
+
+.toolbar-wrapper {
+  text-align: center;
+}
+
+.btn-toolbar {
+  display: inline-block;
+}
+
 #dmCanvas {
   opacity: 0.5;
 }
 
 #preview {
+  display: none;
   float: right;
 }
 
