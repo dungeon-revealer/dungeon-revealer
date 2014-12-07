@@ -13,6 +13,12 @@
     src: url("/fonts/cardinal.woff") format('woff');
 }
 
+
+@font-face {
+    font-family: "KnightsTemplar";
+    src: url("/fonts/KnightsTemplar.woff") format('woff');
+}
+
 #dmCanvas {
   opacity: 0.5;
 }
@@ -45,6 +51,42 @@
   color: white;
   font-family: folkard, palitino, serif;
   font-size: 600%;
+}
+
+.auth-container {
+  position: absolute;
+  right: 10%;
+  bottom: 10%;
+}
+
+.glass {
+  color: white;
+  font-family: perigord, palitino, serif;
+  border: none;
+  background-position: center;
+}
+
+.glass::-webkit-input-placeholder {
+  color: white !important;
+  font-family: perigord, palitino, serif;
+  font-size: 150%;
+  text-transform: uppercase;
+}
+.glass::-moz-placeholder {
+  color: black !important;
+  font-family: KnightsTemplar, palitino, serif;
+}
+.glass:-moz-placeholder {
+  color: black !important;
+  font-family: KnightsTemplar, palitino, serif;
+}
+.glass:-ms-input-placeholder {
+  color: black !important;
+  font-family: KnightsTemplar, palitino, serif;
+}
+.glass::input-placeholder {
+  color: black !important;
+  font-family: KnightsTemplar, palitino, serif;
 }
 
 @media (max-width:480px) {

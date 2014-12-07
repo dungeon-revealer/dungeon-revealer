@@ -6,6 +6,7 @@ var cookieParser = require('cookie-parser');
 var session = require('cookie-session');
 var bodyParser = require('body-parser');
 var crypto = require('crypto');
+var fs = require('fs');
 
 var generate_key = function() {
     var sha = crypto.createHash('sha256');
@@ -27,9 +28,13 @@ app.set('view engine', 'jade');
 // Maybe for cross-browser support
 app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(logger('dev'));
+
 // Needed to handle JSON posts
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
+//app.use(bodyParser.json());
+//app.use(bodyParser.urlencoded({ extended: false }));
+
 // Cookie parsing needed for sessions
 app.use(cookieParser());
 // Consider all URLs under /public/ as static files, and return them raw.
@@ -40,6 +45,33 @@ console.log(generate_key());
 
 app.use('/', routes);
 app.use('/users', users);
+
+function randomInt() {
+    return Math.floor(Math.random() * 999999999);
+}
+
+
+app.post('/upload', function(req, res) {
+  console.log("upload");
+  console.log(req.body.imageData);
+  var appDir = path.dirname(require.main.filename),
+      fileName = "image" + randomInt().toString() + ".png",
+      filePath = appDir + "/../uploads/" + fileName;
+  console.log(filePath);
+  var buff = new Buffer(req.body.imageData
+    .replace(/^data:image\/(png|gif|jpeg);base64,/,''), 'base64');
+
+  fs.writeFile(filePath, buff, function (err) {
+    console.log('done');
+    if (err) {
+      console.log('error writing image to disk');
+      console.dir(err);
+      res.json({'response':"Error"});
+    } else {
+      res.json({'response':"Saved"});
+    }
+  });
+});
 
 
 // catch 404 and forward to error handler
@@ -72,6 +104,16 @@ app.use(function(err, req, res, next) {
         error: {}
     });
 });
+
+
+app.get('/uploads/:file', function (req, res){
+    file = req.params.file;
+    var dirname = "/uploads";
+    var img = fs.readFileSync(dirname + "/uploads/" + file);
+    res.writeHead(200, {'Content-Type': 'image/png' });
+    res.end(img, 'binary');
+});
+
 
 function getName(req, res) {
   if (req.session.name) {

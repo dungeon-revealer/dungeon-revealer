@@ -1,6 +1,6 @@
 var settings = {
-  maxWidth: 500,
-  maxHeight: 500,
+  maxWidth: 800,
+  maxHeight: 600,
   fogOpacity: 1,
   fogRGB: "0,0,0",
   defaultLineWidth: 15,
@@ -24,7 +24,7 @@ var brush;
 function createCanvases() {
 
   function createCanvas(id, zIndex) {
-    var canvas = document.createElement("canvas");
+    var canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     canvas.id = id;
@@ -34,7 +34,7 @@ function createCanvases() {
     canvas.style.zIndex = zIndex;
     zIndex++;
 
-    document.querySelector("#canvasContainer").appendChild(canvas);
+    document.querySelector('#canvasContainer').appendChild(canvas);
   }
 
   var container = document.createElement("div");
@@ -42,7 +42,7 @@ function createCanvases() {
   container.style.position = "relative";
   container.style.top = "0";
   container.style.left = "0";
-  document.body.appendChild(container);
+  document.getElementById('app').appendChild(container);
 
   createCanvas('mapCanvas', 1)
   createCanvas('dmCanvas', 2);
@@ -60,7 +60,7 @@ function midPointBtw(p1, p2) {
 img.onload = function() {
   setUp();
 };
-img.crossOrigin = "Anonymous"; // to prevent tainted canvas errors
+img.crossOrigin = 'Anonymous'; // to prevent tainted canvas errors
 img.src = mapImage;
 function createImageCanvas(img) {
   var imageCanvas = document.createElement("canvas"),
@@ -115,8 +115,7 @@ function stopDrawing() {
   points.length = 0;
 }
 
-function createPlayerMapImage(bottomCanvas, topCanvas) {
-
+function mergeCanvas(bottomCanvas, topCanvas) {
   var mergedCanvas = document.createElement('canvas'),
       mergedContext = mergedCanvas.getContext('2d');
 
@@ -125,9 +124,16 @@ function createPlayerMapImage(bottomCanvas, topCanvas) {
   //var canvas = createImageCanvas();
   copyCanvas(mergedContext, bottomCanvas);
   copyCanvas(mergedContext, topCanvas);
-  var mergedImage = convertCanvasToImage(mergedCanvas);
+
+  return mergedCanvas;
+}
+
+function createPlayerMapImage(bottomCanvas, topCanvas) {
+
+  var mergedCanvas = mergeCanvas(bottomCanvas, topCanvas),
+      mergedImage = convertCanvasToImage(mergedCanvas);
   mergedImage.id = 'preview';
-  document.querySelector('#menu').appendChild(mergedImage);
+  document.querySelector('#app').appendChild(mergedImage);
 }
 
 function getOptimalDimensions(width, height, maxWidth, maxHeight) {
@@ -156,7 +162,7 @@ function setUp() {
   dimensions = getOptimalDimensions(img.width, img.height, settings.maxWidth, settings.maxHeight);
   width = dimensions.width;
   height = dimensions.height;
-  console.log(width, height);
+  console.log("Canvas dimensions: ", width, "x", height);
 
   createCanvases();
   dmCanvas = document.getElementById('dmCanvas');
@@ -287,6 +293,25 @@ function setUpEvents() {
   removePreviewButton.addEventListener("click", function() {
     removePreview();
   });
+
+  $('#sendButton').click(function() {
+    var imageData = document.getElementById('preview').src;
+
+    var jqxhr = $.post('upload',
+      {
+        "imageData" : imageData
+      },
+      function(e) {
+      })
+      .done(function(e) {
+      })
+      .fail(function(e) {
+      })
+      .always(function(e) {
+        console.log(e.response);
+      });
+  });
+
   document.addEventListener("mouseup", function() {
     stopDrawing();
   });
@@ -298,3 +323,14 @@ function createPreview() {
 function removePreview() {
   $('#preview').remove();
 }
+$('.app-js').hide();
+$('#enter').click(function() {
+  $('.splash-js').hide();
+  $('.app-js').show();
+});
+$(function() {
+  $('.glass').blurjs({
+  	source: '#splash',
+  	radius: 10
+  });
+});
