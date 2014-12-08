@@ -1,0 +1,33 @@
+include splash.jade
+
+#app.app-js
+  .navbar.navbar-inverse
+    .navbar-header
+      button.navbar-toggle(type="button", data-toggle="collapse", data-target=".navbar-inverse-collapse")
+        span.icon-bar
+        span.icon-bar
+        span.icon-bar
+      a.navbar-brand(href="#") Dungeon Revealer
+    .navbar-collapse.collapse.navbar-inverse-collapse
+      ul.nav.navbar-nav
+        li.active
+          a(href="#") Active
+        li
+          a(href="#") Link
+      ul.nav.navbar-nav.navbar-right
+        li
+          a(href="#") Link
+  #map-wrapper
+  .toolbar-wrapper
+    .btn-toolbar
+      .btn-group
+        a#btn-shroud-all.btn.btn-default(href="#") Shroud All
+        a#btn-clear-all.btn.btn-default(href="#") Clear All
+      .btn-group
+        a#btn-toggle-brush.btn.btn-default(href="#") Shroud Brush
+        a#btn-shrink-brush.btn.btn-default(href="#") Shrink Brush
+        a#btn-enlarge-brush.btn.btn-default(href="#") Enlarge Brush
+      .btn-group
+        a#btn-preview.btn.btn-default(href="#") Preview
+        a#btn-send.btn.btn-default(href="#") Send
+  ul#messages

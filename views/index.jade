@@ -1,1 +1,7 @@
-include index.html
+extends layout.jade
+
+block content
+  include index.html
+
+block js
+  script(src="/javascripts/dungeon-revealer.js")

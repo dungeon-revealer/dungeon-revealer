@@ -1,6 +1,6 @@
 var settings = {
   maxWidth: 800,
-  maxHeight: 600,
+  maxHeight: 6000,
   fogOpacity: 1,
   fogRGB: "0,0,0",
   defaultLineWidth: 15,
@@ -45,6 +45,7 @@ function createCanvases() {
   //container.style.margin-right = "auto";
   container.style.width = width + 'px';
   container.style.height = height + 'px';
+  //container.style.zoom = '50%';
 
   document.getElementById('map-wrapper').appendChild(container);
 
@@ -183,13 +184,12 @@ brush = (function(context, settings) {
         console.error("Doesn't exist yet");
       },
       toggle = function() {
-        console.log("togglin");
         if (currentBrushType === brushTypes[0]) {
-          console.log("shadow");
+          console.log("shroud brush set");
           currentBrushType = brushTypes[1];
         } else if (currentBrushType === brushTypes[1]) {
 
-          console.log("clear");
+          console.log("clear brush set");
           currentBrushType = brushTypes[0];
         } else {
           console.log("nothing: ");
@@ -314,7 +314,11 @@ function setUpEvents() {
       .fail(function(e) {
       })
       .always(function(e) {
-        console.log(e.response);
+        if (e.success) {
+          console.log(e.responseText);
+        } else {
+          console.error(e.responseText);
+        }
       });
   });
 
@@ -340,13 +344,13 @@ $('#enter').click(function() {
 });
 
 $(function() {
-  $('.glass').blurjs({
+  /*$('.glass').blurjs({
   	source: '#splash',
   	radius: 10
-  });
+  });*/
 });
 
 
-socket.on('chat message', function(msg){
+socket.on('map update', function(msg){
   $('#messages').append($('<li>').text(msg));
 });
