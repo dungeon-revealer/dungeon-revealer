@@ -14,7 +14,8 @@ var width,
     fogOpacity = settings.fogOpacity,
     fogRGB = settings.fogRGB,
     mapImage = settings.mapImage,
-    img = new Image();
+    img = new Image(),
+    socket = io();
 
 var isDrawing, points = [];
 var brush;
@@ -321,21 +322,31 @@ function setUpEvents() {
     stopDrawing();
   });
 }
+
 function createPreview() {
     removePreview();
     createPlayerMapImage(mapCanvas, dmCanvas);
 }
+
 function removePreview() {
   $('#preview').remove();
 }
+
 $('.app-js').hide();
+
 $('#enter').click(function() {
   $('.splash-js').hide();
   $('.app-js').show();
 });
+
 $(function() {
   $('.glass').blurjs({
   	source: '#splash',
   	radius: 10
   });
+});
+
+
+socket.on('chat message', function(msg){
+  $('#messages').append($('<li>').text(msg));
 });

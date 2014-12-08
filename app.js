@@ -32,16 +32,16 @@ app.set('view engine', 'jade');
 app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(logger('dev'));
 
-// Needed to handle JSON posts
+// Needed to handle JSON posts, size limit of 50mb
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
-//app.use(bodyParser.json());
-//app.use(bodyParser.urlencoded({ extended: false }));
 
 // Cookie parsing needed for sessions
 app.use(cookieParser());
+
 // Consider all URLs under /public/ as static files, and return them raw.
 app.use(express.static(path.join(__dirname, 'public')));
+
 // Session framework
 app.use(session({secret: generate_key()}));
 console.log(generate_key());
@@ -55,8 +55,7 @@ function randomInt() {
 
 
 app.post('/upload', function(req, res) {
-  console.log("upload");
-  console.log(req.body.imageData);
+  console.log("image uploaded");
   var appDir = path.dirname(require.main.filename),
       fileName = "image" + randomInt().toString() + ".png",
       filePath = appDir + "/../uploads/" + fileName;
@@ -65,7 +64,6 @@ app.post('/upload', function(req, res) {
     .replace(/^data:image\/(png|gif|jpeg);base64,/,''), 'base64');
 
   fs.writeFile(filePath, buff, function (err) {
-    console.log('done');
     if (err) {
       console.log('error writing image to disk');
       console.dir(err);
@@ -74,6 +72,8 @@ app.post('/upload', function(req, res) {
       res.json({'response':"Saved"});
     }
   });
+
+  io.emit('chat message', 'success');
 });
 
 
@@ -148,10 +148,13 @@ app.get('/name', getName);
 app.post('/name', setName);
 app.get('/logout', logout);
 
-io.on('connection', function(socket){
+/*io.on('connection', function(socket){
+  console.log('connection');
+  io.emit('chat message', 'first');
   socket.on('chat message', function(msg){
     io.emit('chat message', msg);
   });
-});
+});*/
 
-module.exports = app;
+//module.exports = app;
+module.exports = http;
