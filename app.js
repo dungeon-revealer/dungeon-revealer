@@ -74,6 +74,9 @@ app.post('/upload', function(req, res) {
         "responseText":"Image not uploaded successfully"
       });
   }
+
+  io.emit('map update', { "imageData":imageData
+  });
 /*  console.log(filePath);
   var buff = new Buffer(req.body.imageData
     .replace(/^data:image\/(png|gif|jpeg);base64,/,''), 'base64');
@@ -95,7 +98,6 @@ app.post('/upload', function(req, res) {
   });
   */
 
-  io.emit('map update', 'success');
 });
 
 

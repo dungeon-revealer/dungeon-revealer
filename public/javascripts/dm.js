@@ -349,8 +349,3 @@ $(function() {
   	radius: 10
   });*/
 });
-
-
-socket.on('map update', function(msg){
-  $('#messages').append($('<li>').text(msg));
-});

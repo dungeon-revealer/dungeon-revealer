@@ -23,6 +23,14 @@
 #map-wrapper {
 }
 
+#dm-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+}
+
 .toolbar-wrapper {
   text-align: center;
 }
@@ -33,6 +41,7 @@
 
 #dmCanvas {
   opacity: 0.5;
+  margin-bottom: 50px; /* to leave room for the control panel */
 }
 
 #preview {
