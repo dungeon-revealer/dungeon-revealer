@@ -1,6 +1,6 @@
 var settings = {
-  maxWidth: 800,
-  maxHeight: 6000,
+  maxWidth: 1400,
+  maxHeight: 8000,
   fogOpacity: 1,
   fogRGB: "0,0,0",
   defaultLineWidth: 15,

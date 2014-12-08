@@ -18,9 +18,8 @@ var generate_key = function() {
 };
 
 var routes = require('./routes/index');
-var users = require('./routes/users');
 var player = require('./routes/player');
-
+var dm = require('./routes/dm');
 
 //app.set('env', 'something');
 
@@ -47,16 +46,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({secret: generate_key()}));
 console.log(generate_key());
 
-app.use('/', routes);
+// default to the player
+app.use('/', player);
+app.use('/dm', dm);
 app.use('/player', player);
-app.use('/users', users);
-
-function randomInt() {
-    return Math.floor(Math.random() * 999999999);
-}
-
 
 app.post('/upload', function(req, res) {
+  function randomInt() {
+    return Math.floor(Math.random() * 999999999);
+  }
+
   console.log("image uploaded");
   var appDir = path.dirname(require.main.filename),
       fileName = "image" + randomInt().toString() + ".png",
@@ -69,7 +68,6 @@ app.post('/upload', function(req, res) {
         "responseText":"Image successfully uploaded"
       });
   } else  {
-      console.log('error writing image to disk');
       console.dir(err);
       res.json({
         "success":false,
@@ -181,5 +179,4 @@ app.get('/logout', logout);
   });
 });*/
 
-//module.exports = app;
 module.exports = http;

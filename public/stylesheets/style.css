@@ -72,11 +72,27 @@
   bottom: 10%;
 }
 
+#enter {
+  position: absolute;
+  left: calc(50% + 100px);
+  top: calc(50% + 70px);
+}
+
 .glass {
   color: white;
   font-family: perigord, palitino, serif;
   border: none;
   background-position: center;
+  background-color: transparent; /* temporary ? */
+}
+
+/* temporary ? */
+.glass:hover {
+  color: red;
+  font-family: perigord, palitino, serif;
+  border: none;
+  background-position: center;
+  background-color: transparent;
 }
 
 .glass::-webkit-input-placeholder {
@@ -99,7 +115,7 @@
 }
 .glass::input-placeholder {
   color: black !important;
-  font-family: KnightsTemplar, palitino, serif;
+  font-family: perigord, palitino, serif;
 }
 
 @media (max-width:480px) {
