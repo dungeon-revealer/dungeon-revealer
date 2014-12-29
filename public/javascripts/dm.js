@@ -4,7 +4,7 @@ var settings = {
   fogOpacity: 1,
   fogRGB: "0,0,0",
   defaultLineWidth: 15,
-  mapImage: '/images/map.png',
+  mapImage: '/images/CarnathRoadhouse.png',
   shadowImage: null, // for future feature
 };
 

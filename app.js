@@ -11,17 +11,16 @@ var fs = require('fs');
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
+// Used to generate session keys
 var generate_key = function() {
     var sha = crypto.createHash('sha256');
     sha.update(Math.random().toString());
     return sha.digest('hex');
 };
 
-var routes = require('./routes/index');
+var index = require('./routes/index');
 var player = require('./routes/player');
 var dm = require('./routes/dm');
-
-//app.set('env', 'something');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -43,15 +42,17 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Session framework
+// not implemented
 app.use(session({secret: generate_key()}));
-console.log(generate_key());
 
-// default to the player
-app.use('/', player);
-app.use('/dm', dm);
-app.use('/player', player);
+app.disable('etag');
 
-app.post('/upload', function(req, res) {
+// Routes
+app.get('/dm', function(req, res) {
+  res.render('dm', { dm: true, title: 'Dungeon Revealer DM Console' });
+});
+
+app.post('/dm/upload', function(req, res) {
   function randomInt() {
     return Math.floor(Math.random() * 999999999);
   }
@@ -77,6 +78,7 @@ app.post('/upload', function(req, res) {
 
   io.emit('map update', { "imageData":imageData
   });
+  console.log('map updated');
 /*  console.log(filePath);
   var buff = new Buffer(req.body.imageData
     .replace(/^data:image\/(png|gif|jpeg);base64,/,''), 'base64');
@@ -99,6 +101,9 @@ app.post('/upload', function(req, res) {
   */
 
 });
+app.use('/', player);
+//app.use('/dm', dm);
+app.use('/player', player);
 
 
 // catch 404 and forward to error handler
@@ -125,6 +130,7 @@ if (app.get('env') === 'development') {
 // production error handler
 // no stacktraces leaked to user
 app.use(function(err, req, res, next) {
+    console.log(err);
     res.status(err.status || 500);
     res.render('error', {
         message: err.message,
@@ -182,3 +188,4 @@ app.get('/logout', logout);
 });*/
 
 module.exports = http;
+//module.exports = app;
