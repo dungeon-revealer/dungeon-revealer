@@ -1,7 +1,7 @@
 extends layout.jade
 
 block content
-  include splash.jade
+  //include splash.jade
 
   #app.app-js
     .navbar.navbar-inverse
@@ -16,10 +16,14 @@ block content
           li.active
             a Active
           li
-            a Link
+            a Upload Files
         ul.nav.navbar-nav.navbar-right
           li
             a Link
+    //input(type="file", id="fileinput")
+    //#div1(ondrop='drop(event)', ondragover='allowDrop(event)')
+    //img#drag1(src='/images/favicomatic/favicon-128.png', draggable='true', ondragstart='drag(event)', width='336', height='69')
+
     #map-wrapper
     #dm-toolbar.toolbar-wrapper
       .btn-toolbar
@@ -38,3 +42,15 @@ block content
 
 block js
   script(src="/javascripts/dm.js")
+  script.
+    function allowDrop(ev) {
+    ev.preventDefault();
+    }
+    function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.id);
+    }
+    function drop(ev) {
+    ev.preventDefault();
+    var data = ev.dataTransfer.getData("text");
+    ev.target.appendChild(document.getElementById(data));
+    }

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 var debug = require('debug')('dungeon-revealer');
 var app = require('../app');
-//var http = app.http;
+var http = app.http;
 
-/*app.set('port', process.env.PORT || 3000);
+app.set('port', process.env.PORT || 3000);
 
-var server = app.listen(app.get('port'), function() {
+var server = http.listen(app.get('port'), function() {
 
   var host = server.address().address,
       port = server.address().port,
@@ -15,9 +15,4 @@ var server = app.listen(app.get('port'), function() {
       debug(message);
 
       console.log('Point your browser to that address');
-});*/
-
-
-var server = app.listen(3000, function() {
-  console.log('listening on *:3000');
 });

@@ -8,7 +8,7 @@ var session = require('cookie-session');
 var bodyParser = require('body-parser');
 var crypto = require('crypto');
 var fs = require('fs');
-var http = require('http').Server(app);
+var http = app.http = require('http').Server(app);
 var io = require('socket.io')(http);
 
 // Used to generate session keys
@@ -18,9 +18,9 @@ var generate_key = function() {
     return sha.digest('hex');
 };
 
-var index = require('./routes/index');
-var player = require('./routes/player');
-var dm = require('./routes/dm');
+//var index = require('./routes/index');
+//var player = require('./routes/player');
+//var dm = require('./routes/dm');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -45,9 +45,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // not implemented
 app.use(session({secret: generate_key()}));
 
-app.disable('etag');
-
 // Routes
+// TODO: Move this logic somewhere else
+app.get('/', function(req, res) {
+  res.render('player', { dm: false, title: 'Dungeon Revealer' });
+});
 app.get('/dm', function(req, res) {
   res.render('dm', { dm: true, title: 'Dungeon Revealer DM Console' });
 });
@@ -101,9 +103,9 @@ app.post('/dm/upload', function(req, res) {
   */
 
 });
-app.use('/', player);
+//app.use('/', player);
 //app.use('/dm', dm);
-app.use('/player', player);
+//app.use('/player', player);
 
 
 // catch 404 and forward to error handler
@@ -187,5 +189,4 @@ app.get('/logout', logout);
   });
 });*/
 
-module.exports = http;
-//module.exports = app;
+module.exports = app;

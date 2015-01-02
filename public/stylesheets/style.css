@@ -19,6 +19,16 @@
     src: url("/fonts/KnightsTemplar.woff") format('woff');
 }
 
+#dm-link {
+  position: absolute;
+  top: 10%;
+  right: 4%;
+  color: white;
+  font-family: cardinal, palitino, serif;
+  font-size: 150%;
+}
+
+#div1 {width:350px;height:70px;padding:10px;border:1px solid #aaaaaa;}
 
 #map-wrapper {
 }
@@ -47,10 +57,6 @@
 #preview {
   display: none;
   float: right;
-}
-
-#app {
-  display: none;
 }
 
 .splash {

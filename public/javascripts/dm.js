@@ -4,7 +4,7 @@ var settings = {
   fogOpacity: 1,
   fogRGB: "0,0,0",
   defaultLineWidth: 15,
-  mapImage: '/images/CarnathRoadhouse.png',
+  mapImage: '/images/map.png',
   shadowImage: null, // for future feature
 };
 
@@ -335,8 +335,6 @@ function createPreview() {
 function removePreview() {
   $('#preview').remove();
 }
-
-$('.app-js').hide();
 
 $('#enter').click(function() {
   $('.splash-js').hide();
