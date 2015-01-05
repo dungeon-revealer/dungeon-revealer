@@ -5,8 +5,16 @@ var settings = {
   fogRGB: "0,0,0",
   defaultLineWidth: 15,
   mapImage: '/images/map.png',
-  shadowImage: null, // for future feature
+  shadowImage: null // for future feature
 };
+
+/*require(['settings'], function( settings ) {
+  console.log( settings ); // OK
+});*/
+
+var $ = require(['jquery'], function( jq ) {
+  console.log( jq ); // OK
+});
 
 var width,
     height,
