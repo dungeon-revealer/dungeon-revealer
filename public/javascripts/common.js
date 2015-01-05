@@ -8,12 +8,3 @@ require.config({
         'io' : '//cdn.socket.io/socket.io-1.2.0'
     }
 });
-
-require(['settings', 'jquery', 'io', 'bootstrap'], function(settings, $, io){
-
-    // DOM ready
-    $(function(){
-
-        console.log('started');
-    });
-});

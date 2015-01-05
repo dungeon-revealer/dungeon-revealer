@@ -54,7 +54,7 @@ app.get('/dm', function(req, res) {
   res.render('dm', { dm: true, title: 'Dungeon Revealer DM Console' });
 });
 
-app.post('/dm/upload', function(req, res) {
+app.post('/upload', function(req, res) {
   function randomInt() {
     return Math.floor(Math.random() * 999999999);
   }
