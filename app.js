@@ -12,7 +12,7 @@ var http = app.http = require('http').Server(app);
 var io = require('socket.io')(http);
 
 // Used to generate session keys
-var generate_key = function() {
+var generateKey = function () {
     var sha = crypto.createHash('sha256');
     sha.update(Math.random().toString());
     return sha.digest('hex');
@@ -43,64 +43,65 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Session framework
 // not implemented
-app.use(session({secret: generate_key()}));
+app.use(session({secret: generateKey()}));
 
 // Routes
 // TODO: Move this logic somewhere else
-app.get('/', function(req, res) {
-  res.render('player', { dm: false, title: 'Dungeon Revealer' });
+app.get('/', function (req, res) {
+    res.render('player', {dm: false, title: 'Dungeon Revealer'});
 });
-app.get('/dm', function(req, res) {
-  res.render('dm', { dm: true, title: 'Dungeon Revealer DM Console' });
+app.get('/dm', function (req, res) {
+    res.render('dm', {dm: true, title: 'Dungeon Revealer DM Console'});
 });
 
-app.post('/upload', function(req, res) {
-  function randomInt() {
-    return Math.floor(Math.random() * 999999999);
-  }
-
-  console.log("image uploaded");
-  var appDir = path.dirname(require.main.filename),
-      fileName = "image" + randomInt().toString() + ".png",
-      filePath = appDir + "/../uploads/" + fileName,
-      imageData = req.body.imageData;
-
-  if (imageData) {
-      res.json({
-        "success":true,
-        "responseText":"Image successfully uploaded"
-      });
-  } else  {
-      console.dir(err);
-      res.json({
-        "success":false,
-        "responseText":"Image not uploaded successfully"
-      });
-  }
-
-  io.emit('map update', { "imageData":imageData
-  });
-  console.log('map updated');
-/*  console.log(filePath);
-  var buff = new Buffer(req.body.imageData
-    .replace(/^data:image\/(png|gif|jpeg);base64,/,''), 'base64');
-
-  fs.writeFile(filePath, buff, function (err) {
-    if (err) {
-      console.log('error writing image to disk');
-      console.dir(err);
-      res.json({
-        "success":false,
-        "responseText":"Image not uploaded successfully"
-      });
-    } else {
-      res.json({
-        "success":true,
-        "responseText":"Image successfully uploaded"
-      });
+app.post('/upload', function (req, res) {
+    function randomInt() {
+        return Math.floor(Math.random() * 999999999);
     }
-  });
-  */
+
+    console.log("image uploaded");
+    var appDir = path.dirname(require.main.filename),
+        fileName = "image" + randomInt().toString() + ".png",
+        filePath = appDir + "/../uploads/" + fileName,
+        imageData = req.body.imageData;
+
+    if (imageData) {
+        res.json({
+            "success": true,
+            "responseText": "Image successfully uploaded"
+        });
+    } else {
+        console.dir(err);
+        res.json({
+            "success": false,
+            "responseText": "Image not uploaded successfully"
+        });
+    }
+
+    io.emit('map update', {
+        "imageData": imageData
+    });
+    console.log('map updated');
+    /*  console.log(filePath);
+     var buff = new Buffer(req.body.imageData
+     .replace(/^data:image\/(png|gif|jpeg);base64,/,''), 'base64');
+
+     fs.writeFile(filePath, buff, function (err) {
+     if (err) {
+     console.log('error writing image to disk');
+     console.dir(err);
+     res.json({
+     "success":false,
+     "responseText":"Image not uploaded successfully"
+     });
+     } else {
+     res.json({
+     "success":true,
+     "responseText":"Image successfully uploaded"
+     });
+     }
+     });
+     */
 
 });
 //app.use('/', player);
@@ -109,7 +110,7 @@ app.post('/upload', function(req, res) {
 
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
     var err = new Error('Not Found');
     err.status = 404;
     next(err);
@@ -120,7 +121,7 @@ app.use(function(req, res, next) {
 // development error handler
 // will print stacktrace
 if (app.get('env') === 'development') {
-    app.use(function(err, req, res, next) {
+    app.use(function (err, req, res, next) {
         res.status(err.status || 500);
         res.render('error', {
             message: err.message,
@@ -131,7 +132,7 @@ if (app.get('env') === 'development') {
 
 // production error handler
 // no stacktraces leaked to user
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
     console.log(err);
     res.status(err.status || 500);
     res.render('error', {
@@ -141,52 +142,52 @@ app.use(function(err, req, res, next) {
 });
 
 /*
-app.get('/uploads/:file', function (req, res){
-    file = req.params.file;
-    var dirname = "/uploads";
-    var img = fs.readFileSync(dirname + "/uploads/" + file);
-    res.writeHead(200, {'Content-Type': 'image/png' });
-    res.end(img, 'binary');
-});*/
+ app.get('/uploads/:file', function (req, res){
+ file = req.params.file;
+ var dirname = "/uploads";
+ var img = fs.readFileSync(dirname + "/uploads/" + file);
+ res.writeHead(200, {'Content-Type': 'image/png' });
+ res.end(img, 'binary');
+ });*/
 
 /*
-function getName(req, res) {
-  if (req.session.name) {
-    return res.json({ name: req.session.name });
-  }
-  else {
-    return res.json({ name: '' });
-  }
-}
+ function getName(req, res) {
+ if (req.session.name) {
+ return res.json({ name: req.session.name });
+ }
+ else {
+ return res.json({ name: '' });
+ }
+ }
 
-function setName(req, res) {
-  if(!req.body.hasOwnProperty('name')) {
-    res.statusCode = 400;
-    return res.json({ error: 'Invalid message' });
-  }
-  else {
-    req.session.name = req.body.name;
-    return res.json({ name: req.body.name });
-  }
-}
+ function setName(req, res) {
+ if(!req.body.hasOwnProperty('name')) {
+ res.statusCode = 400;
+ return res.json({ error: 'Invalid message' });
+ }
+ else {
+ req.session.name = req.body.name;
+ return res.json({ name: req.body.name });
+ }
+ }
 
-function logout(req, res) {
-  req.session = null;
-  return res.json({});
-}
+ function logout(req, res) {
+ req.session = null;
+ return res.json({});
+ }
 
 
-app.get('/name', getName);
-app.post('/name', setName);
-app.get('/logout', logout);
-*/
+ app.get('/name', getName);
+ app.post('/name', setName);
+ app.get('/logout', logout);
+ */
 
 /*io.on('connection', function(socket){
-  console.log('connection');
-  io.emit('chat message', 'first');
-  socket.on('chat message', function(msg){
-    io.emit('chat message', msg);
-  });
-});*/
+ console.log('connection');
+ io.emit('chat message', 'first');
+ socket.on('chat message', function(msg){
+ io.emit('chat message', msg);
+ });
+ });*/
 
 module.exports = app;

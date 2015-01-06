@@ -1,9 +1,8 @@
 extends layout.jade
 
 block content
-  include splash.jade
-  #map-container
+    include splash.jade
+    #map-container
 
 block js
-  script(src="https://cdn.socket.io/socket.io-1.2.0.js")
-  script(src="/javascripts/player.js")
+    script(data-main='/javascripts/player-app.js', src='/javascripts/require.js')

@@ -1,44 +1,44 @@
 extends layout.jade
 
 block content
-  //include splash.jade
+    //include splash.jade
 
-  #app.app-js
-    .navbar.navbar-inverse
-      .navbar-header
-        button.navbar-toggle(type="button", data-toggle="collapse", data-target=".navbar-inverse-collapse")
-          span.icon-bar
-          span.icon-bar
-          span.icon-bar
-        a.navbar-brand Dungeon Revealer
-      .navbar-collapse.collapse.navbar-inverse-collapse
-        ul.nav.navbar-nav
-          li.active
-            a Active
-          li
-            a Upload Files
-        ul.nav.navbar-nav.navbar-right
-          li
-            a Link
-    //input(type="file", id="fileinput")
-    //#div1(ondrop='drop(event)', ondragover='allowDrop(event)')
-    //img#drag1(src='/images/favicomatic/favicon-128.png', draggable='true', ondragstart='drag(event)', width='336', height='69')
+    #app.app-js
+        .navbar.navbar-inverse
+            .navbar-header
+                button.navbar-toggle(type="button", data-toggle="collapse", data-target=".navbar-inverse-collapse")
+                    span.icon-bar
+                    span.icon-bar
+                    span.icon-bar
+                a.navbar-brand Dungeon Revealer
+            .navbar-collapse.collapse.navbar-inverse-collapse
+                ul.nav.navbar-nav
+                    li.active
+                        a Active
+                    li
+                        a Upload Files
+                ul.nav.navbar-nav.navbar-right
+                    li
+                        a Link
+        //input(type="file", id="fileinput")
+        //#div1(ondrop='drop(event)', ondragover='allowDrop(event)')
+        //img#drag1(src='/images/favicomatic/favicon-128.png', draggable='true', ondragstart='drag(event)', width='336', height='69')
 
-    #map-wrapper
-    #dm-toolbar.toolbar-wrapper
-      .btn-toolbar
-        .btn-group
-          a#btn-shroud-all.btn.btn-default Shroud All
-          a#btn-clear-all.btn.btn-default Clear All
-        .btn-group
-          a#btn-toggle-brush.btn.btn-default Shroud Brush
-          a#btn-shrink-brush.btn.btn-default Shrink Brush
-          a#btn-enlarge-brush.btn.btn-default Enlarge Brush
-        .btn-group
-          a#btn-preview.btn.btn-default Preview
-          a#btn-send.btn.btn-default Send
-    ul#messages
+        #map-wrapper
+        #dm-toolbar.toolbar-wrapper
+            .btn-toolbar
+                .btn-group
+                    a#btn-shroud-all.btn.btn-default Shroud All
+                    a#btn-clear-all.btn.btn-default Clear All
+                .btn-group
+                    a#btn-toggle-brush.btn.btn-default Shroud Brush
+                    a#btn-shrink-brush.btn.btn-default Shrink Brush
+                    a#btn-enlarge-brush.btn.btn-default Enlarge Brush
+                .btn-group
+                    a#btn-preview.btn.btn-default Preview
+                    a#btn-send.btn.btn-default Send
+        ul#messages
 
 
 block js
-  script(data-main='/javascripts/client-app.js', src='/javascripts/require.js')
+    script(data-main='/javascripts/dm-app.js', src='/javascripts/require.js')
