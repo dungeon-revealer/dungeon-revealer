@@ -1,6 +1,6 @@
 //Calling define with a dependency array and a factory function
 define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
-    console.log('dm.js starting');
+    console.log('dm-console2.js starting');
     var $ = jquery;
 
     var width,
@@ -134,9 +134,9 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
     }
 
     function createPlayerMapImage(bottomCanvas, topCanvas) {
-
         var mergedCanvas = mergeCanvas(bottomCanvas, topCanvas),
             mergedImage = convertCanvasToImage(mergedCanvas);
+
         mergedImage.id = 'preview';
         document.querySelector('#map-wrapper').appendChild(mergedImage);
     }
@@ -161,7 +161,7 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
     }
 
     function setUp() {
-        brush = require(['brush'], function (brush) {
+        //brush = require(['brush'], function (brush) {
             var dimensions;
             console.log("Setting up");
 
@@ -177,53 +177,53 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
             mapContext = mapCanvas.getContext('2d');
 
 
-            // Need to move this somewhere else
-            //brush = (function (context, settings) {
-            //    var brushTypes = ["clear", "fog"],
-            //        currentBrushType = brushTypes[0],
-            //        currentPattern = null,
-            //        setBrushType = function () {
-            //            console.error("Doesn't exist yet");
-            //        },
-            //        toggle = function () {
-            //            if (currentBrushType === brushTypes[0]) {
-            //                console.log("shroud brush set");
-            //                currentBrushType = brushTypes[1];
-            //            } else if (currentBrushType === brushTypes[1]) {
-            //
-            //                console.log("clear brush set");
-            //                currentBrushType = brushTypes[0];
-            //            } else {
-            //                console.log("nothing: ");
-            //                console.log(currentBrushType);
-            //            }
-            //            context.strokeStyle = getCurrent();
-            //        },
-            //        getPattern = function (brushType) {
-            //            if (brushType === brushTypes[0]) {
-            //                context.globalCompositeOperation = 'destination-out';
-            //                //return dmContext.createPattern(getImageCanvas(), 'repeat');
-            //                return 'rgba(' + settings.fogRGB + ',' + settings.fogOpacity + ')';
-            //            } else if (brushType === brushTypes[1]) {
-            //                context.globalCompositeOperation = 'source-over';
-            //                return 'rgba(' + settings.fogRGB + ',' + settings.fogOpacity + ')';
-            //                //return dmContext.createPattern(getShadowImageCanvas(), 'repeat');
-            //            }
-            //
-            //        },
-            //        getCurrent = function () {
-            //            return getPattern(currentBrushType);
-            //        }
-            //
-            //    return {
-            //        brushTypes: brushTypes,
-            //        currentBrushType: currentBrushType,
-            //        setBrushType: setBrushType,
-            //        toggle: toggle,
-            //        getCurrent: getCurrent,
-            //        getPattern: getPattern
-            //    }
-            //})(dmContext, settings);
+            //Need to move this somewhere else
+            brush = (function (context, settings) {
+                var brushTypes = ["clear", "fog"],
+                    currentBrushType = brushTypes[0],
+                    currentPattern = null,
+                    setBrushType = function () {
+                        console.error("Doesn't exist yet");
+                    },
+                    toggle = function () {
+                        if (currentBrushType === brushTypes[0]) {
+                            console.log("shroud brush set");
+                            currentBrushType = brushTypes[1];
+                        } else if (currentBrushType === brushTypes[1]) {
+
+                            console.log("clear brush set");
+                            currentBrushType = brushTypes[0];
+                        } else {
+                            console.log("nothing: ");
+                            console.log(currentBrushType);
+                        }
+                        context.strokeStyle = getCurrent();
+                    },
+                    getPattern = function (brushType) {
+                        if (brushType === brushTypes[0]) {
+                            context.globalCompositeOperation = 'destination-out';
+                            //return dmContext.createPattern(getImageCanvas(), 'repeat');
+                            return 'rgba(' + settings.fogRGB + ',' + settings.fogOpacity + ')';
+                        } else if (brushType === brushTypes[1]) {
+                            context.globalCompositeOperation = 'source-over';
+                            return 'rgba(' + settings.fogRGB + ',' + settings.fogOpacity + ')';
+                            //return dmContext.createPattern(getShadowImageCanvas(), 'repeat');
+                        }
+
+                    },
+                    getCurrent = function () {
+                        return getPattern(currentBrushType);
+                    }
+
+                return {
+                    brushTypes: brushTypes,
+                    currentBrushType: currentBrushType,
+                    setBrushType: setBrushType,
+                    toggle: toggle,
+                    getCurrent: getCurrent,
+                    getPattern: getPattern
+                }
+            })(dmContext, settings);
 
 
             copyCanvas(mapContext, createImageCanvas(img));
@@ -231,8 +231,8 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
             dmContext.strokeStyle = brush.getCurrent();
             setUpEvents();
             createPreview();
-        })(settings, dmContext);
-        console.log(brush);
+            console.log(brush);
+        //})(settings, dmContext);
     }
 
     function setUpEvents() {
@@ -339,21 +339,10 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
         $('#preview').remove();
     }
 
-    $('#enter').click(function () {
-        $('.splash-js').hide();
-        $('.app-js').show();
-    });
-
-    $(function () {
-        /*$('.glass').blurjs({
-         source: '#splash',
-         radius: 10
-         });*/
-    });
-
-
     //Define the module value by returning a value.
-    return function () {
-        return "hi"
+    return {
+        setUp: setUp,
+        createPreview: createPreview,
+        removePreview: removePreview
     };
 });

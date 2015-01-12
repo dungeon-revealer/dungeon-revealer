@@ -1,3 +1,4 @@
+// Require.js settings
 require.config({
     shim : {
         "bootstrap" : { "deps" :['jquery'] }
