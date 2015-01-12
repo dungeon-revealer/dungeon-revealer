@@ -1,6 +1,6 @@
 //Calling define with a dependency array and a factory function
 define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
-    console.log('dm-console2.js starting');
+    console.log('dmconsole2.js starting');
     var $ = jquery;
 
     var width,

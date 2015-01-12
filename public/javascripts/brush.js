@@ -1,7 +1,10 @@
 define(function () {
     console.log('brush.js starting');
 
-    brush = function (context, settings) {
+    return function (context, settings) {
+        if (!context || !settings) {
+            throw new Error('Invalid args');
+        }
         console.log('brush instance created');
         var brushTypes = ["clear", "fog"],
             currentBrushType = brushTypes[0],
@@ -48,6 +51,4 @@ define(function () {
             getPattern: getPattern
         }
     };
-
-    return brush;
 });
