@@ -5,7 +5,7 @@ define(function () {
         if (!context || !settings) {
             throw new Error('Invalid args');
         }
-        console.log('brush instance created');
+
         var brushTypes = ["clear", "fog"],
             currentBrushType = brushTypes[0],
             currentPattern = null,

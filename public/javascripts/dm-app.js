@@ -4,8 +4,12 @@ require(['common'], function(common) {
 
     //refactor this later
     require(['map', 'jquery'], function(map, jquery) {
-        var $ = jquery;
-        var map1 = map();
+        var $ = jquery,
+            mapWrapper = document.getElementById('map-wrapper'),
+            map1 = map();
+
+        map1.create(mapWrapper);
+        //$('#map-wrapper').createMap();
         $('#enter').click(function () {
             $('.splash-js').hide();
             $('.app-js').show();

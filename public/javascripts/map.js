@@ -1,17 +1,74 @@
 define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
-    return function() {
+    console.log('map module running');
+    return function () {
         var $ = jquery,
             fowContext,
             mapImageContext,
-            fowBrush = brush(),
+            fowBrush,
+            mapImage,
             i = 0; // for testing
 
+        // expose as a jquery plug-in
+        // could be some issues with this if module is defined in multiple places?
+        // TODO: just refactor this if it should be kept, or else delete it
+        (function($) {
+            console.log('hi');
+            $.fn.createMap = function(imgUrl, opts) {
+                console.log("createMap()");
+                console.log(this);
+                return this.each(function() {
+                    console.log(this);
+                    create(imgUrl, this, opts);
+                });
+            }
+        })(jquery);
 
-        function create(opts) {
+        function create(parentElem, imgUrl, opts) {
+            //TODO: better way to override individual settings properties?
             opts = opts || settings;
+            imgUrl = imgUrl || opts.mapImage;
+
+            var container = getContainer(settings),
+                canvases = createCanvases(settings.width, settings.height);
+
+            console.log('map image url is ' + imgUrl);
+
+            parentElem.appendChild(container);
+            container.appendChild(canvases.mapImageCanvas);
+            container.appendChild(canvases.fowCanvas);
+            mapImageContext = canvases.mapImageCanvas.getContext('2d');
+            fowContext = canvases.fowCanvas.getContext('2d');
+
+            mapImage = new Image();
+            mapImage.onload = function () {
+                console.log('mapImage loaded');
+                copyCanvas(mapImageContext, createImageCanvas(mapImage));
+                //fogBoard(dmContext);
+                //dmContext.strokeStyle = brush.getCurrent();
+                //setUpEvents();
+                //createPreview();
+                //console.log(brush);
+            };
+            mapImage.crossOrigin = 'Anonymous'; // to prevent tainted canvas errors
+            mapImage.src = imgUrl;
+
+
         }
 
-        function createCanvases() {
+        // TODO: account for multiple containers
+        function getContainer(settings) {
+            var container = document.getElementById('canvasContainer') || document.createElement("div");
+            container.id = "canvasContainer"; //TODO: wont work for multiple containers
+            container.style.position = "relative";
+            container.style.top = "0";
+            container.style.left = "0";
+            container.style.margin = "auto";
+            container.style.width = settings.width + 'px';
+            container.style.height = settings.height + 'px';
+            return container;
+        }
+
+        function createCanvases(width, height) {
 
             function createCanvas(id, zIndex) {
                 var canvas = document.createElement('canvas');
@@ -24,22 +81,15 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 canvas.style.zIndex = zIndex;
                 zIndex++;
 
-                document.querySelector('#canvasContainer').appendChild(canvas);
+                return canvas;
             }
 
-            var container = document.createElement("div");
-            container.id = "canvasContainer";
-            container.style.position = "relative";
-            container.style.top = "0";
-            container.style.left = "0";
-            container.style.margin = "auto";
-            container.style.width = width + 'px';
-            container.style.height = height + 'px';
 
-            document.getElementById('map-wrapper').appendChild(container);
+            return {
+                mapImageCanvas: createCanvas('mapImageCanvas', 1),
+                fowCanvas: createCanvas('fowCanvas', 2)
+            }
 
-            createCanvas('mapCanvas', 1)
-            createCanvas('dmCanvas', 2);
         };
 
         function midPointBtw(p1, p2) {
@@ -76,7 +126,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         }
 
         function copyCanvas(context, canvasToCopy) {
-            context.drawImage(canvasToCopy, 0, 0, width, height);
+            context.drawImage(canvasToCopy, 0, 0, 500, 500);
         }
 
         function mergeCanvas(bottomCanvas, topCanvas) {
@@ -92,26 +142,41 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             return mergedCanvas;
         }
 
-        //TODO: rename?
-        function resetBoard(context, brushType, brush) {
+        function createImageCanvas(img) {
+            var imageCanvas = document.createElement("canvas"),
+                imageContext = imageCanvas.getContext('2d'),
+                width = settings.maxWidth,
+                height = settings.maxHeight;
+
+            imageCanvas.width = width;
+            imageCanvas.height = height;
+            imageContext.drawImage(img, 0, 0, width, height);
+
+            return imageCanvas;
+        }
+
+        function resetMap(context, brushType, brush) {
             context.save();
             context.fillStyle = brush.getPattern(brushType);
             context.fillRect(0, 0, width, height);
             context.restore();
         }
 
-        //TODO: rename?
-        function fogBoard(context) {
+        function fogMap(context) {
             resetBoard(context, 'fog');
         }
 
-        //TODO: rename?
-        function clearBoard(context) {
+        function clearMap(context) {
             resetBoard(context, 'clear');
+        }
+
+        function resizeMap(width, height) {
+
         }
 
 
         return {
+            create: create,
             x: Math.random(),
             y: function () {
                 i++
