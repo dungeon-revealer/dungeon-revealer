@@ -2,6 +2,7 @@
 require(['common'], function(common) {
     console.log('dm-app.js running');
 
+    //require(['dmconsole2', 'jquery']);
     //refactor this later
     require(['map', 'jquery'], function(map, jquery) {
         var $ = jquery,

@@ -3,48 +3,47 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
     return function () {
         var $ = jquery,
             fowContext,
+            fowCanvas,
             mapImageContext,
+            mapImageCanvas,
             fowBrush,
             mapImage,
-            i = 0; // for testing
-
-        // expose as a jquery plug-in
-        // could be some issues with this if module is defined in multiple places?
-        // TODO: just refactor this if it should be kept, or else delete it
-        (function($) {
-            console.log('hi');
-            $.fn.createMap = function(imgUrl, opts) {
-                console.log("createMap()");
-                console.log(this);
-                return this.each(function() {
-                    console.log(this);
-                    create(imgUrl, this, opts);
-                });
-            }
-        })(jquery);
+            width,
+            height;
 
         function create(parentElem, imgUrl, opts) {
             //TODO: better way to override individual settings properties?
             opts = opts || settings;
             imgUrl = imgUrl || opts.mapImage;
 
-            var container = getContainer(settings),
-                canvases = createCanvases(settings.width, settings.height);
-
-            console.log('map image url is ' + imgUrl);
-
-            parentElem.appendChild(container);
-            container.appendChild(canvases.mapImageCanvas);
-            container.appendChild(canvases.fowCanvas);
-            mapImageContext = canvases.mapImageCanvas.getContext('2d');
-            fowContext = canvases.fowCanvas.getContext('2d');
-
             mapImage = new Image();
             mapImage.onload = function () {
+
+                var container,
+                    canvases,
+                    dimensions;
+
                 console.log('mapImage loaded');
+                console.log('map image url is ' + imgUrl);
+
+                dimensions = getOptimalDimensions(mapImage.width, mapImage.height, opts.maxWidth, opts.maxHeight);
+                width = dimensions.width;
+                height = dimensions.height;
+                console.log("width: " + width + ", height: " + height);
+                container = getContainer();
+                canvases = createCanvases();
+                parentElem.appendChild(container);
+                mapImageCanvas = canvases.mapImageCanvas;
+                fowCanvas = canvases.fowCanvas;
+                container.appendChild(mapImageCanvas);
+                container.appendChild(fowCanvas);
+                mapImageContext = mapImageCanvas.getContext('2d');
+                fowContext = fowCanvas.getContext('2d');
                 copyCanvas(mapImageContext, createImageCanvas(mapImage));
-                //fogBoard(dmContext);
-                //dmContext.strokeStyle = brush.getCurrent();
+                fowBrush = brush(fowContext, opts);
+                fowContext.strokeStyle = fowBrush.getCurrent();
+
+                fogMap();
                 //setUpEvents();
                 //createPreview();
                 //console.log(brush);
@@ -56,21 +55,22 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         }
 
         // TODO: account for multiple containers
-        function getContainer(settings) {
+        function getContainer() {
             var container = document.getElementById('canvasContainer') || document.createElement("div");
             container.id = "canvasContainer"; //TODO: wont work for multiple containers
             container.style.position = "relative";
             container.style.top = "0";
             container.style.left = "0";
             container.style.margin = "auto";
-            container.style.width = settings.width + 'px';
-            container.style.height = settings.height + 'px';
+            container.style.width = width + 'px';
+            container.style.height = height + 'px';
             return container;
         }
 
-        function createCanvases(width, height) {
+        function createCanvases() {
 
             function createCanvas(id, zIndex) {
+                console.log("creating canvas " + id);
                 var canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
@@ -84,13 +84,22 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 return canvas;
             }
 
-
             return {
                 mapImageCanvas: createCanvas('mapImageCanvas', 1),
                 fowCanvas: createCanvas('fowCanvas', 2)
             }
 
         };
+
+        function getMouseCoordinates(e) {
+            var viewportOffset = fowCanvas.getBoundingClientRect(),
+                borderTop = parseInt($(fowCanvas).css('border-top-width')),
+                borderLeft = parseInt($(fowCanvas).css('border-left-width'));
+            return {
+                x: e.clientX - viewportOffset.left - borderLeft,
+                y: e.clientY - viewportOffset.top - borderTop
+            }
+        }
 
         function midPointBtw(p1, p2) {
             return {
@@ -99,34 +108,24 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             };
         }
 
-        function getOptimalDimensions(width, height, maxWidth, maxHeight) {
-            var widthCompressionRatio = maxWidth / width,
-                heightCompressionRatio = maxHeight / height,
-                bestCompressionRatio,
-                d = {width: width, height: height};
+        function getOptimalDimensions(idealWidth, idealHeight, maxWidth, maxHeight) {
+            var ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
 
-            if (widthCompressionRatio < 1 || heightCompressionRatio < 1) {
-                if (widthCompressionRatio < heightCompressionRatio) {
-                    bestCompressionRatio = widthCompressionRatio;
-                } else {
-                    bestCompressionRatio = heightCompressionRatio;
-                }
-                d.width = parseInt(d.width * bestCompressionRatio);
-                d.height = parseInt(d.height * bestCompressionRatio);
-            }
-            return d;
+            return {
+                width: idealWidth * ratio,
+                height: idealHeight * ratio
+            };
         }
 
         function convertCanvasToImage(canvas) {
             var image = new Image();
 
-            //TODO: support other image types
             image.src = canvas.toDataURL("image/png");
             return image;
         }
 
         function copyCanvas(context, canvasToCopy) {
-            context.drawImage(canvasToCopy, 0, 0, 500, 500);
+            context.drawImage(canvasToCopy, 0, 0, width, height);
         }
 
         function mergeCanvas(bottomCanvas, topCanvas) {
@@ -135,13 +134,13 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
             mergedCanvas.width = width;
             mergedCanvas.height = height;
-            //var canvas = createImageCanvas();
             copyCanvas(mergedContext, bottomCanvas);
             copyCanvas(mergedContext, topCanvas);
 
             return mergedCanvas;
         }
 
+        // Creates a canvas from an image
         function createImageCanvas(img) {
             var imageCanvas = document.createElement("canvas"),
                 imageContext = imageCanvas.getContext('2d'),
@@ -162,28 +161,36 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             context.restore();
         }
 
-        function fogMap(context) {
-            resetBoard(context, 'fog');
+        function fogMap() {
+            resetMap(fowContext, 'fog', fowBrush);
         }
 
         function clearMap(context) {
-            resetBoard(context, 'clear');
+            resetMap(context, 'clear');
         }
 
-        function resizeMap(width, height) {
-
+        function resize(displayWidth, displayHeight) {
+            fowCanvas.style.width = displayWidth;
+            fowCanvas.style.height = displayHeight;
+            mapImageCanvas.style.width = displayWidth;
+            mapImageCanvas.style.height = displayHeight;
         }
 
+        function toImage() {
+            return convertCanvasToImage(mergeCanvas(mapImageCanvas, fowCanvas));
+        }
+
+        function remove() {
+            // won't work in IE
+            mapImageCanvas.remove();
+            fowCanvas.remove();
+        }
 
         return {
             create: create,
-            x: Math.random(),
-            y: function () {
-                i++
-            },
-            z: function () {
-                return i
-            }
+            toImage: toImage,
+            resize: resize,
+            remove: remove
         }
 
     }

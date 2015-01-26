@@ -2,6 +2,8 @@ define(function () {
     console.log('brush.js starting');
 
     return function (context, settings) {
+        console.log('creating brush');
+
         if (!context || !settings) {
             throw new Error('Invalid args');
         }
@@ -29,12 +31,10 @@ define(function () {
             getPattern = function (brushType) {
                 if (brushType === brushTypes[0]) {
                     context.globalCompositeOperation = 'destination-out';
-                    //return dmContext.createPattern(getImageCanvas(), 'repeat');
                     return 'rgba(' + settings.fogRGB + ',' + settings.fogOpacity + ')';
                 } else if (brushType === brushTypes[1]) {
                     context.globalCompositeOperation = 'source-over';
                     return 'rgba(' + settings.fogRGB + ',' + settings.fogOpacity + ')';
-                    //return dmContext.createPattern(getShadowImageCanvas(), 'repeat');
                 }
 
             },
