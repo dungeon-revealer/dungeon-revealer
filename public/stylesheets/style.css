@@ -19,6 +19,11 @@
     src: url("/fonts/KnightsTemplar.woff") format('woff');
 }
 
+html, body, #wrapper {
+  width: 100%;
+  min-height: 100%;
+}
+
 #dm-link {
   position: absolute;
   top: 10%;
@@ -26,11 +31,6 @@
   color: white;
   font-family: cardinal, palitino, serif;
   font-size: 150%;
-}
-
-#div1 {width:350px;height:70px;padding:10px;border:1px solid #aaaaaa;}
-
-#map-wrapper {
 }
 
 #dm-toolbar {
@@ -49,9 +49,16 @@
   display: inline-block;
 }
 
+/* TODO: Remove later */
 #dmCanvas {
   opacity: 0.5;
   margin-bottom: 50px; /* to leave room for the control panel */
+}
+
+.fow-canvas {
+  opacity: 0.5;
+  margin-bottom: 50px; /* to leave room for the control panel */
+  max-width: 100%;
 }
 
 #preview {
@@ -67,7 +74,6 @@
   width: 100vw;
   z-index: 100;
   background-image: url('/images/DungeonEntranceMedium.jpg');
-  /*background-size: cover;*/
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-position: center;

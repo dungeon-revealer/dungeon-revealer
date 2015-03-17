@@ -69,12 +69,13 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
         function createCanvases() {
 
-            function createCanvas(id, zIndex) {
-                console.log("creating canvas " + id);
+            function createCanvas(type, zIndex) {
+                console.log("creating canvas " + type);
                 var canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
-                canvas.id = id;
+                canvas.id = type + Math.floor(Math.random()*100000);
+                canvas.className = type;
                 canvas.style.position = "absolute";
                 canvas.style.left = "0";
                 canvas.style.top = "0";
@@ -85,8 +86,8 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             }
 
             return {
-                mapImageCanvas: createCanvas('mapImageCanvas', 1),
-                fowCanvas: createCanvas('fowCanvas', 2)
+                mapImageCanvas: createCanvas('map-image-canvas', 1),
+                fowCanvas: createCanvas('fow-canvas', 2)
             }
 
         };
