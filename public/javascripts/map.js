@@ -11,14 +11,13 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             width,
             height;
 
-        function create(parentElem, imgUrl, opts) {
+        function create(parentElem, imgUrl, opts, callback) {
             //TODO: better way to override individual settings properties?
             opts = opts || settings;
             imgUrl = imgUrl || opts.mapImage;
 
             mapImage = new Image();
             mapImage.onload = function () {
-
                 var container,
                     canvases,
                     dimensions;
@@ -47,6 +46,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 //setUpEvents();
                 //createPreview();
                 //console.log(brush);
+                callback();
             };
             mapImage.crossOrigin = 'Anonymous'; // to prevent tainted canvas errors
             mapImage.src = imgUrl;
@@ -90,7 +90,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 fowCanvas: createCanvas('fow-canvas', 2)
             }
 
-        };
+        }
 
         function getMouseCoordinates(e) {
             var viewportOffset = fowCanvas.getBoundingClientRect(),
@@ -110,8 +110,9 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         }
 
         function getOptimalDimensions(idealWidth, idealHeight, maxWidth, maxHeight) {
+            console.log(arguments);
             var ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
-
+            console.log(ratio);
             return {
                 width: idealWidth * ratio,
                 height: idealHeight * ratio
@@ -173,8 +174,20 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         function resize(displayWidth, displayHeight) {
             fowCanvas.style.width = displayWidth;
             fowCanvas.style.height = displayHeight;
-            mapImageCanvas.style.width = displayWidth;
-            mapImageCanvas.style.height = displayHeight;
+            mapImageCanvas.style.width = displayWidth + 'px';
+            mapImageCanvas.style.height = displayHeight + 'px';
+        }
+
+        // Maybe having this here violates cohesion
+        function fitMapToWindow() {
+            var oldWidth = parseInt(mapImageCanvas.style.width || mapImageCanvas.width, 10),
+                oldHeight = parseInt(mapImageCanvas.style.height || mapImageCanvas.height, 10),
+                // Using Infinity for new height so as not to limit the image size's width because
+                // the height was too large. We want to fill the available width.
+                newDims = getOptimalDimensions(oldWidth, oldHeight, window.innerWidth, Infinity);
+
+            resize(newDims.width, newDims.height);
+            console.log(newDims);
         }
 
         function toImage() {
@@ -191,7 +204,8 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             create: create,
             toImage: toImage,
             resize: resize,
-            remove: remove
+            remove: remove,
+            fitMapToWindow: fitMapToWindow
         }
 
     }

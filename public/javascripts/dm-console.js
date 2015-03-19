@@ -83,6 +83,16 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
         return image;
     }
 
+    function fitCanvasSizeToWindow(canvas) {
+        var dims = getOptimalDimensions(canvas.style.width || canvas.width,
+                       canvas.style.height || canvas.height,
+                       window.innerWidth,
+                       window.innerHeight);
+        canvas.style.width = dims.width;
+        canvas.style.height = dims.height;
+        console.log(dims);
+    }
+
     function copyCanvas(context, canvasToCopy) {
         context.drawImage(canvasToCopy, 0, 0, width, height);
     }
@@ -232,6 +242,8 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
             setUpEvents();
             createPreview();
         //})(settings, dmContext);
+
+        fitCanvasSizeToWindow();
         console.log(brush);
     }
 

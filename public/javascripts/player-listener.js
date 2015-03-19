@@ -18,6 +18,18 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
         }
     });
 
+    socket.on('disconnect', function() {
+      console.log('disconnected');
+      socketConnectTimeInterval = setInterval(function () {
+        console.log('attempting to reconnect...');
+        socket.socket.reconnect();
+        if(socket.socket.connected) {
+          console.log('successfully reconnected')
+          clearInterval(socketConnectTimeInterval);
+        }
+      }, 3000);
+    });
+
     //Define the module value by returning a value.
     return function () {
         return "hi"
