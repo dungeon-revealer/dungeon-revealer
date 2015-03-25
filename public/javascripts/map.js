@@ -23,7 +23,6 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                     dimensions;
 
                 console.log('mapImage loaded');
-                console.log('map image url is ' + imgUrl);
 
                 dimensions = getOptimalDimensions(mapImage.width, mapImage.height, opts.maxWidth, opts.maxHeight);
                 width = dimensions.width;
@@ -46,6 +45,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 //setUpEvents();
                 //createPreview();
                 //console.log(brush);
+                setUpDrawingEvents();
                 callback();
             };
             mapImage.crossOrigin = 'Anonymous'; // to prevent tainted canvas errors
@@ -56,12 +56,12 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
         // TODO: account for multiple containers
         function getContainer() {
-            var container = document.getElementById('canvasContainer') || document.createElement("div");
-            container.id = "canvasContainer"; //TODO: wont work for multiple containers
-            container.style.position = "relative";
-            container.style.top = "0";
-            container.style.left = "0";
-            container.style.margin = "auto";
+            var container = document.getElementById('canvasContainer') || document.createElement('div');
+            container.id = 'canvasContainer'; //TODO: wont work for multiple containers
+            container.style.position = 'relative';
+            container.style.top = '0';
+            container.style.left = '0';
+            container.style.margin = 'auto';
             container.style.width = width + 'px';
             container.style.height = height + 'px';
             return container;
@@ -70,15 +70,15 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         function createCanvases() {
 
             function createCanvas(type, zIndex) {
-                console.log("creating canvas " + type);
+                console.log('creating canvas ' + type);
                 var canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
                 canvas.id = type + Math.floor(Math.random()*100000);
                 canvas.className = type;
-                canvas.style.position = "absolute";
-                canvas.style.left = "0";
-                canvas.style.top = "0";
+                canvas.style.position = 'absolute';
+                canvas.style.left = '0';
+                canvas.style.top = '0';
                 canvas.style.zIndex = zIndex;
                 zIndex++;
 
@@ -88,7 +88,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             return {
                 mapImageCanvas: createCanvas('map-image-canvas', 1),
                 fowCanvas: createCanvas('fow-canvas', 2)
-            }
+            };
 
         }
 
@@ -99,7 +99,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             return {
                 x: e.clientX - viewportOffset.left - borderLeft,
                 y: e.clientY - viewportOffset.top - borderTop
-            }
+            };
         }
 
         function midPointBtw(p1, p2) {
@@ -122,7 +122,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         function convertCanvasToImage(canvas) {
             var image = new Image();
 
-            image.src = canvas.toDataURL("image/png");
+            image.src = canvas.toDataURL('image/png');
             return image;
         }
 
@@ -144,7 +144,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
         // Creates a canvas from an image
         function createImageCanvas(img) {
-            var imageCanvas = document.createElement("canvas"),
+            var imageCanvas = document.createElement('canvas'),
                 imageContext = imageCanvas.getContext('2d'),
                 width = settings.maxWidth,
                 height = settings.maxHeight;
@@ -187,7 +187,6 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 newDims = getOptimalDimensions(oldWidth, oldHeight, window.innerWidth, Infinity);
 
             resize(newDims.width, newDims.height);
-            console.log(newDims);
         }
 
         function toImage() {
@@ -200,13 +199,116 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             fowCanvas.remove();
         }
 
+        function setUpDrawingEvents() {
+            mapImageCanvas.onmousedown = function (e) {
+                isDrawing = true;
+                var coords = getMouseCoordinates(e);
+                points.push(coords);
+                // Draw a circle as the start of the brush stroke
+                mapImageContext.beginPath();
+                mapImageContext.arc(coords.x, coords.y, lineWidth / 2, 0, Math.PI * 2, true);
+                mapImageContext.closePath();
+                mapImageContext.fill();
+            };
+
+            mapImageCanvas.onmousemove = function (e) {
+                if (!isDrawing) return;
+
+                points.push(getMouseCoordinates(e));
+
+                var p1 = points[0],
+                    p2 = points[1];
+
+                mapImageContext.beginPath();
+                mapImageContext.moveTo(p1.x, p1.y);
+                mapImageContext.lineWidth = lineWidth;
+                mapImageContext.lineJoin = mapImageContext.lineCap = 'round';
+
+                for (var i = 1, len = points.length; i < len; i++) {
+                    var midPoint = midPointBtw(p1, p2);
+                    mapImageContext.quadraticCurveTo(p1.x, p1.y, midPoint.x, midPoint.y);
+                    p1 = points[i];
+                    p2 = points[i + 1];
+                }
+                mapImageContext.lineTo(p1.x, p1.y);
+                mapImageContext.stroke();
+            };
+
+
+            $('#btn-toggle-brush').click(function () {
+                var toggleButton = this;
+                if (toggleButton.innerHTML === "Clear Brush") {
+                    toggleButton.innerHTML = "Shadow Brush";
+                } else {
+                    toggleButton.innerHTML = "Clear Brush";
+                }
+                brush.toggle();
+            });
+            $('#btn-shroud-all').click(function () {
+                fogBoard(mapImageContext);
+                //createPlayerMapImage(mapCanvas, mapImageCanvas);
+            });
+            $('#btn-clear-all').click(function () {
+                clearBoard(mapImageContext);
+                //createPlayerMapImage(mapCanvas, mapImageCanvas);
+            });
+
+            $('#btn-enlarge-brush').click(function () {
+                // If the new width would be over 200, set it to 200
+                lineWidth = (lineWidth * 2 > 200) ? 200 : lineWidth * 2;
+            });
+
+            $('#btn-shrink-brush').click(function () {
+                // If the new width would be less than 1, set it to 1
+                lineWidth = (lineWidth / 2 < 1) ? 1 : lineWidth / 2;
+            });
+
+            $('#btn-preview').click(function () {
+                createPreview();
+            });
+
+            $('#btn-send').click(function () {
+                var imageData = document.getElementById('preview').src;
+
+                var jqxhr = $.post('upload',
+                    {
+                        "imageData": imageData
+                    },
+                    function (e) {
+                    })
+                    .done(function (e) {
+                    })
+                    .fail(function (e) {
+                    })
+                    .always(function (e) {
+                        if (e.success) {
+                            console.log(e.responseText);
+                        } else {
+                            console.error(e.responseText);
+                        }
+                    });
+            });
+
+            document.addEventListener("mouseup", function () {
+                stopDrawing();
+            });
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                createPreview();
+            }
+            isDrawing = false;
+            points.length = 0;
+        }
+
         return {
             create: create,
             toImage: toImage,
             resize: resize,
             remove: remove,
             fitMapToWindow: fitMapToWindow
-        }
+        };
 
-    }
+    };
 });

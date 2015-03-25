@@ -1,8 +1,9 @@
-// don't try to use jquery before this is defined, or else it won't be found
 require(['common'], function(common) {
     console.log('dm-app.js running');
-
-    if (false) {
+    
+    var useOldApp = false;
+    
+    if (useOldApp) {
         require(['dmconsole2', 'jquery']);
     }
     else {
@@ -14,8 +15,7 @@ require(['common'], function(common) {
 
             map1.create(mapWrapper, null, null, function() {
                 map1.fitMapToWindow();
-                window.addEventListener('resize', function(event){
-                    console.log("window resized");
+                window.addEventListener('resize', function(event) {
                     map1.fitMapToWindow();
                 });
             });
