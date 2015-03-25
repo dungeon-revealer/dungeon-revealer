@@ -1,5 +1,5 @@
 define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
-    console.log('map module running');
+    console.log('map module loaded');
     return function () {
         var $ = jquery,
             fowContext,
@@ -9,7 +9,12 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             fowBrush,
             mapImage,
             width,
-            height;
+            height,
+            isDrawing = false,
+            points = [],
+            lineWidth = settings.defaultLineWidth,
+            fogOpacity = settings.fogOpacity,
+            fogRGB = settings.fogRGB;
 
         function create(parentElem, imgUrl, opts, callback) {
             //TODO: better way to override individual settings properties?
@@ -24,6 +29,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
                 console.log('mapImage loaded');
 
+                // TODO: make this more readable
                 dimensions = getOptimalDimensions(mapImage.width, mapImage.height, opts.maxWidth, opts.maxHeight);
                 width = dimensions.width;
                 height = dimensions.height;
@@ -42,40 +48,38 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 fowContext.strokeStyle = fowBrush.getCurrent();
 
                 fogMap();
-                //setUpEvents();
-                //createPreview();
-                //console.log(brush);
                 setUpDrawingEvents();
                 callback();
             };
             mapImage.crossOrigin = 'Anonymous'; // to prevent tainted canvas errors
             mapImage.src = imgUrl;
-
-
         }
 
         // TODO: account for multiple containers
         function getContainer() {
             var container = document.getElementById('canvasContainer') || document.createElement('div');
+            
             container.id = 'canvasContainer'; //TODO: wont work for multiple containers
             container.style.position = 'relative';
             container.style.top = '0';
             container.style.left = '0';
             container.style.margin = 'auto';
-            container.style.width = width + 'px';
-            container.style.height = height + 'px';
+            //container.style.width = width + 'px';
+            //container.style.height = height + 'px';
+            
             return container;
         }
 
         function createCanvases() {
 
             function createCanvas(type, zIndex) {
-                console.log('creating canvas ' + type);
                 var canvas = document.createElement('canvas');
+                
+                console.log('creating canvas ' + type);
                 canvas.width = width;
                 canvas.height = height;
                 canvas.id = type + Math.floor(Math.random()*100000);
-                canvas.className = type;
+                canvas.className = type + ' map-canvas';
                 canvas.style.position = 'absolute';
                 canvas.style.left = '0';
                 canvas.style.top = '0';
@@ -96,9 +100,10 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             var viewportOffset = fowCanvas.getBoundingClientRect(),
                 borderTop = parseInt($(fowCanvas).css('border-top-width')),
                 borderLeft = parseInt($(fowCanvas).css('border-left-width'));
+                
             return {
-                x: e.clientX - viewportOffset.left - borderLeft,
-                y: e.clientY - viewportOffset.top - borderTop
+                x: (e.clientX - viewportOffset.left - borderLeft) / getMapDisplayRatio(),
+                y: (e.clientY - viewportOffset.top - borderTop) / getMapDisplayRatio()
             };
         }
 
@@ -110,10 +115,10 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         }
 
         function getOptimalDimensions(idealWidth, idealHeight, maxWidth, maxHeight) {
-            console.log(arguments);
             var ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
-            console.log(ratio);
+            
             return {
+                ratio: ratio,
                 width: idealWidth * ratio,
                 height: idealHeight * ratio
             };
@@ -123,6 +128,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             var image = new Image();
 
             image.src = canvas.toDataURL('image/png');
+            
             return image;
         }
 
@@ -172,8 +178,8 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         }
 
         function resize(displayWidth, displayHeight) {
-            fowCanvas.style.width = displayWidth;
-            fowCanvas.style.height = displayHeight;
+            fowCanvas.style.width = displayWidth + 'px';
+            fowCanvas.style.height = displayHeight + 'px';
             mapImageCanvas.style.width = displayWidth + 'px';
             mapImageCanvas.style.height = displayHeight + 'px';
         }
@@ -182,8 +188,6 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         function fitMapToWindow() {
             var oldWidth = parseInt(mapImageCanvas.style.width || mapImageCanvas.width, 10),
                 oldHeight = parseInt(mapImageCanvas.style.height || mapImageCanvas.height, 10),
-                // Using Infinity for new height so as not to limit the image size's width because
-                // the height was too large. We want to fill the available width.
                 newDims = getOptimalDimensions(oldWidth, oldHeight, window.innerWidth, Infinity);
 
             resize(newDims.width, newDims.height);
@@ -198,43 +202,50 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             mapImageCanvas.remove();
             fowCanvas.remove();
         }
+        
+        function getMapDisplayRatio() {
+            return parseFloat(mapImageCanvas.style.width, 10) / mapImageCanvas.width;
+        }
 
         function setUpDrawingEvents() {
-            mapImageCanvas.onmousedown = function (e) {
+            fowCanvas.onmousedown = function (e) {
                 isDrawing = true;
                 var coords = getMouseCoordinates(e);
                 points.push(coords);
                 // Draw a circle as the start of the brush stroke
-                mapImageContext.beginPath();
-                mapImageContext.arc(coords.x, coords.y, lineWidth / 2, 0, Math.PI * 2, true);
-                mapImageContext.closePath();
-                mapImageContext.fill();
+                fowContext.beginPath();
+                fowContext.arc(coords.x, coords.y, lineWidth / 2, 0, Math.PI * 2, true);
+                fowContext.closePath();
+                fowContext.fill();
             };
 
-            mapImageCanvas.onmousemove = function (e) {
+            fowCanvas.onmousemove = function (e) {
+                var p1, p2;
+                
                 if (!isDrawing) return;
 
                 points.push(getMouseCoordinates(e));
+                p1 = points[0];
+                p2 = points[1];
 
-                var p1 = points[0],
-                    p2 = points[1];
-
-                mapImageContext.beginPath();
-                mapImageContext.moveTo(p1.x, p1.y);
-                mapImageContext.lineWidth = lineWidth;
-                mapImageContext.lineJoin = mapImageContext.lineCap = 'round';
+                fowContext.beginPath();
+                fowContext.moveTo(p1.x, p1.y);
+                fowContext.lineWidth = lineWidth;
+                fowContext.lineJoin = fowContext.lineCap = 'round';
 
                 for (var i = 1, len = points.length; i < len; i++) {
                     var midPoint = midPointBtw(p1, p2);
-                    mapImageContext.quadraticCurveTo(p1.x, p1.y, midPoint.x, midPoint.y);
+                    fowContext.quadraticCurveTo(p1.x, p1.y, midPoint.x, midPoint.y);
                     p1 = points[i];
                     p2 = points[i + 1];
                 }
-                mapImageContext.lineTo(p1.x, p1.y);
-                mapImageContext.stroke();
+                
+                fowContext.lineTo(p1.x, p1.y);
+                fowContext.stroke();
             };
 
-
+            //TODO: move all of this jquery stuff somewhere else
+            
             $('#btn-toggle-brush').click(function () {
                 var toggleButton = this;
                 if (toggleButton.innerHTML === "Clear Brush") {
@@ -244,13 +255,13 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 }
                 brush.toggle();
             });
+            
             $('#btn-shroud-all').click(function () {
-                fogBoard(mapImageContext);
-                //createPlayerMapImage(mapCanvas, mapImageCanvas);
+                fogMap(fowContext);
             });
+            
             $('#btn-clear-all').click(function () {
-                clearBoard(mapImageContext);
-                //createPlayerMapImage(mapCanvas, mapImageCanvas);
+                clearMap(fowContext);
             });
 
             $('#btn-enlarge-brush').click(function () {
@@ -263,12 +274,12 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 lineWidth = (lineWidth / 2 < 1) ? 1 : lineWidth / 2;
             });
 
-            $('#btn-preview').click(function () {
-                createPreview();
+            $('#btn-render').click(function () {
+                createRender();
             });
 
             $('#btn-send').click(function () {
-                var imageData = document.getElementById('preview').src;
+                var imageData = document.getElementById('render').src;
 
                 var jqxhr = $.post('upload',
                     {
@@ -296,10 +307,30 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
         function stopDrawing() {
             if (isDrawing) {
-                createPreview();
+                createRender();
             }
             isDrawing = false;
             points.length = 0;
+        }
+        
+        //todo: move this functionality elsewher
+        function createRender() {
+            removeRender();
+            createPlayerMapImage(mapImageCanvas, fowCanvas);
+        }
+    
+        function removeRender() {
+            $('#render').remove();
+        }
+        
+        function createPlayerMapImage(bottomCanvas, topCanvas) {
+            var mergedCanvas = mergeCanvas(bottomCanvas, topCanvas),
+                mergedImage = convertCanvasToImage(mergedCanvas);
+                
+            mergedImage.id = 'render';
+            
+            //todo: refactor this functionality outside
+            document.querySelector('#map-wrapper').appendChild(mergedImage);
         }
 
         return {

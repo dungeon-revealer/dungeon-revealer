@@ -58,11 +58,14 @@ html, body, #wrapper {
 
 .fow-canvas {
   opacity: 0.5;
+}
+
+.map-canvas {
   margin-bottom: 50px; /* to leave room for the control panel */
   max-width: 100%;
 }
 
-#preview {
+#render {
   display: none;
   float: right;
 }
