@@ -174,7 +174,8 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         }
 
         function clearMap(context) {
-            resetMap(context, 'clear');
+            resetMap(fowContext, 'clear', fowBrush);
+            //resetMap(context, 'clear');
         }
 
         function resize(displayWidth, displayHeight) {
@@ -258,10 +259,12 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             
             $('#btn-shroud-all').click(function () {
                 fogMap(fowContext);
+                createRender();
             });
             
             $('#btn-clear-all').click(function () {
                 clearMap(fowContext);
+                createRender();
             });
 
             $('#btn-enlarge-brush').click(function () {
