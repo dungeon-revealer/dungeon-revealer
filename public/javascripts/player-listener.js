@@ -4,11 +4,9 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
         socket = io();
 
     socket.on('map update', function (msg) {
-        console.log('got a map update');
         $('.splash-js').hide();
-        console.log(msg);
         if (msg && msg.imageData) {
-            console.log('updating the map');
+            console.log('got a map update');
             $('#map').remove();
             var map = new Image();
             map.id = 'map';
@@ -17,22 +15,30 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
             document.getElementById('map-container').appendChild(map);
         }
     });
+    
+    socket.on('connect', function() {
+      console.log('connected to server');
+    });
+    
+    socket.on('reconnecting', function() {
+      console.log('reconnecting to server');
+    });
+    
+    socket.on('reconnect', function() {
+      console.log('reconnected to server');
+    });
+    
+    socket.on('reconnect_failed', function() {
+      console.log('reconnect failed!');
+    });
 
     socket.on('disconnect', function() {
-      console.log('disconnected');
-      socketConnectTimeInterval = setInterval(function () {
-        console.log('attempting to reconnect...');
-        socket.socket.reconnect();
-        if(socket.socket.connected) {
-          console.log('successfully reconnected')
-          clearInterval(socketConnectTimeInterval);
-        }
-      }, 3000);
+      console.log('disconnected from server');
     });
 
     //Define the module value by returning a value.
     return function () {
-        return "hi"
+        return "hi";
     };
 });
 

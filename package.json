@@ -1,7 +1,6 @@
 {
   "name": "dungeon-revealer",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.0.1",
   "scripts": {
     "start": "node ./bin/www"
   },
