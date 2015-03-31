@@ -103,6 +103,21 @@ html, body, #wrapper {
   top: calc(50% + 70px);
 }
 
+
+.map {
+  position: absolute;
+  left: 0;
+  top: 0;
+  -webkit-transition: opacity 2s ease-in-out;
+  -moz-transition: opacity 2s ease-in-out;
+  -o-transition: opacity 2s ease-in-out;
+  transition: opacity 2s ease-in-out;
+}
+
+.transparent {
+  opacity:0;
+}
+
 .glass {
   color: white;
   font-family: perigord, palitino, serif;

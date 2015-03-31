@@ -18,6 +18,8 @@ var generateKey = function () {
     return sha.digest('hex');
 };
 
+var mostRecentImageData = null;
+
 //var index = require('./routes/index');
 //var player = require('./routes/player');
 //var dm = require('./routes/dm');
@@ -66,6 +68,7 @@ app.post('/upload', function (req, res) {
         imageData = req.body.imageData;
 
     if (imageData) {
+        mostRecentImageData = imageData;
         res.json({
             "success": true,
             "responseText": "Image successfully uploaded"
@@ -182,19 +185,19 @@ app.use(function (err, req, res, next) {
  app.get('/logout', logout);
  */
 
-/*io.on('connection', function(socket){
- console.log('connection');
- io.emit('chat message', 'first');
- socket.on('chat message', function(msg){
- io.emit('chat message', msg);
- });
- });*/
- 
- io.on('connection', function(socket){
-  console.log('a user connected');
-  socket.on('disconnect', function(){
-    console.log('user disconnected');
-  });
+io.on('connection', function(socket) {
+      console.log('a user connected');
+      
+      if (mostRecentImageData) {
+          console.log('sending current map to newly connected user');
+          socket.emit('map update', {
+              "imageData": mostRecentImageData
+          });
+      }
+      
+      socket.on('disconnect', function() {
+          console.log('user disconnected'); 
+      });
 });
 
 module.exports = app;

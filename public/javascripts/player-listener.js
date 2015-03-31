@@ -7,12 +7,17 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
         $('.splash-js').hide();
         if (msg && msg.imageData) {
             console.log('got a map update');
-            $('#map').remove();
-            var map = new Image();
-            map.id = 'map';
-            map.style.width = '100%';
-            map.src = msg.imageData;
-            document.getElementById('map-container').appendChild(map);
+            $('.oldest').remove();
+            $('.map').addClass('oldest').css('z-index', '30');
+            var oldMap = document.querySelector('.map');
+            var newMap = new Image();
+            newMap.style.width = '100%';
+            newMap.style.zIndex = 20;
+            newMap.src = msg.imageData;
+            newMap.className = "map";
+            document.getElementById('map-container').appendChild(newMap);
+            $('.oldest').addClass('transparent');
+            //oldMap.className += ' oldest';
         }
     });
     
@@ -38,6 +43,7 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
 
     //Define the module value by returning a value.
     return function () {
+        // TODO: return something useful?
         return "hi";
     };
 });
