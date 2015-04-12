@@ -67,6 +67,7 @@ app.post('/upload', function (req, res) {
         filePath = appDir + "/../uploads/" + fileName,
         imageData = req.body.imageData;
 
+    console.dir(req.files);
     if (imageData) {
         mostRecentImageData = imageData;
         res.json({
@@ -74,7 +75,6 @@ app.post('/upload', function (req, res) {
             "responseText": "Image successfully uploaded"
         });
     } else {
-        console.dir(err);
         res.json({
             "success": false,
             "responseText": "Image not uploaded successfully"
@@ -107,9 +107,6 @@ app.post('/upload', function (req, res) {
      */
 
 });
-//app.use('/', player);
-//app.use('/dm', dm);
-//app.use('/player', player);
 
 
 // catch 404 and forward to error handler
@@ -145,7 +142,7 @@ app.use(function (err, req, res, next) {
 });
 
 
-// *Totally* insecure
+// insecure
 /*
  app.get('/uploads/:file', function (req, res){
  file = req.params.file;
@@ -154,38 +151,6 @@ app.use(function (err, req, res, next) {
  res.writeHead(200, {'Content-Type': 'image/png' });
  res.end(img, 'binary');
  });*/
-
-/*
- function getName(req, res) {
- if (req.session.name) {
- return res.json({ name: req.session.name });
- }
- else {
- return res.json({ name: '' });
- }
- }
-
- function setName(req, res) {
- if(!req.body.hasOwnProperty('name')) {
- res.statusCode = 400;
- return res.json({ error: 'Invalid message' });
- }
- else {
- req.session.name = req.body.name;
- return res.json({ name: req.body.name });
- }
- }
-
- function logout(req, res) {
- req.session = null;
- return res.json({});
- }
-
-
- app.get('/name', getName);
- app.post('/name', setName);
- app.get('/logout', logout);
- */
 
 io.on('connection', function(socket) {
       console.log('a user connected');
@@ -198,7 +163,7 @@ io.on('connection', function(socket) {
       }
       
       socket.on('disconnect', function() {
-          console.log('user disconnected'); 
+          console.log('a user disconnected'); 
       });
 });
 
