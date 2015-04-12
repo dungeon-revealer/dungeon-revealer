@@ -144,6 +144,8 @@ app.use(function (err, req, res, next) {
     });
 });
 
+
+// *Totally* insecure
 /*
  app.get('/uploads/:file', function (req, res){
  file = req.params.file;

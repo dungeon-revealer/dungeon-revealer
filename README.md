@@ -1,6 +1,6 @@
 dungeon-revealer
 ================
 
-A simple app for revealing areas of a dungeon that players have explored.
+A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
 
 

@@ -17,7 +17,6 @@ define(['settings', 'jquery', 'io'], function (settings, jquery, io) {
             newMap.className = "map";
             document.getElementById('map-container').appendChild(newMap);
             $('.oldest').addClass('transparent');
-            //oldMap.className += ' oldest';
         }
     });
     
