@@ -63,7 +63,7 @@ app.post('/upload', function (req, res) {
 
     console.log("image uploaded");
     var appDir = path.dirname(require.main.filename),
-        fileName = "image" + randomInt().toString() + ".png",
+        fileName = "map.png",
         filePath = appDir + "/../uploads/" + fileName,
         imageData = req.body.imageData;
 

@@ -15,13 +15,24 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             lineWidth = settings.defaultLineWidth,
             fogOpacity = settings.fogOpacity,
             fogRGB = settings.fogRGB;
+            
+        function extend(obj1, obj2) {
+            obj1 = obj1 || {};
+            obj2 = obj2 || {};
+            for (var attrname in obj2) { obj1[attrname] = obj2[attrname]; }
+            return obj1;
+        }
+        
+        function nop() {};
 
-        function create(parentElem, imgUrl, opts, callback) {
-            //TODO: better way to override individual settings properties?
-            opts = opts || settings;
-            imgUrl = imgUrl || opts.mapImage;
+        function create(parentElem, opts) {
+            var opts = extend(opts, settings),
+                imgUrl = opts.imgUrl || opts.mapImage,
+                callback = opts.callback || nop,
+                error = opts.error || nop;
 
             mapImage = new Image();
+            mapImage.onerror = error;
             mapImage.onload = function () {
                 var container,
                     canvases,
