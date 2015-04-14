@@ -5,14 +5,18 @@ require(['common'], function(common) {
     require(['map', 'jquery', 'dropzone'], function(map, jquery, Dropzone) {
         var $ = jquery,
             mapWrapper = document.getElementById('map-wrapper'),
-            map1 = map();
-            
-        var myDropzone = new Dropzone("div#upload", { url: "/upload"});
+            dmMap = map();
 
-        map1.create(mapWrapper, null, null, function() {
-            map1.fitMapToWindow();
+        Dropzone.options.upload = { 
+            url: "/upload",
+            dictDefaultMessage: "Click here or drag and drop an image to upload (PNG only for now)", 
+            acceptedFiles: "image/png" // Accept png images only, for now
+        };
+
+        dmMap.create(mapWrapper, null, null, function() {
+            dmMap.fitMapToWindow();
             window.addEventListener('resize', function(event) {
-                map1.fitMapToWindow();
+                dmMap.fitMapToWindow();
             });
         });
 

@@ -30,7 +30,7 @@ html, body, #wrapper {
   top: 10%;
   right: 4%;
   color: white;
-  font-family: cardinal, palitino, serif;
+  font-family: folkard, cardinal, palitino, serif;
   font-size: 150%;
 }
 
@@ -89,6 +89,17 @@ html, body, #wrapper {
   color: white;
   font-family: folkard, palitino, serif;
   font-size: 600%;
+}
+
+.navbar-brand {
+  font-family: folkard, palitino, serif;
+  font-size: 25px;
+  line-height: 40px;
+}
+
+.btn {
+  font-family: KnightsTemplar, palitino, serif;
+  font-size: 20px;
 }
 
 .auth-container {
@@ -558,4 +569,13 @@ div#upload {
         border-left: 6px solid transparent;
         border-right: 6px solid transparent;
         border-bottom: 6px solid #be2626; }
+        
+        
+.dz-message {
+    background: none;
+}
+
+.dz-message span {
+    display: block;
+}
 
