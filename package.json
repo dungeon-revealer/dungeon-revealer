@@ -2,7 +2,7 @@
   "name": "dungeon-revealer",
   "version": "0.0.1",
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/dungeon-revealer"
   },
   "dependencies": {
     "body-parser": "~1.8.1",

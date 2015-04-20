@@ -44,7 +44,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 dimensions = getOptimalDimensions(mapImage.width, mapImage.height, opts.maxWidth, opts.maxHeight);
                 width = dimensions.width;
                 height = dimensions.height;
-                console.log("width: " + width + ", height: " + height);
+                console.log('width: ' + width + ', height: ' + height);
                 container = getContainer();
                 canvases = createCanvases();
                 parentElem.appendChild(container);
@@ -59,6 +59,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 fowContext.strokeStyle = fowBrush.getCurrent();
 
                 fogMap();
+                createRender();
                 setUpDrawingEvents();
                 callback();
             };
@@ -260,10 +261,10 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             
             $('#btn-toggle-brush').click(function () {
                 var toggleButton = this;
-                if (toggleButton.innerHTML === "Clear Brush") {
-                    toggleButton.innerHTML = "Shadow Brush";
+                if (toggleButton.innerHTML === 'Clear Brush') {
+                    toggleButton.innerHTML = 'Shadow Brush';
                 } else {
-                    toggleButton.innerHTML = "Clear Brush";
+                    toggleButton.innerHTML = 'Clear Brush';
                 }
                 brush.toggle();
             });
@@ -295,9 +296,9 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             $('#btn-send').click(function () {
                 var imageData = document.getElementById('render').src;
 
-                var jqxhr = $.post('upload',
+                var jqxhr = $.post('/send',
                     {
-                        "imageData": imageData
+                        'imageData': imageData
                     },
                     function (e) {
                     })
@@ -314,7 +315,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                     });
             });
 
-            document.addEventListener("mouseup", function () {
+            document.addEventListener('mouseup', function () {
                 stopDrawing();
             });
         }

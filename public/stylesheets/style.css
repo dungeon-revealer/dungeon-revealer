@@ -3,15 +3,15 @@
     src: url("/fonts/folkard.woff") format('woff');
 }
 
-@font-face {
-    font-family: "perigord";
-    src: url("/fonts/perigord.woff") format('woff');
-}
+/*@font-face {*/
+/*    font-family: "perigord";*/
+/*    src: url("/fonts/perigord.woff") format('woff');*/
+/*}*/
 
-@font-face {
-    font-family: "cardinal";
-    src: url("/fonts/cardinal.woff") format('woff');
-}
+/*@font-face {*/
+/*    font-family: "cardinal";*/
+/*    src: url("/fonts/cardinal.woff") format('woff');*/
+/*}*/
 
 
 @font-face {

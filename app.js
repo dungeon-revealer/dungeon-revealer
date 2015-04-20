@@ -10,6 +10,7 @@ var crypto = require('crypto');
 var fs = require('fs');
 var http = app.http = require('http').Server(app);
 var io = require('socket.io')(http);
+var busboy = require('connect-busboy');
 
 // Used to generate session keys
 var generateKey = function () {
@@ -20,9 +21,8 @@ var generateKey = function () {
 
 var mostRecentImageData = null;
 
-//var index = require('./routes/index');
-//var player = require('./routes/player');
-//var dm = require('./routes/dm');
+
+app.use(busboy()); 
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -57,55 +57,49 @@ app.get('/dm', function (req, res) {
 });
 
 app.post('/upload', function (req, res) {
-    function randomInt() {
-        return Math.floor(Math.random() * 999999999);
-    }
-
-    console.log("image uploaded");
+  
     var appDir = path.dirname(require.main.filename),
-        fileName = "map.png",
-        filePath = appDir + "/../uploads/" + fileName,
-        imageData = req.body.imageData;
+        fileName = 'map.png',
+        filePath = appDir + '/../uploads/' + fileName,
+        imageData = req.body.imageData,
+        fstream;
+    
+    req.pipe(req.busboy);
 
-    console.dir(req.files);
+    req.busboy.on('file', function (fieldname, file, filename) {
+        console.log('Uploading: ' + filename); 
+        fstream = fs.createWriteStream(__dirname + '/public/uploads/map.png');
+        file.pipe(fstream);
+        fstream.on('close', function () {
+            console.log('map saved');
+            res.sendStatus(200);
+        });
+        // should do something for a failure as well
+    });
+
+});
+
+
+app.post('/send', function (req, res) {
+    var imageData = req.body.imageData;
+        
     if (imageData) {
         mostRecentImageData = imageData;
         res.json({
-            "success": true,
-            "responseText": "Image successfully uploaded"
+            'success': true,
+            'responseText': 'Image successfully uploaded'
+        });
+        
+        io.emit('map update', {
+            'imageData': imageData
         });
     } else {
         res.json({
-            "success": false,
-            "responseText": "Image not uploaded successfully"
+            'success': false,
+            'responseText': 'Image not uploaded successfully'
         });
     }
-
-    io.emit('map update', {
-        "imageData": imageData
-    });
-    console.log('map updated');
-    /*  console.log(filePath);
-     var buff = new Buffer(req.body.imageData
-     .replace(/^data:image\/(png|gif|jpeg);base64,/,''), 'base64');
-
-     fs.writeFile(filePath, buff, function (err) {
-     if (err) {
-     console.log('error writing image to disk');
-     console.dir(err);
-     res.json({
-     "success":false,
-     "responseText":"Image not uploaded successfully"
-     });
-     } else {
-     res.json({
-     "success":true,
-     "responseText":"Image successfully uploaded"
-     });
-     }
-     });
-     */
-
+  
 });
 
 
@@ -141,24 +135,13 @@ app.use(function (err, req, res, next) {
     });
 });
 
-
-// insecure
-/*
- app.get('/uploads/:file', function (req, res){
- file = req.params.file;
- var dirname = "/uploads";
- var img = fs.readFileSync(dirname + "/uploads/" + file);
- res.writeHead(200, {'Content-Type': 'image/png' });
- res.end(img, 'binary');
- });*/
-
 io.on('connection', function(socket) {
       console.log('a user connected');
       
       if (mostRecentImageData) {
           console.log('sending current map to newly connected user');
           socket.emit('map update', {
-              "imageData": mostRecentImageData
+              'imageData': mostRecentImageData
           });
       }
       

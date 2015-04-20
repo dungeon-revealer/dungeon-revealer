@@ -7,31 +7,36 @@ require(['common'], function(common) {
             mapWrapper = document.getElementById('map-wrapper'),
             dmMap = map();
         
-        Dropzone.options.upload = {
-            url: "/upload",
-            dictDefaultMessage: "Click here or drag and drop an image to upload (PNG only for now)", 
-            acceptedFiles: "image/png", // Accept png images only, for now
-            init: function () {
-                this.on("complete", function (file) {
+        $('#upload').addClass('dropzone').dropzone({
+            url: '/upload',
+            dictDefaultMessage: 'Click here or drag and drop an image to upload (PNG only for now)',
+            acceptedFiles: 'image/png', // Accept png images only, for now
+            init: function() {
+                this.on('addedfile', function(file) { 
+                  console.log('added file'); 
+                });
+                
+                this.on('complete', function (file) {
                     console.log('complete');
                     this.removeFile(file);
                     checkForMapUpload();
                 });
             }
-        };
+        });
         
         function checkForMapUpload() {
           var jqxhr = $.get(settings.mapImage, function() {
-              console.log( "success" );
+              console.log( 'success' );
               createTheMap();
           }).fail(function() {
-              console.log('failure')
+              console.log('failure');
           });
         }
         
         checkForMapUpload();
         
         function createTheMap() {
+            console.log('createTheMap() called');
             $('#upload').remove();
             dmMap.create(mapWrapper, {
                 callback: function() {
