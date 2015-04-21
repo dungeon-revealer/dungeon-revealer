@@ -27,7 +27,7 @@ html, body, #wrapper {
 
 #dm-link {
   position: absolute;
-  top: 10%;
+  bottom: 10%;
   right: 4%;
   color: white;
   font-family: folkard, cardinal, palitino, serif;
@@ -98,8 +98,8 @@ html, body, #wrapper {
 }
 
 .btn {
-  font-family: KnightsTemplar, palitino, serif;
-  font-size: 20px;
+  /*font-family: KnightsTemplar, palitino, serif;*/
+  /*font-size: 20px;*/
 }
 
 .auth-container {

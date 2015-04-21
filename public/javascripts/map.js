@@ -23,11 +23,12 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             return obj1;
         }
         
-        function nop() {};
+        function nop() {}
 
         function create(parentElem, opts) {
-            var opts = extend(opts, settings),
-                imgUrl = opts.imgUrl || opts.mapImage,
+            opts = extend(opts, settings);
+            
+            var imgUrl = opts.imgUrl || opts.mapImage,
                 callback = opts.callback || nop,
                 error = opts.error || nop;
 
@@ -291,28 +292,6 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
             $('#btn-render').click(function () {
                 createRender();
-            });
-
-            $('#btn-send').click(function () {
-                var imageData = document.getElementById('render').src;
-
-                var jqxhr = $.post('/send',
-                    {
-                        'imageData': imageData
-                    },
-                    function (e) {
-                    })
-                    .done(function (e) {
-                    })
-                    .fail(function (e) {
-                    })
-                    .always(function (e) {
-                        if (e.success) {
-                            console.log(e.responseText);
-                        } else {
-                            console.error(e.responseText);
-                        }
-                    });
             });
 
             document.addEventListener('mouseup', function () {

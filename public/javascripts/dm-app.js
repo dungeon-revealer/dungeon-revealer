@@ -37,7 +37,7 @@ require(['common'], function(common) {
         
         function createTheMap() {
             console.log('createTheMap() called');
-            $('#upload').remove();
+            $('#upload').hide();
             dmMap.create(mapWrapper, {
                 callback: function() {
                     dmMap.fitMapToWindow();
@@ -50,6 +50,37 @@ require(['common'], function(common) {
                 }
             });
         }
+        
+        
+            
+        $('#btn-new-map').click(function() {
+            dmMap.remove();
+            $('#upload').show();
+        });
+        
+        
+
+        $('#btn-send').click(function () {
+            var imageData = document.getElementById('render').src;
+
+            var jqxhr = $.post('/send',
+                {
+                    'imageData': imageData
+                },
+                function (e) {
+                })
+                .done(function (e) {
+                })
+                .fail(function (e) {
+                })
+                .always(function (e) {
+                    if (e.success) {
+                        console.log(e.responseText);
+                    } else {
+                        console.error(e.responseText);
+                    }
+                });
+        });
 
     });
 
