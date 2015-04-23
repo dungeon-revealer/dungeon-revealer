@@ -22,5 +22,9 @@ Installation
 Use
 ---
 
-To use dungeon-revealer, the game master and the players must be on the same local network (usually a wifi network). The game master will start the server, navigate to the server's URL in a browser like Chrome, and then click on the Dungeon Master link. At this point, he will be prompted to upload a PNG file of the map to share with the other players. The other players will navigate to the server using their own browsers and will remain at the home page. To clear areas of the map, click and draw on the map. If you clear too much, you can switch the brush to the "shadow brush" and restore some of the fog. Whenever the DM clears some of the fog of war from the map and is ready to share with the players, she will click "Send" and the revealed areas of the map will appear in the player's browsers.
+To use dungeon-revealer, the game master and the players must be on the same local network (usually a wifi network). The game master will start the server, navigate to the server's URL in a browser like Chrome, and then click on the Dungeon Master link. At this point, she will be prompted to upload a PNG file of the map to share with the other players. The other players will navigate to the server using their own browsers and will remain at the home page.
+
+To clear areas of the map, click and draw on the map. If you clear too much, you can switch the brush to the "shadow brush" and restore some of the fog. Whenever you clear some of the fog of war from the map and is ready to share with the players, she will click "Send" and the revealed areas of the map will appear in the player's browsers. What appears as a shadow to the DM will appear as pure blackness to players, thus only revealing the cleared sections of the map to them.
+
+To replace the existing map with a new image file, click "New Map".
 
