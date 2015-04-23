@@ -13,10 +13,10 @@ Installation
   * For Windows users, press the Windows key and type "command prompt" or "cmd" into the search box and then press enter.
   * For Linux users, you already know how to open the command prompt.
 3. Using the command prompt, change to whatever directory you want to keep this program in. 
-4. Once you are in that directory, type "npm install apclary/dungeon-revealer" (without quotes) into the command prompt and press enter.
+4. Once you are in that directory, type `npm install apclary/dungeon-revealer` (without quotes) into the command prompt and press enter.
 5. Wait a little bit while it installs.
 6. Once it's done, a directory named node_modules should appear. Using the prompt, navigate to node_modules/dungeon-revealer/bin.
-7. Type "node dungeon-revealer" into the prompt. Some messages should appear. This likely means the server is now running. 
+7. Type `node dungeon-revealer` into the prompt. Some messages should appear. This likely means the server is now running. 
   * On some Windows machines, a firewall prompt will appear. Check all of the checkboxes and click OK.
 
 Use
