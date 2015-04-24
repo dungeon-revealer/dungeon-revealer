@@ -3,6 +3,15 @@ dungeon-revealer
 
 A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
 
+What the DM Sees
+----------------
+![alt text](http://apclary.github.io/dungeon-revealer/img/example_dm_1.jpeg "DM's view")
+
+What the players see
+--------------------
+![alt text](https://apclary.github.io/dungeon-revealer/img/example_player_1.jpeg "Player's view")
+
+
 Installation
 ------------
 (This is the simplest way I know to install. If you know a better way, please shoot me a message.)
