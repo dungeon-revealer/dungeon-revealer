@@ -267,7 +267,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 } else {
                     toggleButton.innerHTML = 'Clear Brush';
                 }
-                brush.toggle();
+                fowBrush.toggle();
             });
             
             $('#btn-shroud-all').click(function () {
