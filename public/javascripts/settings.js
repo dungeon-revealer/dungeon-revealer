@@ -5,5 +5,5 @@ define({
     fogOpacity:1,
     fogRGB: "0,0,0",
     defaultLineWidth: 15,
-    mapImage: '/uploads/map.png'
+    mapImage: '/dm/map'
 });

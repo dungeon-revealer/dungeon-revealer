@@ -19,7 +19,10 @@ var generateKey = function () {
     return sha.digest('hex');
 };
 
-var mostRecentImageData = null;
+var mostRecentImageData = null,
+    mostRecentRawImagePath = null,
+    UPLOADS_DIR = path.join(__dirname, '/public/uploads/'),
+    GENERATED_IMAGE_PATH = path.join(UPLOADS_DIR + 'generatedMap.png');
 
 
 app.use(busboy()); 
@@ -28,7 +31,7 @@ app.use(busboy());
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-// Not sure why this is needed, Chrome seems to grab the favicon just fine anyway
+// Not sure if this is needed, Chrome seems to grab the favicon just fine anyway
 // Maybe for cross-browser support
 app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(logger('dev'));
@@ -48,7 +51,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({secret: generateKey()}));
 
 // Routes
-// TODO: Move this logic somewhere else
+// TODO: Move interior logic somewhere else
 app.get('/', function (req, res) {
     res.render('player', {dm: false, title: 'Dungeon Revealer'});
 });
@@ -56,22 +59,59 @@ app.get('/dm', function (req, res) {
     res.render('dm', {dm: true, title: 'Dungeon Revealer DM Console'});
 });
 
-app.post('/upload', function (req, res) {
-  
-    var appDir = path.dirname(require.main.filename),
-        fileName = 'map.png',
-        filePath = appDir + '/../uploads/' + fileName,
-        imageData = req.body.imageData,
-        fstream;
+
+app.get('/map', function (req, res) {
+    res.sendFile(GENERATED_IMAGE_PATH);
+});
+
+app.get('/dm/map', function (req, res) {
     
+      var mapSent = false;
+      
+      if (mostRecentRawImagePath) {
+          res.sendFile(mostRecentRawImagePath);
+          mapSent = true;
+      } else {
+          console.log(UPLOADS_DIR);
+          // Look in the dir for a file named map.* and return the first one found
+          // Because we are deleting the previous files on upload this logic is mostly useless now
+          var files = fs.readdirSync(UPLOADS_DIR);
+          files.filter(function(file) { 
+              return file.indexOf('map.') > -1; 
+          }).forEach(function(file) { 
+              var filePath = path.join(UPLOADS_DIR + file);
+              if (!mapSent) {
+                  mapSent = true;
+                  mostRecentRawImagePath = filePath;
+                  res.sendFile(mostRecentRawImagePath);
+              }
+          });
+      }
+      
+      if (!mapSent) {
+          res.sendStatus(404);
+      }
+});
+
+// For DM map uploads. These are the raw images without any fog of war. 
+app.post('/upload', function (req, res) {
+
     req.pipe(req.busboy);
 
     req.busboy.on('file', function (fieldname, file, filename) {
-        console.log('Uploading: ' + filename); 
-        fstream = fs.createWriteStream(__dirname + '/public/uploads/map.png');
+
+        var fileExtension = filename.split('.').pop(),
+            uploadedImageSavePath = path.join(UPLOADS_DIR + 'map.' + fileExtension),
+            fstream;
+            
+        deleteExistingMapFilesSync();
+            
+        fstream = fs.createWriteStream(uploadedImageSavePath);
+        
         file.pipe(fstream);
         fstream.on('close', function () {
-            console.log('map saved');
+            console.log('map uploaded');
+            mostRecentRawImagePath = uploadedImageSavePath;
             res.sendStatus(200);
         });
         // should do something for a failure as well
@@ -79,19 +119,29 @@ app.post('/upload', function (req, res) {
 
 });
 
-
+// For the DM sending out fogged maps to be distributed to players
 app.post('/send', function (req, res) {
-    var imageData = req.body.imageData;
+    var imageDataString = req.body.imageData;
+    
+    if (imageDataString) {
+        var imageData = decodeBase64Image(imageDataString).data;
         
-    if (imageData) {
-        mostRecentImageData = imageData;
+        fs.writeFile(GENERATED_IMAGE_PATH, imageData, function (err) {
+            console.log('sent map saved');
+        });
+      
+        // Cache the data for future requests
+        mostRecentImageData = imageDataString;
+        
+        // ACK for DM
         res.json({
             'success': true,
             'responseText': 'Image successfully uploaded'
         });
         
+        // Send the map update to players
         io.emit('map update', {
-            'imageData': imageData
+            'imageData': imageDataString
         });
     } else {
         res.json({
@@ -149,5 +199,29 @@ io.on('connection', function(socket) {
           console.log('a user disconnected'); 
       });
 });
+
+function decodeBase64Image(dataString) {
+    var matches = dataString.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
+      response = {};
+  
+    if (matches.length !== 3) {
+      return new Error('Invalid input string');
+    }
+  
+    response.type = matches[1];
+    response.data = new Buffer(matches[2], 'base64');
+  
+    return response;
+}
+
+function deleteExistingMapFilesSync() {
+    var files = fs.readdirSync(UPLOADS_DIR);
+    files.filter(function(file) { 
+        return file.indexOf('map.') > -1; 
+    }).forEach(function(file) { 
+        var filePath = path.join(UPLOADS_DIR + file);
+        fs.unlinkSync(filePath);
+    });
+}
 
 module.exports = app;

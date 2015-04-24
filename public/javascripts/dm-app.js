@@ -9,8 +9,8 @@ require(['common'], function(common) {
         
         $('#upload').addClass('dropzone').dropzone({
             url: '/upload',
-            dictDefaultMessage: 'Click here or drag and drop an image to upload (PNG only for now)',
-            acceptedFiles: 'image/png', // Accept png images only, for now
+            dictDefaultMessage: 'Click here or drag and drop an image to upload',
+            acceptedFiles: 'image/*', 
             init: function() {
                 this.on('addedfile', function(file) { 
                   console.log('added file'); 
@@ -36,7 +36,6 @@ require(['common'], function(common) {
         checkForMapUpload();
         
         function createTheMap() {
-            console.log('createTheMap() called');
             $('#upload').hide();
             dmMap.create(mapWrapper, {
                 callback: function() {
@@ -46,7 +45,7 @@ require(['common'], function(common) {
                     });
                 },
                 error: function() {
-                  console.log('error creating map');
+                  console.error('error creating map');
                 }
             });
         }
