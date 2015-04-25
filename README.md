@@ -37,5 +37,4 @@ To clear areas of the map, click and draw on the map. If you clear too much, you
 
 To replace the existing map with a new image file, click "New Map".
 
-WARNING: THIS APP IS NOT SECURE! DO NOT RUN THIS ON ANY PUBLICLY ACCESSIBLE SERVER OR NETWORK! 
 
