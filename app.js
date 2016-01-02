@@ -55,8 +55,16 @@ app.use(session({secret: generateKey()}));
 app.get('/', function (req, res) {
     res.render('player', {dm: false, title: 'Dungeon Revealer'});
 });
+
 app.get('/dm', function (req, res) {
-    res.render('dm', {dm: true, title: 'Dungeon Revealer DM Console'});
+    /* console.log( req.headers ); */
+    if( req.headers['host'] == 'localhost:3000' ){
+    	res.render('dm', {dm: true, title: 'Dungeon Revealer DM Console'});
+    }
+    else
+    {
+        res.sendStatus(404);
+    }
 });
 
 
@@ -64,10 +72,13 @@ app.get('/map', function (req, res) {
     res.sendFile(GENERATED_IMAGE_PATH);
 });
 
+
 app.get('/dm/map', function (req, res) {
-    
-      var mapSent = false;
-      
+
+    var mapSent = false;
+
+    if( req.headers['host'] == 'localhost:3000' ){
+
       if (mostRecentRawImagePath) {
           res.sendFile(mostRecentRawImagePath);
           mapSent = true;
@@ -87,11 +98,13 @@ app.get('/dm/map', function (req, res) {
               }
           });
       }
+    }
       
-      if (!mapSent) {
-          res.sendStatus(404);
-      }
+    if (!mapSent) {
+        res.sendStatus(404);
+    }
 });
+
 
 // For DM map uploads. These are the raw images without any fog of war. 
 app.post('/upload', function (req, res) {
