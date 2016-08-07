@@ -5,5 +5,6 @@ define({
     fogOpacity:1,
     fogRGB: "0,0,0",
     defaultLineWidth: 15,
+    defaultBrushShape: 'round',
     mapImage: '/dm/map'
 });

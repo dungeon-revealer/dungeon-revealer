@@ -2,6 +2,8 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
     console.log('map module loaded');
     return function () {
         var $ = jquery,
+            cursorContext,
+            cursorCanvas,
             fowContext,
             fowCanvas,
             mapImageContext,
@@ -13,21 +15,25 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             isDrawing = false,
             points = [],
             lineWidth = settings.defaultLineWidth,
+            brushShape = settings.defaultBrushShape,
             fogOpacity = settings.fogOpacity,
             fogRGB = settings.fogRGB;
-            
+
         function extend(obj1, obj2) {
             obj1 = obj1 || {};
             obj2 = obj2 || {};
-            for (var attrname in obj2) { obj1[attrname] = obj2[attrname]; }
+            for (var attrname in obj2) {
+                obj1[attrname] = obj2[attrname];
+            }
             return obj1;
         }
-        
-        function nop() {}
+
+        function nop() {
+        }
 
         function create(parentElem, opts) {
             opts = extend(opts, settings);
-            
+
             var imgUrl = opts.imgUrl || opts.mapImage,
                 callback = opts.callback || nop,
                 error = opts.error || nop;
@@ -51,17 +57,20 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 parentElem.appendChild(container);
                 mapImageCanvas = canvases.mapImageCanvas;
                 fowCanvas = canvases.fowCanvas;
+                cursorCanvas = canvases.cursorCanvas;
                 container.appendChild(mapImageCanvas);
                 container.appendChild(fowCanvas);
+                container.appendChild(cursorCanvas);
                 mapImageContext = mapImageCanvas.getContext('2d');
                 fowContext = fowCanvas.getContext('2d');
+                cursorContext = cursorCanvas.getContext('2d');
                 copyCanvas(mapImageContext, createImageCanvas(mapImage));
                 fowBrush = brush(fowContext, opts);
                 fowContext.strokeStyle = fowBrush.getCurrent();
-
                 fogMap();
                 createRender();
                 setUpDrawingEvents();
+                setupCursorTracking();
                 callback();
             };
             mapImage.crossOrigin = 'Anonymous'; // to prevent tainted canvas errors
@@ -71,7 +80,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         // TODO: account for multiple containers
         function getContainer() {
             var container = document.getElementById('canvasContainer') || document.createElement('div');
-            
+
             container.id = 'canvasContainer'; //TODO: wont work for multiple containers
             container.style.position = 'relative';
             container.style.top = '0';
@@ -79,7 +88,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             container.style.margin = 'auto';
             //container.style.width = width + 'px';
             //container.style.height = height + 'px';
-            
+
             return container;
         }
 
@@ -87,11 +96,11 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
             function createCanvas(type, zIndex) {
                 var canvas = document.createElement('canvas');
-                
+
                 console.log('creating canvas ' + type);
                 canvas.width = width;
                 canvas.height = height;
-                canvas.id = type + Math.floor(Math.random()*100000);
+                canvas.id = type + Math.floor(Math.random() * 100000);
                 canvas.className = type + ' map-canvas';
                 canvas.style.position = 'absolute';
                 canvas.style.left = '0';
@@ -104,7 +113,8 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
             return {
                 mapImageCanvas: createCanvas('map-image-canvas', 1),
-                fowCanvas: createCanvas('fow-canvas', 2)
+                fowCanvas: createCanvas('fow-canvas', 2),
+                cursorCanvas: createCanvas('cursor-canvas', 3)
             };
 
         }
@@ -113,7 +123,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             var viewportOffset = fowCanvas.getBoundingClientRect(),
                 borderTop = parseInt($(fowCanvas).css('border-top-width')),
                 borderLeft = parseInt($(fowCanvas).css('border-left-width'));
-                
+
             return {
                 x: (e.clientX - viewportOffset.left - borderLeft) / getMapDisplayRatio(),
                 y: (e.clientY - viewportOffset.top - borderTop) / getMapDisplayRatio()
@@ -121,15 +131,19 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         }
 
         function midPointBtw(p1, p2) {
+            console.log(p1)
+            console.log(p2)
+
             return {
                 x: p1.x + (p2.x - p1.x) / 2,
                 y: p1.y + (p2.y - p1.y) / 2
-            };
+            }
+
         }
 
         function getOptimalDimensions(idealWidth, idealHeight, maxWidth, maxHeight) {
             var ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
-            
+
             return {
                 ratio: ratio,
                 width: idealWidth * ratio,
@@ -141,7 +155,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             var image = new Image();
 
             image.src = canvas.toDataURL('image/png');
-            
+
             return image;
         }
 
@@ -216,50 +230,191 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             mapImageCanvas.remove();
             fowCanvas.remove();
         }
-        
+
         function getMapDisplayRatio() {
             return parseFloat(mapImageCanvas.style.width, 10) / mapImageCanvas.width;
         }
 
-        function setUpDrawingEvents() {
-            fowCanvas.onmousedown = function (e) {
+        function constructMask(cords) {
+
+            let maskDimensions = {
+                x: cords.x,
+                y: cords.y,
+                lineWidth: 2,
+                line: 'aqua',
+                fill: 'transparent'
+            }
+
+            if (brushShape == 'round') {
+                maskDimensions.r = lineWidth / 2
+                maskDimensions.startingAngle = 0
+                maskDimensions.endingAngle = Math.PI * 2
+            }
+            else if (brushShape == 'square') {
+
+                maskDimensions.centerX = maskDimensions.x - lineWidth / 2
+                maskDimensions.centerY = maskDimensions.y - lineWidth / 2
+                maskDimensions.height = lineWidth
+                maskDimensions.width = lineWidth
+            }
+            else {
+                throw new Error('fuckedup')
+            }
+
+            return maskDimensions
+
+        }
+
+        function setupCursorTracking() {
+
+            // Mouse Click
+            cursorCanvas.onmousedown = function (e) {
+                // Log
+                console.log('mouse clicked')
+
+                // Start drawing
                 isDrawing = true;
-                var coords = getMouseCoordinates(e);
-                points.push(coords);
-                // Draw a circle as the start of the brush stroke
-                fowContext.beginPath();
-                fowContext.arc(coords.x, coords.y, lineWidth / 2, 0, Math.PI * 2, true);
-                fowContext.closePath();
-                fowContext.fill();
+
+                // Get correct cords from mouse click
+                var cords = getMouseCoordinates(e);
+
+                // Draw initial Shape
+                // set lineWidth to 0 for initial drawing of shape to prevent screwing up of size/placement
+                fowCanvas.drawInitial(cords)
             };
 
-            fowCanvas.onmousemove = function (e) {
-                var p1, p2;
-                
-                if (!isDrawing) return;
+            // Mouse Move
+            cursorCanvas.onmousemove = function (e) {
+                // Log
+                //console.log('mouse moved')
 
-                points.push(getMouseCoordinates(e));
-                p1 = points[0];
-                p2 = points[1];
+                //get cords and points
+                var cords = getMouseCoordinates(e);
+                if (isDrawing) {points.push(cords)}
+
+                // Deal with Shit
+                cursorCanvas.drawCursor(cords)
+                fowCanvas.draw(points)
+            }
+
+            cursorCanvas.drawCursor = function (cords) {
+                // Cleanup
+                cursorContext.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+
+                // Construct circle dimensions
+                var cusorMask = constructMask(cords)
+
+                cursorContext.strokeStyle = cusorMask.line;
+                cursorContext.fillStyle = cusorMask.fill;
+                cursorContext.lineWidth = cusorMask.lineWidth;
+
+                cursorContext.beginPath();
+                if (brushShape == 'round') {
+                    cursorContext.arc(
+                        cusorMask.x,
+                        cusorMask.y,
+                        cusorMask.r,
+                        cusorMask.startingAngle,
+                        cusorMask.endingAngle,
+                        true
+                    );
+                }
+                else if (brushShape == 'square') {
+                    cursorContext.rect(
+                        cusorMask.centerX,
+                        cusorMask.centerY,
+                        cusorMask.height,
+                        cusorMask.width);
+                }
+
+                cursorContext.fill()
+                cursorContext.stroke()
+                requestAnimationFrame(setupCursorTracking)
+            }
+
+        }
+
+        function setUpDrawingEvents() {
+            //
+            console.log('setupDrawingEvents')
+
+            fowCanvas.drawInitial = function (coords) {
+                // Log
+                console.log('initial Fill called')
+
+                // Construct circle dimensions
+                var fowMask = constructMask(coords)
+                fowContext.lineWidth = fowMask.lineWidth;
 
                 fowContext.beginPath();
-                fowContext.moveTo(p1.x, p1.y);
-                fowContext.lineWidth = lineWidth;
-                fowContext.lineJoin = fowContext.lineCap = 'round';
+                if (brushShape == 'round') {
+                    fowContext.arc(
+                        fowMask.x,
+                        fowMask.y,
+                        fowMask.r,
+                        fowMask.startingAngle,
+                        fowMask.endingAngle,
+                        true
+                    );
+                }
+                else if (brushShape == 'square') {
+                    fowContext.rect(
+                        fowMask.centerX,
+                        fowMask.centerY,
+                        fowMask.height,
+                        fowMask.width);
+                }
 
+                fowContext.fill()
+                fowContext.stroke()
+
+            }
+
+            fowCanvas.draw = function (points) {
+
+                if (!isDrawing) return;
+                var p1, p2;
+                p1 = points[0];
+                p2 = points[1];
+                fowContext.lineWidth = lineWidth
+                fowContext.lineJoin = 'miter';
+                fowContext.lineCap = brushShape;
+
+                // Start Path
+                fowContext.beginPath();
+
+                // Move to initial point
+                fowContext.moveTo(p1.x, p2.y);
+
+                // For each point create a quadraticCurve btweeen each point
                 for (var i = 1, len = points.length; i < len; i++) {
-                    var midPoint = midPointBtw(p1, p2);
+
+                    // Cordinates
+                    let midPoint = midPointBtw(p1, p2)
                     fowContext.quadraticCurveTo(p1.x, p1.y, midPoint.x, midPoint.y);
+
+                    // Loop
                     p1 = points[i];
                     p2 = points[i + 1];
                 }
-                
+
+               /* for (var i = 1, len = points.length; i < len; i++) {
+
+                    // Cordinates
+                    let midPoint = midPointBtw(p1, p2)
+                    fowContext.quadraticCurveTo(p1.x, p1.y, midPoint.x, midPoint.y);
+
+                    // Loop
+                    p1 = points[i];
+                    p2 = points[i + 1];
+                }*/
+
                 fowContext.lineTo(p1.x, p1.y);
                 fowContext.stroke();
             };
 
             //TODO: move all of this jquery stuff somewhere else
-            
+
             $('#btn-toggle-brush').click(function () {
                 var toggleButton = this;
                 if (toggleButton.innerHTML === 'Clear Brush') {
@@ -269,12 +424,12 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 }
                 fowBrush.toggle();
             });
-            
+
             $('#btn-shroud-all').click(function () {
                 fogMap(fowContext);
                 createRender();
             });
-            
+
             $('#btn-clear-all').click(function () {
                 clearMap(fowContext);
                 createRender();
@@ -288,6 +443,18 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             $('#btn-shrink-brush').click(function () {
                 // If the new width would be less than 1, set it to 1
                 lineWidth = (lineWidth / 2 < 1) ? 1 : lineWidth / 2;
+            });
+
+            $('#btn-shape-brush').click(function () {
+                var toggleButton = this;
+                if (toggleButton.innerHTML === 'Square Brush') {
+                    toggleButton.innerHTML = 'Circle Brush';
+                    brushShape = 'square'
+                } else {
+                    toggleButton.innerHTML = 'Square Brush';
+                    brushShape = 'round'
+                }
+
             });
 
             $('#btn-render').click(function () {
@@ -304,25 +471,26 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 createRender();
             }
             isDrawing = false;
+            points = []
             points.length = 0;
         }
-        
+
         //todo: move this functionality elsewher
         function createRender() {
             removeRender();
             createPlayerMapImage(mapImageCanvas, fowCanvas);
         }
-    
+
         function removeRender() {
             $('#render').remove();
         }
-        
+
         function createPlayerMapImage(bottomCanvas, topCanvas) {
             var mergedCanvas = mergeCanvas(bottomCanvas, topCanvas),
                 mergedImage = convertCanvasToImage(mergedCanvas);
-                
+
             mergedImage.id = 'render';
-            
+
             //todo: refactor this functionality outside
             document.querySelector('#map-wrapper').appendChild(mergedImage);
         }
@@ -334,6 +502,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             remove: remove,
             fitMapToWindow: fitMapToWindow
         };
+    }
 
-    };
-});
+})
+;
