@@ -131,8 +131,8 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         }
 
         function midPointBtw(p1, p2) {
-            console.log(p1)
-            console.log(p2)
+            //console.log(p1)
+            //console.log(p2)
 
             return {
                 x: p1.x + (p2.x - p1.x) / 2,
@@ -236,7 +236,6 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         }
 
         function constructMask(cords) {
-
             let maskDimensions = {
                 x: cords.x,
                 y: cords.y,
@@ -258,10 +257,152 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 maskDimensions.width = lineWidth
             }
             else {
-                throw new Error('fuckedup')
+                throw new Error('brush shape not found')
             }
 
             return maskDimensions
+
+        }
+
+        function constructCoordinates(cords) {
+            // This function constructs the corner coordinates of a square given its central cord. The square is
+            // described in a clockwise fashion
+            // a - bottom left
+            // b - top left
+            // c - top right
+            // d - bottom right
+
+            // Note: 0,0 starts in top left. Remember this when doing calculations for corners, the y axis calculations
+            // need to be flipped vs bottom left orientation
+
+            const r = lineWidth / 2
+            let corners = {
+                1: {
+                    x: cords.x - r,
+                    y: cords.y + r
+                },
+                2: {
+                    x: cords.x - r,
+                    y: cords.y - r
+                },
+                3: {
+                    x: cords.x + r,
+                    y: cords.y - r
+                },
+                4: {
+                    x: cords.x + r,
+                    y: cords.y + r
+                }
+            }
+
+            return corners
+        }
+
+        function distanceBetweenCords(cords1, cords2) {
+            var a = cords1.x - cords2.x
+            var b = cords1.y - cords2.y
+
+            var distance = Math.sqrt(a * a + b * b);
+
+            return distance
+        }
+
+        function orderByProperty(prop) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            return function (a, b) {
+                var equality = a[prop] - b[prop];
+                if (equality === 0 && arguments.length > 1) {
+                    return orderByProperty.apply(null, args)(a, b);
+                }
+                return equality;
+            };
+        }
+
+        function findOptimalPolygon(pointCurrent, pointPrevious) {
+            // midpoint
+            let midPoint = midPointBtw(pointPrevious, pointCurrent)
+
+            // fully flushed out coordinates
+            let pointCurrentCoordinates = constructCoordinates(pointCurrent),
+                pointPreviousCoordinates = constructCoordinates(pointPrevious)
+
+            // Arrays
+            let allPoints = [],
+                counts = {},
+                limitedPoints
+
+            // Load the points into all points with a field documenting their origion
+            for (var key in pointCurrentCoordinates) {
+                pointCurrentCoordinates[key].corner = key
+                pointCurrentCoordinates[key].version = 2
+                allPoints.push(pointCurrentCoordinates[key])
+            }
+            for (var key in pointPreviousCoordinates) {
+                pointPreviousCoordinates[key].corner = key
+                pointPreviousCoordinates[key].version = 1
+                allPoints.push(pointPreviousCoordinates[key])
+            }
+
+            // For each point find the distance between the cord and the midpoint
+            for (var j = 0, allPointsLength = allPoints.length; j < allPointsLength; j++) {
+                allPoints[j].distance = distanceBetweenCords(midPoint, allPoints[j]).toFixed(10)
+            }
+
+            // Add distance
+            allPoints.forEach(function (x) {
+                //console.log(x.distance)
+                var distance = x.distance
+                counts[distance] = (counts[distance] || 0) + 1;
+            });
+
+            // Sort by distance
+            allPoints.sort(function (a, b) {
+                return a.distance - b.distance;
+            });
+
+            //console.log(allPoints)
+            //console.log(counts)
+
+            // There are two scenarios
+            // 1. the squares are perfectly vertically or horizontally aligned:
+            ////  In this case, there will be two distinct lengths between the mid point, In this case, we want to take
+            ////  the coordinates with the shortest distance to the midpoint
+            // 2. The squares are offset vertically and horizontally. In this case, there will be 3 distinct lengths between
+            ////  the coordinates, 2 that are the shortest, 4 that are in the middle, and 2 that are the longest. We want
+            ////  the middle 4
+
+            let numberOfDistances = Object.keys(counts).length
+            console.log(numberOfDistances)
+            if (numberOfDistances == 2) {
+                limitedPoints = allPoints.slice(0, 4)
+            }
+
+            else if (numberOfDistances == 3 || numberOfDistances == 4) {
+                limitedPoints = allPoints.slice(2, 6)
+            }
+            else {
+                throw new Error("unexpected number of distances")
+            }
+
+            // error checking
+            if (limitedPoints.length != 4) {
+                throw new Error('unexpected number of lengths')
+            }
+            //console.log(limitedPoints)
+
+            var limitedPointsSorted = limitedPoints.sort(orderByProperty('corner', 'version'));
+            // if there are moret than 2 cats (not a vertical or horizaontal movement), switch the last two objects in
+            // array
+
+            if (numberOfDistances > 2) {
+                console.log('count is 3 or 4, reverse last 2')
+                var temp = limitedPointsSorted[2]
+                limitedPointsSorted[2] = limitedPointsSorted[3]
+                limitedPointsSorted[3] = temp
+            }
+
+            console.log(limitedPointsSorted)
+            return limitedPointsSorted
 
         }
 
@@ -290,7 +431,9 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
                 //get cords and points
                 var cords = getMouseCoordinates(e);
-                if (isDrawing) {points.push(cords)}
+                if (isDrawing) {
+                    points.push(cords)
+                }
 
                 // Deal with Shit
                 cursorCanvas.drawCursor(cords)
@@ -343,6 +486,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 console.log('initial Fill called')
 
                 // Construct circle dimensions
+                console.log('callings from here')
                 var fowMask = constructMask(coords)
                 fowContext.lineWidth = fowMask.lineWidth;
 
@@ -373,44 +517,117 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             fowCanvas.draw = function (points) {
 
                 if (!isDrawing) return;
-                var p1, p2;
-                p1 = points[0];
-                p2 = points[1];
-                fowContext.lineWidth = lineWidth
-                fowContext.lineJoin = 'miter';
-                fowContext.lineCap = brushShape;
+                // pointStart - the initial cord
+                // pointPrevious - the prior cord
+                // pointCurrent - the current cord
 
-                // Start Path
-                fowContext.beginPath();
+                // outside loop
+                //// - move to pointStart, draw rectangle
+                // Inside loop, start @ i = i
+                //// - draw rectange at pointCurrent
+                //// - draw line between pointCurrent and pointPrior
 
-                // Move to initial point
-                fowContext.moveTo(p1.x, p2.y);
+                let pointStart = points[0],
+                    pointPrevious,
+                    pointCurrent
 
                 // For each point create a quadraticCurve btweeen each point
-                for (var i = 1, len = points.length; i < len; i++) {
+                if (brushShape == 'round') {
+                    // Start Path
+                    fowContext.lineWidth = lineWidth
+                    fowContext.lineJoin = 'miter';
+                    fowContext.lineCap = 'butt';
+                    fowContext.beginPath();
 
-                    // Cordinates
-                    let midPoint = midPointBtw(p1, p2)
-                    fowContext.quadraticCurveTo(p1.x, p1.y, midPoint.x, midPoint.y);
+                    fowContext.moveTo(p1.x, p1.y);
 
-                    // Loop
-                    p1 = points[i];
-                    p2 = points[i + 1];
+
+                    for (var i = 1, len = points.length; i < len; i++) {
+
+                        // Cordinates
+                        let midPoint = midPointBtw(p1, p2)
+                        fowContext.quadraticCurveTo(p1.x, p1.y, midPoint.x, midPoint.y);
+
+                        // Loop
+                        p1 = points[i];
+                        p2 = points[i + 1];
+
+                        fowContext.lineTo(p1.x, p1.y);
+                        fowContext.stroke();
+                    }
                 }
+                else {
+                    // The goal of this area is to draw lines with a square mask
 
-               /* for (var i = 1, len = points.length; i < len; i++) {
+                    // The fundamental issue is that not every position of the mouse is recorded when it is moved
+                    // around the canvas (particularly when it is moved fast). If it were, we could simply draw a
+                    // square at every single coordinate
 
-                    // Cordinates
-                    let midPoint = midPointBtw(p1, p2)
-                    fowContext.quadraticCurveTo(p1.x, p1.y, midPoint.x, midPoint.y);
+                    // a simple approach is to draw an initial square then connect a line to a series of
+                    // central cords with a square lineCap. Unfortunately, this has undesirable behavior. When moving in
+                    // a diagonal, the square linecap rotates into a diamond, and "draws" outside of the square mask.
 
-                    // Loop
-                    p1 = points[i];
-                    p2 = points[i + 1];
-                }*/
+                    // Using 'butt' lineCap lines to connect between squares drawn at each set of cords has unexpected behavior.
+                    // When moving in a diagonal fashion. The width does not correspond to the "face" of the cursor, which
+                    // maybe longer then the length / width (think hypotenuse) which results in weird drawing.
 
-                fowContext.lineTo(p1.x, p1.y);
-                fowContext.stroke();
+                    // The current solution is two fold
+                    // 1. Draw a rectangle at every available cord
+                    // 2. Draw a line between each consecutive rectangles with a butt linecap.
+
+                    // TODO:
+                    // 1. The lineWidth needs a better solution. I use a lineWidth of 1 when drawing a square so it is
+                    //    exactly the side  described, but to draw a line I need to set a lineWidth equal
+                    //    to the width / height of the square mask.
+                    // 2. All of this needs to be abstracted into a separate line drawing objects. Not a scalable solution
+                    //    if we want to introduce other cursor masks.
+
+                    // Setup
+                    //fowContext.lineJoin = 'miter';
+                    //fowContext.lineCap = 'butt';
+
+                    //1. Start path
+                    //2. Move to first point
+                    //3. create mask
+                    //4. create rectangle
+                    fowContext.lineWidth = 1
+                    fowContext.beginPath();
+
+                    // The initial square mask is drawn by drawInitial, so we doing need to start at points[0] or
+                    // pointStart. Therefore we start point[1], draw that square, then connect a line bewteen p[0] and p[1]
+                    for (var i = 1, len = points.length; i < len; i++) {
+                        //1. setup points
+                        //2. create mask
+                        //3. create rectangle
+
+                        // Setup points
+                        pointCurrent = points[i]
+                        pointPrevious = points[i - 1]
+                        //console.log(points)
+
+                        if (!pointCurrent || !pointPrevious) {
+                            throw new Error('points are incorrect')
+                        }
+
+                        // draw rectangle at current point
+                       /* var fowMask = constructMask(pointCurrent)
+                        fowContext.rect(
+                            fowMask.centerX,
+                            fowMask.centerY,
+                            fowMask.height,
+                            fowMask.width);*/
+
+                        // optimal polygon to draw to connect two square
+                        var optimalPoints = findOptimalPolygon(pointCurrent, pointPrevious)
+
+                         fowContext.moveTo(optimalPoints[0].x, optimalPoints[0].y)
+                         fowContext.lineTo(optimalPoints[1].x, optimalPoints[1].y)
+                         fowContext.lineTo(optimalPoints[2].x, optimalPoints[2].y)
+                         fowContext.lineTo(optimalPoints[3].x, optimalPoints[3].y)
+
+                    }
+                    fowContext.fill();
+                }
             };
 
             //TODO: move all of this jquery stuff somewhere else
