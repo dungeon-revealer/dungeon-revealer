@@ -11,7 +11,6 @@ var fs = require('fs');
 var http = app.http = require('http').Server(app);
 var io = require('socket.io')(http);
 var busboy = require('connect-busboy');
-var busboy = require('lodash');
 
 
 // Used to generate session keys
