@@ -123,6 +123,10 @@ html, body, #wrapper {
   -moz-transition: opacity 2s ease-in-out;
   -o-transition: opacity 2s ease-in-out;
   transition: opacity 2s ease-in-out;
+  background-color: black;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .transparent {
