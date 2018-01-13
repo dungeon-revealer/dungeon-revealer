@@ -210,13 +210,15 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             fowCanvas.style.height = displayHeight + 'px';
             mapImageCanvas.style.width = displayWidth + 'px';
             mapImageCanvas.style.height = displayHeight + 'px';
+            cursorCanvas.style.width = displayWidth + 'px';
+            cursorCanvas.style.height = displayHeight + 'px';
         }
 
         // Maybe having this here violates cohesion
         function fitMapToWindow() {
             var oldWidth = parseInt(mapImageCanvas.style.width || mapImageCanvas.width, 10),
                 oldHeight = parseInt(mapImageCanvas.style.height || mapImageCanvas.height, 10),
-                newDims = getOptimalDimensions(oldWidth, oldHeight, window.innerWidth, Infinity);
+                newDims = getOptimalDimensions(oldWidth, oldHeight, $(window).width(), Infinity);
 
             resize(newDims.width, newDims.height);
         }
@@ -229,6 +231,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             // won't work in IE
             mapImageCanvas.remove();
             fowCanvas.remove();
+            cursorCanvas.remove();
         }
 
         function getMapDisplayRatio() {
