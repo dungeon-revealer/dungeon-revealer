@@ -1,6 +1,6 @@
 // Settings for client-side behavior in the app
 define({
-    maxWidth: 1400,
+    maxWidth: 3000,
     maxHeight: 8000,
     fogOpacity:1,
     fogRGB: "0,0,0",

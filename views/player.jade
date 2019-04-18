@@ -3,6 +3,13 @@ extends layout.jade
 block content
     include splash.jade
     #map-container
+    #dm-toolbar.toolbar-wrapper
+        .btn-toolbar
+            .btn-group
+                a#btn-zoom-in.btn.btn-default Zoom In
+                a#btn-zoom-out.btn.btn-default Zoom Out
+                input#range(type='range')
+            
 
 block js
     script(data-main='/javascripts/player-app.js', src='/javascripts/require.js')
