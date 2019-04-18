@@ -28,8 +28,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             return obj1;
         }
 
-        function nop() {
-        }
+        function nop() {}
 
         function create(parentElem, opts) {
             opts = extend(opts, settings);
@@ -251,15 +250,13 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                 maskDimensions.r = lineWidth / 2;
                 maskDimensions.startingAngle = 0;
                 maskDimensions.endingAngle = Math.PI * 2
-            }
-            else if (brushShape == 'square') {
+            } else if (brushShape == 'square') {
 
                 maskDimensions.centerX = maskDimensions.x - lineWidth / 2;
                 maskDimensions.centerY = maskDimensions.y - lineWidth / 2;
                 maskDimensions.height = lineWidth;
                 maskDimensions.width = lineWidth;
-            }
-            else {
+            } else {
                 throw new Error('brush shape not found')
             }
 
@@ -383,12 +380,9 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
             if (numberOfDistances == 2) {
                 limitedPoints = allPoints.slice(0, 4)
-            }
-
-            else if (numberOfDistances == 3 || numberOfDistances == 4) {
+            } else if (numberOfDistances == 3 || numberOfDistances == 4) {
                 limitedPoints = allPoints.slice(2, 6)
-            }
-            else {
+            } else {
                 // if the distance is all the same, the square masks haven't moved, so just return
                 return
             }
@@ -458,8 +452,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                         cursorMask.endingAngle,
                         true
                     );
-                }
-                else if (brushShape == 'square') {
+                } else if (brushShape == 'square') {
                     cursorContext.rect(
                         cursorMask.centerX,
                         cursorMask.centerY,
@@ -491,8 +484,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                         fowMask.endingAngle,
                         true
                     );
-                }
-                else if (brushShape == 'square') {
+                } else if (brushShape == 'square') {
                     fowContext.rect(
                         fowMask.centerX,
                         fowMask.centerY,
@@ -531,8 +523,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
                         fowContext.lineTo(pointCurrent.x, pointCurrent.y);
                         fowContext.stroke();
                     }
-                }
-                else if (brushShape == 'square') {
+                } else if (brushShape == 'square') {
                     // The goal of this area is to draw lines with a square mask
 
                     // The fundamental issue is that not every position of the mouse is recorded when it is moved
@@ -600,12 +591,12 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
             $('#btn-shroud-all').click(function () {
                 fogMap(fowContext);
-                createRender();
+                //createRender();
             });
 
             $('#btn-clear-all').click(function () {
                 clearMap(fowContext);
-                createRender();
+                //createRender();
             });
 
             $('#btn-enlarge-brush').click(function () {
@@ -631,7 +622,26 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             });
 
             $('#btn-render').click(function () {
+                //createRender();
+            });
+
+            $('#btn-send').click(function () {
                 createRender();
+                var imageData = document.getElementById('render').src;
+
+                var jqxhr = $.post('/send', {
+                            'imageData': imageData
+                        },
+                        function (e) {})
+                    .done(function (e) {})
+                    .fail(function (e) {})
+                    .always(function (e) {
+                        if (e.success) {
+                            console.log(e.responseText);
+                        } else {
+                            console.error(e.responseText);
+                        }
+                    });
             });
 
             document.addEventListener('mouseup', function () {
@@ -641,7 +651,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
         function stopDrawing() {
             if (isDrawing) {
-                createRender();
+                //createRender();
             }
             isDrawing = false;
             points = []
@@ -677,5 +687,4 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         };
     }
 
-})
-;
+});
