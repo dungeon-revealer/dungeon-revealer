@@ -11,7 +11,17 @@ var fs = require('fs');
 var http = app.http = require('http').Server(app);
 var io = require('socket.io')(http);
 var busboy = require('connect-busboy');
+var basicAuth = require('express-basic-auth');
 
+var authMiddleware = basicAuth({
+    challenge: true,
+    authorizer: function (user, password) {
+        if (process.env.DM_PASSWORD) {
+            return password === process.env.DM_PASSWORD
+        }
+        return true
+    }
+})
 
 // Used to generate session keys
 var generateKey = function () {
@@ -57,15 +67,8 @@ app.get('/', function (req, res) {
     res.render('player', {dm: false, title: 'Dungeon Revealer'});
 });
 
-app.get('/dm', function (req, res) {
-    /* console.log( req.headers ); */
-    if( req.headers['host'] == 'localhost:3000' ){
-    	res.render('dm', {dm: true, title: 'Dungeon Revealer DM Console'});
-    }
-    else
-    {
-        res.sendStatus(404);
-    }
+app.get('/dm', authMiddleware, function (req, res) {
+    res.render('dm', {dm: true, title: 'Dungeon Revealer DM Console'});
 });
 
 
@@ -74,33 +77,28 @@ app.get('/map', function (req, res) {
 });
 
 
-app.get('/dm/map', function (req, res) {
-
+app.get('/dm/map', authMiddleware, function (req, res) {
     var mapSent = false;
-
-    if( req.headers['host'] == 'localhost:3000' ){
-
-      if (mostRecentRawImagePath) {
-          res.sendFile(mostRecentRawImagePath);
-          mapSent = true;
-      } else {
-          console.log(UPLOADS_DIR);
-          // Look in the dir for a file named map.* and return the first one found
-          // Because we are deleting the previous files on upload this logic is mostly useless now
-          var files = fs.readdirSync(UPLOADS_DIR);
-          files.filter(function(file) { 
-              return file.indexOf('map.') > -1; 
-          }).forEach(function(file) { 
-              var filePath = path.join(UPLOADS_DIR + file);
-              if (!mapSent) {
-                  mapSent = true;
-                  mostRecentRawImagePath = filePath;
-                  res.sendFile(mostRecentRawImagePath);
-              }
-          });
-      }
+    if (mostRecentRawImagePath) {
+        res.sendFile(mostRecentRawImagePath);
+        mapSent = true;
+    } else {
+        console.log(UPLOADS_DIR);
+        // Look in the dir for a file named map.* and return the first one found
+        // Because we are deleting the previous files on upload this logic is mostly useless now
+        var files = fs.readdirSync(UPLOADS_DIR);
+        files.filter(function(file) { 
+            return file.indexOf('map.') > -1; 
+        }).forEach(function(file) { 
+            var filePath = path.join(UPLOADS_DIR + file);
+            if (!mapSent) {
+                mapSent = true;
+                mostRecentRawImagePath = filePath;
+                res.sendFile(mostRecentRawImagePath);
+            }
+        });
     }
-      
+
     if (!mapSent) {
         res.sendStatus(404);
     }
