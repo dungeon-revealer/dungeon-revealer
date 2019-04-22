@@ -13,6 +13,7 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             width,
             height,
             isDrawing = false,
+            isTouch = false,
             points = [],
             lineWidth = settings.defaultLineWidth,
             brushShape = settings.defaultBrushShape,
@@ -118,11 +119,21 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
         }
 
+        function getTouchCoordinates(e) {
+            var viewportOffset = fowCanvas.getBoundingClientRect(),
+                borderTop = parseInt($(fowCanvas).css('border-top-width')),
+                borderLeft = parseInt($(fowCanvas).css('border-left-width'));
+            
+            return {
+                x: (e.touches[0].pageX - viewportOffset.left - borderLeft - document.documentElement.scrollLeft) / getMapDisplayRatio(),
+                y: (e.touches[0].pageY - viewportOffset.top - borderTop- document.documentElement.scrollTop) / getMapDisplayRatio()
+            };
+        }
+
         function getMouseCoordinates(e) {
             var viewportOffset = fowCanvas.getBoundingClientRect(),
                 borderTop = parseInt($(fowCanvas).css('border-top-width')),
                 borderLeft = parseInt($(fowCanvas).css('border-left-width'));
-
             return {
                 x: (e.clientX - viewportOffset.left - borderLeft) / getMapDisplayRatio(),
                 y: (e.clientY - viewportOffset.top - borderTop) / getMapDisplayRatio()
@@ -404,32 +415,60 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
         }
 
         function setupCursorTracking() {
-
-            // Mouse Click
-            cursorCanvas.onmousedown = function (e) {
+            function drawStart (cords) {
                 // Start drawing
                 isDrawing = true;
-
-                // Get correct cords from mouse click
-                var cords = getMouseCoordinates(e);
 
                 // Draw initial Shape
                 // set lineWidth to 0 for initial drawing of shape to prevent screwing up of size/placement
                 fowCanvas.drawInitial(cords)
-            };
+            }
 
-            // Mouse Move
-            cursorCanvas.onmousemove = function (e) {
-                //get cords and points
+            function drawStartMousedown(e) {
+                if (isTouch) {
+                    return;
+                }
                 var cords = getMouseCoordinates(e);
+                drawStart(cords)
+            }
+
+            function drawStartTouchstart(e) {
+                e.preventDefault();
+                isTouch = true
+                var cords = getTouchCoordinates(e)
+                drawStart(cords);
+            }
+
+            // Mouse Click
+            cursorCanvas.addEventListener('mousedown', drawStartMousedown);
+            cursorCanvas.addEventListener('touchstart', drawStartTouchstart);
+
+            function drawContinue(cords) {
                 if (isDrawing) {
                     points.push(cords)
                 }
-
                 // Draw cursor and fow
                 cursorCanvas.drawCursor(cords);
-                fowCanvas.draw(points)
-            };
+                fowCanvas.draw(points);
+            }
+
+            function drawContinueMousemove(e) {
+                //get cords and points
+                var cords = getMouseCoordinates(e);
+                drawContinue(cords);
+            }
+
+            function drawContinueTouchmove(e) {
+                e.preventDefault();
+                var cords = getTouchCoordinates(e);
+                drawContinue(cords);
+            }
+
+            // Mouse Move
+            cursorCanvas.addEventListener('mousemove', drawContinueMousemove);
+            cursorCanvas.addEventListener('touchmove', drawContinueTouchmove);
+
+
 
             cursorCanvas.drawCursor = function (cords) {
                 // Cleanup
@@ -462,7 +501,6 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
                 cursorContext.fill();
                 cursorContext.stroke();
-                requestAnimationFrame(setupCursorTracking)
             }
 
         }
@@ -647,12 +685,25 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             document.addEventListener('mouseup', function () {
                 stopDrawing();
             });
+            document.addEventListener('touchend', function (e) {
+                if (isDrawing) {
+                    e.preventDefault();
+                }
+                stopDrawing();
+            });
+            document.addEventListener('touchcancel', function (e) {
+                if (isDrawing) {
+                    e.preventDefault();
+                }
+                stopDrawing();
+            });
         }
 
         function stopDrawing() {
             if (isDrawing) {
                 //createRender();
             }
+            isTouch = false;
             isDrawing = false;
             points = []
             points.length = 0;
