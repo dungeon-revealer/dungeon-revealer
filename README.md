@@ -7,6 +7,8 @@ What the DM Sees
 ----------------
 ![alt text](http://apclary.github.io/dungeon-revealer/img/example_dm_1.jpeg "DM's view")
 
+You can protect the DM area by setting a password.
+
 What the players see
 --------------------
 ![alt text](https://apclary.github.io/dungeon-revealer/img/example_player_1.jpeg "Player's view")
@@ -28,6 +30,8 @@ Installation
 7. Once it's done, a directory named node_modules should appear. Using the prompt, navigate to node_modules/dungeon-revealer/bin.
 8. Type `node dungeon-revealer` into the prompt. Some messages should appear. This likely means the server is now running. 
   * On some Windows machines, a firewall prompt will appear. Check all of the checkboxes and click OK.
+
+If you want to protect the DM endpoint you should set the `DM_PASSWORD` environment variable (e.g. `DM_PASSWORD=test123 node dungeon-revealer`)
 
 Use
 ---
