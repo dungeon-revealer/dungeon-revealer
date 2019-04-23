@@ -23,7 +23,7 @@ A docker image is kept up to date with master branch of this repository.
 
 To create an instance run the following:
 
-`docker run -e DM_PASSWORD=<password> -p <PORT>:3000 -d maxb2/dungeon-revealer`
+`docker run -e DM_PASSWORD=<password> -p <PORT>:3000 -d apclary/dungeon-revealer`
 
 Replace `<password>` with your chosen DM password, and `<PORT>` with your prefered port.
 In your browser, go to `<YOUR_IPADDRESS>:<PORT>`. 
