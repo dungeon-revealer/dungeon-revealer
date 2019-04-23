@@ -433,7 +433,9 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
             }
 
             function drawStartTouchstart(e) {
-                e.preventDefault();
+                if (e.cancelable) {
+                    e.preventDefault();
+                }
                 isTouch = true
                 var cords = getTouchCoordinates(e)
                 drawStart(cords);
@@ -445,7 +447,12 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
             function drawContinue(cords) {
                 if (isDrawing) {
-                    points.push(cords)
+                    var prevCords = points.length ? points[points.length - 1] : null
+                    if (prevCords) {
+                        points = [prevCords, cords];
+                    } else {
+                        points = [cords];
+                    }
                 }
                 // Draw cursor and fow
                 cursorCanvas.drawCursor(cords);
@@ -629,12 +636,10 @@ define(['settings', 'jquery', 'brush'], function (settings, jquery, brush) {
 
             $('#btn-shroud-all').click(function () {
                 fogMap(fowContext);
-                //createRender();
             });
 
             $('#btn-clear-all').click(function () {
                 clearMap(fowContext);
-                //createRender();
             });
 
             $('#btn-enlarge-brush').click(function () {
