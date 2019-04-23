@@ -16,6 +16,22 @@ What the players see
 
 Installation
 ------------
+
+### Docker
+
+A docker image is kept up to date with master branch of this repository.
+
+To create an instance run the following:
+
+`docker run -e DM_PASSWORD=<password> -p <PORT>:3000 -d maxb2/dungeon-revealer`
+
+Replace `<password>` with your chosen DM password, and `<PORT>` with your prefered port.
+In your browser, go to `<YOUR_IPADDRESS>:<PORT>`. 
+If you are the DM, click on Dungeon Master and enter the specified password with no user.
+If you are a player, just wait until the DM pushes a map.
+
+### Node
+
 (This is the simplest way I know to install. If you know a better way, please shoot me a message.)
 
 1. Install git. On Windows, I believe if you install the Github version of git it should add git automatically to your path.
