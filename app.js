@@ -1,17 +1,17 @@
-var express = require('express');
-var app = express();
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var session = require('cookie-session');
-var bodyParser = require('body-parser');
-var crypto = require('crypto');
-var fs = require('fs');
-var http = app.http = require('http').Server(app);
-var io = require('socket.io')(http);
-var busboy = require('connect-busboy');
-var basicAuth = require('express-basic-auth');
+const express = require('express');
+const app = require('express')();
+const path = require('path');
+const favicon = require('serve-favicon');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
+const session = require('cookie-session');
+const bodyParser = require('body-parser');
+const crypto = require('crypto');
+const fs = require('fs');
+const server = app.http = require('http').createServer(app);
+const io = require('socket.io')(server);
+const busboy = require('connect-busboy');
+const basicAuth = require('express-basic-auth');
 
 var authMiddleware = basicAuth({
     challenge: true,
@@ -40,7 +40,7 @@ app.use(busboy());
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.set('view engine', 'pug');
 
 // Not sure if this is needed, Chrome seems to grab the favicon just fine anyway
 // Maybe for cross-browser support

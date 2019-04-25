@@ -21,6 +21,7 @@ define(['settings', 'jquery', 'io', 'panzoom'], function (settings, jquery, io) 
       focal: e
     });
   });
+  
   socket.on('map update', function (msg) {
     $('.splash-js').hide();
     if (msg && msg.imageData) {
