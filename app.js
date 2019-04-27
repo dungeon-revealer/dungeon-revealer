@@ -16,7 +16,7 @@ const busboy = require("connect-busboy");
 const basicAuth = require("express-basic-auth");
 
 const authMiddleware = basicAuth({
-  challenge: Boolean(process.env.DM_PASSWORD),
+  challenge: true,
   authorizer: function(user, password) {
     if (process.env.DM_PASSWORD) {
       return password === process.env.DM_PASSWORD;

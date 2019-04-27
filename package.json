@@ -42,12 +42,18 @@
     }
   },
   "lint-staged": {
-    "*.{js,json,md}": [
-      "prettier --write",
-      "git add"
+    "ignore": [
+      "public/javascripts/dropzone.js",
+      "public/javascripts/require.js"
     ],
-    ".js": [
-      "eslint --fix"
-    ]
+    "linters": {
+      "*.{js,json,md}": [
+        "prettier --write",
+        "git add"
+      ],
+      ".js": [
+        "eslint --fix"
+      ]
+    }
   }
 }

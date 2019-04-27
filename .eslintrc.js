@@ -7,9 +7,12 @@ module.exports = {
     "prefer-const": ["error"],
     "no-var": ["error"],
     eqeqeq: ["error"],
-    camelcase: ["error"]
+    camelcase: ["error"],
+    "no-console": ["off"]
   },
-
+  parserOptions: {
+    ecmaVersion: 2017
+  },
   overrides: [
     {
       env: {
@@ -19,7 +22,8 @@ module.exports = {
     },
     {
       env: {
-        browser: true
+        browser: true,
+        amd: true
       },
       files: ["public/**/*.js"]
     }

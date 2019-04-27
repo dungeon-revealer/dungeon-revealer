@@ -1,4 +1,4 @@
-require(['common'], function (common) {
-    console.log('player-app.js running');
-    require(['player-listener']);
+require(["common"], function() {
+  console.log("player-app.js running");
+  require(["player-listener"]);
 });
