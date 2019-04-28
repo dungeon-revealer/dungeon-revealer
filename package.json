@@ -1,9 +1,10 @@
 {
   "name": "dungeon-revealer",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "scripts": {
     "start": "node ./bin/dungeon-revealer",
-    "lint": "eslint \"./public/javascripts/*.js\""
+    "lint": "./node_modules/.bin/eslint \"./public/javascripts/*.js\"",
+    "build": "./node_modules/.bin/pkg . --out-path ./bin/ --targets node10-win-x64,node10-macos-x64,node10-linux-x64"
   },
   "dependencies": {
     "body-parser": "~1.18.3",
@@ -25,6 +26,7 @@
     "eslint-config-prettier": "4.2.0",
     "husky": "2.1.0",
     "lint-staged": "8.1.5",
+    "pkg": "^4.3.7",
     "prettier": "1.17.0"
   },
   "repository": {
@@ -56,5 +58,12 @@
         "eslint --fix"
       ]
     }
-  }
+  },
+  "pkg": {
+    "assets": [
+      "public/**/*",
+      "views/**/*"
+    ]
+  },
+  "bin": "bin/dungeon-revealer"
 }

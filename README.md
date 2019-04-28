@@ -16,6 +16,10 @@ You can protect the DM area by setting a password.
 
 ## Installation
 
+The easiest way is to just download and run the [latest release](https://github.com/apclary/dungeon-revealer/releases). Only the DM needs to have the application, regular users just require a browser.
+
+For more tech-saavy users, see below for additional options.
+
 ### Docker
 
 A docker image is kept up to date with master branch of this repository.
@@ -30,8 +34,6 @@ If you are the DM, click on Dungeon Master and enter the specified password with
 If you are a player, just wait until the DM pushes a map.
 
 ### Node
-
-(This is the simplest way I know to install. If you know a better way, please shoot me a message.)
 
 1. Install git. On Windows, I believe if you install the Github version of git it should add git automatically to your path.
 1. Go to https://nodejs.org/download/ and download and install Node. Node is the runtime for this software, which basically means you need it to make the software work. Only one person needs Node (assumed to be the DM).

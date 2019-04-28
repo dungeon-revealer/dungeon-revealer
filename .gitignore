@@ -8,6 +8,8 @@
 *.exe
 *.o
 *.so
+dungeon-revealer-linux
+dungeon-revealer-macos
 
 # Packages #
 ############
