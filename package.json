@@ -2,7 +2,8 @@
   "name": "dungeon-revealer",
   "version": "0.0.1",
   "scripts": {
-    "start": "node ./bin/dungeon-revealer"
+    "start": "node ./bin/dungeon-revealer",
+    "lint": "eslint \"./public/javascripts/*.js\""
   },
   "dependencies": {
     "body-parser": "~1.18.3",
