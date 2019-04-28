@@ -19,7 +19,13 @@
   },
   "description": "dungeon-revealer ================",
   "main": "app.js",
-  "devDependencies": {},
+  "devDependencies": {
+    "eslint": "5.16.0",
+    "eslint-config-prettier": "4.2.0",
+    "husky": "2.1.0",
+    "lint-staged": "8.1.5",
+    "prettier": "1.17.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/apclary/dungeon-revealer.git"
@@ -29,5 +35,25 @@
   "bugs": {
     "url": "https://github.com/apclary/dungeon-revealer/issues"
   },
-  "homepage": "https://github.com/apclary/dungeon-revealer"
+  "homepage": "https://github.com/apclary/dungeon-revealer",
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "ignore": [
+      "public/javascripts/dropzone.js",
+      "public/javascripts/require.js"
+    ],
+    "linters": {
+      "*.{js,json,md}": [
+        "prettier --write",
+        "git add"
+      ],
+      ".js": [
+        "eslint --fix"
+      ]
+    }
+  }
 }

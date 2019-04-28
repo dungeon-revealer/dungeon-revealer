@@ -1,4 +1,4 @@
-require(['common'], function (common) {
-    console.log('client-app.js running');
-    require(['dm']);
+require(["common"], function() {
+  console.log("client-app.js running");
+  require(["dm"]);
 });
