@@ -34,7 +34,16 @@ const generateKey = () => {
 
 let mostRecentImageData = null;
 let mostRecentRawImagePath = null;
-const UPLOADS_DIR = path.join(__dirname, "/public/uploads/");
+
+/* Images have to be uploaded outside of the code directory to account for 
+the case where the application has been bundled up into an executable */
+/* It would not surprise me at all if there was some weirdness with where 
+it creates the upload directory, either when run from a certain location or 
+run in a certain way (e.g. docker or node) */
+const UPLOADS_DIR = path.join(process.cwd(), "../../uploads/");
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR);
+}
 const GENERATED_IMAGE_PATH = path.join(UPLOADS_DIR + "generatedMap.png");
 
 app.use(busboy());
@@ -82,7 +91,7 @@ app.get("/dm/map", authMiddleware, function(req, res) {
     res.sendFile(mostRecentRawImagePath);
     mapSent = true;
   } else {
-    console.log(UPLOADS_DIR);
+    console.log("Uploading image to " + UPLOADS_DIR);
     // Look in the dir for a file named map.* and return the first one found
     // Because we are deleting the previous files on upload this logic is mostly useless now
     fs.readdirSync(UPLOADS_DIR)
@@ -111,7 +120,8 @@ app.post("/upload", function(req, res) {
   req.busboy.on("file", function(fieldname, file, filename) {
     const fileExtension = filename.split(".").pop();
     const uploadedImageSavePath = path.join(
-      UPLOADS_DIR + "map." + fileExtension
+      UPLOADS_DIR,
+      "map." + fileExtension
     );
     deleteExistingMapFilesSync();
 
@@ -227,6 +237,7 @@ function deleteExistingMapFilesSync() {
     })
     .forEach(function(file) {
       const filePath = path.join(UPLOADS_DIR + file);
+      console.log("Deleting old map " + filePath);
       fs.unlinkSync(filePath);
     });
 }
