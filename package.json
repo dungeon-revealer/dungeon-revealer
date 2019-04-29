@@ -21,7 +21,6 @@
     "jquery": "2.1.1",
     "jquery.panzoom": "3.2.2",
     "morgan": "~1.9.1",
-    "pug": "^2.0.3",
     "react": "16.8.6",
     "react-dom": "16.8.6",
     "react-transition-group": "4.0.0",
