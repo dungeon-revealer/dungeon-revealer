@@ -15,6 +15,20 @@ jobs:
     - stage: docker
       script:
         - docker build -t dungeon-revealer .
+    - stage: GitHub Release
+      script: echo "Deploying to GitHub releases ..."
+      deploy:
+        provider: releases
+        api_key: $GITHUB_OAUTH_TOKEN
+        file:
+          - dungeon-revealer-linux
+          - dungeon-revealer-macos
+          - dungeon-revealer-win.exe
+        skip_cleanup: true
+        draft: true
+        on:
+          tags: true
+
 
 services:
   - docker
