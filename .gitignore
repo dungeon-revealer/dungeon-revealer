@@ -8,12 +8,9 @@
 *.exe
 *.o
 *.so
-<<<<<<< HEAD
 dungeon-revealer-linux
 dungeon-revealer-macos
-=======
 build
->>>>>>> refactor: react rewrite
 
 # Packages #
 ############

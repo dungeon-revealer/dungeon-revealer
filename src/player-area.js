@@ -1,16 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import $ from "jquery";
-import "jquery.panzoom";
 import io from "socket.io-client";
 import { CSSTransition } from "react-transition-group";
+import { PanZoom } from "react-easy-panzoom";
 
 export const PlayerArea = () => {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
-  const [mapContainer, mapContainerRef] = useState(null);
-  const [zoomInButton, zoomInButtonRef] = useState(null);
-  const [zoomOutButton, zoomOutButtonRef] = useState(null);
-  const [zoomRange, zoomRangeRef] = useState(null);
-  const panzoom = useRef(null);
+
+  const didCenterMapInitially = useRef(false);
+  const panZoomRef = useRef(null);
 
   const activeMapIndex = useRef(0);
 
@@ -61,26 +58,22 @@ export const PlayerArea = () => {
     });
   }, []);
 
-  useEffect(() => {
-    if (!mapContainer || !zoomInButton || !zoomOutButton || !zoomRange) {
+  /**
+   *
+   */
+  const centerMap = () => {
+    if (panZoomRef.current) {
+      panZoomRef.current.autoCenter();
+    }
+  };
+
+  const centerMapInitially = () => {
+    if (didCenterMapInitially.current) {
       return;
     }
-    const $map = $(mapContainer);
-    panzoom.current = $map.panzoom({
-      $zoomIn: $(zoomInButton),
-      $zoomOut: $(zoomOutButton),
-      $zoomRange: $(zoomRange),
-      increment: 0.05,
-      exponential: false,
-      linearZoom: true,
-      minScale: 0.05,
-      maxScale: 20
-    });
-
-    return () => {
-      $map.panzoom("destroy");
-    };
-  }, [mapContainer, zoomInButton, zoomOutButton, zoomRange, panzoom]);
+    didCenterMapInitially.current = true;
+    centerMap();
+  };
 
   return (
     <>
@@ -92,42 +85,60 @@ export const PlayerArea = () => {
           <h1 className="title-text">Dungeon Revealer</h1>
         </div>
       ) : null}
-      <div
-        ref={mapContainerRef}
-        onWheel={e => {
-          e.preventDefault();
-          if (!panzoom.current) {
-            return;
-          }
-
-          const zoomOut = e.deltaY > 0;
-          panzoom.current.panzoom("zoom", zoomOut, {
-            animate: false,
-            focal: e
-          });
+      <PanZoom
+        style={{
+          cursor: "grab"
         }}
+        ref={panZoomRef}
       >
-        <CSSTransition in={activeMap === 1} timeout={500}>
-          {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <img src={firstMap} className="map" />
-        </CSSTransition>
-        <CSSTransition in={activeMap === 2} timeout={500}>
-          {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <img src={secondMap} className="map" />
-        </CSSTransition>
-      </div>
+        <div
+          style={{
+            height: "100vh",
+            width: "100vw",
+            position: "relative",
+            pointerEvents: "none"
+          }}
+        >
+          <CSSTransition in={activeMap === 1} timeout={500}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
+            <img src={firstMap} className="map" onLoad={centerMapInitially} />
+          </CSSTransition>
+          <CSSTransition in={activeMap === 2} timeout={500}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
+            <img src={secondMap} className="map" onLoad={centerMapInitially} />
+          </CSSTransition>
+        </div>
+      </PanZoom>
       {activeMap !== 0 ? (
         <div id="dm-toolbar" className="toolbar-wrapper">
           <div className="btn-toolbar">
             <div className="btn-group">
-              <button ref={zoomInButtonRef} className="btn btn-default">
+              <button className="btn btn-default" onClick={centerMap}>
+                Center
+              </button>
+              <button
+                className="btn btn-default"
+                onClick={() => {
+                  if (!panZoomRef.current) {
+                    return;
+                  }
+                  panZoomRef.current.zoomIn();
+                }}
+              >
                 Zoom in
               </button>
-              <button ref={zoomOutButtonRef} className="btn btn-default">
+              <button
+                className="btn btn-default"
+                onClick={() => {
+                  if (!panZoomRef.current) {
+                    return;
+                  }
+                  panZoomRef.current.zoomOut();
+                }}
+              >
                 Zoom out
               </button>
             </div>
-            <input ref={zoomRangeRef} type="range" />
           </div>
         </div>
       ) : null}

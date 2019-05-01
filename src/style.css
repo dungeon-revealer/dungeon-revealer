@@ -19,8 +19,7 @@
 }
 
 html,
-body,
-#wrapper {
+body {
   width: 100%;
   height: 100%;
   margin: 0px;
@@ -28,6 +27,7 @@ body,
 
 #root {
   height: 100%;
+  overflow: hidden;
 }
 
 #dm-link {
@@ -41,6 +41,7 @@ body,
 
 #dm-toolbar {
   position: fixed;
+  text-align: center;
   bottom: 0;
   left: 0;
   width: 100%;
@@ -48,7 +49,6 @@ body,
 }
 
 .toolbar-wrapper {
-  text-align: center;
   pointer-events: none;
 }
 
@@ -125,11 +125,14 @@ body,
 }
 
 .map {
-  opacity: 0;
   position: absolute;
-  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  height: 100%;
+  opacity: 0;
+  width: auto;
   left: 0;
-  top: 0;
+  right: 0;
   -webkit-transition: opacity 500ms ease-in;
   -moz-transition: opacity 500ms ease-in;
   -o-transition: opacity 500ms ease-in;
