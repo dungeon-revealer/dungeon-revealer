@@ -3,9 +3,18 @@ language: node_js
 node_js:
   - "node"
 
-script:
-  - npm run eslint
-  - npm run build
+
+jobs:
+  include:
+    - stage: eslint
+      script:
+        - npm run eslint
+    - stage: build
+      script:
+        - npm run build
+    - stage: docker
+      script:
+        - docker build -t dungeon-revealer .
 
 services:
   - docker
