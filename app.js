@@ -51,7 +51,7 @@ app.use(busboy());
 // Not sure if this is needed, Chrome seems to grab the favicon just fine anyway
 // Maybe for cross-browser support
 app.use(logger("dev"));
-app.use(favicon(__dirname + "/public/favicon.ico"));
+app.use(favicon(__dirname + "/build/favicon.ico"));
 
 // Needed to handle JSON posts, size limit of 50mb
 app.use(bodyParser.json({ limit: "50mb" }));

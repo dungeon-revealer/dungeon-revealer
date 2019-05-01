@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node ./bin/dungeon-revealer",
-    "lint": "./node_modules/.bin/eslint \"./public/javascripts/*.js\"",
+    "eslint": "./node_modules/.bin/eslint --ignore-path .gitignore \"**/*.js\"",
     "start:dev": "cross-env PORT=3001 react-scripts start",
     "build": "react-scripts build && ./node_modules/.bin/pkg . --out-path ./bin/ --targets node10-win-x64,node10-macos-x64,node10-linux-x64",
     "test": "react-scripts test",
@@ -66,8 +66,7 @@
   },
   "pkg": {
     "assets": [
-      "public/**/*",
-      "views/**/*"
+      "build/**/*"
     ]
   },
   "bin": "bin/dungeon-revealer",
