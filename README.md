@@ -1,7 +1,5 @@
 # dungeon-revealer
 
-[![Build Status](https://travis-ci.org/apclary/dungeon-revealer.svg?branch=master)](https://travis-ci.org/apclary/dungeon-revealer)
-
 A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
 
 ## What the DM Sees
@@ -15,10 +13,6 @@ You can protect the DM area by setting a password.
 ![alt text](https://apclary.github.io/dungeon-revealer/img/example_player_1.jpeg "Player's view")
 
 ## Installation
-
-The easiest way is to just download and run the [latest release](https://github.com/apclary/dungeon-revealer/releases). Only the DM needs to have the application, regular users just require a browser.
-
-For more tech-saavy users, see below for additional options.
 
 ### Docker
 
@@ -57,3 +51,13 @@ To use dungeon-revealer, the game master and the players must be on the same loc
 To clear areas of the map, click and draw on the map. If you clear too much, you can switch the brush to the "shadow brush" and restore some of the fog. Whenever you clear some of the fog of war from the map and is ready to share with the players, she will click "Send" and the revealed areas of the map will appear in the player's browsers. What appears as a shadow to the DM will appear as pure blackness to players, thus only revealing the cleared sections of the map to them.
 
 To replace the existing map with a new image file, click "New Map".
+
+## Contributing
+
+Run the react development server:
+
+- `npm run start:dev` (visit `localhost:3001`)
+
+Run the backend
+
+- `npm run start` (available on `localhost:3000`)

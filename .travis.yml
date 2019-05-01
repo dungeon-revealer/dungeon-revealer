@@ -4,9 +4,8 @@ node_js:
   - "node"
 
 script:
-  - npm run lint
+  - npm run eslint
   - npm run build
-#  - npm test
 
 services:
   - docker

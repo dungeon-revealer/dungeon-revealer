@@ -48,14 +48,10 @@ const GENERATED_IMAGE_PATH = path.join(UPLOADS_DIR + "generatedMap.png");
 
 app.use(busboy());
 
-// view engine setup
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "pug");
-
 // Not sure if this is needed, Chrome seems to grab the favicon just fine anyway
 // Maybe for cross-browser support
-app.use(favicon(__dirname + "/public/favicon.ico"));
 app.use(logger("dev"));
+app.use(favicon(__dirname + "/build/favicon.ico"));
 
 // Needed to handle JSON posts, size limit of 50mb
 app.use(bodyParser.json({ limit: "50mb" }));
@@ -64,22 +60,9 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 // Cookie parsing needed for sessions
 app.use(cookieParser());
 
-// Consider all URLs under /public/ as static files, and return them raw.
-app.use(express.static(path.join(__dirname, "public")));
-
 // Session framework
 // not implemented
 app.use(session({ secret: generateKey() }));
-
-// Routes
-// TODO: Move interior logic somewhere else
-app.get("/", function(req, res) {
-  res.render("player", { dm: false, title: "Dungeon Revealer" });
-});
-
-app.get("/dm", authMiddleware, function(req, res) {
-  res.render("dm", { dm: true, title: "Dungeon Revealer DM Console" });
-});
 
 app.get("/map", function(req, res) {
   res.sendFile(GENERATED_IMAGE_PATH);
@@ -140,7 +123,6 @@ app.post("/upload", function(req, res) {
 // For the DM sending out fogged maps to be distributed to players
 app.post("/send", function(req, res) {
   const imageDataString = req.body.imageData;
-
   if (imageDataString) {
     const imageData = decodeBase64Image(imageDataString).data;
 
@@ -168,6 +150,17 @@ app.post("/send", function(req, res) {
     });
   }
 });
+
+app.get("/", function(req, res) {
+  res.sendfile("/build/index.html", { root: __dirname });
+});
+
+app.get("/dm", function(req, res) {
+  res.sendfile("/build/index.html", { root: __dirname });
+});
+
+// Consider all URLs under /public/ as static files, and return them raw.
+app.use(express.static(path.join(__dirname, "build")));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

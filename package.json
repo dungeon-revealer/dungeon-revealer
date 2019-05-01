@@ -3,8 +3,12 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node ./bin/dungeon-revealer",
-    "lint": "./node_modules/.bin/eslint \"./public/javascripts/*.js\"",
-    "build": "./node_modules/.bin/pkg . --out-path ./bin/ --targets node10-win-x64,node10-macos-x64,node10-linux-x64"
+    "eslint": "./node_modules/.bin/eslint --ignore-path .gitignore \"**/*.js\"",
+    "start:dev": "cross-env PORT=3001 react-scripts start",
+    "build": "react-scripts build && ./node_modules/.bin/pkg . --out-path ./bin/ --targets node10-win-x64,node10-macos-x64,node10-linux-x64",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "body-parser": "~1.18.3",
@@ -15,19 +19,25 @@
     "express": "~4.16.4",
     "express-basic-auth": "1.2.0",
     "morgan": "~1.9.1",
-    "pug": "^2.0.3",
+    "react": "16.8.6",
+    "react-dom": "16.8.6",
+    "react-easy-panzoom": "0.2.3",
+    "react-transition-group": "4.0.0",
     "serve-favicon": "~2.5.0",
-    "socket.io": "^2.2.0"
+    "socket.io": "^2.2.0",
+    "socket.io-client": "2.2.0"
   },
   "description": "dungeon-revealer ================",
   "main": "app.js",
   "devDependencies": {
+    "cross-env": "5.2.0",
     "eslint": "5.16.0",
     "eslint-config-prettier": "4.2.0",
     "husky": "2.1.0",
     "lint-staged": "8.1.5",
     "pkg": "^4.3.7",
-    "prettier": "1.17.0"
+    "prettier": "1.17.0",
+    "react-scripts": "3.0.0"
   },
   "repository": {
     "type": "git",
@@ -38,19 +48,14 @@
   "bugs": {
     "url": "https://github.com/apclary/dungeon-revealer/issues"
   },
-  "homepage": "https://github.com/apclary/dungeon-revealer",
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged"
     }
   },
   "lint-staged": {
-    "ignore": [
-      "public/javascripts/dropzone.js",
-      "public/javascripts/require.js"
-    ],
     "linters": {
-      "*.{js,json,md}": [
+      "*.{js,json,md,html}": [
         "prettier --write",
         "git add"
       ],
@@ -61,9 +66,14 @@
   },
   "pkg": {
     "assets": [
-      "public/**/*",
-      "views/**/*"
+      "build/**/*"
     ]
   },
-  "bin": "bin/dungeon-revealer"
+  "bin": "bin/dungeon-revealer",
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
 }
