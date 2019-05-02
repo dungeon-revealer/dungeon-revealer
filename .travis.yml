@@ -13,11 +13,11 @@ stages:
   - build
   - build docker image
   - name: github deploy
-    # if: branch = master AND tag IS present # Use this conditional if you want to limit the deployments to only the master branch
-    if: tag IS present
+    if: branch = master AND tag IS present # Use this conditional if you want to limit the deployments to only the master branch
+    # if: tag IS present
   - name: dockerhub deploy
-    # if: branch = master AND tag IS present
-    if: tag IS present
+    if: branch = master AND tag IS present # Use this conditional if you want to limit the deployments to only the master branch
+    # if: tag IS present
 
 jobs:
   include:
