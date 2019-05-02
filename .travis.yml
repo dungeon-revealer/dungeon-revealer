@@ -1,7 +1,7 @@
 sudo: false
 language: node_js
 node_js:
-  - "node"
+  - "10"
 cache: npm
 
 services:
@@ -40,7 +40,9 @@ jobs:
 
     - stage: github deploy
       install: true
-      script: echo "Deploying to GitHub releases ..."
+      script:
+        - echo "Deploying to GitHub releases ..."
+        - npm run build
       deploy:
         provider: releases
         api_key: $GITHUB_OAUTH_TOKEN
@@ -58,7 +60,6 @@ jobs:
       script:
       - echo "Deploying to Dockerhub..."
       - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      - docker build -t dungeon-revealer .
+      - docker build -t $DOCKER_USERNAME/dungeon-revealer:$TRAVIS_TAG -t $DOCKER_USERNAME/dungeon-revealer:latest .
       - docker images
-      - docker tag dungeon-revealer $DOCKER_USERNAME/dungeon-revealer:$TRAVIS_TAG
       - docker push $DOCKER_USERNAME/dungeon-revealer
