@@ -37,17 +37,21 @@ jobs:
       script: true
 
     - stage: eslint
+      install: true
       script: npm run eslint
 
     - stage: build
+      install: true
       script: npm run build
 
     - stage: build docker image
+      install: true
       script:
       - docker build -t dungeon-revealer .
       - docker run --rm dungeon-revealer echo "hello"
 
     - stage: github deploy
+      install: true
       script: echo "Deploying to GitHub releases ..."
       deploy:
         provider: releases
@@ -62,6 +66,7 @@ jobs:
           tags: true
 
     - stage: dockerhub deploy
+      install: true
       script:
       - echo "Deploying to Dockerhub..."
       - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
