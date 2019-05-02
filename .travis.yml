@@ -1,11 +1,63 @@
 sudo: false
 language: node_js
 node_js:
-  - "node"
-
-script:
-  - npm run eslint
-  - npm run build
+  - "10"
+cache: npm
 
 services:
   - docker
+
+stages:
+  - cache
+  - eslint
+  - build
+  - build docker image
+  - name: github deploy
+    if: tag IS present
+  - name: dockerhub deploy
+    if: tag IS present
+
+jobs:
+  include:
+    - stage: cache
+      script: true
+
+    - stage: eslint
+      install: true
+      script: npm run eslint
+
+    - stage: build
+      install: true
+      script: npm run build
+
+    - stage: build docker image
+      install: true
+      script:
+      - docker build -t dungeon-revealer .
+      - docker run --rm dungeon-revealer echo "hello"
+
+    - stage: github deploy
+      install: true
+      script:
+        - echo "Deploying to GitHub releases ..."
+        - npm run build
+      deploy:
+        provider: releases
+        api_key: $GITHUB_OAUTH_TOKEN
+        file:
+          - bin/dungeon-revealer-linux
+          - bin/dungeon-revealer-macos
+          - bin/dungeon-revealer-win.exe
+        skip_cleanup: true
+        draft: true
+        on:
+          tags: true
+
+    - stage: dockerhub deploy
+      install: true
+      script:
+      - echo "Deploying to Dockerhub..."
+      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - docker build -t $DOCKER_USERNAME/dungeon-revealer:$TRAVIS_TAG -t $DOCKER_USERNAME/dungeon-revealer:latest .
+      - docker images
+      - docker push $DOCKER_USERNAME/dungeon-revealer
