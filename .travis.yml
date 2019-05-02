@@ -6,11 +6,9 @@ node_js:
 
 jobs:
   include:
-    - stage: eslint
+    - stage: Node
       script:
         - npm run eslint
-    - stage: build
-      script:
         - npm run build
     - stage: docker
       script:
