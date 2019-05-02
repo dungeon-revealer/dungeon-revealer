@@ -161,9 +161,11 @@ export const DmMap = () => {
   const fogCanvasRef = useRef(null);
   const mouseCanvasRef = useRef(null);
   const drawState = useRef({ isDrawing: false, lastCoords: null });
+  const areaDrawState = useRef({ startCoords: null, currentCoords: null });
 
   const [mode, setMode] = useState("clear");
   const [brushShape, setBrushShape] = useState("square");
+  const [tool, setTool] = useState("brush"); // "brush" or "area"
   const [lineWidth, setLineWidth] = useState(15);
 
   const fillFog = () => {
@@ -304,6 +306,23 @@ export const DmMap = () => {
       mouseCanvasRef.current.width,
       mouseCanvasRef.current.height
     );
+
+    if (tool === "area") {
+      mouseContext.strokeStyle = "aqua";
+      mouseContext.fillStyle = "aqua";
+      mouseContext.lineWidth = 2;
+
+      mouseContext.beginPath();
+      mouseContext.moveTo(coords.x - 10, coords.y);
+      mouseContext.lineTo(coords.x + 10, coords.y);
+      mouseContext.moveTo(coords.x, coords.y - 10);
+      mouseContext.lineTo(coords.x, coords.y + 10);
+      mouseContext.stroke();
+      return;
+    }
+
+    // brush
+
     const cursorMask = constructMask(coords);
     mouseContext.strokeStyle = cursorMask.line;
     mouseContext.fillStyle = cursorMask.fill;
@@ -400,6 +419,52 @@ export const DmMap = () => {
     }
   };
 
+  const drawAreaSelection = () => {
+    const mouseContext = mouseCanvasRef.current.getContext("2d");
+    mouseContext.clearRect(
+      0,
+      0,
+      mouseCanvasRef.current.width,
+      mouseCanvasRef.current.height
+    );
+
+    mouseContext.strokeStyle = "aqua";
+    mouseContext.fillStyle = "transparent";
+    mouseContext.lineWidth = 2;
+
+    mouseContext.beginPath();
+
+    const { startCoords, currentCoords } = areaDrawState.current;
+
+    const startX = startCoords.x;
+    const startY = startCoords.y;
+    const width = currentCoords.x - startCoords.x;
+    const height = currentCoords.y - startCoords.y;
+
+    mouseContext.rect(startX, startY, width, height);
+    mouseContext.fill();
+    mouseContext.stroke();
+  };
+
+  const handleAreaSelection = () => {
+    const context = fogCanvasRef.current.getContext("2d");
+
+    if (mode === "clear") {
+      context.globalCompositeOperation = "destination-out";
+    } else {
+      context.globalCompositeOperation = "source-over";
+    }
+    context.beginPath();
+    const { startCoords, currentCoords } = areaDrawState.current;
+
+    const startX = startCoords.x;
+    const startY = startCoords.y;
+    const width = currentCoords.x - startCoords.x;
+    const height = currentCoords.y - startCoords.y;
+    context.fillRect(startX, startY, width, height);
+    drawCursor(currentCoords);
+  };
+
   useEffect(() => {
     const resize = (displayWidth, displayHeight) => {
       fogCanvasRef.current.style.width = displayWidth + "px";
@@ -480,6 +545,14 @@ export const DmMap = () => {
             const coords = getMouseCoordinates(ev);
             drawCursor(coords);
 
+            if (tool === "area" && areaDrawState.current.startCoords) {
+              if (areaDrawState.current.startCoords) {
+                areaDrawState.current.currentCoords = coords;
+                drawAreaSelection();
+              }
+              return;
+            }
+
             if (!drawState.current.isDrawing) {
               return;
             }
@@ -498,24 +571,49 @@ export const DmMap = () => {
             );
             drawState.current.isDrawing = false;
             drawState.current.lastCoords = null;
+            areaDrawState.current.currentCoords = null;
+            areaDrawState.current.startCoords = null;
           }}
           onMouseDown={ev => {
-            drawState.current.isDrawing = true;
             const coords = getMouseCoordinates(ev);
-            drawInitial(coords);
+
+            if (tool === "brush") {
+              drawState.current.isDrawing = true;
+              drawInitial(coords);
+            } else if (tool === "area") {
+              areaDrawState.current.startCoords = coords;
+            }
           }}
           onMouseUp={() => {
             drawState.current.isDrawing = false;
             drawState.current.lastCoords = null;
+            if (
+              areaDrawState.current.currentCoords &&
+              areaDrawState.current.startCoords
+            ) {
+              handleAreaSelection();
+            }
+            areaDrawState.current.currentCoords = null;
+            areaDrawState.current.startCoords = null;
           }}
           onTouchStart={ev => {
-            drawState.current.isDrawing = true;
             const coords = getTouchCoordinates(ev);
-            drawInitial(coords);
+            if (tool === "brush") {
+              drawState.current.isDrawing = true;
+              drawInitial(coords);
+            } else if (tool === "area") {
+              areaDrawState.current.startCoords = coords;
+            }
           }}
           onTouchMove={ev => {
             ev.preventDefault();
             const coords = getTouchCoordinates(ev);
+
+            if (tool === "area" && areaDrawState.current.startCoords) {
+              areaDrawState.current.currentCoords = coords;
+              drawAreaSelection();
+              return;
+            }
 
             if (!drawState.current.isDrawing) {
               return;
@@ -527,6 +625,14 @@ export const DmMap = () => {
           onTouchEnd={() => {
             drawState.current.isDrawing = false;
             drawState.current.lastCoords = null;
+            if (
+              areaDrawState.current.currentCoords &&
+              areaDrawState.current.startCoords
+            ) {
+              handleAreaSelection();
+            }
+            areaDrawState.current.currentCoords = null;
+            areaDrawState.current.startCoords = null;
           }}
         />
       </div>
@@ -566,8 +672,22 @@ export const DmMap = () => {
                 }
               }}
             >
-              {mode === "clear" ? "Shroud Brush" : "Clear Brush"}
+              {mode === "shroud" ? "Shroud Mode" : "Clear Mode"}
             </button>
+            <button
+              className="btn btn-default"
+              onClick={() => {
+                if (tool === "brush") {
+                  setTool("area");
+                } else {
+                  setTool("brush");
+                }
+              }}
+            >
+              {tool === "brush" ? "Brush Tool" : "Area Select Tool"}
+            </button>
+          </div>
+          <div className="btn-group">
             <button
               className="btn btn-default"
               onClick={() => {
