@@ -1,5 +1,5 @@
 /**
- * Utility for preoloading an image as a promise
+ * Utility for preloading an image as a promise
  */
 export const loadImage = src => {
   return new Promise((resolve, reject) => {
