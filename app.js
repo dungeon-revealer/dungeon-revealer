@@ -14,6 +14,11 @@ const server = (app.http = require("http").createServer(app));
 const io = require("socket.io")(server);
 const busboy = require("connect-busboy");
 const basicAuth = require("express-basic-auth");
+const { Maps } = require("./maps");
+const { Settings } = require("./settings");
+
+const maps = new Maps();
+const settings = new Settings();
 
 const authMiddleware = basicAuth({
   challenge: true,
@@ -32,9 +37,6 @@ const generateKey = () => {
   return sha.digest("hex");
 };
 
-let mostRecentImageData = null;
-let mostRecentRawImagePath = null;
-
 /* Images have to be uploaded outside of the code directory to account for 
 the case where the application has been bundled up into an executable */
 /* It would not surprise me at all if there was some weirdness with where 
@@ -44,7 +46,6 @@ const UPLOADS_DIR = path.join(process.cwd(), "./uploads/");
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR);
 }
-const GENERATED_IMAGE_PATH = path.join(UPLOADS_DIR + "generatedMap.png");
 
 app.use(busboy());
 
@@ -64,98 +65,135 @@ app.use(cookieParser());
 // not implemented
 app.use(session({ secret: generateKey() }));
 
-app.get("/map", function(req, res) {
-  res.sendFile(GENERATED_IMAGE_PATH);
-});
-
-app.get("/dm/map", authMiddleware, function(req, res) {
-  let mapSent = false;
-  if (mostRecentRawImagePath) {
-    res.sendFile(mostRecentRawImagePath);
-    mapSent = true;
-  } else {
-    console.log("Uploading image to " + UPLOADS_DIR);
-    // Look in the dir for a file named map.* and return the first one found
-    // Because we are deleting the previous files on upload this logic is mostly useless now
-    fs.readdirSync(UPLOADS_DIR)
-      .filter(function(file) {
-        return file.indexOf("map.") > -1;
-      })
-      .forEach(function(file) {
-        const filePath = path.join(UPLOADS_DIR + file);
-        if (!mapSent) {
-          mapSent = true;
-          mostRecentRawImagePath = filePath;
-          res.sendFile(mostRecentRawImagePath);
-        }
-      });
-  }
-
-  if (!mapSent) {
-    res.sendStatus(404);
-  }
-});
-
-// For DM map uploads. These are the raw images without any fog of war.
-app.post("/upload", function(req, res) {
-  req.pipe(req.busboy);
-
-  req.busboy.on("file", function(fieldname, file, filename) {
-    const fileExtension = filename.split(".").pop();
-    const uploadedImageSavePath = path.join(
-      UPLOADS_DIR,
-      "map." + fileExtension
-    );
-    deleteExistingMapFilesSync();
-
-    const fstream = fs.createWriteStream(uploadedImageSavePath);
-
-    file.pipe(fstream);
-    fstream.on("close", function() {
-      console.log("map uploaded");
-      mostRecentRawImagePath = uploadedImageSavePath;
-      res.sendStatus(200);
+app.get("/map/:id/map", (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.status(404).json({
+      data: null,
+      error: {
+        message: `Map with id '${req.params.id}' does not exist.`,
+        code: "ERR_MAP_DOES_NOT_EXIST"
+      }
     });
-    // should do something for a failure as well
+  } else if (!map.mapPath) {
+    return res.status(404).json({
+      data: null,
+      error: {
+        message: `Map with id '${
+          req.params.id
+        }' does not have a map image yet.`,
+        code: "ERR_MAP_NO_IMAGE"
+      }
+    });
+  }
+
+  const basePath = maps.getBasePath(map);
+
+  return res.sendFile(path.join(basePath, map.mapPath));
+});
+
+app.get("/map/:id/fog", (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.status(404).json({
+      data: null,
+      error: {
+        message: `Map with id '${req.params.id}' does not exist.`,
+        code: "ERR_MAP_DOES_NOT_EXIST"
+      }
+    });
+  } else if (!map.fogProgressPath) {
+    return res.status(404).json({
+      data: null,
+      error: {
+        message: `Map with id '${
+          req.params.id
+        }' does not have a fog image yet.`,
+        code: "ERR_MAP_NO_FOG"
+      }
+    });
+  }
+  return res.sendFile(path.join(maps.getBasePath(map), map.fogProgressPath));
+});
+
+app.get("/map/:id/fog-live", (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.status(404).json({
+      data: null,
+      error: {
+        message: `Map with id '${req.params.id}' does not exist.`,
+        code: "ERR_MAP_DOES_NOT_EXIST"
+      }
+    });
+  } else if (!map.fogLivePath) {
+    return res.status(404).json({
+      data: null,
+      error: {
+        message: `Map with id '${
+          req.params.id
+        }' does not have a fog image yet.`,
+        code: "ERR_MAP_NO_FOG"
+      }
+    });
+  }
+  return res.sendFile(path.join(maps.getBasePath(map), map.fogLivePath));
+});
+
+app.post("/map/:id/map", authMiddleware, (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.send(404);
+  }
+  req.pipe(req.busboy);
+  req.busboy.once("file", (fieldname, file, filename) => {
+    const extension = filename.split(".").pop();
+    maps
+      .updateMapImage(req.params.id, { fileStream: file, extension })
+      .then(map => {
+        res.json({ success: true, data: map });
+      })
+      .catch(err => {
+        res.status(404).json({ data: null, error: err });
+      });
   });
 });
 
-// For the DM sending out fogged maps to be distributed to players
-app.post("/send", function(req, res) {
-  const imageDataString = req.body.imageData;
-  if (imageDataString) {
-    const imageData = decodeBase64Image(imageDataString).data;
-
-    fs.writeFile(GENERATED_IMAGE_PATH, imageData, function() {
-      console.log("sent map saved");
-    });
-
-    // Cache the data for future requests
-    mostRecentImageData = imageDataString;
-
-    // ACK for DM
-    res.json({
-      success: true,
-      responseText: "Image successfully uploaded"
-    });
-
-    // Send the map update to players
-    io.emit("map update", {
-      imageData: imageDataString
-    });
-  } else {
-    res.json({
-      success: false,
-      responseText: "Image not uploaded successfully"
-    });
+app.post("/map/:id/fog", authMiddleware, (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.send(404);
   }
+
+  const imageData = req.body.image.replace(/^data:image\/png;base64,/, "");
+  maps.updateFogProgressImage(req.params.id, imageData).then(map => {
+    res.json({ success: true, data: map });
+  });
+});
+
+app.post("/map/:id/send", authMiddleware, (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.send(404);
+  }
+  const imageData = req.body.image.replace(/^data:image\/png;base64,/, "");
+
+  maps.updateFogLiveImage(req.params.id, imageData).then(map => {
+    settings.set("currentMapId", map.id);
+    res.json({ success: true, data: map });
+
+    io.emit("map update", {
+      mapId: map.id,
+      image: req.body.image
+    });
+  });
 });
 
 app.get("/", function(req, res) {
   res.sendfile("/build/index.html", { root: __dirname });
 });
 
-app.get("/dm", function(req, res) {
+app.get("/dm", authMiddleware, function(req, res) {
   res.sendfile("/build/index.html", { root: __dirname });
 });
 
@@ -195,16 +233,17 @@ app.use(function(err, req, res) {
 });
 
 io.on("connection", function(socket) {
-  console.log("a user connected");
+  const currentMapId = settings.get("currentMapId");
 
-  if (mostRecentImageData) {
+  if (currentMapId) {
     console.log("sending current map to newly connected user");
+
     socket.emit("map update", {
-      imageData: mostRecentImageData
+      mapId: currentMapId
     });
   }
 
-  socket.on("disconnect", function() {
+  socket.once("disconnect", function() {
     console.log("a user disconnected");
   });
 });

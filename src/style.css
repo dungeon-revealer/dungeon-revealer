@@ -129,35 +129,9 @@ body {
   margin-left: auto;
   margin-right: auto;
   height: 100%;
-  opacity: 0;
   width: auto;
   left: 0;
   right: 0;
-  -webkit-transition: opacity 500ms ease-in;
-  -moz-transition: opacity 500ms ease-in;
-  -o-transition: opacity 500ms ease-in;
-  transition: opacity 500ms ease-in;
-}
-
-.map.enter-done {
-  opacity: 1;
-  z-index: 30;
-}
-
-.map.exit-done {
-  transition-delay: 500ms;
-  opacity: 0;
-  z-index: 20;
-}
-
-.map.exit {
-  opacity: 1;
-  z-index: 20;
-}
-
-.map.enter {
-  opacity: 1;
-  z-index: 30;
 }
 
 .scroll-button {

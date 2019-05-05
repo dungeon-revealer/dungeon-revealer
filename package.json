@@ -18,14 +18,15 @@
     "debug": "~4.1.1",
     "express": "~4.16.4",
     "express-basic-auth": "1.2.0",
+    "junk": "3.1.0",
     "morgan": "~1.9.1",
     "react": "16.8.6",
     "react-dom": "16.8.6",
     "react-easy-panzoom": "0.2.3",
-    "react-transition-group": "4.0.0",
     "serve-favicon": "~2.5.0",
     "socket.io": "^2.2.0",
-    "socket.io-client": "2.2.0"
+    "socket.io-client": "2.2.0",
+    "uuid": "3.3.2"
   },
   "description": "dungeon-revealer ================",
   "main": "app.js",

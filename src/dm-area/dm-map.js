@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import debounce from "lodash/debounce";
+import { loadImage } from "./../util";
 
 const getOptimalDimensions = (idealWidth, idealHeight, maxWidth, maxHeight) => {
   const ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
@@ -162,6 +164,9 @@ export const DmMap = () => {
   const mouseCanvasRef = useRef(null);
   const drawState = useRef({ isDrawing: false, lastCoords: null });
   const areaDrawState = useRef({ startCoords: null, currentCoords: null });
+  const [mapId, setMapId] = useState(null);
+
+  const updateMouseCanvaseRef = useRef(null);
 
   const [mode, setMode] = useState("clear");
   const [brushShape, setBrushShape] = useState("square");
@@ -497,9 +502,10 @@ export const DmMap = () => {
       resize(newDimensions.width, newDimensions.height);
     };
 
-    const map = new Image();
-    map.src = "/dm/map";
-    const listener = () => {
+    Promise.all([
+      loadImage("/map/1111-1111-1111/map"),
+      loadImage("/map/1111-1111-1111/fog").catch(() => null)
+    ]).then(([map, fog]) => {
       const dimensions = getOptimalDimensions(
         map.width,
         map.height,
@@ -517,15 +523,36 @@ export const DmMap = () => {
       mapCanvasRef.current
         .getContext("2d")
         .drawImage(map, 0, 0, dimensions.width, dimensions.height);
-      fitMapToWindow();
-      fillFog();
-    };
 
-    map.addEventListener("load", listener);
+      fitMapToWindow();
+
+      if (!fog) {
+        fillFog();
+        return;
+      }
+      fogCanvasRef.current
+        .getContext("2d")
+        .drawImage(fog, 0, 0, dimensions.width, dimensions.height);
+    });
+
     window.addEventListener("resize", fitMapToWindow);
 
+    updateMouseCanvaseRef.current = debounce(() => {
+      if (!fogCanvasRef.current) {
+        return;
+      }
+      fetch("/map/1111-1111-1111/fog", {
+        method: "POST",
+        body: JSON.stringify({
+          image: fogCanvasRef.current.toDataURL("image/png")
+        }),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+    }, 500);
+
     return () => {
-      map.removeEventListener("load", listener);
       window.removeEventListener("resize", fitMapToWindow);
     };
   }, []);
@@ -569,6 +596,14 @@ export const DmMap = () => {
               mouseCanvasRef.current.width,
               mouseCanvasRef.current.height
             );
+
+            if (
+              (drawState.current.isDrawing || drawState.current.lastCoords) &&
+              updateMouseCanvaseRef.current
+            ) {
+              updateMouseCanvaseRef.current();
+            }
+
             drawState.current.isDrawing = false;
             drawState.current.lastCoords = null;
             areaDrawState.current.currentCoords = null;
@@ -595,6 +630,10 @@ export const DmMap = () => {
             }
             areaDrawState.current.currentCoords = null;
             areaDrawState.current.startCoords = null;
+
+            if (updateMouseCanvaseRef.current) {
+              updateMouseCanvaseRef.current();
+            }
           }}
           onTouchStart={ev => {
             const coords = getTouchCoordinates(ev);
@@ -633,6 +672,10 @@ export const DmMap = () => {
             }
             areaDrawState.current.currentCoords = null;
             areaDrawState.current.startCoords = null;
+
+            if (updateMouseCanvaseRef.current) {
+              updateMouseCanvaseRef.current();
+            }
           }}
         />
       </div>
@@ -721,30 +764,14 @@ export const DmMap = () => {
             <button
               className="btn btn-default"
               onClick={async () => {
-                const canvas = document.createElement("canvas");
-                const context = canvas.getContext("2d");
-                canvas.width = mapCanvasRef.current.width;
-                canvas.height = mapCanvasRef.current.height;
+                if (!fogCanvasRef) {
+                  return;
+                }
 
-                context.drawImage(
-                  mapCanvasRef.current,
-                  0,
-                  0,
-                  mapCanvasRef.current.width,
-                  mapCanvasRef.current.height
-                );
-                context.drawImage(
-                  fogCanvasRef.current,
-                  0,
-                  0,
-                  mapCanvasRef.current.width,
-                  mapCanvasRef.current.height
-                );
-
-                await fetch("/send", {
+                await fetch("/map/1111-1111-1111/send", {
                   method: "POST",
                   body: JSON.stringify({
-                    imageData: canvas.toDataURL("image/png")
+                    image: fogCanvasRef.current.toDataURL("image/png")
                   }),
                   headers: {
                     "Content-Type": "application/json"

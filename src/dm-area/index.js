@@ -5,14 +5,15 @@ const uploadFile = async file => {
   const formData = new FormData();
 
   formData.append("file", file);
-  const res = await fetch("/upload", {
+  const res = await fetch("/map/1111-1111-1111/map", {
     method: "POST",
     body: formData
   });
   return res.ok;
 };
+
 const checkMapExistence = async () => {
-  const res = await fetch("/dm/map");
+  const res = await fetch("/map/1111-1111-1111/map");
   return res.ok;
 };
 

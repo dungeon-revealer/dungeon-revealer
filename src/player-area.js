@@ -1,19 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
-import { CSSTransition } from "react-transition-group";
 import { PanZoom } from "react-easy-panzoom";
+import { loadImage } from "./util";
 
 export const PlayerArea = () => {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
 
-  const didCenterMapInitially = useRef(false);
   const panZoomRef = useRef(null);
+  const currentMapId = useRef(null);
 
   const activeMapIndex = useRef(0);
 
   const [firstMap, setFirstMap] = useState(null);
-  const [secondMap, setSecondMap] = useState(null);
   const [activeMap, setActiveMap] = useState(0);
+  const [mapOpacity, setMapOpacity] = useState(0);
+  const fogCanvasRef = useRef();
 
   useEffect(() => {
     activeMapIndex.current = activeMap;
@@ -42,37 +43,67 @@ export const PlayerArea = () => {
       console.log("disconnected from server");
     });
 
-    socket.on("map update", msg => {
-      setShowSplashScreen(false);
-      console.log("got a map update");
-      if (!msg || !msg.imageData) {
+    socket.on("map update", async data => {
+      if (!data || !data.mapId) {
         return;
       }
-      if (activeMapIndex.current === 1) {
-        setSecondMap(msg.imageData);
-        setActiveMap(2);
-      } else {
-        setFirstMap(msg.imageData);
-        setActiveMap(1);
+      if (currentMapId.current === data.mapId) {
+        const context = fogCanvasRef.current.getContext("2d");
+
+        loadImage(data.image).then(image => {
+          context.clearRect(
+            0,
+            0,
+            fogCanvasRef.current.width,
+            fogCanvasRef.current.height
+          );
+          context.drawImage(
+            image,
+            0,
+            0,
+            fogCanvasRef.current.width,
+            fogCanvasRef.current.height
+          );
+          setMapOpacity(1);
+        });
       }
+
+      setMapOpacity(0);
+
+      currentMapId.current = data.mapId;
+
+      setShowSplashScreen(false);
+      setFirstMap(`/map/${data.mapId}/map`);
+      setActiveMap(1);
     });
   }, []);
 
-  /**
-   *
-   */
   const centerMap = () => {
     if (panZoomRef.current) {
       panZoomRef.current.autoCenter();
     }
   };
 
-  const centerMapInitially = () => {
-    if (didCenterMapInitially.current) {
+  const onLoadMap = ev => {
+    centerMap();
+    if (!fogCanvasRef.current) {
       return;
     }
-    didCenterMapInitially.current = true;
-    centerMap();
+    fogCanvasRef.current.style.width = ev.target.clientWidth + "px";
+    fogCanvasRef.current.style.height = ev.target.clientHeight + "px";
+    fogCanvasRef.current.width = ev.target.width;
+    fogCanvasRef.current.height = ev.target.height;
+    const context = fogCanvasRef.current.getContext("2d");
+    loadImage(`/map/${currentMapId.current}/fog-live`).then(image => {
+      context.drawImage(
+        image,
+        0,
+        0,
+        fogCanvasRef.current.width,
+        fogCanvasRef.current.height
+      );
+      setMapOpacity(1);
+    });
   };
 
   return (
@@ -87,7 +118,8 @@ export const PlayerArea = () => {
       ) : null}
       <PanZoom
         style={{
-          cursor: "grab"
+          cursor: "grab",
+          background: "black"
         }}
         ref={panZoomRef}
       >
@@ -99,14 +131,14 @@ export const PlayerArea = () => {
             pointerEvents: "none"
           }}
         >
-          <CSSTransition in={activeMap === 1} timeout={500}>
-            {/* eslint-disable-next-line jsx-a11y/alt-text */}
-            <img src={firstMap} className="map" onLoad={centerMapInitially} />
-          </CSSTransition>
-          <CSSTransition in={activeMap === 2} timeout={500}>
-            {/* eslint-disable-next-line jsx-a11y/alt-text */}
-            <img src={secondMap} className="map" onLoad={centerMapInitially} />
-          </CSSTransition>
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+          <img
+            src={firstMap}
+            className="map"
+            onLoad={onLoadMap}
+            style={{ opacity: mapOpacity }}
+          />
+          <canvas className="map" ref={fogCanvasRef} />
         </div>
       </PanZoom>
       {activeMap !== 0 ? (
