@@ -9,25 +9,42 @@ const isDirectory = source => fs.lstatSync(source).isDirectory();
 const dataDirectory = path.join(__dirname, "data");
 const mapDirectory = path.join(__dirname, "data", "maps");
 
+const tryUnlinkSync = path => {
+  try {
+    fs.unlinkSync(path);
+    // eslint-disable-next-line no-empty
+  } catch (err) {}
+};
+
+const tryMkdirSync = path => {
+  try {
+    fs.mkdirSync(path);
+    // eslint-disable-next-line no-empty
+  } catch (err) {}
+};
+
 class Maps {
   constructor() {
+    this._shimInitialMap();
     this.maps = this._loadMaps();
   }
 
+  /**
+   * Create Initial Map (Temporary solution while there is no UI for creating multiple maps yet)
+   * The frontend currently uses the id 1111-1111-1111 for all map interactions
+   */
   _shimInitialMap() {
+    tryMkdirSync(dataDirectory);
+    tryMkdirSync(mapDirectory);
+    tryMkdirSync(path.join(mapDirectory, "1111-1111-1111"));
     try {
-      fs.mkdirSync(dataDirectory);
-    } catch (err) {}
-    try {
-      fs.mkdirSync(mapDirectory);
-    } catch (err) {}
-    try {
-      fs.mkdirSync(path.join(mapDirectory, "1111-1111-1111"));
-    } catch (err) {}
-    fs.writeFileSync(
-      path.join(mapDirectory, "1111-1111-1111"),
-      JSON.stringify({ id: "1111-1111-1111" }, undefined, 2)
-    );
+      fs.statSync(path.join(mapDirectory, "1111-1111-1111"));
+    } catch (err) {
+      fs.writeFileSync(
+        path.join(mapDirectory, "1111-1111-1111"),
+        JSON.stringify({ id: "1111-1111-1111" }, undefined, 2)
+      );
+    }
   }
 
   _loadMaps() {
@@ -95,9 +112,7 @@ class Maps {
       throw new Error(`Map with id "${id}" not found.`);
     }
     if (map.fogProgressPath) {
-      try {
-        fs.unlinkSync(path.join(mapDirectory, id, map.fogProgressPath));
-      } catch (err) {}
+      tryUnlinkSync(path.join(mapDirectory, id, map.fogProgressPath));
     }
 
     const newMapData = {
@@ -127,14 +142,10 @@ class Maps {
     };
 
     if (map.fogProgressPath) {
-      try {
-        fs.unlinkSync(path.join(mapDirectory, id, map.fogProgressPath));
-      } catch (err) {}
+      tryUnlinkSync(path.join(mapDirectory, id, map.fogProgressPath));
     }
     if (map.fogLivePath) {
-      try {
-        fs.unlinkSync(path.join(mapDirectory, id, map.fogLivePath));
-      } catch (err) {}
+      tryUnlinkSync(path.join(mapDirectory, id, map.fogLivePath));
     }
 
     fs.writeFileSync(
@@ -159,7 +170,7 @@ class Maps {
       throw new Error(`Map with id "${id}" not found.`);
     }
     if (map.mapPath) {
-      fs.unlinkSync(map.mapPath);
+      tryUnlinkSync(map.mapPath);
     }
 
     const fileName = "map." + extension;
@@ -167,7 +178,6 @@ class Maps {
       path.join(mapDirectory, id, fileName)
     );
     fileStream.pipe(writeStream);
-    console.log("LELELE");
     return new Promise((res, rej) => {
       writeStream.on("close", err => {
         if (err) {
