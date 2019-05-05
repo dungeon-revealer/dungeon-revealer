@@ -248,30 +248,4 @@ io.on("connection", function(socket) {
   });
 });
 
-function decodeBase64Image(dataString) {
-  const matches = dataString.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
-  const response = {};
-
-  if (matches.length !== 3) {
-    return new Error("Invalid input string");
-  }
-
-  response.type = matches[1];
-  response.data = new Buffer(matches[2], "base64");
-
-  return response;
-}
-
-function deleteExistingMapFilesSync() {
-  fs.readdirSync(UPLOADS_DIR)
-    .filter(function(file) {
-      return file.indexOf("map.") > -1;
-    })
-    .forEach(function(file) {
-      const filePath = path.join(UPLOADS_DIR + file);
-      console.log("Deleting old map " + filePath);
-      fs.unlinkSync(filePath);
-    });
-}
-
 module.exports = app;
