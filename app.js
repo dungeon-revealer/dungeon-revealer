@@ -189,6 +189,26 @@ app.post("/map/:id/send", authMiddleware, (req, res) => {
   });
 });
 
+app.post("/map/set-active-map", authMiddleware, (req, res) => {
+  const mapId = req.body.mapId;
+  if (mapId === undefined) {
+    res.status(404).json({
+      error: {
+        message: "Missing param 'mapId' in body.",
+        code: "ERR_MISSING_MAP_ID"
+      }
+    });
+  }
+  settings.set("currentMapId", mapId);
+  io.emit("map update", {
+    mapId: null,
+    image: null
+  });
+  res.json({
+    success: true
+  });
+});
+
 app.get("/", function(req, res) {
   res.sendfile("/build/index.html", { root: __dirname });
 });

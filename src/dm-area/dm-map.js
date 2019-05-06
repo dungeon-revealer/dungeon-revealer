@@ -781,6 +781,22 @@ export const DmMap = () => {
             >
               Send
             </button>
+            <button
+              className="btn btn-default"
+              onClick={async () => {
+                await fetch("/map/set-active-map", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    mapId: null
+                  }),
+                  headers: {
+                    "Content-Type": "application/json"
+                  }
+                });
+              }}
+            >
+              Hide
+            </button>
           </div>
         </div>
       </div>

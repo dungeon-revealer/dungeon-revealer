@@ -4,21 +4,12 @@ import { PanZoom } from "react-easy-panzoom";
 import { loadImage } from "./util";
 
 export const PlayerArea = () => {
-  const [showSplashScreen, setShowSplashScreen] = useState(true);
-
   const panZoomRef = useRef(null);
   const currentMapId = useRef(null);
 
-  const activeMapIndex = useRef(0);
-
   const [firstMap, setFirstMap] = useState(null);
-  const [activeMap, setActiveMap] = useState(0);
   const [mapOpacity, setMapOpacity] = useState(0);
   const fogCanvasRef = useRef();
-
-  useEffect(() => {
-    activeMapIndex.current = activeMap;
-  }, [activeMap]);
 
   useEffect(() => {
     const socket = io();
@@ -44,7 +35,11 @@ export const PlayerArea = () => {
     });
 
     socket.on("map update", async data => {
-      if (!data || !data.mapId) {
+      if (!data) {
+        return;
+      }
+      if (data.mapId === null) {
+        setFirstMap(null);
         return;
       }
       if (currentMapId.current === data.mapId) {
@@ -71,10 +66,7 @@ export const PlayerArea = () => {
       setMapOpacity(0);
 
       currentMapId.current = data.mapId;
-
-      setShowSplashScreen(false);
       setFirstMap(`/map/${data.mapId}/map`);
-      setActiveMap(1);
     });
   }, []);
 
@@ -108,7 +100,7 @@ export const PlayerArea = () => {
 
   return (
     <>
-      {showSplashScreen ? (
+      {firstMap === null ? (
         <div id="splash" className="splash splash-js">
           <a id="dm-link" href="/dm">
             Dungeon Master ↝
@@ -141,7 +133,7 @@ export const PlayerArea = () => {
           <canvas className="map" ref={fogCanvasRef} />
         </div>
       </PanZoom>
-      {activeMap !== 0 ? (
+      {firstMap !== null ? (
         <div id="dm-toolbar" className="toolbar-wrapper">
           <div className="btn-toolbar">
             <div className="btn-group">
