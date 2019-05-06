@@ -5,13 +5,17 @@ export const loadImage = src => {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.src = src;
-    const loadListener = () => {
-      resolve(image);
+    const removeEventListeners = () => {
       image.removeEventListener("load", loadListener);
+      image.removeEventListener("error", errorListener);
+    };
+    const loadListener = () => {
+      removeEventListeners();
+      resolve(image);
     };
     const errorListener = err => {
+      removeEventListeners();
       reject(err);
-      image.removeEventListener("error", errorListener);
     };
     image.addEventListener("load", loadListener);
     image.addEventListener("error", errorListener);
