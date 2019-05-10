@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { Modal } from "./modal";
 
 const AddIcon = props => {
@@ -180,6 +180,7 @@ export const SelectMapModal = ({
                     overflowY: "scroll"
                   }}
                 >
+                  {/* eslint-disable-next-line jsx-a11y/alt-text */}
                   <img
                     src={`/map/${activeMap.id}/map`}
                     style={{ width: "100%" }}

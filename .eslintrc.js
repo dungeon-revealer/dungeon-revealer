@@ -18,14 +18,13 @@ module.exports = {
       env: {
         node: true
       },
-      files: ["app.js"]
-    },
-    {
-      env: {
-        browser: true,
-        amd: true
+      parserOptions: {
+        sourceType: "script"
       },
-      files: ["public/**/*.js"]
+      files: ["*/**.js", "!src/**/*.js"],
+      rules: {
+        strict: ["error", "global"]
+      }
     },
     {
       files: ["src/**/*.js"],
