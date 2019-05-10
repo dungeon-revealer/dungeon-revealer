@@ -5,17 +5,6 @@ import { SelectMapModal } from "./select-map-modal";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 
-const uploadFile = async file => {
-  const formData = new FormData();
-
-  formData.append("file", file);
-  const res = await fetch("/map/1111-1111-1111/map", {
-    method: "POST",
-    body: formData
-  });
-  return res.ok;
-};
-
 const Dropzone = ({ onSelectFile }) => {
   const [isFileDragInProcess, setIsFileDragInProcess] = useState(false);
 
@@ -102,7 +91,6 @@ export const DmArea = () => {
         return res.json();
       })
       .then(res => {
-        console.log(res);
         setData(res.data);
         if (
           !res.data.currentMapId &&
@@ -161,6 +149,21 @@ export const DmArea = () => {
             setData(data => ({
               ...data,
               maps: data.maps.filter(map => map.id !== mapId)
+            }));
+          }}
+          createMap={async ({ file, title }) => {
+            const formData = new FormData();
+
+            formData.append("file", file);
+            formData.append("title", title);
+
+            const res = await fetch(`/map`, {
+              method: "POST",
+              body: formData
+            }).then(res => res.json());
+            setData(data => ({
+              ...data,
+              maps: [...data.maps, res.data.map]
             }));
           }}
         />
@@ -227,15 +230,7 @@ export const DmArea = () => {
             setLiveMapId(null);
           }}
         />
-      ) : null
-      // ()
-      // <Dropzone
-      //   onSelectFile={async file => {
-      //     await uploadFile(file);
-      //     setHasMap(true);
-      //   }}
-      // />
-      }
+      ) : null}
     </>
   );
 };

@@ -167,6 +167,7 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
   const mouseCanvasRef = useRef(null);
   const drawState = useRef({ isDrawing: false, lastCoords: null });
   const areaDrawState = useRef({ startCoords: null, currentCoords: null });
+  const hasPreviousMap = useRef(false);
 
   const updateMouseCanvaseRef = useRef(null);
 
@@ -482,8 +483,11 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
 
   useEffect(() => {
     if (!loadedMapId) {
-      return;
+      return () => {
+        hasPreviousMap.current = false;
+      };
     }
+
     const resize = (displayWidth, displayHeight) => {
       fogCanvasRef.current.style.width = displayWidth + "px";
       fogCanvasRef.current.style.height = displayHeight + "px";
@@ -493,31 +497,26 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
       mouseCanvasRef.current.style.height = displayHeight + "px";
     };
 
-    const fitMapToWindow = () => {
-      const oldWidth = parseInt(
-        mapCanvasRef.current.style.width || mapCanvasRef.current.width,
-        10
-      );
-      const oldHeight = parseInt(
-        mapCanvasRef.current.style.height || mapCanvasRef.current.height,
-        10
-      );
-
+    const fitMapToWindow = (
+      width = parseInt(mapCanvasRef.current.getBoundingClientRect().width, 10),
+      height = parseInt(mapCanvasRef.current.getBoundingClientRect().height, 10)
+    ) => {
       const newDimensions = getOptimalDimensions(
-        oldWidth,
-        oldHeight,
+        width,
+        height,
         window.innerWidth ||
           document.documentElement.clientWidth ||
           document.body.clientWidth,
         Infinity
       );
-
       resize(newDimensions.width, newDimensions.height);
     };
 
     Promise.all([
       loadImage(`/map/${loadedMapId}/map`),
-      loadImage(`/map/${loadedMapId}/fog`).catch(() => null)
+      loadImage(`/map/${loadedMapId}/fog`).catch(() => {
+        return null;
+      })
     ]).then(([map, fog]) => {
       const dimensions = getOptimalDimensions(
         map.width,
@@ -525,7 +524,6 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
         3000,
         8000
       );
-
       mapCanvasRef.current.width = dimensions.width;
       mapCanvasRef.current.height = dimensions.height;
       fogCanvasRef.current.width = dimensions.width;
@@ -537,18 +535,24 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
         .getContext("2d")
         .drawImage(map, 0, 0, dimensions.width, dimensions.height);
 
-      fitMapToWindow();
+      if (hasPreviousMap.current) {
+        fitMapToWindow(dimensions.width, dimensions.height);
+      } else {
+        fitMapToWindow();
+      }
 
       if (!fog) {
         fillFog();
         return;
       }
+
       fogCanvasRef.current
         .getContext("2d")
         .drawImage(fog, 0, 0, dimensions.width, dimensions.height);
     });
 
-    window.addEventListener("resize", fitMapToWindow);
+    const resizeEventHandler = () => fitMapToWindow();
+    window.addEventListener("resize", resizeEventHandler);
 
     updateMouseCanvaseRef.current = debounce(() => {
       if (!fogCanvasRef.current) {
@@ -566,7 +570,8 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
     }, 500);
 
     return () => {
-      window.removeEventListener("resize", fitMapToWindow);
+      hasPreviousMap.current = true;
+      window.removeEventListener("resize", resizeEventHandler);
       updateMouseCanvaseRef.current.cancel();
     };
   }, [loadedMapId]);

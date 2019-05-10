@@ -6,49 +6,11 @@ const junk = require("junk");
 const uuid = require("uuid/v4");
 
 const isDirectory = source => fs.lstatSync(source).isDirectory();
-const dataDirectory = path.join(__dirname, "data");
 const mapDirectory = path.join(__dirname, "data", "maps");
-
-const tryUnlinkSync = path => {
-  try {
-    fs.unlinkSync(path);
-    // eslint-disable-next-line no-empty
-  } catch (err) {}
-};
-
-const tryMkdirSync = path => {
-  try {
-    fs.mkdirSync(path);
-    // eslint-disable-next-line no-empty
-  } catch (err) {}
-};
-
 class Maps {
   constructor() {
-    this._shimInitialMap();
+    fs.mkdirpSync(mapDirectory);
     this.maps = this._loadMaps();
-  }
-
-  /**
-   * Create Initial Map (Temporary solution while there is no UI for creating multiple maps yet)
-   * The frontend currently uses the id 1111-1111-1111 for all map interactions
-   */
-  _shimInitialMap() {
-    tryMkdirSync(dataDirectory);
-    tryMkdirSync(mapDirectory);
-    tryMkdirSync(path.join(mapDirectory, "1111-1111-1111"));
-    try {
-      fs.statSync(path.join(mapDirectory, "1111-1111-1111"));
-    } catch (err) {
-      fs.writeFileSync(
-        path.join(mapDirectory, "1111-1111-1111"),
-        JSON.stringify(
-          { id: "1111-1111-1111", title: "My first map" },
-          undefined,
-          2
-        )
-      );
-    }
   }
 
   _loadMaps() {
@@ -75,17 +37,21 @@ class Maps {
     return this.maps.find(map => map.id === id) || null;
   }
 
-  createMap({ name }) {
+  createMap({ title, file }) {
     const id = uuid();
     fs.mkdirSync(path.join(mapDirectory, id));
+    const mapPath = `map.${file.extension}`;
     const map = {
-      name,
+      id,
+      title,
       // automatically saved after interaction
       fogProgressPath: null,
       // progress becomes live when DM publishes map
       fogLivePath: null,
-      mapPath: null
+      mapPath
     };
+
+    fs.moveSync(file.path, path.join(mapDirectory, id, mapPath));
 
     fs.writeFileSync(
       path.join(mapDirectory, id, "settings.json"),
@@ -119,7 +85,7 @@ class Maps {
       throw new Error(`Map with id "${id}" not found.`);
     }
     if (map.fogProgressPath) {
-      tryUnlinkSync(path.join(mapDirectory, id, map.fogProgressPath));
+      fs.removeSync(path.join(mapDirectory, id, map.fogProgressPath));
     }
 
     const newMapData = {
@@ -149,10 +115,10 @@ class Maps {
     };
 
     if (map.fogProgressPath) {
-      tryUnlinkSync(path.join(mapDirectory, id, map.fogProgressPath));
+      fs.removeSync(path.join(mapDirectory, id, map.fogProgressPath));
     }
     if (map.fogLivePath) {
-      tryUnlinkSync(path.join(mapDirectory, id, map.fogLivePath));
+      fs.removeSync(path.join(mapDirectory, id, map.fogLivePath));
     }
 
     fs.writeFileSync(
@@ -177,7 +143,7 @@ class Maps {
       throw new Error(`Map with id "${id}" not found.`);
     }
     if (map.mapPath) {
-      tryUnlinkSync(map.mapPath);
+      fs.removeSync(map.mapPath);
     }
 
     const fileName = "map." + extension;

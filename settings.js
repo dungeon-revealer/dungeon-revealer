@@ -1,12 +1,10 @@
-"use strict";
-
 const path = require("path");
 const fs = require("fs");
 
 const settingsPath = path.join(__dirname, "data", "settings.json");
 
 const defaultSettings = {
-  currentMapId: "1111-1111-1111"
+  currentMapId: null
 };
 
 class Settings {
@@ -16,7 +14,12 @@ class Settings {
       const settingsRaw = fs.readFileSync(settingsPath);
       settings = JSON.parse(settingsRaw);
       // eslint-disable-next-line no-empty
-    } catch (err) {}
+    } catch (err) {
+      fs.writeFileSync(
+        settingsPath,
+        JSON.stringify(defaultSettings, undefined, 2)
+      );
+    }
 
     this.settings = Object.assign({}, defaultSettings, settings);
   }

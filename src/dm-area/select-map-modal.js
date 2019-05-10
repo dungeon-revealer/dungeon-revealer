@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Modal } from "./modal";
 
 const AddIcon = props => {
@@ -15,6 +15,40 @@ const EditIcon = props => (
   </svg>
 );
 
+const CreateNewMapButton = ({ onSelectFile }) => {
+  const fileInputRef = useRef();
+  return (
+    <>
+      <button
+        className="btn btn-default"
+        onClick={() => {
+          if (fileInputRef.current) {
+            fileInputRef.current.click();
+          }
+        }}
+      >
+        <AddIcon height={15} width={15} /> Create new map
+      </button>
+      <input
+        type="file"
+        style={{ display: "none" }}
+        ref={fileInputRef}
+        accept=".jpeg,.jpg,.svg,.png"
+        onChange={ev => {
+          if (!ev.target.files) {
+            return;
+          }
+          const [file] = ev.target.files;
+          if (!file) {
+            return;
+          }
+          onSelectFile(file);
+        }}
+      />
+    </>
+  );
+};
+
 export const SelectMapModal = ({
   onClickOutside,
   setLoadedMapId,
@@ -22,7 +56,8 @@ export const SelectMapModal = ({
   liveMapId,
   loadedMapId,
   deleteMap,
-  updateMap
+  updateMap,
+  createMap
 }) => {
   const [activeMapId, setActiveMapId] = useState(loadedMapId);
   let activeMap = null;
@@ -30,21 +65,30 @@ export const SelectMapModal = ({
     activeMap = maps.find(map => map.id === activeMapId) || null;
   }
 
+  const beforeCreateMap = file => {
+    const title = (window.prompt("Please choose a map name") || "").trim();
+    if (title) {
+      createMap({ file, title });
+    } else {
+      alert("Please enter a valid title");
+    }
+  };
+
   return (
     <Modal onClickOutside={onClickOutside}>
       <Modal.Dialog>
         <Modal.Header style={{ display: "flex", alignItems: "center" }}>
           <h2 style={{ margin: 0 }}>Maps</h2>
           <div style={{ flex: 1, textAlign: "right" }}>
-            <button className="btn btn-default">
-              <AddIcon height={15} width={15} /> Create new map
-            </button>
+            <CreateNewMapButton
+              onSelectFile={file => {
+                beforeCreateMap(file);
+              }}
+            />
             <button
               className="btn btn-default"
               style={{ marginLeft: 8 }}
-              onClick={() => {
-                onClickOutside();
-              }}
+              onClick={onClickOutside}
             >
               Close
             </button>
@@ -167,12 +211,6 @@ export const SelectMapModal = ({
                       }}
                     >
                       Delete
-                    </button>
-                    <button
-                      className="btn btn-default"
-                      style={{ marginLeft: 8 }}
-                    >
-                      Change Map Image
                     </button>
                   </div>
 

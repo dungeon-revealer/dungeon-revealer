@@ -1,5 +1,3 @@
-"use strict";
-
 const express = require("express");
 const app = express();
 const path = require("path");
@@ -9,13 +7,16 @@ const cookieParser = require("cookie-parser");
 const session = require("cookie-session");
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
-const fs = require("fs");
+const fs = require("fs-extra");
+const os = require("os");
 const server = (app.http = require("http").createServer(app));
 const io = require("socket.io")(server);
 const busboy = require("connect-busboy");
 const basicAuth = require("express-basic-auth");
 const { Maps } = require("./maps");
 const { Settings } = require("./settings");
+
+fs.mkdirpSync(path.join(__dirname, "data"));
 
 const maps = new Maps();
 const settings = new Settings();
@@ -243,6 +244,32 @@ app.get("/map", authMiddleware, (req, res) => {
       currentMapId: settings.get("currentMapId"),
       maps: maps.getAll()
     }
+  });
+});
+
+app.post("/map", (req, res) => {
+  req.pipe(req.busboy);
+
+  const data = {};
+
+  req.busboy.on("file", (fieldname, stream, filename) => {
+    const extension = filename.split(".").pop();
+    const saveTo = path.join(os.tmpDir(), path.basename(fieldname));
+    data.file = {
+      path: saveTo,
+      extension
+    };
+    stream.pipe(fs.createWriteStream(saveTo));
+  });
+  req.busboy.on("field", (fieldname, value) => {
+    if (fieldname === "title") {
+      data[fieldname] = value;
+    }
+  });
+
+  req.busboy.on("finish", () => {
+    const map = maps.createMap(data);
+    res.status(200).json({ success: true, data: { map } });
   });
 });
 
