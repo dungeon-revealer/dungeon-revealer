@@ -38,7 +38,7 @@
     "eslint": "5.16.0",
     "eslint-config-prettier": "4.2.0",
     "husky": "2.1.0",
-    "lint-staged": "8.1.5",
+    "lint-staged": "8.1.6",
     "pkg": "^4.3.7",
     "prettier": "1.17.0",
     "react-scripts": "3.0.0"
