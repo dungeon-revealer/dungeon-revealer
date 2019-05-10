@@ -8,7 +8,8 @@ module.exports = {
     "no-var": ["error"],
     eqeqeq: ["error"],
     camelcase: ["error"],
-    "no-console": ["off"]
+    "no-console": ["off"],
+    "no-unused-vars": ["error"]
   },
   parserOptions: {
     ecmaVersion: 2017

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
 import { loadImage } from "./../util";
