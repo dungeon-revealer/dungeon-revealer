@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import debounce from "lodash/debounce";
+import createPersistedState from "use-persisted-state";
 import { loadImage } from "./../util";
 
 const getOptimalDimensions = (idealWidth, idealHeight, maxWidth, maxHeight) => {
@@ -157,6 +158,12 @@ const findOptimalRhombus = (pointCurrent, pointPrevious, lineWidth) => {
   }
   return limitedPointsSorted;
 };
+
+const useModeState = createPersistedState("dm.settings.mode");
+const useBrushShapeState = createPersistedState("dm.settings.brushShape");
+const useToolState = createPersistedState("dm.settings.tool");
+const useLineWidthState = createPersistedState("dm.settings.lineWidth");
+
 /**
  * loadedMapId = id of the map that is currently visible in the editor
  * liveMapId = id of the map that is currently visible to the players
@@ -169,12 +176,15 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
   const areaDrawState = useRef({ startCoords: null, currentCoords: null });
   const hasPreviousMap = useRef(false);
 
-  const updateMouseCanvaseRef = useRef(null);
+  /**
+   * function for saving the fog to the server.
+   */
+  const saveFogCanvasRef = useRef(null);
 
-  const [mode, setMode] = useState("clear");
-  const [brushShape, setBrushShape] = useState("square");
-  const [tool, setTool] = useState("brush"); // "brush" or "area"
-  const [lineWidth, setLineWidth] = useState(15);
+  const [mode, setMode] = useModeState("clear");
+  const [brushShape, setBrushShape] = useBrushShapeState("square");
+  const [tool, setTool] = useToolState("brush"); // "brush" or "area"
+  const [lineWidth, setLineWidth] = useLineWidthState(15);
 
   const fillFog = () => {
     if (!fogCanvasRef.current) {
@@ -191,8 +201,8 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
       fogCanvasRef.current.height
     );
 
-    if (updateMouseCanvaseRef.current) {
-      updateMouseCanvaseRef.current();
+    if (saveFogCanvasRef.current) {
+      saveFogCanvasRef.current();
     }
   };
 
@@ -233,8 +243,8 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
       fogCanvasRef.current.height
     );
 
-    if (updateMouseCanvaseRef.current) {
-      updateMouseCanvaseRef.current();
+    if (saveFogCanvasRef.current) {
+      saveFogCanvasRef.current();
     }
   };
 
@@ -554,7 +564,7 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
     const resizeEventHandler = () => fitMapToWindow();
     window.addEventListener("resize", resizeEventHandler);
 
-    updateMouseCanvaseRef.current = debounce(() => {
+    saveFogCanvasRef.current = debounce(() => {
       if (!fogCanvasRef.current) {
         return;
       }
@@ -572,7 +582,7 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
     return () => {
       hasPreviousMap.current = true;
       window.removeEventListener("resize", resizeEventHandler);
-      updateMouseCanvaseRef.current.cancel();
+      saveFogCanvasRef.current.cancel();
     };
   }, [loadedMapId]);
 
@@ -618,9 +628,9 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
 
             if (
               (drawState.current.isDrawing || drawState.current.lastCoords) &&
-              updateMouseCanvaseRef.current
+              saveFogCanvasRef.current
             ) {
-              updateMouseCanvaseRef.current();
+              saveFogCanvasRef.current();
             }
 
             drawState.current.isDrawing = false;
@@ -650,8 +660,8 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
             areaDrawState.current.currentCoords = null;
             areaDrawState.current.startCoords = null;
 
-            if (updateMouseCanvaseRef.current) {
-              updateMouseCanvaseRef.current();
+            if (saveFogCanvasRef.current) {
+              saveFogCanvasRef.current();
             }
           }}
           onTouchStart={ev => {
@@ -692,8 +702,8 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
             areaDrawState.current.currentCoords = null;
             areaDrawState.current.startCoords = null;
 
-            if (updateMouseCanvaseRef.current) {
-              updateMouseCanvaseRef.current();
+            if (saveFogCanvasRef.current) {
+              saveFogCanvasRef.current();
             }
           }}
         />
