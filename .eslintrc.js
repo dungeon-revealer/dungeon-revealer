@@ -8,7 +8,8 @@ module.exports = {
     "no-var": ["error"],
     eqeqeq: ["error"],
     camelcase: ["error"],
-    "no-console": ["off"]
+    "no-console": ["off"],
+    "no-unused-vars": ["error"]
   },
   parserOptions: {
     ecmaVersion: 2017
@@ -18,14 +19,14 @@ module.exports = {
       env: {
         node: true
       },
-      files: ["app.js"]
-    },
-    {
-      env: {
-        browser: true,
-        amd: true
+      parserOptions: {
+        sourceType: "script"
       },
-      files: ["public/**/*.js"]
+      files: ["*/**.js", "!src/**/*.js"],
+      rules: {
+        strict: ["error", "global"],
+        "no-path-concat": ["error"]
+      }
     },
     {
       files: ["src/**/*.js"],

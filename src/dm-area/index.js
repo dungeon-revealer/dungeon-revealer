@@ -1,103 +1,104 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import createPersistedState from "use-persisted-state";
 import { DmMap } from "./dm-map";
+import { SelectMapModal } from "./select-map-modal";
 
-const uploadFile = async file => {
-  const formData = new FormData();
-
-  formData.append("file", file);
-  const res = await fetch("/upload", {
-    method: "POST",
-    body: formData
-  });
-  return res.ok;
-};
-const checkMapExistence = async () => {
-  const res = await fetch("/dm/map");
-  return res.ok;
-};
-
-const Dropzone = ({ onSelectFile }) => {
-  const [isFileDragInProcess, setIsFileDragInProcess] = useState(false);
-
-  return (
-    <label
-      style={{
-        display: "block",
-        minHeight: 150,
-        border: "2px solid rgba(0,0,0,0.3)",
-        background: "white",
-        padding: "20px 20px",
-        cursor: "pointer"
-      }}
-      onDragOver={ev => {
-        setIsFileDragInProcess(true);
-        ev.stopPropagation();
-        ev.preventDefault();
-      }}
-      onDragEnd={() => {
-        setIsFileDragInProcess(false);
-      }}
-      onDragLeave={() => {
-        setIsFileDragInProcess(false);
-      }}
-      onDrop={ev => {
-        ev.preventDefault();
-        setIsFileDragInProcess(false);
-        if (ev.dataTransfer.items) {
-          const files = Array.from(ev.dataTransfer.items)
-            .filter(item => {
-              return item.kind === "file";
-            })
-            .map(item => item.getAsFile())
-            .filter(Boolean);
-
-          const [file] = files;
-          if (!file) {
-            return;
-          }
-          onSelectFile(file);
-        }
-      }}
-    >
-      <input
-        style={{ opacity: 0, width: 0, height: 0, overflow: "hidden" }}
-        accept=".jpeg,.jpg,.svg,.png"
-        type="file"
-        id="upload"
-        className="dropzone"
-        onChange={({ target }) => {
-          if (target.files) {
-            const files = Array.from(target.files);
-            const [file] = files;
-            if (!file) {
-              return;
-            }
-            onSelectFile(file);
-          }
-        }}
-      />
-      <div style={{ marginTop: "45px", textAlign: "center" }}>
-        {isFileDragInProcess
-          ? "Drop your file here"
-          : "Click here or drag and drop an image to upload"}
-      </div>
-    </label>
-  );
-};
+const useLoadedMapId = createPersistedState("loadedMapId");
 
 export const DmArea = () => {
-  const [hasMap, setHasMap] = useState(false);
+  const [data, setData] = useState(null);
+  const [loadedMapId, setLoadedMapId] = useLoadedMapId(null);
+  const [liveMapId, setLiveMapId] = useState(null);
+  const [showMapModal, setShowMapModal] = useState(false);
+
+  const loadedMap = useMemo(
+    () => (data ? data.maps.find(map => map.id === loadedMapId) || null : null),
+    [data, loadedMapId]
+  );
 
   useEffect(() => {
-    checkMapExistence().then(hasMap => {
-      if (hasMap) {
-        setHasMap(true);
-      }
-    });
+    fetch("/map")
+      .then(res => {
+        return res.json();
+      })
+      .then(res => {
+        setData(res.data);
+        if (
+          !res.data.currentMapId &&
+          !res.data.maps.find(map => map.id === loadedMapId)
+        ) {
+          setShowMapModal(true);
+        } else {
+          setLiveMapId(res.data.currentMapId);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <>
+      {showMapModal ? (
+        <SelectMapModal
+          maps={data.maps}
+          loadedMapId={loadedMapId}
+          liveMapId={liveMapId}
+          onClickOutside={() => {
+            setShowMapModal(false);
+          }}
+          setLoadedMapId={loadedMapId => {
+            setShowMapModal(false);
+            setLoadedMapId(loadedMapId);
+          }}
+          updateMap={async (mapId, data) => {
+            const res = await fetch(`/map/${mapId}`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(data)
+            }).then(res => res.json());
+
+            if (!res.data.map) {
+              return;
+            }
+
+            setData(data => ({
+              ...data,
+              maps: data.maps.map(map => {
+                if (map.id !== res.data.map.id) {
+                  return map;
+                } else {
+                  return { ...map, ...res.data.map };
+                }
+              })
+            }));
+          }}
+          deleteMap={async mapId => {
+            await fetch(`/map/${mapId}`, {
+              method: "DELETE"
+            });
+            setData(data => ({
+              ...data,
+              maps: data.maps.filter(map => map.id !== mapId)
+            }));
+          }}
+          createMap={async ({ file, title }) => {
+            const formData = new FormData();
+
+            formData.append("file", file);
+            formData.append("title", title);
+
+            const res = await fetch(`/map`, {
+              method: "POST",
+              body: formData
+            }).then(res => res.json());
+            setData(data => ({
+              ...data,
+              maps: [...data.maps, res.data.map]
+            }));
+          }}
+        />
+      ) : null}
       <div className="navbar navbar-inverse">
         <div className="navbar-header">
           <button
@@ -120,28 +121,47 @@ export const DmArea = () => {
         >
           <form className="navbar-form navbar-left" role="search">
             <button
-              id="btn-new-map"
               className="btn btn-default"
               type="button"
               onClick={() => {
-                setHasMap(false);
+                setShowMapModal(true);
               }}
             >
-              New Map
+              Load map
             </button>
           </form>
         </div>
       </div>
-      {hasMap ? (
-        <DmMap />
-      ) : (
-        <Dropzone
-          onSelectFile={async file => {
-            await uploadFile(file);
-            setHasMap(true);
+      {loadedMap ? (
+        <DmMap
+          loadedMapId={loadedMap.id}
+          liveMapId={liveMapId}
+          sendLiveMap={async ({ image }) => {
+            await fetch(`/map/${loadedMap.id}/send`, {
+              method: "POST",
+              body: JSON.stringify({
+                image
+              }),
+              headers: {
+                "Content-Type": "application/json"
+              }
+            });
+            setLiveMapId(loadedMap.id);
+          }}
+          hideMap={async () => {
+            await fetch("/active-map", {
+              method: "POST",
+              body: JSON.stringify({
+                mapId: null
+              }),
+              headers: {
+                "Content-Type": "application/json"
+              }
+            });
+            setLiveMapId(null);
           }}
         />
-      )}
+      ) : null}
     </>
   );
 };

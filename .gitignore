@@ -1,5 +1,4 @@
 .idea
-uploads
 
 # Compiled source #
 ###################
@@ -12,6 +11,10 @@ uploads
 dungeon-revealer-linux
 dungeon-revealer-macos
 build
+
+# Runtime Data/ Persisted Data #
+################################
+data
 
 # Packages #
 ############

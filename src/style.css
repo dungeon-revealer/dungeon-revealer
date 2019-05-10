@@ -91,6 +91,7 @@ body {
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-position: center;
+  background-size: cover;
 }
 
 .title-text {
@@ -105,11 +106,6 @@ body {
   font-family: folkard, palitino, serif;
   font-size: 25px;
   line-height: 40px;
-}
-
-.btn {
-  /*font-family: KnightsTemplar, palitino, serif;*/
-  /*font-size: 20px;*/
 }
 
 .auth-container {
@@ -129,35 +125,9 @@ body {
   margin-left: auto;
   margin-right: auto;
   height: 100%;
-  opacity: 0;
   width: auto;
   left: 0;
   right: 0;
-  -webkit-transition: opacity 500ms ease-in;
-  -moz-transition: opacity 500ms ease-in;
-  -o-transition: opacity 500ms ease-in;
-  transition: opacity 500ms ease-in;
-}
-
-.map.enter-done {
-  opacity: 1;
-  z-index: 30;
-}
-
-.map.exit-done {
-  transition-delay: 500ms;
-  opacity: 0;
-  z-index: 20;
-}
-
-.map.exit {
-  opacity: 1;
-  z-index: 20;
-}
-
-.map.enter {
-  opacity: 1;
-  z-index: 30;
 }
 
 .scroll-button {
@@ -177,6 +147,10 @@ body {
 @media only screen and (min-width: 321px) and (max-width: 768px) {
   .scroll-button {
     display: block;
+  }
+
+  .btn {
+    font-size: 20px;
   }
 }
 
