@@ -2,8 +2,9 @@
 
 const path = require("path");
 const fs = require("fs");
+const { getDataDirectory } = require("./util");
 
-const settingsPath = path.join(__dirname, "data", "settings.json");
+const settingsPath = path.join(getDataDirectory(), "settings.json");
 
 const defaultSettings = {
   currentMapId: null

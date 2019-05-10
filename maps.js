@@ -4,9 +4,11 @@ const path = require("path");
 const fs = require("fs-extra");
 const junk = require("junk");
 const uuid = require("uuid/v4");
+const { getDataDirectory } = require("./util");
 
+const mapDirectory = path.join(getDataDirectory(), "maps");
 const isDirectory = source => fs.lstatSync(source).isDirectory();
-const mapDirectory = path.join(__dirname, "data", "maps");
+
 class Maps {
   constructor() {
     fs.mkdirpSync(mapDirectory);

@@ -23,7 +23,8 @@ module.exports = {
       },
       files: ["*/**.js", "!src/**/*.js"],
       rules: {
-        strict: ["error", "global"]
+        strict: ["error", "global"],
+        "no-path-concat": ["error"]
       }
     },
     {

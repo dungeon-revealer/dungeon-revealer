@@ -17,8 +17,9 @@ const busboy = require("connect-busboy");
 const basicAuth = require("express-basic-auth");
 const { Maps } = require("./maps");
 const { Settings } = require("./settings");
+const { getDataDirectory } = require("./util");
 
-fs.mkdirpSync(path.join(__dirname, "data"));
+fs.mkdirpSync(getDataDirectory());
 
 const maps = new Maps();
 const settings = new Settings();
@@ -55,7 +56,7 @@ app.use(busboy());
 // Not sure if this is needed, Chrome seems to grab the favicon just fine anyway
 // Maybe for cross-browser support
 app.use(logger("dev"));
-app.use(favicon(__dirname + "/build/favicon.ico"));
+app.use(favicon(path.resolve(__dirname, "build", "favicon.ico")));
 
 // Needed to handle JSON posts, size limit of 50mb
 app.use(bodyParser.json({ limit: "50mb" }));
