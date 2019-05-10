@@ -6,11 +6,10 @@ WORKDIR /usr/src/app
 # Copy app source
 COPY . .
 
-
-RUN npm set unsafe-perm true
 # Docker runs the app as root inside the container, 
 # so it needs elevated permissions.
-RUN npm install
+# Remove binaries after install since we don't need them.
+RUN npm set unsafe-perm true && npm install && rm bin/dungeon-revealer-*
 
 CMD [ "npm", "start" ]
 
