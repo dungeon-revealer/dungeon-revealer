@@ -41,16 +41,6 @@ const generateKey = () => {
   return sha.digest("hex");
 };
 
-/* Images have to be uploaded outside of the code directory to account for 
-the case where the application has been bundled up into an executable */
-/* It would not surprise me at all if there was some weirdness with where 
-it creates the upload directory, either when run from a certain location or 
-run in a certain way (e.g. docker or node) */
-const UPLOADS_DIR = path.join(process.cwd(), "./uploads/");
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR);
-}
-
 app.use(busboy());
 
 // Not sure if this is needed, Chrome seems to grab the favicon just fine anyway
