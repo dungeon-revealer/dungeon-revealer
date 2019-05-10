@@ -157,14 +157,16 @@ const findOptimalRhombus = (pointCurrent, pointPrevious, lineWidth) => {
   }
   return limitedPointsSorted;
 };
-
-export const DmMap = () => {
+/**
+ * loadedMapId = id of the map that is currently visible in the editor
+ * liveMapId = id of the map that is currently visible to the players
+ */
+export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
   const mapCanvasRef = useRef(null);
   const fogCanvasRef = useRef(null);
   const mouseCanvasRef = useRef(null);
   const drawState = useRef({ isDrawing: false, lastCoords: null });
   const areaDrawState = useRef({ startCoords: null, currentCoords: null });
-  const [mapId, setMapId] = useState(null);
 
   const updateMouseCanvaseRef = useRef(null);
 
@@ -187,6 +189,10 @@ export const DmMap = () => {
       fogCanvasRef.current.width,
       fogCanvasRef.current.height
     );
+
+    if (updateMouseCanvaseRef.current) {
+      updateMouseCanvaseRef.current();
+    }
   };
 
   const constructMask = coords => {
@@ -225,6 +231,10 @@ export const DmMap = () => {
       fogCanvasRef.current.width,
       fogCanvasRef.current.height
     );
+
+    if (updateMouseCanvaseRef.current) {
+      updateMouseCanvaseRef.current();
+    }
   };
 
   const getMapDisplayRatio = () => {
@@ -471,6 +481,9 @@ export const DmMap = () => {
   };
 
   useEffect(() => {
+    if (!loadedMapId) {
+      return;
+    }
     const resize = (displayWidth, displayHeight) => {
       fogCanvasRef.current.style.width = displayWidth + "px";
       fogCanvasRef.current.style.height = displayHeight + "px";
@@ -503,8 +516,8 @@ export const DmMap = () => {
     };
 
     Promise.all([
-      loadImage("/map/1111-1111-1111/map"),
-      loadImage("/map/1111-1111-1111/fog").catch(() => null)
+      loadImage(`/map/${loadedMapId}/map`),
+      loadImage(`/map/${loadedMapId}/fog`).catch(() => null)
     ]).then(([map, fog]) => {
       const dimensions = getOptimalDimensions(
         map.width,
@@ -541,7 +554,7 @@ export const DmMap = () => {
       if (!fogCanvasRef.current) {
         return;
       }
-      fetch("/map/1111-1111-1111/fog", {
+      fetch(`/map/${loadedMapId}/fog`, {
         method: "POST",
         body: JSON.stringify({
           image: fogCanvasRef.current.toDataURL("image/png")
@@ -554,8 +567,9 @@ export const DmMap = () => {
 
     return () => {
       window.removeEventListener("resize", fitMapToWindow);
+      updateMouseCanvaseRef.current.cancel();
     };
-  }, []);
+  }, [loadedMapId]);
 
   return (
     <>
@@ -567,7 +581,7 @@ export const DmMap = () => {
         />
         <canvas
           ref={mouseCanvasRef}
-          style={{ position: "absolute", cursor: "none", touchAction: "none" }}
+          style={{ position: "absolute", touchAction: "none" }}
           onMouseMove={ev => {
             const coords = getMouseCoordinates(ev);
             drawCursor(coords);
@@ -768,34 +782,23 @@ export const DmMap = () => {
                   return;
                 }
 
-                await fetch("/map/1111-1111-1111/send", {
-                  method: "POST",
-                  body: JSON.stringify({
-                    image: fogCanvasRef.current.toDataURL("image/png")
-                  }),
-                  headers: {
-                    "Content-Type": "application/json"
-                  }
+                sendLiveMap({
+                  image: fogCanvasRef.current.toDataURL("image/png")
                 });
               }}
             >
               Send
             </button>
+
+            <button className="btn btn-default" disabled>
+              {liveMapId && loadedMapId === liveMapId ? "LIVE" : "NOT LIVE"}
+            </button>
             <button
               className="btn btn-default"
-              onClick={async () => {
-                await fetch("/map/set-active-map", {
-                  method: "POST",
-                  body: JSON.stringify({
-                    mapId: null
-                  }),
-                  headers: {
-                    "Content-Type": "application/json"
-                  }
-                });
-              }}
+              onClick={hideMap}
+              disabled={!liveMapId}
             >
-              Hide
+              Hide Live Map
             </button>
           </div>
         </div>

@@ -181,7 +181,6 @@ app.post("/map/:id/send", authMiddleware, (req, res) => {
   maps.updateFogLiveImage(req.params.id, imageData).then(map => {
     settings.set("currentMapId", map.id);
     res.json({ success: true, data: map });
-
     io.emit("map update", {
       mapId: map.id,
       image: req.body.image
@@ -189,7 +188,35 @@ app.post("/map/:id/send", authMiddleware, (req, res) => {
   });
 });
 
-app.post("/map/set-active-map", authMiddleware, (req, res) => {
+app.delete("/map/:id", authMiddleware, (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.send(404);
+  }
+
+  maps.deleteMap(map.id);
+
+  res.status(200).json({
+    success: true
+  });
+});
+
+app.get("/active-map", authMiddleware, (req, res) => {
+  let activeMap = null;
+  const activeMapId = settings.get("currentMapId");
+  if (activeMapId) {
+    activeMap = maps.get(activeMapId);
+  }
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      activeMap
+    }
+  });
+});
+
+app.post("/active-map", authMiddleware, (req, res) => {
   const mapId = req.body.mapId;
   if (mapId === undefined) {
     res.status(404).json({
@@ -206,6 +233,46 @@ app.post("/map/set-active-map", authMiddleware, (req, res) => {
   });
   res.json({
     success: true
+  });
+});
+
+app.get("/map", authMiddleware, (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      currentMapId: settings.get("currentMapId"),
+      maps: maps.getAll()
+    }
+  });
+});
+
+app.patch("/map/:id", authMiddleware, (req, res) => {
+  let map = maps.get(req.params.id);
+  if (!map) {
+    return res.status(404).json({
+      success: false,
+      data: null,
+      error: {
+        message: `Map with id '${req.params.id}' does not exist.`,
+        code: "ERR_MAP_DOES_NOT_EXIST"
+      }
+    });
+  }
+  const updates = {};
+
+  if (req.body.title) {
+    updates.title = req.body.title;
+  }
+
+  if (Object.keys(updates).length) {
+    map = maps.updateMapSettings(map.id, updates);
+  }
+
+  res.json({
+    success: true,
+    data: {
+      map
+    }
   });
 });
 

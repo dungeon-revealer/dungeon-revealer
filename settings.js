@@ -15,6 +15,7 @@ class Settings {
     try {
       const settingsRaw = fs.readFileSync(settingsPath);
       settings = JSON.parse(settingsRaw);
+      // eslint-disable-next-line no-empty
     } catch (err) {}
 
     this.settings = Object.assign({}, defaultSettings, settings);

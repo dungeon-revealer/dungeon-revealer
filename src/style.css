@@ -108,11 +108,6 @@ body {
   line-height: 40px;
 }
 
-.btn {
-  /*font-family: KnightsTemplar, palitino, serif;*/
-  /*font-size: 20px;*/
-}
-
 .auth-container {
   position: absolute;
   right: 10%;
@@ -152,6 +147,10 @@ body {
 @media only screen and (min-width: 321px) and (max-width: 768px) {
   .scroll-button {
     display: block;
+  }
+
+  .btn {
+    font-size: 20px;
   }
 }
 

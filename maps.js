@@ -1,7 +1,7 @@
 "use strict";
 
 const path = require("path");
-const fs = require("fs");
+const fs = require("fs-extra");
 const junk = require("junk");
 const uuid = require("uuid/v4");
 
@@ -42,7 +42,11 @@ class Maps {
     } catch (err) {
       fs.writeFileSync(
         path.join(mapDirectory, "1111-1111-1111"),
-        JSON.stringify({ id: "1111-1111-1111" }, undefined, 2)
+        JSON.stringify(
+          { id: "1111-1111-1111", title: "My first map" },
+          undefined,
+          2
+        )
       );
     }
   }
@@ -55,7 +59,10 @@ class Maps {
       .filter(isDirectory);
 
     return mapDirectories.map(directory => {
-      const rawConfig = fs.readFileSync(path.join(directory, "settings.json"));
+      const rawConfig = fs.readFileSync(
+        path.join(directory, "settings.json"),
+        "utf-8"
+      );
       return JSON.parse(rawConfig);
     });
   }
@@ -65,7 +72,7 @@ class Maps {
   }
 
   get(id) {
-    return this.maps.find(map => (map.id = id));
+    return this.maps.find(map => map.id === id) || null;
   }
 
   createMap({ name }) {
@@ -194,6 +201,7 @@ class Maps {
       throw new Error(`Map with id "${id}" not found.`);
     }
     this.maps.splice(mapIndex, 1);
+    fs.removeSync(path.join(mapDirectory, id));
   }
 
   getBasePath(map) {
