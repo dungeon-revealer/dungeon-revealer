@@ -41,7 +41,7 @@
     "lint-staged": "8.1.5",
     "pkg": "^4.3.7",
     "prettier": "1.17.0",
-    "react-scripts": "3.0.0"
+    "react-scripts": "3.0.1"
   },
   "repository": {
     "type": "git",
