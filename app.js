@@ -353,6 +353,10 @@ io.on("connection", function(socket) {
   socket.once("disconnect", function() {
     console.log("a user disconnected");
   });
+
+  socket.on("mark area", msg => {
+    console.log("mark area", msg);
+  });
 });
 
 module.exports = app;

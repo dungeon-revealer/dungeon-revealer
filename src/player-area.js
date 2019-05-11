@@ -1,11 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 import { PanZoom } from "react-easy-panzoom";
-import { loadImage } from "./util";
+import Referentiel from "referentiel";
+import { loadImage, useLongPress } from "./util";
 
 export const PlayerArea = () => {
   const panZoomRef = useRef(null);
+  const panZoomDragContainerRef = useRef(null);
   const currentMapId = useRef(null);
+  const imgMapRef = useRef(null);
+  const socketRef = useRef(null);
 
   const [firstMap, setFirstMap] = useState(null);
   const [mapOpacity, setMapOpacity] = useState(0);
@@ -13,6 +17,7 @@ export const PlayerArea = () => {
 
   useEffect(() => {
     const socket = io();
+    socketRef.current = socket;
 
     socket.on("connect", function() {
       console.log("connected to server");
@@ -67,6 +72,13 @@ export const PlayerArea = () => {
 
       currentMapId.current = data.mapId;
       setFirstMap(`/map/${data.mapId}/map`);
+      const contextmenuListener = ev => {
+        ev.preventDefault();
+      };
+      window.addEventListener("contextmenu", contextmenuListener);
+      return () => {
+        window.removeEventListener("contextmenu", contextmenuListener);
+      };
     });
   }, []);
 
@@ -98,6 +110,24 @@ export const PlayerArea = () => {
     });
   };
 
+  const mapLongPressProps = useLongPress(ev => {
+    let input = null;
+    // ev can be touch or click event
+    if (ev.touches) {
+      input = [ev.touches[0].pageX, ev.touches[0].pageY];
+    } else {
+      input = [ev.pageX, ev.pageY];
+    }
+    // calculate coordinates relative to the image
+    const ref = new Referentiel(panZoomDragContainerRef.current);
+    const [x, y] = ref.global_to_local(input);
+    const { width, height } = imgMapRef.current;
+    if (x > width || x < 0 || y > height || y < 0) {
+      return;
+    }
+    socketRef.current.emit("mark area", { x, y });
+  }, 500);
+
   return (
     <>
       {firstMap === null ? (
@@ -114,13 +144,18 @@ export const PlayerArea = () => {
           background: "black"
         }}
         ref={panZoomRef}
+        onDragContainerRef={ref => {
+          panZoomDragContainerRef.current = ref;
+        }}
+        {...mapLongPressProps}
       >
         <div
           style={{
             height: "100vh",
             width: "100vw",
             position: "relative",
-            pointerEvents: "none"
+            pointerEvents: "none",
+            background: "red"
           }}
         >
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
@@ -129,6 +164,7 @@ export const PlayerArea = () => {
             className="map"
             onLoad={onLoadMap}
             style={{ opacity: mapOpacity }}
+            ref={imgMapRef}
           />
           <canvas className="map" ref={fogCanvasRef} />
         </div>
