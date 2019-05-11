@@ -1,0 +1,93 @@
+diff --git a/node_modules/react-easy-panzoom/README.md b/node_modules/react-easy-panzoom/README.md
+index 264df42..3d520b2 100644
+--- a/node_modules/react-easy-panzoom/README.md
++++ b/node_modules/react-easy-panzoom/README.md
+@@ -150,6 +150,13 @@ render() {
+ |onPanEnd|`func`| |Fired on pan end|
+ |preventPan|`func`| |Defines a function to prevent pan|
+ |style|`object`| |Override the inline-styles of the root element|
++|onMouseDown|`func`| |Fired on mouse down|
++|onMouseUp|`func`| |Fired on mouse up|
++|onMouseMove|`func`| |Fired on mouse move|
++|onTouchStart|`func`| |Fired on touch start|
++|onTouchMove|`func`| |Fired on touch move|
++|onTouchEnd|`func`| |Fired on touch end|
++|onDragContainerRef|`func`| |Called with the dragContainer ref which gets the matrix transform applied|
+ 
+ ## Methods
+ By using `ref`, methods from `PanZoom` can be accessed and called to trigger manipulation functions.
+diff --git a/node_modules/react-easy-panzoom/lib/PanZoom.js b/node_modules/react-easy-panzoom/lib/PanZoom.js
+index 4087cb8..3affffd 100644
+--- a/node_modules/react-easy-panzoom/lib/PanZoom.js
++++ b/node_modules/react-easy-panzoom/lib/PanZoom.js
+@@ -187,6 +187,10 @@ function (_React$Component) {
+     });
+ 
+     _defineProperty(_assertThisInitialized(_this), "onMouseDown", function (e) {
++      if (_this.props.onMouseDown) {
++        _this.props.onMouseDown(e)
++      }
++      
+       var preventPan = _this.props.preventPan;
+ 
+       if (_this.props.disabled) {
+@@ -231,6 +235,9 @@ function (_React$Component) {
+     });
+ 
+     _defineProperty(_assertThisInitialized(_this), "onMouseMove", function (e) {
++      if (_this.props.onMouseMove) {
++        _this.props.onMouseMove(e)
++      }
+       if (_this.panning) {
+         var noStateUpdate = _this.props.noStateUpdate; // TODO disable if using touch event
+ 
+@@ -252,6 +259,9 @@ function (_React$Component) {
+     });
+ 
+     _defineProperty(_assertThisInitialized(_this), "onMouseUp", function (e) {
++      if (_this.props.onMouseUp) {
++        _this.props.onMouseUp(e)
++      }
+       // if using noStateUpdate we still need to set the new values in the state
+       _this.dispatchStateUpdateIfNeeded();
+ 
+@@ -364,6 +374,9 @@ function (_React$Component) {
+     });
+ 
+     _defineProperty(_assertThisInitialized(_this), "onTouchStart", function (e) {
++      if (_this.props.onTouchStart) {
++        _this.props.onTouchStart(e)
++      }
+       var preventPan = _this.props.preventPan;
+ 
+       if (e.touches.length === 1) {
+@@ -398,6 +411,9 @@ function (_React$Component) {
+     });
+ 
+     _defineProperty(_assertThisInitialized(_this), "onToucheMove", function (e) {
++      if (_this.props.onTouchMove) {
++        _this.props.onTouchMove(e)
++      }
+       var _this$props2 = _this.props,
+           realPinch = _this$props2.realPinch,
+           noStateUpdate = _this$props2.noStateUpdate;
+@@ -458,6 +474,9 @@ function (_React$Component) {
+     });
+ 
+     _defineProperty(_assertThisInitialized(_this), "onTouchEnd", function (e) {
++      if (_this.props.onTouchEnd) {
++        _this.props.onTouchEnd(e)
++      }
+       if (e.touches.length > 0) {
+         var offset = _this.getOffset(e.touches[0]);
+ 
+@@ -958,6 +977,9 @@ function (_React$Component) {
+         }, style)
+       }), React.createElement("div", {
+         ref: function ref(_ref) {
++          if (_this2.props.onDragContainerRef) {
++            _this2.props.onDragContainerRef(_ref)
++          }
+           return _this2.dragContainer = _ref;
+         },
+         style: {
