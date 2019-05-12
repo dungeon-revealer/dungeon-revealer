@@ -57,7 +57,7 @@ export const useLongPress = (callback = () => {}, ms = 300) => {
     };
     const onMouseUp = () => setStartLongPress(false);
     const onMouseMove = () => setStartLongPress(false);
-    const onTouchMove = ev => {
+    const onTouchMove = () => {
       setStartLongPress(false);
     };
     const onMouseLeave = () => setStartLongPress(false);
@@ -73,18 +73,18 @@ export const useLongPress = (callback = () => {}, ms = 300) => {
     window.addEventListener("mouseup", onMouseUp);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseleave", onMouseLeave);
-    window.addEventListener("touchstart", onTouchStart);
-    window.addEventListener("touchmove", onTouchMove);
-    window.addEventListener("touchend", onTouchEnd);
+    document.addEventListener("touchstart", onTouchStart);
+    document.addEventListener("touchmove", onTouchMove);
+    document.addEventListener("touchend", onTouchEnd);
 
     return () => {
       window.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mouseup", onMouseUp);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseleave", onMouseLeave);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onTouchEnd);
+      document.removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", onTouchEnd);
     };
   });
 };
