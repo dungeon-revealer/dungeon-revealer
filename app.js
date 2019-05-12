@@ -355,7 +355,7 @@ io.on("connection", function(socket) {
   });
 
   socket.on("mark area", msg => {
-    console.log("mark area", msg);
+    io.emit("mark area", msg);
   });
 });
 

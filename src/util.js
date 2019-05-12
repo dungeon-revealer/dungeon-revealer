@@ -50,24 +50,41 @@ export const useLongPress = (callback = () => {}, ms = 300) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startLogPress]);
 
-  return {
-    onMouseDown: ev => {
-      ev.persist();
+  useEffect(() => {
+    const onMouseDown = ev => {
       currentEventRef.current = ev;
       setStartLongPress(true);
-    },
-    onMouseUp: () => setStartLongPress(false),
-    onMouseMove: () => setStartLongPress(false),
-    onTouchMove: ev => {
+    };
+    const onMouseUp = () => setStartLongPress(false);
+    const onMouseMove = () => setStartLongPress(false);
+    const onTouchMove = ev => {
       setStartLongPress(false);
-    },
-    onMouseLeave: () => setStartLongPress(false),
-    onTouchStart: ev => {
+    };
+    const onMouseLeave = () => setStartLongPress(false);
+
+    const onTouchStart = ev => {
       ev.preventDefault();
-      ev.persist();
       currentEventRef.current = ev;
       setStartLongPress(true);
-    },
-    onTouchEnd: () => setStartLongPress(false)
-  };
+    };
+    const onTouchEnd = () => setStartLongPress(false);
+
+    window.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseleave", onMouseLeave);
+    window.addEventListener("touchstart", onTouchStart);
+    window.addEventListener("touchmove", onTouchMove);
+    window.addEventListener("touchend", onTouchEnd);
+
+    return () => {
+      window.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseleave", onMouseLeave);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  });
 };

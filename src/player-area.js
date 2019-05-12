@@ -4,16 +4,41 @@ import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
 import { loadImage, useLongPress } from "./util";
 
+const getOptimalDimensions = (idealWidth, idealHeight, maxWidth, maxHeight) => {
+  const ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
+
+  return {
+    ratio: ratio,
+    width: idealWidth * ratio,
+    height: idealHeight * ratio
+  };
+};
+
 export const PlayerArea = () => {
   const panZoomRef = useRef(null);
   const panZoomDragContainerRef = useRef(null);
   const currentMapId = useRef(null);
-  const imgMapRef = useRef(null);
   const socketRef = useRef(null);
+  const [showSplashScreen, setShowSplashScreen] = useState(true);
 
-  const [firstMap, setFirstMap] = useState(null);
-  const [mapOpacity, setMapOpacity] = useState(0);
-  const fogCanvasRef = useRef();
+  const mapCanvasRef = useRef(null);
+  const mapCanvasDimensions = useRef(null);
+  const mapImageRef = useRef(null);
+
+  const centerMap = (isInitial = false) => {
+    if (panZoomRef.current) {
+      // hacky approach for centering the map initially
+      // (there is no API for react-native-panzoom to do the autofocus without a transition)
+      if (isInitial) {
+        const transition = panZoomDragContainerRef.current.style.transition;
+        panZoomDragContainerRef.current.style.transition = "none";
+        setTimeout(() => {
+          panZoomDragContainerRef.current.style.transition = transition;
+        }, 200);
+      }
+      panZoomRef.current.autoCenter(0.8);
+    }
+  };
 
   useEffect(() => {
     const socket = io();
@@ -39,78 +64,124 @@ export const PlayerArea = () => {
       console.log("disconnected from server");
     });
 
+    socket.on("mark area", async data => {});
+
     socket.on("map update", async data => {
       if (!data) {
         return;
       }
-      if (data.mapId === null) {
-        setFirstMap(null);
-        return;
-      }
-      if (currentMapId.current === data.mapId) {
-        const context = fogCanvasRef.current.getContext("2d");
 
-        loadImage(data.image).then(image => {
+      const context = mapCanvasRef.current.getContext("2d");
+
+      if (!data.mapId) {
+        currentMapId.current = null;
+        mapCanvasDimensions.current = null;
+        mapImageRef.current = null;
+
+        context.clearRect(
+          0,
+          0,
+          mapCanvasRef.current.width,
+          mapCanvasRef.current.height
+        );
+        setShowSplashScreen(true);
+      } else if (currentMapId.current === data.mapId) {
+        /**
+         * Fog update
+         */
+        loadImage(data.image).then(fogImage => {
           context.clearRect(
             0,
             0,
-            fogCanvasRef.current.width,
-            fogCanvasRef.current.height
+            mapCanvasRef.current.width,
+            mapCanvasRef.current.height
           );
           context.drawImage(
-            image,
+            mapImageRef.current,
             0,
             0,
-            fogCanvasRef.current.width,
-            fogCanvasRef.current.height
+            mapCanvasRef.current.width,
+            mapCanvasRef.current.height
           );
-          setMapOpacity(1);
+          context.drawImage(
+            fogImage,
+            0,
+            0,
+            mapCanvasRef.current.width,
+            mapCanvasRef.current.height
+          );
+        });
+      } else {
+        /**
+         * Load new map
+         */
+        Promise.all([
+          loadImage(`/map/${data.mapId}/map`),
+          loadImage(`/map/${data.mapId}/fog`)
+        ]).then(([map, fog]) => {
+          mapImageRef.current = map;
+          const mapCanvas = mapCanvasRef.current;
+          const mapContext = mapCanvas.getContext("2d");
+
+          const dimensions = getOptimalDimensions(
+            map.width,
+            map.height,
+            window.innerWidth,
+            window.innerHeight
+          );
+
+          const cavasDimensions = getOptimalDimensions(
+            map.width,
+            map.height,
+            3000,
+            9000
+          );
+
+          mapCanvas.width = cavasDimensions.width;
+          mapCanvas.height = cavasDimensions.height;
+
+          mapCanvasDimensions.current = dimensions;
+          mapCanvas.style.width = `${dimensions.width}px`;
+          mapCanvas.style.height = `${dimensions.height}px`;
+
+          mapContext.drawImage(
+            map,
+            0,
+            0,
+            cavasDimensions.width,
+            cavasDimensions.height
+          );
+          mapContext.drawImage(
+            fog,
+            0,
+            0,
+            cavasDimensions.width,
+            cavasDimensions.height
+          );
+
+          centerMap(true);
+          setShowSplashScreen(false);
         });
       }
 
-      setMapOpacity(0);
-
       currentMapId.current = data.mapId;
-      setFirstMap(`/map/${data.mapId}/map`);
+
       const contextmenuListener = ev => {
         ev.preventDefault();
       };
       window.addEventListener("contextmenu", contextmenuListener);
+
       return () => {
         window.removeEventListener("contextmenu", contextmenuListener);
       };
     });
   }, []);
 
-  const centerMap = () => {
-    if (panZoomRef.current) {
-      panZoomRef.current.autoCenter();
-    }
-  };
-
-  const onLoadMap = ev => {
-    centerMap();
-    if (!fogCanvasRef.current) {
+  useLongPress(ev => {
+    if (!mapCanvasDimensions.current) {
       return;
     }
-    fogCanvasRef.current.style.width = ev.target.clientWidth + "px";
-    fogCanvasRef.current.style.height = ev.target.clientHeight + "px";
-    fogCanvasRef.current.width = ev.target.width;
-    fogCanvasRef.current.height = ev.target.height;
-    const context = fogCanvasRef.current.getContext("2d");
-    loadImage(`/map/${currentMapId.current}/fog-live`).then(image => {
-      context.drawImage(
-        image,
-        0,
-        0,
-        fogCanvasRef.current.width,
-        fogCanvasRef.current.height
-      );
-      setMapOpacity(1);
-    });
-  };
 
-  const mapLongPressProps = useLongPress(ev => {
     let input = null;
     // ev can be touch or click event
     if (ev.touches) {
@@ -118,19 +189,21 @@ export const PlayerArea = () => {
     } else {
       input = [ev.pageX, ev.pageY];
     }
-    // calculate coordinates relative to the image
+    // calculate coordinates relative to the canvas
     const ref = new Referentiel(panZoomDragContainerRef.current);
     const [x, y] = ref.global_to_local(input);
-    const { width, height } = imgMapRef.current;
+    const { width, height, ratio } = mapCanvasDimensions.current;
+
     if (x > width || x < 0 || y > height || y < 0) {
       return;
     }
-    socketRef.current.emit("mark area", { x, y });
+    // Press was on the map, calculate actual image position next
+    socketRef.current.emit("mark area", { x: x / ratio, y: y / ratio });
   }, 500);
 
   return (
     <>
-      {firstMap === null ? (
+      {showSplashScreen ? (
         <div id="splash" className="splash splash-js">
           <a id="dm-link" href="/dm">
             Dungeon Master ↝
@@ -141,39 +214,31 @@ export const PlayerArea = () => {
       <PanZoom
         style={{
           cursor: "grab",
-          background: "black"
+          background: "black",
+          height: "100vh",
+          width: "100vw"
         }}
         ref={panZoomRef}
         onDragContainerRef={ref => {
           panZoomDragContainerRef.current = ref;
         }}
-        {...mapLongPressProps}
       >
-        <div
-          style={{
-            height: "100vh",
-            width: "100vw",
-            position: "relative",
-            pointerEvents: "none",
-            background: "red"
-          }}
-        >
-          {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <img
-            src={firstMap}
-            className="map"
-            onLoad={onLoadMap}
-            style={{ opacity: mapOpacity }}
-            ref={imgMapRef}
-          />
-          <canvas className="map" ref={fogCanvasRef} />
-        </div>
+        <canvas
+          className="map"
+          ref={mapCanvasRef}
+          style={{ pointerEvents: "none", backfaceVisibility: "hidden" }}
+        />
       </PanZoom>
-      {firstMap !== null ? (
+      {!showSplashScreen ? (
         <div id="dm-toolbar" className="toolbar-wrapper">
           <div className="btn-toolbar">
             <div className="btn-group">
-              <button className="btn btn-default" onClick={centerMap}>
+              <button
+                className="btn btn-default"
+                onClick={() => {
+                  centerMap();
+                }}
+              >
                 Center
               </button>
               <button
