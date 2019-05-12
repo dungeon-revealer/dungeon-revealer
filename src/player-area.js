@@ -2,17 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
-import { loadImage, useLongPress } from "./util";
-
-const getOptimalDimensions = (idealWidth, idealHeight, maxWidth, maxHeight) => {
-  const ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
-
-  return {
-    ratio: ratio,
-    width: idealWidth * ratio,
-    height: idealHeight * ratio
-  };
-};
+import { loadImage, useLongPress, getOptimalDimensions } from "./util";
 
 const createPulsateFunction = (duration = 10000, interval = 2000) => {
   const step = duration / interval;

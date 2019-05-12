@@ -1,17 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
-import { loadImage } from "./../util";
-
-const getOptimalDimensions = (idealWidth, idealHeight, maxWidth, maxHeight) => {
-  const ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
-
-  return {
-    ratio: ratio,
-    width: idealWidth * ratio,
-    height: idealHeight * ratio
-  };
-};
+import { loadImage, getOptimalDimensions } from "./../util";
 
 const midPointBtw = (p1, p2) => {
   return {

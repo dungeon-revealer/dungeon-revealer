@@ -25,6 +25,28 @@ export const loadImage = src => {
 };
 
 /**
+ * calculate the optimal dimensions for an area while kepping the aspect ratio
+ * @param {number} idealWidth
+ * @param {number} idealHeight
+ * @param {number} maxWidth
+ * @param {number} maxHeight
+ */
+export const getOptimalDimensions = (
+  idealWidth,
+  idealHeight,
+  maxWidth,
+  maxHeight
+) => {
+  const ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
+
+  return {
+    ratio: ratio,
+    width: idealWidth * ratio,
+    height: idealHeight * ratio
+  };
+};
+
+/**
  * longpress hook inspired by https://stackoverflow.com/a/54749871/4202031
  * works with touch an mouse events
  */
