@@ -14,8 +14,11 @@ const getOptimalDimensions = (idealWidth, idealHeight, maxWidth, maxHeight) => {
   };
 };
 
-const createPulsateFunction = (duration = 10000, interval = 1500) => t =>
-  ((t * duration) % interval) / interval;
+const createPulsateFunction = (duration = 10000, interval = 2000) => {
+  const step = duration / interval;
+  const modificator = step * 2 * Math.PI;
+  return t => 0.5 * Math.sin(t * modificator - Math.PI / 2) + 0.5;
+};
 
 const MarkedArea = React.memo(({ x, y, onFinishAnimation }) => {
   const circleRef = useRef(null);
@@ -23,13 +26,17 @@ const MarkedArea = React.memo(({ x, y, onFinishAnimation }) => {
   useEffect(() => {
     let id = null;
 
-    const duration = 9500;
+    const duration = 10500 - 1;
     const start = Date.now();
     const createValue = createPulsateFunction(duration, 1500);
 
     const animate = () => {
       const t = Math.max(0, Math.min((Date.now() - start) / duration, 1));
       circleRef.current.setAttribute("r", 15 + 10 * createValue(t));
+
+      if (t >= 0.9) {
+        circleRef.current.setAttribute("opacity", 1 - (t - 0.9) / 0.1);
+      }
       if (t >= 1) {
         onFinishAnimation();
         return;
@@ -46,6 +53,7 @@ const MarkedArea = React.memo(({ x, y, onFinishAnimation }) => {
       }
       cancelAnimationFrame(id);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -56,6 +64,7 @@ const MarkedArea = React.memo(({ x, y, onFinishAnimation }) => {
       strokeWidth="5"
       stroke="red"
       fill="transparent"
+      opacity="1"
       ref={circleRef}
     />
   );
@@ -261,12 +270,8 @@ export const PlayerArea = () => {
     // calculate coordinates relative to the canvas
     const ref = new Referentiel(panZoomRef.current.dragContainer);
     const [x, y] = ref.global_to_local(input);
-    const { width, height, ratio } = mapCanvasDimensions.current;
+    const { ratio } = mapCanvasDimensions.current;
 
-    if (x > width || x < 0 || y > height || y < 0) {
-      return;
-    }
-    // Press was on the map, calculate actual image position next
     socketRef.current.emit("mark area", { x: x / ratio, y: y / ratio });
   }, 500);
 
@@ -305,7 +310,8 @@ export const PlayerArea = () => {
             style={{
               pointerEvents: "none",
               backfaceVisibility: "hidden",
-              position: "absolute"
+              position: "absolute",
+              overflow: "visible"
             }}
           >
             {markedAreas.map(markedArea => (
