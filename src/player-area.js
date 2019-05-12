@@ -14,15 +14,66 @@ const getOptimalDimensions = (idealWidth, idealHeight, maxWidth, maxHeight) => {
   };
 };
 
+const createPulsateFunction = (duration = 10000, interval = 1500) => t =>
+  ((t * duration) % interval) / interval;
+
+const MarkedArea = React.memo(({ x, y, onFinishAnimation }) => {
+  const circleRef = useRef(null);
+
+  useEffect(() => {
+    let id = null;
+
+    const duration = 9500;
+    const start = Date.now();
+    const createValue = createPulsateFunction(duration, 1500);
+
+    const animate = () => {
+      const t = Math.max(0, Math.min((Date.now() - start) / duration, 1));
+      circleRef.current.setAttribute("r", 15 + 10 * createValue(t));
+      if (t >= 1) {
+        onFinishAnimation();
+        return;
+      }
+
+      id = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      if (!id) {
+        return;
+      }
+      cancelAnimationFrame(id);
+    };
+  }, []);
+
+  return (
+    <circle
+      cx={x}
+      cy={y}
+      r="15"
+      strokeWidth="5"
+      stroke="red"
+      fill="transparent"
+      ref={circleRef}
+    />
+  );
+});
+
 export const PlayerArea = () => {
   const panZoomRef = useRef(null);
   const currentMapId = useRef(null);
   const socketRef = useRef(null);
   const [showSplashScreen, setShowSplashScreen] = useState(true);
 
+  const mapContainerRef = useRef(null);
   const mapCanvasRef = useRef(null);
+  const objectSvgRef = useRef(null);
   const mapCanvasDimensions = useRef(null);
   const mapImageRef = useRef(null);
+
+  const [markedAreas, setMarkedAreas] = useState(() => []);
 
   const centerMap = (isInitial = false) => {
     if (panZoomRef.current) {
@@ -63,7 +114,16 @@ export const PlayerArea = () => {
       console.log("disconnected from server");
     });
 
-    socket.on("mark area", async data => {});
+    socket.on("mark area", async data => {
+      setMarkedAreas(markedAreas => [
+        ...markedAreas,
+        {
+          id: data.id,
+          x: data.x * mapCanvasDimensions.current.ratio,
+          y: data.y * mapCanvasDimensions.current.ratio
+        }
+      ]);
+    });
 
     socket.on("map update", async data => {
       if (!data) {
@@ -120,6 +180,9 @@ export const PlayerArea = () => {
         ]).then(([map, fog]) => {
           mapImageRef.current = map;
           const mapCanvas = mapCanvasRef.current;
+          const objectSvg = objectSvgRef.current;
+          const mapContainer = mapContainerRef.current;
+
           const mapContext = mapCanvas.getContext("2d");
 
           const dimensions = getOptimalDimensions(
@@ -138,10 +201,17 @@ export const PlayerArea = () => {
 
           mapCanvas.width = cavasDimensions.width;
           mapCanvas.height = cavasDimensions.height;
+          objectSvg.setAttribute("width", cavasDimensions.width);
+          objectSvg.setAttribute("height", cavasDimensions.height);
 
           mapCanvasDimensions.current = dimensions;
-          mapCanvas.style.width = `${dimensions.width}px`;
-          mapCanvas.style.height = `${dimensions.height}px`;
+
+          mapCanvas.style.width = mapContainer.style.width = objectSvg.style.width = `${
+            dimensions.width
+          }px`;
+          mapCanvas.style.height = mapContainer.style.height = objectSvg.style.height = `${
+            dimensions.height
+          }px`;
 
           mapContext.drawImage(
             map,
@@ -219,11 +289,38 @@ export const PlayerArea = () => {
         }}
         ref={panZoomRef}
       >
-        <canvas
-          className="map"
-          ref={mapCanvasRef}
-          style={{ pointerEvents: "none", backfaceVisibility: "hidden" }}
-        />
+        <div ref={mapContainerRef}>
+          <canvas
+            className="map"
+            ref={mapCanvasRef}
+            style={{
+              pointerEvents: "none",
+              backfaceVisibility: "hidden",
+              position: "absolute"
+            }}
+          />
+          <svg
+            className="map"
+            ref={objectSvgRef}
+            style={{
+              pointerEvents: "none",
+              backfaceVisibility: "hidden",
+              position: "absolute"
+            }}
+          >
+            {markedAreas.map(markedArea => (
+              <MarkedArea
+                {...markedArea}
+                onFinishAnimation={() => {
+                  setMarkedAreas(markedAreas =>
+                    markedAreas.filter(area => area.id !== markedArea.id)
+                  );
+                }}
+                key={markedArea.id}
+              />
+            ))}
+          </svg>
+        </div>
       </PanZoom>
       {!showSplashScreen ? (
         <div id="dm-toolbar" className="toolbar-wrapper">

@@ -142,10 +142,6 @@ body {
   .scroll-button {
     display: block;
   }
-
-  .btn {
-    font-size: 20px;
-  }
 }
 
 div#upload {
