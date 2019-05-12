@@ -121,13 +121,7 @@ body {
 }
 
 .map {
-  position: absolute;
-  margin-left: auto;
-  margin-right: auto;
-  height: 100%;
-  width: auto;
-  left: 0;
-  right: 0;
+  transform: translateZ(0) scale(1, 1);
 }
 
 .scroll-button {
@@ -147,10 +141,6 @@ body {
 @media only screen and (min-width: 321px) and (max-width: 768px) {
   .scroll-button {
     display: block;
-  }
-
-  .btn {
-    font-size: 20px;
   }
 }
 

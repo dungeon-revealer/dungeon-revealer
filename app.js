@@ -9,6 +9,7 @@ const cookieParser = require("cookie-parser");
 const session = require("cookie-session");
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
+const createUniqueId = require("uuid/v4");
 const fs = require("fs-extra");
 const os = require("os");
 const server = (app.http = require("http").createServer(app));
@@ -352,6 +353,13 @@ io.on("connection", function(socket) {
 
   socket.once("disconnect", function() {
     console.log("a user disconnected");
+  });
+
+  socket.on("mark area", msg => {
+    io.emit("mark area", {
+      id: createUniqueId(),
+      ...msg
+    });
   });
 });
 
