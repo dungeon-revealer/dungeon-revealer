@@ -16,7 +16,6 @@ const getOptimalDimensions = (idealWidth, idealHeight, maxWidth, maxHeight) => {
 
 export const PlayerArea = () => {
   const panZoomRef = useRef(null);
-  const panZoomDragContainerRef = useRef(null);
   const currentMapId = useRef(null);
   const socketRef = useRef(null);
   const [showSplashScreen, setShowSplashScreen] = useState(true);
@@ -30,11 +29,11 @@ export const PlayerArea = () => {
       // hacky approach for centering the map initially
       // (there is no API for react-native-panzoom to do the autofocus without a transition)
       if (isInitial) {
-        const transition = panZoomDragContainerRef.current.style.transition;
-        panZoomDragContainerRef.current.style.transition = "none";
+        const transition = panZoomRef.current.dragContainer.style.transition;
+        panZoomRef.current.dragContainer.style.transition = "none";
         setTimeout(() => {
-          panZoomDragContainerRef.current.style.transition = transition;
-        }, 200);
+          panZoomRef.current.dragContainer.style.transition = transition;
+        }, 500);
       }
       panZoomRef.current.autoCenter(0.8);
     }
@@ -190,7 +189,7 @@ export const PlayerArea = () => {
       input = [ev.pageX, ev.pageY];
     }
     // calculate coordinates relative to the canvas
-    const ref = new Referentiel(panZoomDragContainerRef.current);
+    const ref = new Referentiel(panZoomRef.current.dragContainer);
     const [x, y] = ref.global_to_local(input);
     const { width, height, ratio } = mapCanvasDimensions.current;
 
@@ -219,9 +218,6 @@ export const PlayerArea = () => {
           width: "100vw"
         }}
         ref={panZoomRef}
-        onDragContainerRef={ref => {
-          panZoomDragContainerRef.current = ref;
-        }}
       >
         <canvas
           className="map"
