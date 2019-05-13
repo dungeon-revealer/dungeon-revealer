@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
+import { PanZoom } from "react-easy-panzoom";
+import Referentiel from "referentiel";
 import { loadImage, getOptimalDimensions } from "./../util";
 
 const midPointBtw = (p1, p2) => {
@@ -165,6 +167,8 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
   const drawState = useRef({ isDrawing: false, lastCoords: null });
   const areaDrawState = useRef({ startCoords: null, currentCoords: null });
   const hasPreviousMap = useRef(false);
+  const panZoomRef = useRef(null);
+  const panZoomReferentialRef = useRef(null);
 
   /**
    * function for saving the fog to the server.
@@ -246,15 +250,15 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
   };
 
   const getMouseCoordinates = ev => {
-    const viewportOffset = fogCanvasRef.current.getBoundingClientRect();
-    const borderTop = parseInt(fogCanvasRef.current.style.borderTopWidth || 0);
-    const borderLeft = parseInt(
-      fogCanvasRef.current.style.borderLeftWidth || 0
-    );
+    const ratio = getMapDisplayRatio();
+    const [x, y] = panZoomReferentialRef.current.global_to_local([
+      ev.clientX,
+      ev.clientY
+    ]);
 
     return {
-      x: (ev.clientX - viewportOffset.left - borderLeft) / getMapDisplayRatio(),
-      y: (ev.clientY - viewportOffset.top - borderTop) / getMapDisplayRatio()
+      x: x / ratio,
+      y: y / ratio
     };
   };
 
@@ -313,7 +317,7 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
     fogContext.fill();
   };
 
-  const drawCursor = coords => {
+  const drawCursor = ({ x, y }) => {
     const mouseContext = mouseCanvasRef.current.getContext("2d");
     // draw cursor
     mouseContext.clearRect(
@@ -329,17 +333,17 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
       mouseContext.lineWidth = 2;
 
       mouseContext.beginPath();
-      mouseContext.moveTo(coords.x - 10, coords.y);
-      mouseContext.lineTo(coords.x + 10, coords.y);
-      mouseContext.moveTo(coords.x, coords.y - 10);
-      mouseContext.lineTo(coords.x, coords.y + 10);
+      mouseContext.moveTo(x - 10, y);
+      mouseContext.lineTo(x + 10, y);
+      mouseContext.moveTo(x, y - 10);
+      mouseContext.lineTo(x, y + 10);
       mouseContext.stroke();
       return;
     }
 
     // brush
 
-    const cursorMask = constructMask(coords);
+    const cursorMask = constructMask({ x, y });
     mouseContext.strokeStyle = cursorMask.line;
     mouseContext.fillStyle = cursorMask.fill;
     mouseContext.lineWidth = cursorMask.lineWidth;
@@ -482,6 +486,26 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
   };
 
   useEffect(() => {
+    panZoomReferentialRef.current = new Referentiel(
+      panZoomRef.current.dragContainer
+    );
+
+    const mousewheelListener = debounce(() => {
+      panZoomReferentialRef.current = new Referentiel(
+        panZoomRef.current.dragContainer
+      );
+    }, 500);
+
+    document.addEventListener("mousewheel", mousewheelListener);
+
+    return () => {
+      panZoomReferentialRef.current = null;
+      document.removeEventListener("mousewheel", mousewheelListener);
+      mousewheelListener.cancel();
+    };
+  }, []);
+
+  useEffect(() => {
     if (!loadedMapId) {
       return () => {
         hasPreviousMap.current = false;
@@ -578,7 +602,19 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
 
   return (
     <>
-      <div id="map-wrapper">
+      <PanZoom
+        onPanEnd={() => {
+          panZoomReferentialRef.current = new Referentiel(
+            panZoomRef.current.dragContainer
+          );
+        }}
+        disabled={tool !== "move"}
+        style={{
+          cursor: tool !== "move" ? "inherit" : "move",
+          outline: "none"
+        }}
+        ref={panZoomRef}
+      >
         <canvas ref={mapCanvasRef} style={{ position: "absolute" }} />
         <canvas
           ref={fogCanvasRef}
@@ -588,6 +624,10 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
           ref={mouseCanvasRef}
           style={{ position: "absolute", touchAction: "none" }}
           onMouseMove={ev => {
+            if (tool === "move") {
+              return;
+            }
+
             const coords = getMouseCoordinates(ev);
             drawCursor(coords);
 
@@ -667,7 +707,9 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
             ev.preventDefault();
             const coords = getTouchCoordinates(ev);
 
-            if (tool === "area" && areaDrawState.current.startCoords) {
+            if (tool === "move") {
+              return;
+            } else if (tool === "area" && areaDrawState.current.startCoords) {
               areaDrawState.current.currentCoords = coords;
               drawAreaSelection();
               return;
@@ -697,7 +739,7 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
             }
           }}
         />
-      </div>
+      </PanZoom>
       <div id="dm-toolbar" className="toolbar-wrapper">
         <button className="scroll-button">
           <svg
@@ -737,16 +779,28 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
               {mode === "shroud" ? "Shroud Mode" : "Clear Mode"}
             </button>
             <button
-              className="btn btn-default"
+              className={`btn btn-default${tool === "move" ? " active" : ""}`}
               onClick={() => {
-                if (tool === "brush") {
-                  setTool("area");
-                } else {
-                  setTool("brush");
-                }
+                setTool("move");
               }}
             >
-              {tool === "brush" ? "Brush Tool" : "Area Select Tool"}
+              Move
+            </button>
+            <button
+              className={`btn btn-default${tool === "area" ? " active" : ""}`}
+              onClick={() => {
+                setTool("area");
+              }}
+            >
+              Area Select Tool
+            </button>
+            <button
+              className={`btn btn-default${tool === "brush" ? " active" : ""}`}
+              onClick={() => {
+                setTool("brush");
+              }}
+            >
+              Brush Tool
             </button>
           </div>
           <div className="btn-group">

@@ -99,7 +99,10 @@ export const DmArea = () => {
           }}
         />
       ) : null}
-      <div className="navbar navbar-inverse">
+      <div
+        className="navbar navbar-inverse"
+        style={{ marginBottom: 0, zIndex: 1000 }}
+      >
         <div className="navbar-header">
           <button
             className="navbar-toggle"
