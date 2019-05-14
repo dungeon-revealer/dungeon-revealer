@@ -20,7 +20,8 @@ The easiest way to use dungeon-revealer is to download the app from the [release
 
 #### Prebuilt app 
 
-Download the app for your system from [here](https://github.com/apclary/dungeon-revealer/releases).
+**Download the app for your system from the [releases page](https://github.com/apclary/dungeon-revealer/releases).**
+We provide builds for Windows, Linux, and OSX.
 
 Either double click the app or open a command prompt in the same directory as the app and run from there. 
 Running from the command prompt will present connection information and some debugging.
