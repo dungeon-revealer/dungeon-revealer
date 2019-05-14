@@ -35,10 +35,14 @@ To create an instance, run the following:
 
 ```
 docker pull apclary/dungeon-revealer:latest
-docker run -e DM_PASSWORD=<password> -p <PORT>:3000 -d apclary/dungeon-revealer:latest
+docker run -e DM_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/data -d apclary/dungeon-revealer:latest
 ```
 
-Replace `<password>` with your chosen DM password, and `<PORT>` with your preferred port.
+- Replace `<password>` with your chosen DM password
+- Replace `<PORT>` with your preferred port. 
+- `<DATA_DIR>` is the directory on the host filesystem in which you want to store the maps and settings. `<DATA_DIR>` **must be an absolute path.** One way to achieve this in linux is to navigate to the directory you want in the terminal and then use `$PWD/data` as `<DATA_DIR>`.
+
+
 In your browser, go to `<YOUR_IPADDRESS>:<PORT>`.
 
 ### Using the app
