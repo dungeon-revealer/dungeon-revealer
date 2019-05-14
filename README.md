@@ -56,7 +56,9 @@ To switch to a different map, click "Load map", and then select one of the maps 
 
 Navigate to the server using a web browser and wait at the home page. (The connection information is displayed in command prompt for convenience.) When the dungeon master is ready, they will push a map to your webpage. You will see either a black screen or a partially covered image. You can zoom in/out and pan the map. On a long click you will place a "point of interest" on the map that will show as a red circle.
 
+## Contributing
 
+See the [CONTRIBUTING.md](CONTRIBUTING.md).
 
 
 
