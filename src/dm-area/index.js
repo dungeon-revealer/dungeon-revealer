@@ -30,6 +30,9 @@ export const DmArea = () => {
           setShowMapModal(true);
         } else {
           setLiveMapId(res.data.currentMapId);
+          if (!loadedMapId) {
+            setLoadedMapId(res.data.currentMapId);
+          }
         }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps

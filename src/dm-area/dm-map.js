@@ -2,20 +2,21 @@ import React, { useEffect, useRef } from "react";
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
 import { PanZoom } from "react-easy-panzoom";
+import ReactTooltip from "react-tooltip";
 import Referentiel from "referentiel";
 import { loadImage, getOptimalDimensions } from "./../util";
 
-const MapIcon = ({ fill, ...props }) => (
+const DropletIcon = ({ fill, filled, ...props }) => (
   <svg
     viewBox="0 0 24 24"
-    fill="none"
+    fill={filled ? fill : "none"}
     stroke={fill}
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
   >
-    <path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4zM8 2v16M16 6v16" />
+    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
   </svg>
 );
 
@@ -93,6 +94,34 @@ const EyeOffIcon = ({ fill, ...props }) => (
   </svg>
 );
 
+const MapIcon = ({ fill, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4zM8 2v16M16 6v16" />
+  </svg>
+);
+
+const SendIcon = ({ fill, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+  </svg>
+);
+
 const Toolbar = ({ children }) => {
   return (
     <div
@@ -117,13 +146,13 @@ const Toolbar = ({ children }) => {
           fontSize: 20,
           fontWeight: "bold",
           color: "rgba(255, 255, 255, 1)",
-          marginBottom: 30,
+          marginBottom: 24,
           fontFamily: "folkard, palitino, serif"
         }}
       >
         DR
       </div>
-      <ul
+      <div
         style={{
           display: "block",
           padding: 0,
@@ -132,28 +161,46 @@ const Toolbar = ({ children }) => {
         }}
       >
         {children}
-      </ul>
+      </div>
     </div>
   );
 };
 
-Toolbar.Seperator = () => {
-  return <div style={{ borderBottom: "1px solid grey", opacity: 0.1 }} />;
+Toolbar.Group = ({ children, style, ...props }) => {
+  return (
+    <ul
+      style={{
+        display: "block",
+        padding: 0,
+        margin: 0,
+        listStyle: "none",
+        marginTop: 16,
+        marginRight: 12,
+        marginLeft: 12,
+        paddingBottom: 12,
+        ...style
+      }}
+      {...props}
+    >
+      {children}
+    </ul>
+  );
 };
 
-Toolbar.Item = ({ children, isActive, ...props }) => {
+Toolbar.Item = ({ children, isActive, style = {}, ...props }) => {
   return (
     <li
       style={{
         display: "block",
         cursor: "pointer",
-        marginBottom: 12,
-        marginTop: 12,
-        paddingBottom: 12,
-        paddingTop: 12,
+        marginBottom: 8,
+        paddingBottom: 8,
+        paddingTop: 8,
+
         ...(isActive
           ? { filter: "drop-shadow( 0 0 4px rgba(0, 0, 0, .3))" }
-          : {})
+          : {}),
+        ...style
       }}
       {...props}
     >
@@ -914,31 +961,18 @@ export const DmMap = ({
         </div>
       </PanZoom>
       <div id="dm-toolbar" className="toolbar-wrapper">
-        <button className="scroll-button">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            version="1.0"
-            width="28"
-            height="28"
-          >
-            <path d="m 13.5,1.5 l 4.5,4.5 h -9 l 4.5,-4.5 z m -0.5,5.5 h 1 v 7 h 7 v 1 h -7 v 7 h -1 v -7 h -7 v -1 h 7 v -7 z m 9,3 l 4.5,4.5 -4.5,4.5 v -9 z m -13,13 h 9 l -4.5,4.5 -4.5,-4.5 z m -8.5,-8.5 l 4.5,-4.5 v 9 l -4.5,-4.5 z" />
-          </svg>
-        </button>
         <div className="btn-toolbar">
           <div className="btn-group">
-            <button className="btn btn-default" onClick={fillFog}>
-              Shroud All
-            </button>
             <button
               className="btn btn-default"
               onClick={() => {
-                clearFog();
+                showMapModal();
               }}
             >
-              Clear All
+              <MapIcon height={16} width={16} fill="rgba(0, 0, 0, 1)" /> Load
+              Map
             </button>
           </div>
-
           <div className="btn-group">
             <button
               className="btn btn-default"
@@ -982,7 +1016,7 @@ export const DmMap = ({
                 });
               }}
             >
-              Send
+              <SendIcon height={16} width={16} fill="rgba(0, 0, 0, 1)" /> Send
             </button>
 
             <button className="btn btn-default" disabled>
@@ -1000,61 +1034,83 @@ export const DmMap = ({
       </div>
 
       <Toolbar>
-        <Toolbar.Item onClick={showMapModal}>
-          <MapIcon height={30} width={30} fill={"grey"} />
-        </Toolbar.Item>
-        <Toolbar.Item
-          isActive={tool === "move"}
-          onClick={() => {
-            setTool("move");
+        <Toolbar.Group
+          style={{
+            borderBottom: "1px solid rgba(222, 222, 222, .7)"
           }}
         >
-          <MoveIcon
-            height={30}
-            width={30}
-            fill={tool === "move" ? "rgb(34, 60, 7, 1)" : "grey"}
-          />
-        </Toolbar.Item>
-        <Toolbar.Item
-          isActive={tool === "area"}
-          onClick={() => {
-            setTool("area");
-          }}
-        >
-          <CropIcon
-            height={30}
-            width={30}
-            fill={tool === "area" ? "rgb(34, 60, 7, 1)" : "grey"}
-          />
-        </Toolbar.Item>
-        <Toolbar.Item
-          isActive={tool === "brush"}
-          onClick={() => {
-            setTool("brush");
-          }}
-        >
-          <PenIcon
-            height={30}
-            width={30}
-            fill={tool === "brush" ? "rgb(34, 60, 7, 1)" : "grey"}
-          />
-        </Toolbar.Item>
-        <Toolbar.Item
-          onClick={() => {
-            if (mode === "clear") {
-              setMode("shroud");
-            } else {
-              setMode("clear");
-            }
-          }}
-        >
-          {mode === "shroud" ? (
-            <EyeOffIcon height={30} width={30} fill={"grey"} />
-          ) : (
-            <EyeIcon height={30} width={30} fill={"grey"} />
-          )}
-        </Toolbar.Item>
+          <Toolbar.Item
+            data-tip="Move Map"
+            isActive={tool === "move"}
+            onClick={() => {
+              setTool("move");
+            }}
+          >
+            <MoveIcon
+              height={30}
+              width={30}
+              fill={tool === "move" ? "rgb(34, 60, 7, 1)" : "grey"}
+            />
+          </Toolbar.Item>
+          <Toolbar.Item
+            data-tip="Select Area"
+            isActive={tool === "area"}
+            onClick={() => {
+              setTool("area");
+            }}
+          >
+            <CropIcon
+              height={30}
+              width={30}
+              fill={tool === "area" ? "rgb(34, 60, 7, 1)" : "grey"}
+            />
+          </Toolbar.Item>
+          <Toolbar.Item
+            data-tip="Brush"
+            isActive={tool === "brush"}
+            onClick={() => {
+              setTool("brush");
+            }}
+            style={{ marginBottom: 0 }}
+          >
+            <PenIcon
+              height={30}
+              width={30}
+              fill={tool === "brush" ? "rgb(34, 60, 7, 1)" : "grey"}
+            />
+          </Toolbar.Item>
+        </Toolbar.Group>
+        <Toolbar.Group>
+          <Toolbar.Item
+            data-tip="Toggle shroud/clear"
+            onClick={() => {
+              if (mode === "clear") {
+                setMode("shroud");
+              } else {
+                setMode("clear");
+              }
+            }}
+          >
+            {mode === "shroud" ? (
+              <EyeOffIcon height={30} width={30} fill="rgba(0, 0, 0, 1)" />
+            ) : (
+              <EyeIcon height={30} width={30} fill="rgba(0, 0, 0, 1)" />
+            )}
+          </Toolbar.Item>
+          <Toolbar.Item onClick={() => fillFog()} data-tip="Shroud all">
+            <DropletIcon
+              height={30}
+              width={30}
+              fill="rgba(0, 0, 0, 1)"
+              filled
+            />
+          </Toolbar.Item>
+          <Toolbar.Item onClick={() => clearFog()} data-tip="Clear all">
+            <DropletIcon height={30} width={30} fill="rgba(0, 0, 0, 1)" />
+          </Toolbar.Item>
+        </Toolbar.Group>
       </Toolbar>
+      <ReactTooltip place="right" />
     </>
   );
 };
