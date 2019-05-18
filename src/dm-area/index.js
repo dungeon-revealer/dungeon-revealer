@@ -42,10 +42,11 @@ export const DmArea = () => {
     <>
       {showMapModal ? (
         <SelectMapModal
+          canClose={loadedMapId !== null}
           maps={data.maps}
           loadedMapId={loadedMapId}
           liveMapId={liveMapId}
-          onClickOutside={() => {
+          closeModal={() => {
             setShowMapModal(false);
           }}
           setLoadedMapId={loadedMapId => {

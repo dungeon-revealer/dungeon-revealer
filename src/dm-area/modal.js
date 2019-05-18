@@ -27,18 +27,27 @@ const ModalBackground = ({ children, ...props }) => (
   </div>
 );
 
-const ModalPortal = ({ children, onClickOutside }) => {
+const ModalPortal = ({ children, onClickOutside, onPressEscape }) => {
   const [modalElement] = useState(() => document.createElement("div"));
   useEffect(() => {
     modalRoot.append(modalElement);
     const body = document.querySelector("body");
     disableBodyScroll(body);
 
+    const keydownListener = ev => {
+      if (ev.keyCode === 27 && onPressEscape) {
+        onPressEscape();
+      }
+    };
+
+    window.addEventListener("keydown", keydownListener);
+
     return () => {
+      window.removeEventListener("keydown", keydownListener);
       modalRoot.removeChild(modalElement);
       enableBodyScroll(body);
     };
-  }, [modalElement]);
+  }, [modalElement, onPressEscape]);
 
   return createPortal(
     <ModalBackground onClick={onClickOutside}>{children}</ModalBackground>,
