@@ -122,62 +122,144 @@ const SendIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-const Toolbar = ({ children }) => {
+const RadioIcon = ({ fill, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx={12} cy={12} r={2} />
+    <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14" />
+  </svg>
+);
+
+const PauseIcon = ({ fill, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx={12} cy={12} r={10} />
+    <path d="M10 15V9M14 15V9" />{" "}
+  </svg>
+);
+
+const IconLabel = ({ children, color }) => (
+  <div
+    style={{
+      fontSize: 10,
+      fontWeight: "bold",
+      color
+    }}
+  >
+    {children}
+  </div>
+);
+
+const ToolbarContext = React.createContext({ horizontal: false });
+
+const ToolbarLogo = () => {
   return (
     <div
       style={{
-        position: "absolute",
-        top: "20%",
-        left: 20,
-        boxShadow: "0 0 15px rgba(0, 0, 0, .1)",
-        borderRadius: 15,
-        width: 70,
-        backgroundColor: "rgba(255, 255, 255, 1)",
-        textAlign: "center",
-        height: "max-content",
-        overflow: "hidden"
+        backgroundColor: "rgb(34, 60, 7, 1)",
+        paddingTop: 25,
+        paddingBottom: 15,
+        fontSize: 20,
+        fontWeight: "bold",
+        color: "rgba(255, 255, 255, 1)",
+        marginBottom: 24,
+        fontFamily: "folkard, palitino, serif"
       }}
     >
-      <div
-        style={{
-          backgroundColor: "rgb(34, 60, 7, 1)",
-          paddingTop: 25,
-          paddingBottom: 15,
-          fontSize: 20,
-          fontWeight: "bold",
-          color: "rgba(255, 255, 255, 1)",
-          marginBottom: 24,
-          fontFamily: "folkard, palitino, serif"
-        }}
-      >
-        DR
-      </div>
-      <div
-        style={{
-          display: "block",
-          padding: 0,
-          margin: 0,
-          listStyle: "none"
-        }}
-      >
-        {children}
-      </div>
+      DR
     </div>
   );
 };
 
-Toolbar.Group = ({ children, style, ...props }) => {
+const Toolbar = ({ children, style, horizontal }) => {
+  const contextValue = React.useMemo(() => ({ horizontal }), [horizontal]);
+
+  return (
+    <ToolbarContext.Provider value={contextValue}>
+      <div
+        style={{
+          pointerEvents: "all",
+          boxShadow: "0 0 15px rgba(0, 0, 0, .1)",
+          borderRadius: 15,
+
+          backgroundColor: "rgba(255, 255, 255, 1)",
+          textAlign: "center",
+          overflow: "hidden",
+          ...(!horizontal
+            ? {
+                width: 80,
+                height: "max-content"
+              }
+            : {
+                display: "flex",
+                width: "max-content",
+                height: 80,
+                alignItems: "center"
+              }),
+          ...style
+        }}
+      >
+        {children}
+      </div>
+    </ToolbarContext.Provider>
+  );
+};
+
+Toolbar.Group = ({ children, style, divider, ...props }) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { horizontal } = React.useContext(ToolbarContext);
+
+  let display = "block";
+  let marginTop = 16;
+  let marginLeft = 12;
+  let marginRight = 12;
+  let paddingBottom = 12;
+  let borderBottom = "none";
+  let borderRight = "none";
+
+  if (horizontal) {
+    display = "flex";
+    marginTop = 0;
+    marginLeft = 16;
+    marginRight = 16;
+    paddingBottom = 0;
+  }
+
+  if (divider) {
+    if (horizontal) {
+      borderRight = "1px solid rgba(222, 222, 222, .7)";
+    } else {
+      borderBottom = "1px solid rgba(222, 222, 222, .7)";
+    }
+  }
+
   return (
     <ul
       style={{
-        display: "block",
+        display,
         padding: 0,
         margin: 0,
         listStyle: "none",
-        marginTop: 16,
-        marginRight: 12,
-        marginLeft: 12,
-        paddingBottom: 12,
+        marginTop,
+        marginRight,
+        marginLeft,
+        paddingBottom,
+        borderBottom,
+        borderRight,
         ...style
       }}
       {...props}
@@ -187,15 +269,39 @@ Toolbar.Group = ({ children, style, ...props }) => {
   );
 };
 
-Toolbar.Item = ({ children, isActive, style = {}, ...props }) => {
+Toolbar.Item = ({ children, isActive, style, ...props }) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { horizontal } = React.useContext(ToolbarContext);
+
+  let flex = "none";
+  let minWidth = "none";
+  let marginBottom = 8;
+  let paddingBottom = 8;
+  let paddingTop = 8;
+  let marginLeft = 0;
+  let paddingRight = 0;
+  let marginRight = 0;
+
+  if (horizontal) {
+    marginBottom = paddingBottom = paddingTop = 0;
+    marginLeft = paddingRight = marginRight = 8;
+    flex = 1;
+    minWidth = 80;
+  }
+
   return (
     <li
       style={{
         display: "block",
-        cursor: "pointer",
-        marginBottom: 8,
-        paddingBottom: 8,
-        paddingTop: 8,
+        flex,
+        minWidth,
+        cursor: props.onClick ? "pointer" : "inherit",
+        marginBottom,
+        paddingBottom,
+        paddingTop,
+        marginLeft,
+        paddingRight,
+        marginRight,
 
         ...(isActive
           ? { filter: "drop-shadow( 0 0 4px rgba(0, 0, 0, .3))" }
@@ -816,6 +922,9 @@ export const DmMap = ({
     };
   }, [loadedMapId]);
 
+  const isCurrentMapLive = liveMapId && loadedMapId === liveMapId;
+  const isOtherMapLive = liveMapId && loadedMapId !== liveMapId;
+
   return (
     <>
       <PanZoom
@@ -960,20 +1069,7 @@ export const DmMap = ({
           />
         </div>
       </PanZoom>
-      <div id="dm-toolbar" className="toolbar-wrapper">
-        <div className="btn-toolbar">
-          <div className="btn-group">
-            <button
-              className="btn btn-default"
-              onClick={() => {
-                showMapModal();
-              }}
-            >
-              <MapIcon height={16} width={16} fill="rgba(0, 0, 0, 1)" /> Load
-              Map
-            </button>
-          </div>
-          <div className="btn-group">
+      {/* <div className="btn-group">
             <button
               className="btn btn-default"
               onClick={() => {
@@ -1004,113 +1100,183 @@ export const DmMap = ({
             </button>
           </div>
           <div className="btn-group">
-            <button
-              className="btn btn-default"
+            */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          position: "absolute",
+          width: "100%",
+          left: 0,
+          bottom: 12,
+          pointerEvents: "none"
+        }}
+      >
+        <Toolbar horizontal>
+          <Toolbar.Group>
+            <Toolbar.Item
+              onClick={() => {
+                showMapModal();
+              }}
+            >
+              <MapIcon height={30} width={30} fill="rgba(0, 0, 0, 1)" />
+              <IconLabel>Change Map</IconLabel>
+            </Toolbar.Item>
+            <Toolbar.Item onClick={hideMap}>
+              <PauseIcon
+                height={30}
+                width={30}
+                fill={
+                  liveMapId !== null
+                    ? "hsl(360, 83%, 62%)"
+                    : "hsl(212, 33%, 89%)"
+                }
+              />
+              <IconLabel
+                color={
+                  liveMapId !== null
+                    ? "hsl(360, 83%, 62%)"
+                    : "hsl(212, 33%, 89%)"
+                }
+              >
+                Stop Sharing
+              </IconLabel>
+            </Toolbar.Item>
+            {isCurrentMapLive ? (
+              <Toolbar.Item data-tooltip="Currently loaded map is live">
+                <RadioIcon height={30} width={30} fill="hsl(160, 51%, 49%)" />
+                <IconLabel color="hsl(160, 51%, 49%)">Live</IconLabel>
+              </Toolbar.Item>
+            ) : isOtherMapLive ? (
+              <Toolbar.Item data-tooltip="A different map is live">
+                <RadioIcon height={30} width={30} fill="hsl(48, 94%, 68%)" />
+                <IconLabel color="hsl(48, 94%, 68%)">Live</IconLabel>
+              </Toolbar.Item>
+            ) : (
+              <Toolbar.Item data-tooltip="No map is currently live">
+                <RadioIcon height={30} width={30} fill="hsl(212, 33%, 89%)" />
+                <IconLabel color="hsl(212, 33%, 89%)">Not Live</IconLabel>
+              </Toolbar.Item>
+            )}
+            <Toolbar.Item
               onClick={async () => {
-                if (!fogCanvasRef) {
+                if (!fogCanvasRef.current) {
                   return;
                 }
-
                 sendLiveMap({
                   image: fogCanvasRef.current.toDataURL("image/png")
                 });
               }}
             >
-              <SendIcon height={16} width={16} fill="rgba(0, 0, 0, 1)" /> Send
-            </button>
-
-            <button className="btn btn-default" disabled>
-              {liveMapId && loadedMapId === liveMapId ? "LIVE" : "NOT LIVE"}
-            </button>
-            <button
-              className="btn btn-default"
-              onClick={hideMap}
-              disabled={!liveMapId}
-            >
-              Hide Live Map
-            </button>
-          </div>
-        </div>
+              <SendIcon height={30} width={30} fill="rgba(0, 0, 0, 1)" />
+              <IconLabel>Send</IconLabel>
+            </Toolbar.Item>
+          </Toolbar.Group>
+        </Toolbar>
       </div>
 
-      <Toolbar>
-        <Toolbar.Group
-          style={{
-            borderBottom: "1px solid rgba(222, 222, 222, .7)"
-          }}
-        >
-          <Toolbar.Item
-            data-tip="Move Map"
-            isActive={tool === "move"}
-            onClick={() => {
-              setTool("move");
-            }}
-          >
-            <MoveIcon
-              height={30}
-              width={30}
-              fill={tool === "move" ? "rgb(34, 60, 7, 1)" : "grey"}
-            />
-          </Toolbar.Item>
-          <Toolbar.Item
-            data-tip="Select Area"
-            isActive={tool === "area"}
-            onClick={() => {
-              setTool("area");
-            }}
-          >
-            <CropIcon
-              height={30}
-              width={30}
-              fill={tool === "area" ? "rgb(34, 60, 7, 1)" : "grey"}
-            />
-          </Toolbar.Item>
-          <Toolbar.Item
-            data-tip="Brush"
-            isActive={tool === "brush"}
-            onClick={() => {
-              setTool("brush");
-            }}
-            style={{ marginBottom: 0 }}
-          >
-            <PenIcon
-              height={30}
-              width={30}
-              fill={tool === "brush" ? "rgb(34, 60, 7, 1)" : "grey"}
-            />
-          </Toolbar.Item>
-        </Toolbar.Group>
-        <Toolbar.Group>
-          <Toolbar.Item
-            data-tip="Toggle shroud/clear"
-            onClick={() => {
-              if (mode === "clear") {
-                setMode("shroud");
-              } else {
-                setMode("clear");
-              }
-            }}
-          >
-            {mode === "shroud" ? (
-              <EyeOffIcon height={30} width={30} fill="rgba(0, 0, 0, 1)" />
-            ) : (
-              <EyeIcon height={30} width={30} fill="rgba(0, 0, 0, 1)" />
-            )}
-          </Toolbar.Item>
-          <Toolbar.Item onClick={() => fillFog()} data-tip="Shroud all">
-            <DropletIcon
-              height={30}
-              width={30}
-              fill="rgba(0, 0, 0, 1)"
-              filled
-            />
-          </Toolbar.Item>
-          <Toolbar.Item onClick={() => clearFog()} data-tip="Clear all">
-            <DropletIcon height={30} width={30} fill="rgba(0, 0, 0, 1)" />
-          </Toolbar.Item>
-        </Toolbar.Group>
-      </Toolbar>
-      <ReactTooltip place="right" />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          position: "absolute",
+          height: "100%",
+          top: 0,
+          left: 12,
+          pointerEvents: "none"
+        }}
+      >
+        <Toolbar>
+          <ToolbarLogo />
+          <Toolbar.Group divider>
+            <Toolbar.Item
+              isActive={tool === "move"}
+              onClick={() => {
+                setTool("move");
+              }}
+            >
+              <MoveIcon
+                height={30}
+                width={30}
+                fill={tool === "move" ? "rgb(34, 60, 7, 1)" : "grey"}
+              />
+              <IconLabel color={tool === "move" ? "rgb(34, 60, 7, 1)" : "grey"}>
+                Move
+              </IconLabel>
+            </Toolbar.Item>
+            <Toolbar.Item
+              isActive={tool === "area"}
+              onClick={() => {
+                setTool("area");
+              }}
+            >
+              <CropIcon
+                height={30}
+                width={30}
+                fill={tool === "area" ? "rgb(34, 60, 7, 1)" : "grey"}
+              />
+              <IconLabel color={tool === "area" ? "rgb(34, 60, 7, 1)" : "grey"}>
+                Select Area
+              </IconLabel>
+            </Toolbar.Item>
+            <Toolbar.Item
+              isActive={tool === "brush"}
+              onClick={() => {
+                setTool("brush");
+              }}
+              style={{ marginBottom: 0 }}
+            >
+              <PenIcon
+                height={30}
+                width={30}
+                fill={tool === "brush" ? "rgb(34, 60, 7, 1)" : "grey"}
+              />
+              <IconLabel
+                color={tool === "brush" ? "rgb(34, 60, 7, 1)" : "grey"}
+              >
+                Brush
+              </IconLabel>
+            </Toolbar.Item>
+          </Toolbar.Group>
+          <Toolbar.Group>
+            <Toolbar.Item
+              onClick={() => {
+                if (mode === "clear") {
+                  setMode("shroud");
+                } else {
+                  setMode("clear");
+                }
+              }}
+            >
+              {mode === "shroud" ? (
+                <>
+                  <EyeOffIcon height={30} width={30} fill="rgba(0, 0, 0, 1)" />
+                  <IconLabel>Shroud</IconLabel>
+                </>
+              ) : (
+                <>
+                  <EyeIcon height={30} width={30} fill="rgba(0, 0, 0, 1)" />
+                  <IconLabel>Reveal</IconLabel>
+                </>
+              )}
+            </Toolbar.Item>
+            <Toolbar.Item onClick={() => fillFog()}>
+              <DropletIcon
+                height={30}
+                width={30}
+                fill="rgba(0, 0, 0, 1)"
+                filled
+              />
+              <IconLabel>Shroud All</IconLabel>
+            </Toolbar.Item>
+            <Toolbar.Item onClick={() => clearFog()}>
+              <DropletIcon height={30} width={30} fill="rgba(0, 0, 0, 1)" />
+              <IconLabel>Clear All</IconLabel>
+            </Toolbar.Item>
+          </Toolbar.Group>
+        </Toolbar>
+      </div>
+      <ReactTooltip />
     </>
   );
 };
