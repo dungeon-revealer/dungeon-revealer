@@ -375,7 +375,6 @@ export const PlayerArea = () => {
       >
         <div ref={mapContainerRef}>
           <canvas
-            className="map"
             ref={mapCanvasRef}
             style={{
               pointerEvents: "none",
@@ -384,7 +383,6 @@ export const PlayerArea = () => {
             }}
           />
           <svg
-            className="map"
             ref={objectSvgRef}
             style={{
               pointerEvents: "none",
