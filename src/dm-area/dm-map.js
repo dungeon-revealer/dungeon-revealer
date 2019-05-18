@@ -5,6 +5,163 @@ import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
 import { loadImage, getOptimalDimensions } from "./../util";
 
+const MapIcon = ({ fill, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4zM8 2v16M16 6v16" />
+  </svg>
+);
+
+const MoveIcon = ({ fill, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20" />
+  </svg>
+);
+
+const CropIcon = ({ fill, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15" />
+    <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15" />
+  </svg>
+);
+
+const PenIcon = ({ fill, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M12 19l7-7 3 3-7 7-3-3z" />
+    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586" />
+    <circle cx={11} cy={11} r={2} />
+  </svg>
+);
+
+const EyeIcon = ({ fill, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx={12} cy={12} r={3} />
+  </svg>
+);
+
+const EyeOffIcon = ({ fill, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" />
+  </svg>
+);
+
+const Toolbar = ({ children }) => {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: "20%",
+        left: 20,
+        boxShadow: "0 0 15px rgba(0, 0, 0, .1)",
+        borderRadius: 15,
+        width: 70,
+        backgroundColor: "rgba(255, 255, 255, 1)",
+        textAlign: "center",
+        height: "max-content",
+        overflow: "hidden"
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "rgb(34, 60, 7, 1)",
+          paddingTop: 25,
+          paddingBottom: 15,
+          fontSize: 20,
+          fontWeight: "bold",
+          color: "rgba(255, 255, 255, 1)",
+          marginBottom: 30,
+          fontFamily: "folkard, palitino, serif"
+        }}
+      >
+        DR
+      </div>
+      <ul
+        style={{
+          display: "block",
+          padding: 0,
+          margin: 0,
+          listStyle: "none"
+        }}
+      >
+        {children}
+      </ul>
+    </div>
+  );
+};
+
+Toolbar.Seperator = () => {
+  return <div style={{ borderBottom: "1px solid grey", opacity: 0.1 }} />;
+};
+
+Toolbar.Item = ({ children, isActive, ...props }) => {
+  return (
+    <li
+      style={{
+        display: "block",
+        cursor: "pointer",
+        marginBottom: 12,
+        marginTop: 12,
+        paddingBottom: 12,
+        paddingTop: 12,
+        ...(isActive
+          ? { filter: "drop-shadow( 0 0 4px rgba(0, 0, 0, .3))" }
+          : {})
+      }}
+      {...props}
+    >
+      {children}
+    </li>
+  );
+};
+
 const midPointBtw = (p1, p2) => {
   return {
     x: p1.x + (p2.x - p1.x) / 2,
@@ -160,7 +317,14 @@ const useLineWidthState = createPersistedState("dm.settings.lineWidth");
  * loadedMapId = id of the map that is currently visible in the editor
  * liveMapId = id of the map that is currently visible to the players
  */
-export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
+export const DmMap = ({
+  loadedMapId,
+  liveMapId,
+  sendLiveMap,
+  hideMap,
+  showMapModal
+}) => {
+  const mapContainerRef = useRef(null);
   const mapCanvasRef = useRef(null);
   const fogCanvasRef = useRef(null);
   const mouseCanvasRef = useRef(null);
@@ -512,71 +676,72 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
       };
     }
 
-    const resize = (displayWidth, displayHeight) => {
-      fogCanvasRef.current.style.width = displayWidth + "px";
-      fogCanvasRef.current.style.height = displayHeight + "px";
-      mapCanvasRef.current.style.width = displayWidth + "px";
-      mapCanvasRef.current.style.height = displayHeight + "px";
-      mouseCanvasRef.current.style.width = displayWidth + "px";
-      mouseCanvasRef.current.style.height = displayHeight + "px";
-    };
-
-    const fitMapToWindow = (
-      width = parseInt(mapCanvasRef.current.getBoundingClientRect().width, 10),
-      height = parseInt(mapCanvasRef.current.getBoundingClientRect().height, 10)
-    ) => {
-      const newDimensions = getOptimalDimensions(
-        width,
-        height,
-        window.innerWidth ||
-          document.documentElement.clientWidth ||
-          document.body.clientWidth,
-        Infinity
-      );
-      resize(newDimensions.width, newDimensions.height);
-    };
-
-    Promise.all([
-      loadImage(`/map/${loadedMapId}/map`),
-      loadImage(`/map/${loadedMapId}/fog`).catch(() => {
-        return null;
-      })
-    ]).then(([map, fog]) => {
-      const dimensions = getOptimalDimensions(
-        map.width,
-        map.height,
-        3000,
-        8000
-      );
-      mapCanvasRef.current.width = dimensions.width;
-      mapCanvasRef.current.height = dimensions.height;
-      fogCanvasRef.current.width = dimensions.width;
-      fogCanvasRef.current.height = dimensions.height;
-      mouseCanvasRef.current.width = dimensions.width;
-      mouseCanvasRef.current.height = dimensions.height;
-
-      mapCanvasRef.current
-        .getContext("2d")
-        .drawImage(map, 0, 0, dimensions.width, dimensions.height);
-
-      if (hasPreviousMap.current) {
-        fitMapToWindow(dimensions.width, dimensions.height);
-      } else {
-        fitMapToWindow();
-      }
-
-      if (!fog) {
-        fillFog();
+    const centerMap = (isInitial = false) => {
+      if (!panZoomRef.current) {
         return;
       }
+      // hacky approach for centering the map initially
+      // (there is no API for react-native-panzoom to do the autofocus without a transition)
+      if (isInitial) {
+        const transition = panZoomRef.current.dragContainer.style.transition;
+        panZoomRef.current.dragContainer.style.transition = "none";
+        setTimeout(() => {
+          panZoomRef.current.dragContainer.style.transition = transition;
+        }, 500);
+      }
+      panZoomRef.current.autoCenter(0.85);
+    };
 
-      fogCanvasRef.current
-        .getContext("2d")
-        .drawImage(fog, 0, 0, dimensions.width, dimensions.height);
-    });
+    let tasks = [
+      loadImage(`/map/${loadedMapId}/map`),
+      loadImage(`/map/${loadedMapId}/fog`)
+    ];
 
-    const resizeEventHandler = () => fitMapToWindow();
-    window.addEventListener("resize", resizeEventHandler);
+    Promise.all([
+      tasks[0].promise,
+      tasks[1].promise.catch(() => {
+        return null;
+      })
+    ])
+      .then(([map, fog]) => {
+        tasks = null;
+        const dimensions = getOptimalDimensions(
+          map.width,
+          map.height,
+          3000,
+          8000
+        );
+        mapCanvasRef.current.width = dimensions.width;
+        mapCanvasRef.current.height = dimensions.height;
+        fogCanvasRef.current.width = dimensions.width;
+        fogCanvasRef.current.height = dimensions.height;
+        mouseCanvasRef.current.width = dimensions.width;
+        mouseCanvasRef.current.height = dimensions.height;
+
+        const widthPx = `${dimensions.width}px`;
+        const heightPx = `${dimensions.height}px`;
+        mapContainerRef.current.style.width = mapCanvasRef.current.style.width = fogCanvasRef.current.style.width = widthPx;
+        mapContainerRef.current.style.height = mapCanvasRef.current.style.height = fogCanvasRef.current.style.height = heightPx;
+
+        mapCanvasRef.current
+          .getContext("2d")
+          .drawImage(map, 0, 0, dimensions.width, dimensions.height);
+
+        centerMap(true);
+
+        if (!fog) {
+          fillFog();
+          return;
+        }
+
+        fogCanvasRef.current
+          .getContext("2d")
+          .drawImage(fog, 0, 0, dimensions.width, dimensions.height);
+      })
+      .catch(err => {
+        // @TODO: distinguish between network error (rertry?) and cancel error
+        console.error(err);
+      });
 
     saveFogCanvasRef.current = debounce(() => {
       if (!fogCanvasRef.current) {
@@ -594,8 +759,12 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
     }, 500);
 
     return () => {
+      if (tasks) {
+        tasks.forEach(task => {
+          task.cancel();
+        });
+      }
       hasPreviousMap.current = true;
-      window.removeEventListener("resize", resizeEventHandler);
       saveFogCanvasRef.current.cancel();
     };
   }, [loadedMapId]);
@@ -611,134 +780,138 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
         disabled={tool !== "move"}
         style={{
           cursor: tool !== "move" ? "inherit" : "move",
-          outline: "none"
+          outline: "none",
+          height: "100vh",
+          width: "100vw"
         }}
         ref={panZoomRef}
       >
-        <canvas ref={mapCanvasRef} style={{ position: "absolute" }} />
-        <canvas
-          ref={fogCanvasRef}
-          style={{ position: "absolute", opacity: 0.5 }}
-        />
-        <canvas
-          ref={mouseCanvasRef}
-          style={{ position: "absolute", touchAction: "none" }}
-          onMouseMove={ev => {
-            if (tool === "move") {
-              return;
-            }
+        <div ref={mapContainerRef}>
+          <canvas ref={mapCanvasRef} style={{ position: "absolute" }} />
+          <canvas
+            ref={fogCanvasRef}
+            style={{ position: "absolute", opacity: 0.5 }}
+          />
+          <canvas
+            ref={mouseCanvasRef}
+            style={{ position: "absolute", touchAction: "none" }}
+            onMouseMove={ev => {
+              if (tool === "move") {
+                return;
+              }
 
-            const coords = getMouseCoordinates(ev);
-            drawCursor(coords);
+              const coords = getMouseCoordinates(ev);
+              drawCursor(coords);
 
-            if (tool === "area" && areaDrawState.current.startCoords) {
-              if (areaDrawState.current.startCoords) {
+              if (tool === "area" && areaDrawState.current.startCoords) {
+                if (areaDrawState.current.startCoords) {
+                  areaDrawState.current.currentCoords = coords;
+                  drawAreaSelection();
+                }
+                return;
+              }
+
+              if (!drawState.current.isDrawing) {
+                return;
+              }
+
+              drawFog(drawState.current.lastCoords, coords);
+              drawState.current.lastCoords = coords;
+            }}
+            onMouseLeave={() => {
+              const mouseContext = mouseCanvasRef.current.getContext("2d");
+              // draw cursor
+              mouseContext.clearRect(
+                0,
+                0,
+                mouseCanvasRef.current.width,
+                mouseCanvasRef.current.height
+              );
+
+              if (
+                (drawState.current.isDrawing || drawState.current.lastCoords) &&
+                saveFogCanvasRef.current
+              ) {
+                saveFogCanvasRef.current();
+              }
+
+              drawState.current.isDrawing = false;
+              drawState.current.lastCoords = null;
+              areaDrawState.current.currentCoords = null;
+              areaDrawState.current.startCoords = null;
+            }}
+            onMouseDown={ev => {
+              const coords = getMouseCoordinates(ev);
+
+              if (tool === "brush") {
+                drawState.current.isDrawing = true;
+                drawInitial(coords);
+              } else if (tool === "area") {
+                areaDrawState.current.startCoords = coords;
+              }
+            }}
+            onMouseUp={() => {
+              drawState.current.isDrawing = false;
+              drawState.current.lastCoords = null;
+              if (
+                areaDrawState.current.currentCoords &&
+                areaDrawState.current.startCoords
+              ) {
+                handleAreaSelection();
+              }
+              areaDrawState.current.currentCoords = null;
+              areaDrawState.current.startCoords = null;
+
+              if (saveFogCanvasRef.current) {
+                saveFogCanvasRef.current();
+              }
+            }}
+            onTouchStart={ev => {
+              const coords = getTouchCoordinates(ev);
+              if (tool === "brush") {
+                drawState.current.isDrawing = true;
+                drawInitial(coords);
+              } else if (tool === "area") {
+                areaDrawState.current.startCoords = coords;
+              }
+            }}
+            onTouchMove={ev => {
+              ev.preventDefault();
+              const coords = getTouchCoordinates(ev);
+
+              if (tool === "move") {
+                return;
+              } else if (tool === "area" && areaDrawState.current.startCoords) {
                 areaDrawState.current.currentCoords = coords;
                 drawAreaSelection();
+                return;
               }
-              return;
-            }
 
-            if (!drawState.current.isDrawing) {
-              return;
-            }
+              if (!drawState.current.isDrawing) {
+                return;
+              }
 
-            drawFog(drawState.current.lastCoords, coords);
-            drawState.current.lastCoords = coords;
-          }}
-          onMouseLeave={() => {
-            const mouseContext = mouseCanvasRef.current.getContext("2d");
-            // draw cursor
-            mouseContext.clearRect(
-              0,
-              0,
-              mouseCanvasRef.current.width,
-              mouseCanvasRef.current.height
-            );
+              drawFog(drawState.current.lastCoords, coords);
+              drawState.current.lastCoords = coords;
+            }}
+            onTouchEnd={() => {
+              drawState.current.isDrawing = false;
+              drawState.current.lastCoords = null;
+              if (
+                areaDrawState.current.currentCoords &&
+                areaDrawState.current.startCoords
+              ) {
+                handleAreaSelection();
+              }
+              areaDrawState.current.currentCoords = null;
+              areaDrawState.current.startCoords = null;
 
-            if (
-              (drawState.current.isDrawing || drawState.current.lastCoords) &&
-              saveFogCanvasRef.current
-            ) {
-              saveFogCanvasRef.current();
-            }
-
-            drawState.current.isDrawing = false;
-            drawState.current.lastCoords = null;
-            areaDrawState.current.currentCoords = null;
-            areaDrawState.current.startCoords = null;
-          }}
-          onMouseDown={ev => {
-            const coords = getMouseCoordinates(ev);
-
-            if (tool === "brush") {
-              drawState.current.isDrawing = true;
-              drawInitial(coords);
-            } else if (tool === "area") {
-              areaDrawState.current.startCoords = coords;
-            }
-          }}
-          onMouseUp={() => {
-            drawState.current.isDrawing = false;
-            drawState.current.lastCoords = null;
-            if (
-              areaDrawState.current.currentCoords &&
-              areaDrawState.current.startCoords
-            ) {
-              handleAreaSelection();
-            }
-            areaDrawState.current.currentCoords = null;
-            areaDrawState.current.startCoords = null;
-
-            if (saveFogCanvasRef.current) {
-              saveFogCanvasRef.current();
-            }
-          }}
-          onTouchStart={ev => {
-            const coords = getTouchCoordinates(ev);
-            if (tool === "brush") {
-              drawState.current.isDrawing = true;
-              drawInitial(coords);
-            } else if (tool === "area") {
-              areaDrawState.current.startCoords = coords;
-            }
-          }}
-          onTouchMove={ev => {
-            ev.preventDefault();
-            const coords = getTouchCoordinates(ev);
-
-            if (tool === "move") {
-              return;
-            } else if (tool === "area" && areaDrawState.current.startCoords) {
-              areaDrawState.current.currentCoords = coords;
-              drawAreaSelection();
-              return;
-            }
-
-            if (!drawState.current.isDrawing) {
-              return;
-            }
-
-            drawFog(drawState.current.lastCoords, coords);
-            drawState.current.lastCoords = coords;
-          }}
-          onTouchEnd={() => {
-            drawState.current.isDrawing = false;
-            drawState.current.lastCoords = null;
-            if (
-              areaDrawState.current.currentCoords &&
-              areaDrawState.current.startCoords
-            ) {
-              handleAreaSelection();
-            }
-            areaDrawState.current.currentCoords = null;
-            areaDrawState.current.startCoords = null;
-
-            if (saveFogCanvasRef.current) {
-              saveFogCanvasRef.current();
-            }
-          }}
-        />
+              if (saveFogCanvasRef.current) {
+                saveFogCanvasRef.current();
+              }
+            }}
+          />
+        </div>
       </PanZoom>
       <div id="dm-toolbar" className="toolbar-wrapper">
         <button className="scroll-button">
@@ -765,44 +938,7 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
               Clear All
             </button>
           </div>
-          <div className="btn-group">
-            <button
-              className="btn btn-default"
-              onClick={() => {
-                if (mode === "clear") {
-                  setMode("shroud");
-                } else {
-                  setMode("clear");
-                }
-              }}
-            >
-              {mode === "shroud" ? "Shroud Mode" : "Clear Mode"}
-            </button>
-            <button
-              className={`btn btn-default${tool === "move" ? " active" : ""}`}
-              onClick={() => {
-                setTool("move");
-              }}
-            >
-              Move
-            </button>
-            <button
-              className={`btn btn-default${tool === "area" ? " active" : ""}`}
-              onClick={() => {
-                setTool("area");
-              }}
-            >
-              Area Select Tool
-            </button>
-            <button
-              className={`btn btn-default${tool === "brush" ? " active" : ""}`}
-              onClick={() => {
-                setTool("brush");
-              }}
-            >
-              Brush Tool
-            </button>
-          </div>
+
           <div className="btn-group">
             <button
               className="btn btn-default"
@@ -862,6 +998,63 @@ export const DmMap = ({ loadedMapId, liveMapId, sendLiveMap, hideMap }) => {
           </div>
         </div>
       </div>
+
+      <Toolbar>
+        <Toolbar.Item onClick={showMapModal}>
+          <MapIcon height={30} width={30} fill={"grey"} />
+        </Toolbar.Item>
+        <Toolbar.Item
+          isActive={tool === "move"}
+          onClick={() => {
+            setTool("move");
+          }}
+        >
+          <MoveIcon
+            height={30}
+            width={30}
+            fill={tool === "move" ? "rgb(34, 60, 7, 1)" : "grey"}
+          />
+        </Toolbar.Item>
+        <Toolbar.Item
+          isActive={tool === "area"}
+          onClick={() => {
+            setTool("area");
+          }}
+        >
+          <CropIcon
+            height={30}
+            width={30}
+            fill={tool === "area" ? "rgb(34, 60, 7, 1)" : "grey"}
+          />
+        </Toolbar.Item>
+        <Toolbar.Item
+          isActive={tool === "brush"}
+          onClick={() => {
+            setTool("brush");
+          }}
+        >
+          <PenIcon
+            height={30}
+            width={30}
+            fill={tool === "brush" ? "rgb(34, 60, 7, 1)" : "grey"}
+          />
+        </Toolbar.Item>
+        <Toolbar.Item
+          onClick={() => {
+            if (mode === "clear") {
+              setMode("shroud");
+            } else {
+              setMode("clear");
+            }
+          }}
+        >
+          {mode === "shroud" ? (
+            <EyeOffIcon height={30} width={30} fill={"grey"} />
+          ) : (
+            <EyeIcon height={30} width={30} fill={"grey"} />
+          )}
+        </Toolbar.Item>
+      </Toolbar>
     </>
   );
 };

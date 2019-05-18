@@ -99,42 +99,6 @@ export const DmArea = () => {
           }}
         />
       ) : null}
-      <div
-        className="navbar navbar-inverse"
-        style={{ marginBottom: 0, zIndex: 1000 }}
-      >
-        <div className="navbar-header">
-          <button
-            className="navbar-toggle"
-            type="button"
-            data-toggle="collapse"
-            data-target=".navbar-inverse-collapse"
-          >
-            <span className="icon-bar" />
-            <span className="icon-bar" />
-            <span className="icon-bar" />
-          </button>
-          <a href="/" className="navbar-brand">
-            Dungeon Revealer
-          </a>
-        </div>
-        <div
-          id="#bs-example-navbar-collapse-2"
-          className="collapse navbar-collapse"
-        >
-          <form className="navbar-form navbar-left" role="search">
-            <button
-              className="btn btn-default"
-              type="button"
-              onClick={() => {
-                setShowMapModal(true);
-              }}
-            >
-              Load map
-            </button>
-          </form>
-        </div>
-      </div>
       {loadedMap ? (
         <DmMap
           loadedMapId={loadedMap.id}
@@ -162,6 +126,9 @@ export const DmArea = () => {
               }
             });
             setLiveMapId(null);
+          }}
+          showMapModal={() => {
+            setShowMapModal(true);
           }}
         />
       ) : null}

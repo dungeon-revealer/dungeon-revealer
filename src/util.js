@@ -4,8 +4,13 @@ import { useState, useEffect, useRef } from "react";
  * Utility for preloading an image as a promise
  */
 export const loadImage = src => {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
+  const image = new Image();
+
+  const cancel = () => {
+    image.src = "";
+  };
+
+  const promise = new Promise((resolve, reject) => {
     image.src = src;
     const removeEventListeners = () => {
       image.removeEventListener("load", loadListener);
@@ -22,6 +27,8 @@ export const loadImage = src => {
     image.addEventListener("load", loadListener);
     image.addEventListener("error", errorListener);
   });
+
+  return { promise, cancel };
 };
 
 /**

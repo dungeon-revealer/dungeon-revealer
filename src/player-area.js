@@ -4,46 +4,82 @@ import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
 import { loadImage, useLongPress, getOptimalDimensions } from "./util";
 
+/**
+ * creates a function that takes the value t which is a number between 0 and 1
+ * and maps those to a sin curve in order to produce values resembling a pulsating effect
+ * @param {number} duration total duration of the effect in seconds
+ * @param {number} interval interval of one pulse animate t from 0 -> 1 -> 0
+ * @returns {function(number): number} pulsateFunction
+ */
 const createPulsateFunction = (duration = 10000, interval = 2000) => {
   const step = duration / interval;
   const modificator = step * 2 * Math.PI;
   return t => 0.5 * Math.sin(t * modificator - Math.PI / 2) + 0.5;
 };
 
+const createAnimation = ({ animate, duration, onFinish }) => {
+  let id = null;
+  let _start = 0;
+
+  const cancel = () => {
+    if (id !== null) {
+      cancelAnimationFrame(id);
+      return;
+    }
+  };
+
+  const _animate = () => {
+    if (id) {
+      const t = Math.max(0, Math.min((Date.now() - _start) / duration, 1));
+      animate(t);
+      if (t >= 1) {
+        if (onFinish) {
+          onFinish();
+        }
+        return;
+      }
+    }
+    id = requestAnimationFrame(_animate);
+  };
+
+  const start = () => {
+    _start = Date.now();
+    _animate();
+  };
+
+  return { cancel, start };
+};
+
 const MarkedArea = React.memo(({ x, y, onFinishAnimation }) => {
   const circleRef = useRef(null);
+  const onFinishAnimationRef = useRef(onFinishAnimation);
 
   useEffect(() => {
-    let id = null;
+    onFinishAnimationRef.current = onFinishAnimation;
+  }, [onFinishAnimation]);
 
-    const duration = 10500 - 1;
-    const start = Date.now();
-    const createValue = createPulsateFunction(duration, 1500);
+  useEffect(() => {
+    const duration = 10500;
+    const createValue = createPulsateFunction(duration, 10500 / 10);
 
-    const animate = () => {
-      const t = Math.max(0, Math.min((Date.now() - start) / duration, 1));
-      circleRef.current.setAttribute("r", 15 + 10 * createValue(t));
-
-      if (t >= 0.9) {
-        circleRef.current.setAttribute("opacity", 1 - (t - 0.9) / 0.1);
+    const animation = createAnimation({
+      animate: t => {
+        circleRef.current.setAttribute("r", 15 + 10 * createValue(t));
+        if (t >= 0.9) {
+          circleRef.current.setAttribute("opacity", 1 - (t - 0.9) / 0.1);
+        }
+      },
+      duration,
+      onFinish: () => {
+        onFinishAnimationRef.current();
       }
-      if (t >= 1) {
-        onFinishAnimation();
-        return;
-      }
+    });
 
-      id = requestAnimationFrame(animate);
-    };
-
-    animate();
+    animation.start();
 
     return () => {
-      if (!id) {
-        return;
-      }
-      cancelAnimationFrame(id);
+      animation.cancel();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -66,10 +102,19 @@ export const PlayerArea = () => {
   const socketRef = useRef(null);
   const [showSplashScreen, setShowSplashScreen] = useState(true);
 
+  /**
+   * used for canceling pending requests in case there is a new update incoming.
+   * should be either null or an array of tasks returned by loadImage
+   */
+  const pendingImageLoads = useRef(null);
+
   const mapContainerRef = useRef(null);
   const mapCanvasRef = useRef(null);
   const objectSvgRef = useRef(null);
   const mapCanvasDimensions = useRef(null);
+  /**
+   * reference to the image object of the currently loaded map
+   */
   const mapImageRef = useRef(null);
 
   const [markedAreas, setMarkedAreas] = useState(() => []);
@@ -131,6 +176,16 @@ export const PlayerArea = () => {
 
       const context = mapCanvasRef.current.getContext("2d");
 
+      if (pendingImageLoads.current) {
+        pendingImageLoads.current.forEach(task => {
+          task.cancel();
+        });
+        pendingImageLoads.current = null;
+      }
+
+      /**
+       * Hide map (show splashscreen)
+       */
       if (!data.mapId) {
         currentMapId.current = null;
         mapCanvasDimensions.current = null;
@@ -143,40 +198,62 @@ export const PlayerArea = () => {
           mapCanvasRef.current.height
         );
         setShowSplashScreen(true);
-      } else if (currentMapId.current === data.mapId) {
-        /**
-         * Fog update
-         */
-        loadImage(data.image).then(fogImage => {
-          context.clearRect(
-            0,
-            0,
-            mapCanvasRef.current.width,
-            mapCanvasRef.current.height
-          );
-          context.drawImage(
-            mapImageRef.current,
-            0,
-            0,
-            mapCanvasRef.current.width,
-            mapCanvasRef.current.height
-          );
-          context.drawImage(
-            fogImage,
-            0,
-            0,
-            mapCanvasRef.current.width,
-            mapCanvasRef.current.height
-          );
-        });
-      } else {
-        /**
-         * Load new map
-         */
-        Promise.all([
-          loadImage(`/map/${data.mapId}/map`),
-          loadImage(`/map/${data.mapId}/fog`)
-        ]).then(([map, fog]) => {
+        return;
+      }
+
+      /**
+       * Fog has updated
+       */
+      if (currentMapId.current === data.mapId) {
+        const task = loadImage(data.image);
+        pendingImageLoads.current = [task];
+
+        task.promise
+          .then(fogImage => {
+            pendingImageLoads.current = null;
+
+            context.clearRect(
+              0,
+              0,
+              mapCanvasRef.current.width,
+              mapCanvasRef.current.height
+            );
+            context.drawImage(
+              mapImageRef.current,
+              0,
+              0,
+              mapCanvasRef.current.width,
+              mapCanvasRef.current.height
+            );
+            context.drawImage(
+              fogImage,
+              0,
+              0,
+              mapCanvasRef.current.width,
+              mapCanvasRef.current.height
+            );
+          })
+          .catch(err => {
+            // @TODO: distinguish between network error (rertry?) and cancel error
+            console.error(err);
+          });
+        return;
+      }
+
+      /**
+       * Load new map
+       */
+      currentMapId.current = data.mapId;
+      const tasks = [
+        loadImage(`/map/${data.mapId}/map`),
+        loadImage(`/map/${data.mapId}/fog`)
+      ];
+      pendingImageLoads.current = tasks;
+
+      Promise.all(tasks.map(task => task.promise))
+        .then(([map, fog]) => {
+          pendingImageLoads.current = null;
+
           mapImageRef.current = map;
           const mapCanvas = mapCanvasRef.current;
           const objectSvg = objectSvgRef.current;
@@ -205,12 +282,10 @@ export const PlayerArea = () => {
 
           mapCanvasDimensions.current = dimensions;
 
-          mapCanvas.style.width = mapContainer.style.width = objectSvg.style.width = `${
-            dimensions.width
-          }px`;
-          mapCanvas.style.height = mapContainer.style.height = objectSvg.style.height = `${
-            dimensions.height
-          }px`;
+          const widthPx = `${dimensions.width}px`;
+          const heightPx = `${dimensions.height}px`;
+          mapCanvas.style.width = mapContainer.style.width = objectSvg.style.width = widthPx;
+          mapCanvas.style.height = mapContainer.style.height = objectSvg.style.height = heightPx;
 
           mapContext.drawImage(
             map,
@@ -229,34 +304,48 @@ export const PlayerArea = () => {
 
           centerMap(true);
           setShowSplashScreen(false);
+        })
+        .catch(err => {
+          // @TODO: distinguish between network error (rertry?) and cancel error
+          console.error(err);
         });
+    });
+
+    const contextmenuListener = ev => {
+      ev.preventDefault();
+    };
+    window.addEventListener("contextmenu", contextmenuListener);
+
+    return () => {
+      window.removeEventListener("contextmenu", contextmenuListener);
+
+      if (pendingImageLoads.current) {
+        pendingImageLoads.current.forEach(task => {
+          task.cancel();
+        });
+        pendingImageLoads.current = null;
       }
 
-      currentMapId.current = data.mapId;
-
-      const contextmenuListener = ev => {
-        ev.preventDefault();
-      };
-      window.addEventListener("contextmenu", contextmenuListener);
-
-      return () => {
-        window.removeEventListener("contextmenu", contextmenuListener);
-      };
-    });
+      socket.close();
+    };
   }, []);
 
+  /**
+   * long press event for setting a map marker
+   */
   useLongPress(ev => {
     if (!mapCanvasDimensions.current) {
       return;
     }
 
     let input = null;
-    // ev can be touch or click event
+    // ev can be a touch or click event
     if (ev.touches) {
       input = [ev.touches[0].pageX, ev.touches[0].pageY];
     } else {
       input = [ev.pageX, ev.pageY];
     }
+
     // calculate coordinates relative to the canvas
     const ref = new Referentiel(panZoomRef.current.dragContainer);
     const [x, y] = ref.global_to_local(input);
