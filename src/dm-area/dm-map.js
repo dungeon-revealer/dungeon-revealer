@@ -216,12 +216,11 @@ const SquareIcon = ({ fill, ...props }) => (
 const ShapeButton = styled.button`
   border: none;
   background-color: transparent;
-  filter: ${p =>
-    p.isActive ? "drop-shadow(0 0 4px rgba(0, 0, 0, 0.3))" : null};
   color: ${p => (p.isActive ? "rgba(0, 0, 0, 1)" : "hsl(211, 27%, 70%)")};
   &:hover {
     filter: drop-shadow(
-      0 0 4px ${p => (p.isActive ? "rgba(0, 0, 0, .3)" : "hsl(211, 27%, 70%)")}
+      0 0 4px
+        ${p => (p.isActive ? "rgba(0, 0, 0, .3)" : "rgba(200, 200, 200, .6)")}
     );
   }
   > svg {
@@ -1027,7 +1026,7 @@ export const DmMap = ({
       >
         <Toolbar horizontal>
           <Toolbar.Group>
-            <Toolbar.Item isActive={true}>
+            <Toolbar.Item isEnabled>
               <Toolbar.Button
                 onClick={() => {
                   showMapModal();
@@ -1079,7 +1078,7 @@ export const DmMap = ({
                 <IconLabel color="hsl(211, 27%, 70%)">Not Live</IconLabel>
               </Toolbar.Item>
             )}
-            <Toolbar.Item isActive={true}>
+            <Toolbar.Item isEnabled>
               <Toolbar.Button
                 onClick={async () => {
                   if (!fogCanvasRef.current) {
@@ -1217,7 +1216,7 @@ export const DmMap = ({
             </Toolbar.Item>
           </Toolbar.Group>
           <Toolbar.Group>
-            <Toolbar.Item isActive={true}>
+            <Toolbar.Item isEnabled>
               <Toolbar.Button
                 onClick={() => {
                   if (mode === "clear") {
@@ -1240,13 +1239,13 @@ export const DmMap = ({
                 )}
               </Toolbar.Button>
             </Toolbar.Item>
-            <Toolbar.Item isActive={true}>
+            <Toolbar.Item isEnabled>
               <Toolbar.Button onClick={() => fillFog()}>
                 <DropletIcon filled />
                 <IconLabel>Shroud All</IconLabel>
               </Toolbar.Button>
             </Toolbar.Item>
-            <Toolbar.Item isActive={true}>
+            <Toolbar.Item isEnabled>
               <Toolbar.Button onClick={() => clearFog()}>
                 <DropletIcon fill="rgba(0, 0, 0, 1)" />
                 <IconLabel>Clear All</IconLabel>

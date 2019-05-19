@@ -43,7 +43,8 @@ const ToolbarItem = styled.li`
   padding-bottom: ${p => (p.horizontal ? "0" : "8px")};
   padding-top: ${p => (p.horizontal ? "0" : "8px")};
   margin-right: ${p => (p.horizontal ? "8px" : "0")};
-  color: ${p => (p.isActive ? "rgb(34, 60, 7, 1)" : "hsl(211, 27%, 70%)")};
+  color: ${p =>
+    p.isActive || p.isEnabled ? "rgb(34, 60, 7, 1)" : "hsl(211, 27%, 70%)"};
 
   &:last-child {
     margin-right: 0;
@@ -52,10 +53,18 @@ const ToolbarItem = styled.li`
   > button {
     filter: ${p =>
       p.isActive ? "drop-shadow(0 0 4px rgba(0, 0, 0, .3))" : null};
+
+    &:hover {
+      filter: ${p =>
+        p.isActive || p.isEnabled
+          ? "drop-shadow(0 0 4px rgba(0, 0, 0, .3))"
+          : "drop-shadow(0 0 4px rgba(200, 200, 200, .6))"};
+    }
   }
 
   svg {
-    stroke: ${p => (p.isActive ? "rgb(34, 60, 7, 1)" : "hsl(211, 27%, 70%)")};
+    stroke: ${p =>
+      p.isActive || p.isEnabled ? "rgb(34, 60, 7, 1)" : "hsl(211, 27%, 70%)"};
   }
 `;
 
@@ -68,13 +77,6 @@ const ToolboxButton = styled.button`
   border: none;
   background-color: transparent;
   color: inherit;
-
-  &:hover {
-    filter: ${p =>
-      p.isActive
-        ? "drop-shadow(0 0 4px rgba(0, 0, 0, .3))"
-        : "drop-shadow(0 0 4px rgba(200, 200, 200, 1))"};
-  }
 `;
 
 const ToolbarItemPopup = styled.div`
