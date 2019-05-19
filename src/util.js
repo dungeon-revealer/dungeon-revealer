@@ -117,3 +117,6 @@ export const useLongPress = (callback = () => {}, ms = 300) => {
     };
   });
 };
+
+export const ConditionalWrap = ({ condition, wrap, children }) =>
+  condition ? wrap(children) : children;
