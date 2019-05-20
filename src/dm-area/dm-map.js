@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
 import { PanZoom } from "react-easy-panzoom";
@@ -7,6 +7,7 @@ import Referentiel from "referentiel";
 import { loadImage, getOptimalDimensions, ConditionalWrap } from "./../util";
 import { Toolbar } from "./toolbar";
 import styled from "@emotion/styled";
+import { ObjectLayer } from "../object-layer";
 
 //
 // All icons are extracted from https://feather.netlify.com/
@@ -441,7 +442,11 @@ export const DmMap = ({
   const [tool, setTool] = useToolState("brush"); // "brush" or "area"
   const [lineWidth, setLineWidth] = useLineWidthState(15);
 
-  const fillFog = () => {
+  // marker related stuff
+  const objectSvgRef = useRef(null);
+  const [markedAreas, setMarkedAreas] = useState(() => []);
+
+  const fillFog = useCallback(() => {
     if (!fogCanvasRef.current) {
       return;
     }
@@ -459,34 +464,37 @@ export const DmMap = ({
     if (saveFogCanvasRef.current) {
       saveFogCanvasRef.current();
     }
-  };
+  }, []);
 
-  const constructMask = coords => {
-    const maskDimensions = {
-      x: coords.x,
-      y: coords.y,
-      lineWidth: 2,
-      line: "aqua",
-      fill: "transparent"
-    };
+  const constructMask = useCallback(
+    coords => {
+      const maskDimensions = {
+        x: coords.x,
+        y: coords.y,
+        lineWidth: 2,
+        line: "aqua",
+        fill: "transparent"
+      };
 
-    if (brushShape === "round") {
-      maskDimensions.r = lineWidth / 2;
-      maskDimensions.startingAngle = 0;
-      maskDimensions.endingAngle = Math.PI * 2;
-    } else if (brushShape === "square") {
-      maskDimensions.centerX = maskDimensions.x - lineWidth / 2;
-      maskDimensions.centerY = maskDimensions.y - lineWidth / 2;
-      maskDimensions.height = lineWidth;
-      maskDimensions.width = lineWidth;
-    } else {
-      throw new Error("brush shape not found");
-    }
+      if (brushShape === "round") {
+        maskDimensions.r = lineWidth / 2;
+        maskDimensions.startingAngle = 0;
+        maskDimensions.endingAngle = Math.PI * 2;
+      } else if (brushShape === "square") {
+        maskDimensions.centerX = maskDimensions.x - lineWidth / 2;
+        maskDimensions.centerY = maskDimensions.y - lineWidth / 2;
+        maskDimensions.height = lineWidth;
+        maskDimensions.width = lineWidth;
+      } else {
+        throw new Error("brush shape not found");
+      }
 
-    return maskDimensions;
-  };
+      return maskDimensions;
+    },
+    [brushShape, lineWidth]
+  );
 
-  const clearFog = () => {
+  const clearFog = useCallback(() => {
     if (!fogCanvasRef.current) {
       return;
     }
@@ -501,206 +509,223 @@ export const DmMap = ({
     if (saveFogCanvasRef.current) {
       saveFogCanvasRef.current();
     }
-  };
+  }, []);
 
-  const getMapDisplayRatio = () => {
+  const getMapDisplayRatio = useCallback(() => {
     return (
       parseFloat(mapCanvasRef.current.style.width, 10) /
       mapCanvasRef.current.width
     );
-  };
+  }, []);
 
-  const getMouseCoordinates = ev => {
-    const ratio = getMapDisplayRatio();
-    const [x, y] = panZoomReferentialRef.current.global_to_local([
-      ev.clientX,
-      ev.clientY
-    ]);
+  const getMouseCoordinates = useCallback(
+    ev => {
+      const ratio = getMapDisplayRatio();
+      const [x, y] = panZoomReferentialRef.current.global_to_local([
+        ev.clientX,
+        ev.clientY
+      ]);
 
-    return {
-      x: x / ratio,
-      y: y / ratio
-    };
-  };
+      return {
+        x: x / ratio,
+        y: y / ratio
+      };
+    },
+    [getMapDisplayRatio]
+  );
 
-  const getTouchCoordinates = ev => {
-    const viewportOffset = fogCanvasRef.current.getBoundingClientRect();
-    const borderTop = parseInt(fogCanvasRef.current.style.borderTopWidth || 0);
-    const borderLeft = parseInt(
-      fogCanvasRef.current.style.borderLeftWidth || 0
-    );
-
-    return {
-      x:
-        (ev.touches[0].pageX -
-          viewportOffset.left -
-          borderLeft -
-          document.documentElement.scrollLeft) /
-        getMapDisplayRatio(),
-      y:
-        (ev.touches[0].pageY -
-          viewportOffset.top -
-          borderTop -
-          document.documentElement.scrollTop) /
-        getMapDisplayRatio()
-    };
-  };
-
-  const drawInitial = coords => {
-    const fogMask = constructMask(coords);
-    const fogContext = fogCanvasRef.current.getContext("2d");
-    fogContext.lineWidth = fogMask.lineWidth;
-    if (mode === "clear") {
-      fogContext.globalCompositeOperation = "destination-out";
-    } else {
-      fogContext.globalCompositeOperation = "source-over";
-    }
-
-    fogContext.beginPath();
-    if (brushShape === "round") {
-      fogContext.arc(
-        fogMask.x,
-        fogMask.y,
-        fogMask.r,
-        fogMask.startingAngle,
-        fogMask.endingAngle,
-        true
+  const getTouchCoordinates = useCallback(
+    ev => {
+      const viewportOffset = fogCanvasRef.current.getBoundingClientRect();
+      const borderTop = parseInt(
+        fogCanvasRef.current.style.borderTopWidth || 0
       );
-    } else if (brushShape === "square") {
-      fogContext.rect(
-        fogMask.centerX,
-        fogMask.centerY,
-        fogMask.height,
-        fogMask.width
+      const borderLeft = parseInt(
+        fogCanvasRef.current.style.borderLeftWidth || 0
       );
-    }
 
-    fogContext.fill();
-  };
+      return {
+        x:
+          (ev.touches[0].pageX -
+            viewportOffset.left -
+            borderLeft -
+            document.documentElement.scrollLeft) /
+          getMapDisplayRatio(),
+        y:
+          (ev.touches[0].pageY -
+            viewportOffset.top -
+            borderTop -
+            document.documentElement.scrollTop) /
+          getMapDisplayRatio()
+      };
+    },
+    [getMapDisplayRatio]
+  );
 
-  const drawCursor = ({ x, y }) => {
-    const mouseContext = mouseCanvasRef.current.getContext("2d");
-    // draw cursor
-    mouseContext.clearRect(
-      0,
-      0,
-      mouseCanvasRef.current.width,
-      mouseCanvasRef.current.height
-    );
+  const drawInitial = useCallback(
+    coords => {
+      const fogMask = constructMask(coords);
+      const fogContext = fogCanvasRef.current.getContext("2d");
+      fogContext.lineWidth = fogMask.lineWidth;
+      if (mode === "clear") {
+        fogContext.globalCompositeOperation = "destination-out";
+      } else {
+        fogContext.globalCompositeOperation = "source-over";
+      }
 
-    if (tool === "area") {
-      mouseContext.strokeStyle = "aqua";
-      mouseContext.fillStyle = "aqua";
-      mouseContext.lineWidth = 2;
+      fogContext.beginPath();
+      if (brushShape === "round") {
+        fogContext.arc(
+          fogMask.x,
+          fogMask.y,
+          fogMask.r,
+          fogMask.startingAngle,
+          fogMask.endingAngle,
+          true
+        );
+      } else if (brushShape === "square") {
+        fogContext.rect(
+          fogMask.centerX,
+          fogMask.centerY,
+          fogMask.height,
+          fogMask.width
+        );
+      }
+
+      fogContext.fill();
+    },
+    [constructMask, brushShape, mode]
+  );
+
+  const drawCursor = useCallback(
+    ({ x, y }) => {
+      const mouseContext = mouseCanvasRef.current.getContext("2d");
+      // draw cursor
+      mouseContext.clearRect(
+        0,
+        0,
+        mouseCanvasRef.current.width,
+        mouseCanvasRef.current.height
+      );
+
+      if (tool === "area") {
+        mouseContext.strokeStyle = "aqua";
+        mouseContext.fillStyle = "aqua";
+        mouseContext.lineWidth = 2;
+
+        mouseContext.beginPath();
+        mouseContext.moveTo(x - 10, y);
+        mouseContext.lineTo(x + 10, y);
+        mouseContext.moveTo(x, y - 10);
+        mouseContext.lineTo(x, y + 10);
+        mouseContext.stroke();
+        return;
+      }
+
+      // brush
+
+      const cursorMask = constructMask({ x, y });
+      mouseContext.strokeStyle = cursorMask.line;
+      mouseContext.fillStyle = cursorMask.fill;
+      mouseContext.lineWidth = cursorMask.lineWidth;
 
       mouseContext.beginPath();
-      mouseContext.moveTo(x - 10, y);
-      mouseContext.lineTo(x + 10, y);
-      mouseContext.moveTo(x, y - 10);
-      mouseContext.lineTo(x, y + 10);
-      mouseContext.stroke();
-      return;
-    }
-
-    // brush
-
-    const cursorMask = constructMask({ x, y });
-    mouseContext.strokeStyle = cursorMask.line;
-    mouseContext.fillStyle = cursorMask.fill;
-    mouseContext.lineWidth = cursorMask.lineWidth;
-
-    mouseContext.beginPath();
-    if (brushShape === "round") {
-      mouseContext.arc(
-        cursorMask.x,
-        cursorMask.y,
-        cursorMask.r,
-        cursorMask.startingAngle,
-        cursorMask.endingAngle,
-        true
-      );
-    } else if (brushShape === "square") {
-      mouseContext.rect(
-        cursorMask.centerX,
-        cursorMask.centerY,
-        cursorMask.height,
-        cursorMask.width
-      );
-    }
-
-    mouseContext.fill();
-    mouseContext.stroke();
-  };
-
-  const drawFog = (lastCoords, coords) => {
-    if (!lastCoords) {
-      return drawInitial(coords);
-    }
-
-    const fogContext = fogCanvasRef.current.getContext("2d");
-    if (mode === "clear") {
-      fogContext.globalCompositeOperation = "destination-out";
-    } else {
-      fogContext.globalCompositeOperation = "source-over";
-    }
-
-    if (brushShape === "round") {
-      fogContext.lineWidth = lineWidth;
-      fogContext.lineJoin = fogContext.lineCap = "round";
-      fogContext.beginPath();
-      fogContext.moveTo(lastCoords.x, lastCoords.y);
-
-      const midPoint = midPointBtw(lastCoords, coords);
-      fogContext.quadraticCurveTo(
-        lastCoords.x,
-        lastCoords.y,
-        midPoint.x,
-        midPoint.y
-      );
-      fogContext.lineTo(coords.x, coords.y);
-      fogContext.stroke();
-    } else if (brushShape === "square") {
-      // The goal of this area is to draw lines with a square mask
-
-      // The fundamental issue is that not every position of the mouse is recorded when it is moved
-      // around the canvas (particularly when it is moved fast). If it were, we could simply draw a
-      // square at every single coordinate
-
-      // a simple approach is to draw an initial square then connect a line to a series of
-      // central cords with a square lineCap. Unfortunately, this has undesirable behavior. When moving in
-      // a diagonal, the square linecap rotates into a diamond, and "draws" outside of the square mask.
-
-      // Using 'butt' lineCap lines to connect between squares drawn at each set of cords has unexpected behavior.
-      // When moving in a diagonal fashion. The width does not correspond to the "face" of the cursor, which
-      // maybe longer then the length / width (think hypotenuse) which results in weird drawing.
-
-      // The current solution is two fold
-      // 1. Draw a rectangle at every available cord
-      // 2. Find and draw the optimal rhombus to connect each square
-      fogContext.lineWidth = 1;
-      fogContext.beginPath();
-
-      const fowMask = constructMask(lastCoords);
-      fogContext.fillRect(
-        fowMask.centerX,
-        fowMask.centerY,
-        fowMask.height,
-        fowMask.width
-      );
-
-      // optimal polygon to draw to connect two square
-      const optimalPoints = findOptimalRhombus(coords, lastCoords, lineWidth);
-      if (optimalPoints) {
-        fogContext.moveTo(optimalPoints[0].x, optimalPoints[0].y);
-        fogContext.lineTo(optimalPoints[1].x, optimalPoints[1].y);
-        fogContext.lineTo(optimalPoints[2].x, optimalPoints[2].y);
-        fogContext.lineTo(optimalPoints[3].x, optimalPoints[3].y);
-        fogContext.fill();
+      if (brushShape === "round") {
+        mouseContext.arc(
+          cursorMask.x,
+          cursorMask.y,
+          cursorMask.r,
+          cursorMask.startingAngle,
+          cursorMask.endingAngle,
+          true
+        );
+      } else if (brushShape === "square") {
+        mouseContext.rect(
+          cursorMask.centerX,
+          cursorMask.centerY,
+          cursorMask.height,
+          cursorMask.width
+        );
       }
-    }
-  };
 
-  const drawAreaSelection = () => {
+      mouseContext.fill();
+      mouseContext.stroke();
+    },
+    [brushShape, constructMask, tool]
+  );
+
+  const drawFog = useCallback(
+    (lastCoords, coords) => {
+      if (!lastCoords) {
+        return drawInitial(coords);
+      }
+
+      const fogContext = fogCanvasRef.current.getContext("2d");
+      if (mode === "clear") {
+        fogContext.globalCompositeOperation = "destination-out";
+      } else {
+        fogContext.globalCompositeOperation = "source-over";
+      }
+
+      if (brushShape === "round") {
+        fogContext.lineWidth = lineWidth;
+        fogContext.lineJoin = fogContext.lineCap = "round";
+        fogContext.beginPath();
+        fogContext.moveTo(lastCoords.x, lastCoords.y);
+
+        const midPoint = midPointBtw(lastCoords, coords);
+        fogContext.quadraticCurveTo(
+          lastCoords.x,
+          lastCoords.y,
+          midPoint.x,
+          midPoint.y
+        );
+        fogContext.lineTo(coords.x, coords.y);
+        fogContext.stroke();
+      } else if (brushShape === "square") {
+        // The goal of this area is to draw lines with a square mask
+
+        // The fundamental issue is that not every position of the mouse is recorded when it is moved
+        // around the canvas (particularly when it is moved fast). If it were, we could simply draw a
+        // square at every single coordinate
+
+        // a simple approach is to draw an initial square then connect a line to a series of
+        // central cords with a square lineCap. Unfortunately, this has undesirable behavior. When moving in
+        // a diagonal, the square linecap rotates into a diamond, and "draws" outside of the square mask.
+
+        // Using 'butt' lineCap lines to connect between squares drawn at each set of cords has unexpected behavior.
+        // When moving in a diagonal fashion. The width does not correspond to the "face" of the cursor, which
+        // maybe longer then the length / width (think hypotenuse) which results in weird drawing.
+
+        // The current solution is two fold
+        // 1. Draw a rectangle at every available cord
+        // 2. Find and draw the optimal rhombus to connect each square
+        fogContext.lineWidth = 1;
+        fogContext.beginPath();
+
+        const fowMask = constructMask(lastCoords);
+        fogContext.fillRect(
+          fowMask.centerX,
+          fowMask.centerY,
+          fowMask.height,
+          fowMask.width
+        );
+
+        // optimal polygon to draw to connect two square
+        const optimalPoints = findOptimalRhombus(coords, lastCoords, lineWidth);
+        if (optimalPoints) {
+          fogContext.moveTo(optimalPoints[0].x, optimalPoints[0].y);
+          fogContext.lineTo(optimalPoints[1].x, optimalPoints[1].y);
+          fogContext.lineTo(optimalPoints[2].x, optimalPoints[2].y);
+          fogContext.lineTo(optimalPoints[3].x, optimalPoints[3].y);
+          fogContext.fill();
+        }
+      }
+    },
+    [brushShape, constructMask, drawInitial, lineWidth, mode]
+  );
+
+  const drawAreaSelection = useCallback(() => {
     const mouseContext = mouseCanvasRef.current.getContext("2d");
     mouseContext.clearRect(
       0,
@@ -725,9 +750,9 @@ export const DmMap = ({
     mouseContext.rect(startX, startY, width, height);
     mouseContext.fill();
     mouseContext.stroke();
-  };
+  }, []);
 
-  const handleAreaSelection = () => {
+  const handleAreaSelection = useCallback(() => {
     const context = fogCanvasRef.current.getContext("2d");
 
     if (mode === "clear") {
@@ -744,7 +769,7 @@ export const DmMap = ({
     const height = currentCoords.y - startCoords.y;
     context.fillRect(startX, startY, width, height);
     drawCursor(currentCoords);
-  };
+  }, [drawCursor, mode]);
 
   useEffect(() => {
     panZoomReferentialRef.current = new Referentiel(
@@ -863,7 +888,7 @@ export const DmMap = ({
       hasPreviousMap.current = true;
       saveFogCanvasRef.current.cancel();
     };
-  }, [loadedMapId]);
+  }, [fillFog, loadedMapId]);
 
   const isCurrentMapLive = liveMapId && loadedMapId === liveMapId;
   const isOtherMapLive = liveMapId && loadedMapId !== liveMapId;
@@ -890,6 +915,15 @@ export const DmMap = ({
           <canvas
             ref={fogCanvasRef}
             style={{ position: "absolute", opacity: 0.5 }}
+          />
+          <ObjectLayer
+            ref={objectSvgRef}
+            areaMarkers={markedAreas}
+            removeAreaMarker={id => {
+              setMarkedAreas(markedAreas =>
+                markedAreas.filter(area => area.id !== id)
+              );
+            }}
           />
           <canvas
             ref={mouseCanvasRef}
