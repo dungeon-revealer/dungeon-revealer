@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import io from "socket.io-client";
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
 import { PanZoom } from "react-easy-panzoom";
@@ -443,6 +444,8 @@ export const DmMap = ({
   const [lineWidth, setLineWidth] = useLineWidthState(15);
 
   // marker related stuff
+  const socketRef = useRef(null);
+  const mapCanvasDimensions = useRef(null);
   const objectSvgRef = useRef(null);
   const [markedAreas, setMarkedAreas] = useState(() => []);
 
@@ -772,6 +775,20 @@ export const DmMap = ({
   }, [drawCursor, mode]);
 
   useEffect(() => {
+    const socket = io();
+    socketRef.current = socket;
+
+    socket.on("mark area", async data => {
+      setMarkedAreas(markedAreas => [
+        ...markedAreas,
+        {
+          id: data.id,
+          x: data.x * mapCanvasDimensions.current.ratio,
+          y: data.y * mapCanvasDimensions.current.ratio
+        }
+      ]);
+    });
+
     panZoomReferentialRef.current = new Referentiel(
       panZoomRef.current.dragContainer
     );
@@ -784,6 +801,8 @@ export const DmMap = ({
     document.addEventListener("mousewheel", mousewheelListener);
 
     return () => {
+      socket.close();
+      socketRef.current = null;
       panZoomReferentialRef.current = null;
       document.removeEventListener("mousewheel", mousewheelListener);
       mousewheelListener.cancel();
@@ -839,10 +858,15 @@ export const DmMap = ({
         mouseCanvasRef.current.width = dimensions.width;
         mouseCanvasRef.current.height = dimensions.height;
 
+        objectSvgRef.current.setAttribute("width", dimensions.width);
+        objectSvgRef.current.setAttribute("height", dimensions.height);
+
+        mapCanvasDimensions.current = dimensions;
+
         const widthPx = `${dimensions.width}px`;
         const heightPx = `${dimensions.height}px`;
-        mapContainerRef.current.style.width = mapCanvasRef.current.style.width = fogCanvasRef.current.style.width = widthPx;
-        mapContainerRef.current.style.height = mapCanvasRef.current.style.height = fogCanvasRef.current.style.height = heightPx;
+        mapContainerRef.current.style.width = mapCanvasRef.current.style.width = fogCanvasRef.current.style.width = objectSvgRef.current.style.width = widthPx;
+        mapContainerRef.current.style.height = mapCanvasRef.current.style.height = fogCanvasRef.current.style.height = objectSvgRef.current.style.height = heightPx;
 
         mapCanvasRef.current
           .getContext("2d")

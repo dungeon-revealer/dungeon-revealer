@@ -93,7 +93,7 @@ const AreaMarker = React.memo(({ x, y, onFinishAnimation }) => {
 });
 
 export const ObjectLayer = React.forwardRef(
-  ({ ref, areaMarkers, removeAreaMarker }) => {
+  ({ areaMarkers, removeAreaMarker }, ref) => {
     return (
       <svg
         ref={ref}
