@@ -14,7 +14,7 @@ const ToolbarBase = styled.div`
   display: ${p => (p.horizontal ? "flex" : null)};
   align-items: ${p => (p.horizontal ? "center" : null)};
 
-  > :first-child {
+  > :first-of-type {
     border-top-right-radius: 15px;
     border-top-left-radius: 15px;
   }

@@ -26,7 +26,7 @@
     "morgan": "~1.9.1",
     "react": "16.8.6",
     "react-dom": "16.8.6",
-    "react-easy-panzoom": "npm:@n1ru4l/react-easy-panzoom",
+    "react-easy-panzoom": "npm:@n1ru4l/react-easy-panzoom@0.2.5.alpha.4",
     "react-tooltip": "3.10.0",
     "referentiel": "0.0.8",
     "serve-favicon": "~2.5.0",

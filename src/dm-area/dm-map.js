@@ -407,6 +407,12 @@ const findOptimalRhombus = (pointCurrent, pointPrevious, lineWidth) => {
   return limitedPointsSorted;
 };
 
+const panZoomContainerStyles = {
+  outline: "none",
+  height: "100vh",
+  width: "100vw"
+};
+
 const useModeState = createPersistedState("dm.settings.mode");
 const useBrushShapeState = createPersistedState("dm.settings.brushShape");
 const useToolState = createPersistedState("dm.settings.tool");
@@ -789,23 +795,10 @@ export const DmMap = ({
       ]);
     });
 
-    panZoomReferentialRef.current = new Referentiel(
-      panZoomRef.current.dragContainer
-    );
-
-    const mousewheelListener = debounce(() => {
-      panZoomReferentialRef.current = new Referentiel(
-        panZoomRef.current.dragContainer
-      );
-    }, 500);
-    document.addEventListener("mousewheel", mousewheelListener);
-
     return () => {
       socket.close();
       socketRef.current = null;
       panZoomReferentialRef.current = null;
-      document.removeEventListener("mousewheel", mousewheelListener);
-      mousewheelListener.cancel();
     };
   }, []);
 
@@ -917,20 +910,35 @@ export const DmMap = ({
   const isCurrentMapLive = liveMapId && loadedMapId === liveMapId;
   const isOtherMapLive = liveMapId && loadedMapId !== liveMapId;
 
+  let cursor = "default";
+  if (tool === "move") {
+    cursor = "grab";
+  } else if (tool === "mark") {
+    cursor = "pointer";
+  }
+
   return (
     <>
       <PanZoom
-        onPanEnd={() => {
+        disableDoubleClickZoom={tool !== "move"}
+        disabled={tool !== "move"}
+        style={{
+          ...panZoomContainerStyles,
+          cursor
+        }}
+        onClick={ev => {
+          if (tool !== "mark") {
+            return;
+          }
+          const ref = new Referentiel(panZoomRef.current.dragContainer);
+          const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
+          const { ratio } = mapCanvasDimensions.current;
+          socketRef.current.emit("mark area", { x: x / ratio, y: y / ratio });
+        }}
+        onChange={() => {
           panZoomReferentialRef.current = new Referentiel(
             panZoomRef.current.dragContainer
           );
-        }}
-        disabled={tool !== "move"}
-        style={{
-          cursor: tool !== "move" ? "inherit" : "move",
-          outline: "none",
-          height: "100vh",
-          width: "100vw"
         }}
         ref={panZoomRef}
       >
@@ -953,7 +961,7 @@ export const DmMap = ({
             ref={mouseCanvasRef}
             style={{ position: "absolute", touchAction: "none" }}
             onMouseMove={ev => {
-              if (tool === "move") {
+              if (tool === "move" || tool === "mark") {
                 return;
               }
 
