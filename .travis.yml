@@ -13,7 +13,7 @@ stages:
   - build
   - build docker image
   - name: dockerhub dev deploy
-    if: branch = master
+    if: (branch = master) AND (NOT (type = pull_request))
   - name: github deploy
     if: tag IS present
   - name: dockerhub deploy
