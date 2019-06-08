@@ -12,6 +12,8 @@ stages:
   - eslint
   - build
   - build docker image
+  - name: dockerhub dev deploy
+    if: (branch = master) AND (NOT (type = pull_request))
   - name: github deploy
     if: tag IS present
   - name: dockerhub deploy
@@ -36,10 +38,19 @@ jobs:
       - docker build -t dungeon-revealer .
       - docker run --rm dungeon-revealer echo "hello"
 
+    - stage: dockerhub dev deploy
+      install: true
+      script:
+      - echo "Deploying dev to Dockerhub..."
+      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - docker build -t $DOCKER_USERNAME/dungeon-revealer:dev .
+      - docker images
+      - docker push $DOCKER_USERNAME/dungeon-revealer
+
     - stage: github deploy
       install: true
       script:
-        - echo "Deploying to GitHub releases ..."
+        - echo "Deploying $TRAVIS_TAG to GitHub releases ..."
         - npm run build
       deploy:
         provider: releases
@@ -56,8 +67,10 @@ jobs:
     - stage: dockerhub deploy
       install: true
       script:
-      - echo "Deploying to Dockerhub..."
+      - echo "Deploying $TRAVIS_TAG, latest to Dockerhub..."
       - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
       - docker build -t $DOCKER_USERNAME/dungeon-revealer:$TRAVIS_TAG -t $DOCKER_USERNAME/dungeon-revealer:latest .
       - docker images
       - docker push $DOCKER_USERNAME/dungeon-revealer
+
+
