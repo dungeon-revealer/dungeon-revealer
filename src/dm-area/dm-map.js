@@ -935,7 +935,7 @@ export const DmMap = ({
           const { ratio } = mapCanvasDimensions.current;
           socketRef.current.emit("mark area", { x: x / ratio, y: y / ratio });
         }}
-        onChange={() => {
+        onStateChange={() => {
           panZoomReferentialRef.current = new Referentiel(
             panZoomRef.current.dragContainer
           );
