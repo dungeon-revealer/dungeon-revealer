@@ -33,10 +33,11 @@ export const PlayerArea = () => {
       // hacky approach for centering the map initially
       // (there is no API for react-native-panzoom to do the autofocus without a transition)
       if (isInitial) {
-        const transition = panZoomRef.current.dragContainer.style.transition;
-        panZoomRef.current.dragContainer.style.transition = "none";
+        const dragContainer = panZoomRef.current.getDragContainer();
+        const transition = dragContainer.style.transition;
+        dragContainer.style.transition = "none";
         setTimeout(() => {
-          panZoomRef.current.dragContainer.style.transition = transition;
+          dragContainer.style.transition = transition;
         }, 500);
       }
       panZoomRef.current.autoCenter(0.8);
@@ -256,7 +257,7 @@ export const PlayerArea = () => {
     }
 
     // calculate coordinates relative to the canvas
-    const ref = new Referentiel(panZoomRef.current.dragContainer);
+    const ref = new Referentiel(panZoomRef.current.getDragContainer());
     const [x, y] = ref.global_to_local(input);
     const { ratio } = mapCanvasDimensions.current;
 

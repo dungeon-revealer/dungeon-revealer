@@ -816,10 +816,11 @@ export const DmMap = ({
       // hacky approach for centering the map initially
       // (there is no API for react-native-panzoom to do the autofocus without a transition)
       if (isInitial) {
-        const transition = panZoomRef.current.dragContainer.style.transition;
-        panZoomRef.current.dragContainer.style.transition = "none";
+        const dragContainer = panZoomRef.current.getDragContainer();
+        const transition = dragContainer.style.transition;
+        dragContainer.style.transition = "none";
         setTimeout(() => {
-          panZoomRef.current.dragContainer.style.transition = transition;
+          dragContainer.style.transition = transition;
         }, 500);
       }
       panZoomRef.current.autoCenter(0.85);
@@ -930,14 +931,14 @@ export const DmMap = ({
           if (tool !== "mark") {
             return;
           }
-          const ref = new Referentiel(panZoomRef.current.dragContainer);
+          const ref = new Referentiel(panZoomRef.current.dragContainer.current);
           const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
           const { ratio } = mapCanvasDimensions.current;
           socketRef.current.emit("mark area", { x: x / ratio, y: y / ratio });
         }}
         onStateChange={() => {
           panZoomReferentialRef.current = new Referentiel(
-            panZoomRef.current.dragContainer
+            panZoomRef.current.dragContainer.current
           );
         }}
         ref={panZoomRef}
