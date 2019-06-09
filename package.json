@@ -41,7 +41,7 @@
     "husky": "2.4.0",
     "lint-staged": "8.1.7",
     "pkg": "^4.3.7",
-    "prettier": "1.17.1",
+    "prettier": "1.18.2",
     "react-scripts": "3.0.1"
   },
   "repository": {
