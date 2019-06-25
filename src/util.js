@@ -4,8 +4,13 @@ import { useState, useEffect, useRef } from "react";
  * Utility for preloading an image as a promise
  */
 export const loadImage = src => {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
+  const image = new Image();
+
+  const cancel = () => {
+    image.src = "";
+  };
+
+  const promise = new Promise((resolve, reject) => {
     image.src = src;
     const removeEventListeners = () => {
       image.removeEventListener("load", loadListener);
@@ -22,6 +27,30 @@ export const loadImage = src => {
     image.addEventListener("load", loadListener);
     image.addEventListener("error", errorListener);
   });
+
+  return { promise, cancel };
+};
+
+/**
+ * calculate the optimal dimensions for an area while kepping the aspect ratio
+ * @param {number} idealWidth
+ * @param {number} idealHeight
+ * @param {number} maxWidth
+ * @param {number} maxHeight
+ */
+export const getOptimalDimensions = (
+  idealWidth,
+  idealHeight,
+  maxWidth,
+  maxHeight
+) => {
+  const ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
+
+  return {
+    ratio: ratio,
+    width: idealWidth * ratio,
+    height: idealHeight * ratio
+  };
 };
 
 /**
@@ -88,3 +117,6 @@ export const useLongPress = (callback = () => {}, ms = 300) => {
     };
   });
 };
+
+export const ConditionalWrap = ({ condition, wrap, children }) =>
+  condition ? wrap(children) : children;

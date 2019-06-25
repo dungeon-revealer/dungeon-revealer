@@ -11,6 +11,8 @@
     "postinstall": "npm run build"
   },
   "dependencies": {
+    "@emotion/core": "10.0.10",
+    "@emotion/styled": "10.0.11",
     "body-parser": "~1.19.0",
     "body-scroll-lock": "2.6.1",
     "connect-busboy": "0.0.2",
@@ -24,7 +26,8 @@
     "morgan": "~1.9.1",
     "react": "16.8.6",
     "react-dom": "16.8.6",
-    "react-easy-panzoom": "0.2.5",
+    "react-easy-panzoom": "0.3.0",
+    "react-tooltip": "3.10.0",
     "referentiel": "0.0.8",
     "serve-favicon": "~2.5.0",
     "socket.io": "^2.2.0",

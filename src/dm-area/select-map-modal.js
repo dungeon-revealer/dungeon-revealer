@@ -50,14 +50,15 @@ const CreateNewMapButton = ({ onSelectFile }) => {
 };
 
 export const SelectMapModal = ({
-  onClickOutside,
+  closeModal,
   setLoadedMapId,
   maps,
   liveMapId,
   loadedMapId,
   deleteMap,
   updateMap,
-  createMap
+  createMap,
+  canClose
 }) => {
   const [activeMapId, setActiveMapId] = useState(loadedMapId);
   let activeMap = null;
@@ -74,8 +75,15 @@ export const SelectMapModal = ({
     }
   };
 
+  const closeIfPossible = () => {
+    if (!canClose) {
+      return;
+    }
+    closeModal();
+  };
+
   return (
-    <Modal onClickOutside={onClickOutside}>
+    <Modal onClickOutside={closeIfPossible} onPressEscape={closeIfPossible}>
       <Modal.Dialog>
         <Modal.Header style={{ display: "flex", alignItems: "center" }}>
           <h2 style={{ margin: 0 }}>Maps</h2>
@@ -85,13 +93,15 @@ export const SelectMapModal = ({
                 beforeCreateMap(file);
               }}
             />
-            <button
-              className="btn btn-default"
-              style={{ marginLeft: 8 }}
-              onClick={onClickOutside}
-            >
-              Close
-            </button>
+            {canClose ? (
+              <button
+                className="btn btn-default"
+                style={{ marginLeft: 8 }}
+                onClick={closeModal}
+              >
+                Close
+              </button>
+            ) : null}
           </div>
         </Modal.Header>
         <Modal.Body style={{ display: "flex", height: "80vh" }}>
