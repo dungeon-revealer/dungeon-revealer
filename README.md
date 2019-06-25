@@ -1,5 +1,7 @@
 # dungeon-revealer [![Build Status](https://travis-ci.org/apclary/dungeon-revealer.svg?branch=master)](https://travis-ci.org/apclary/dungeon-revealer)
 
+![alt text](https://user-images.githubusercontent.com/14338007/57970988-634cc700-7988-11e9-8cae-dfcc685cc848.png "Preview Image")
+
 A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
 
 ## What the DM Sees
