@@ -69,7 +69,7 @@ docker run -e DM_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/d
 In your browser, go to `<YOUR_IPADDRESS>:<PORT>`.
 
 ### Using the app
-There are two modes of usage of this app. One for the dungeon master and one for the players.
+The app is separated into two sections. One for the dungeon master and one for the players.
 
 
 #### Dungeon Master
