@@ -11,7 +11,7 @@
     "postinstall": "npm run build"
   },
   "dependencies": {
-    "@emotion/core": "10.0.10",
+    "@emotion/core": "10.0.14",
     "@emotion/styled": "10.0.11",
     "body-parser": "~1.19.0",
     "body-scroll-lock": "2.6.1",
