@@ -7,8 +7,6 @@ services:
   - docker
 
 stages:
-  - cache
-  - eslint
   - build
   - build docker image
   - name: dockerhub dev deploy
@@ -20,16 +18,8 @@ stages:
 
 jobs:
   include:
-    - stage: cache
-      script: true
-
-    - stage: eslint
-      install: true
-      script: npm run eslint
-
     - stage: build
-      install: true
-      script: npm run build
+      script: true
 
     - stage: build docker image
       install: true
@@ -47,10 +37,8 @@ jobs:
       - docker push $DOCKER_USERNAME/dungeon-revealer
 
     - stage: github deploy
-      install: true
       script:
         - echo "Deploying $TRAVIS_TAG to GitHub releases ..."
-        - npm run build
         - chmod +x bin/dungeon-revealer-linux bin/dungeon-revealer-macos
         - zip "dungeon-revealer-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-*
       deploy:
