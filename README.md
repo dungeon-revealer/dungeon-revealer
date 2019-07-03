@@ -29,30 +29,30 @@ Optionally, you may set a password for the dungeon master page by setting the en
 
 
 ##### Linux
-Before you run the application for the first time, open a terminal in the same directory as the app and run the command:
-```
-chmod +x dungeon-revealer-linux
-```
+Open the zip file and extract the files to your preferred location.
+
 Then you can run the app directly in the terminal.
 ```
 ./dungeon-revealer-linux
 ```
+Then go to `localhost:3000` in your browser and point your players to `<YOUR_IPADDRESS>:3000`.
+This information is also present in the terminal window.
+
 
 ##### OSX
-Before you run the application for the first time, open a terminal in the same directory as the app and run the command:
-```
-chmod +x dungeon-revealer-macos
-```
-Then you can run the app directly in the terminal.
-```
-./dungeon-revealer-macos
-```
+Open the zip file and extract the files to your preferred location.
+
+Double click the app. A terminal will open with useful information.
+Then go to `localhost:3000` in your browser and point your players to `<YOUR_IPADDRESS>:3000`.
+This information is also present in the terminal window.
 
 ##### Windows
-Either double click the app or open a command prompt in the same directory as the app and run from there.
+Double click the app. A command prompt will open with useful information.
 Then go to `localhost:3000` in your browser and point your players to `<YOUR_IPADDRESS>:3000`.
+This information is also present in the command prompt window.
 
 ##### Docker
+
 
 To create a docker instance, run the following:
 
