@@ -40,12 +40,16 @@ jobs:
       script:
         - echo "Deploying $TRAVIS_TAG to GitHub releases ..."
         - chmod +x bin/dungeon-revealer-linux bin/dungeon-revealer-macos
-        - zip "dungeon-revealer-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-*
+        - zip "dungeon-revealer-linux-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-linux README.md
+        - zip "dungeon-revealer-macos-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-macos README.md
+        - zip "dungeon-revealer-win-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-win.exe README.md
       deploy:
         provider: releases
         api_key: $GITHUB_OAUTH_TOKEN
         file:
-          - "dungeon-revealer-$TRAVIS_TAG.zip"
+          - "dungeon-revealer-linux-$TRAVIS_TAG.zip"
+          - "dungeon-revealer-macos-$TRAVIS_TAG.zip"
+          - "dungeon-revealer-win-$TRAVIS_TAG.zip"
         skip_cleanup: true
         draft: true
         on:
