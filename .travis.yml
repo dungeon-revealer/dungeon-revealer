@@ -19,7 +19,8 @@ stages:
 jobs:
   include:
     - stage: build
-      script: true
+      script: 
+      - npm run eslint
 
     - stage: build docker image
       install: true
