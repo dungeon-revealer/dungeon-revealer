@@ -30,7 +30,13 @@ export const DmArea = () => {
           setShowMapModal(true);
         } else {
           setLiveMapId(res.data.currentMapId);
-          if (!loadedMapId) {
+          if (
+            !loadedMapId ||
+            // check whether map is still available
+            // the loaded map id is persisted on the browser side
+            // therefore it could happen that the map is not available
+            (loadedMapId && !res.data.maps.find(map => map.id === loadedMapId))
+          ) {
             setLoadedMapId(res.data.currentMapId);
           }
         }
