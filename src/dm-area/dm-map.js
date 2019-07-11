@@ -809,21 +809,11 @@ export const DmMap = ({
       };
     }
 
-    const centerMap = (isInitial = false) => {
+    const centerMap = (isAnimated = true) => {
       if (!panZoomRef.current) {
         return;
       }
-      // hacky approach for centering the map initially
-      // (there is no API for react-native-panzoom to do the autofocus without a transition)
-      if (isInitial) {
-        const dragContainer = panZoomRef.current.getDragContainer();
-        const transition = dragContainer.style.transition;
-        dragContainer.style.transition = "none";
-        setTimeout(() => {
-          dragContainer.style.transition = transition;
-        }, 500);
-      }
-      panZoomRef.current.autoCenter(0.85);
+      panZoomRef.current.autoCenter(0.85, isAnimated);
     };
 
     let tasks = [
@@ -866,7 +856,7 @@ export const DmMap = ({
           .getContext("2d")
           .drawImage(map, 0, 0, dimensions.width, dimensions.height);
 
-        centerMap(true);
+        centerMap(false);
 
         if (!fog) {
           fillFog();
