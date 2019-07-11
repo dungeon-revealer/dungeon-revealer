@@ -28,20 +28,12 @@ export const PlayerArea = () => {
 
   const [markedAreas, setMarkedAreas] = useState(() => []);
 
-  const centerMap = (isInitial = false) => {
-    if (panZoomRef.current) {
-      // hacky approach for centering the map initially
-      // (there is no API for react-native-panzoom to do the autofocus without a transition)
-      if (isInitial) {
-        const dragContainer = panZoomRef.current.getDragContainer();
-        const transition = dragContainer.style.transition;
-        dragContainer.style.transition = "none";
-        setTimeout(() => {
-          dragContainer.style.transition = transition;
-        }, 500);
-      }
-      panZoomRef.current.autoCenter(0.8);
+  const centerMap = (isAnimated = true) => {
+    if (!panZoomRef.current) {
+      return;
     }
+
+    panZoomRef.current.autoCenter(0.8, isAnimated);
   };
 
   useEffect(() => {
@@ -212,7 +204,7 @@ export const PlayerArea = () => {
             cavasDimensions.height
           );
 
-          centerMap(true);
+          centerMap(false);
           setShowSplashScreen(false);
         })
         .catch(err => {
