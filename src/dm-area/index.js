@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import createPersistedState from "use-persisted-state";
 import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
@@ -8,6 +8,7 @@ const useLoadedMapId = createPersistedState("loadedMapId");
 export const DmArea = () => {
   const [data, setData] = useState(null);
   const [loadedMapId, setLoadedMapId] = useLoadedMapId(null);
+  const loadedMapIdRef = useRef(loadedMapId);
   const [liveMapId, setLiveMapId] = useState(null);
   const [showMapModal, setShowMapModal] = useState(false);
 
@@ -23,20 +24,25 @@ export const DmArea = () => {
       })
       .then(res => {
         setData(res.data);
-        if (
-          !res.data.currentMapId &&
-          !res.data.maps.find(map => map.id === loadedMapId)
-        ) {
+        const isLoadedMapAvailable = Boolean(
+          res.data.maps.find(map => map.id === loadedMapIdRef.current)
+        );
+        const isLiveMapAvailable = Boolean(
+          res.data.maps.find(map => map.id === res.data.currentMapId)
+        );
+
+        if (!isLiveMapAvailable && !isLoadedMapAvailable) {
           setShowMapModal(true);
-        } else {
-          setLiveMapId(res.data.currentMapId);
-          if (!loadedMapId) {
-            setLoadedMapId(res.data.currentMapId);
-          }
+          setLoadedMapId(null);
+          return;
         }
+
+        setLiveMapId(isLiveMapAvailable ? res.data.currentMapId : null);
+        setLoadedMapId(
+          isLoadedMapAvailable ? loadedMapIdRef.current : res.data.currentMapId
+        );
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [setLoadedMapId]);
 
   return (
     <>
