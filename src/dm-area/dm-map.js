@@ -296,8 +296,8 @@ export const DmMap = ({
     ev => {
       const ratio = getMapDisplayRatio();
       const [x, y] = panZoomReferentialRef.current.global_to_local([
-        ev.clientX,
-        ev.clientY
+        ev.pageX,
+        ev.pageY
       ]);
 
       return {
