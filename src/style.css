@@ -31,27 +31,6 @@ body {
   font-size: 150%;
 }
 
-#dm-toolbar {
-  position: fixed;
-  text-align: center;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  z-index: 100;
-}
-
-.toolbar-wrapper {
-  pointer-events: none;
-}
-
-.toolbar-wrapper > * {
-  pointer-events: all;
-}
-
-.btn-toolbar {
-  display: inline-block;
-}
-
 .splash {
   position: absolute;
   top: 0;
