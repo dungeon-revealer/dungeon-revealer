@@ -308,33 +308,16 @@ export const DmMap = ({
     [getMapDisplayRatio]
   );
 
-  const getTouchCoordinates = useCallback(
-    ev => {
-      const viewportOffset = fogCanvasRef.current.getBoundingClientRect();
-      const borderTop = parseInt(
-        fogCanvasRef.current.style.borderTopWidth || 0
-      );
-      const borderLeft = parseInt(
-        fogCanvasRef.current.style.borderLeftWidth || 0
-      );
-
-      return {
-        x:
-          (ev.touches[0].pageX -
-            viewportOffset.left -
-            borderLeft -
-            document.documentElement.scrollLeft) /
-          getMapDisplayRatio(),
-        y:
-          (ev.touches[0].pageY -
-            viewportOffset.top -
-            borderTop -
-            document.documentElement.scrollTop) /
-          getMapDisplayRatio()
-      };
-    },
-    [getMapDisplayRatio]
-  );
+  const getTouchCoordinates = useCallback(touch => {
+    if (!panZoomReferentialRef.current) {
+      throw new TypeError("Invalid state");
+    }
+    const [x, y] = panZoomReferentialRef.current.global_to_local([
+      touch.pageX,
+      touch.pageY
+    ]);
+    return { x, y };
+  }, []);
 
   const drawInitial = useCallback(
     coords => {
@@ -788,7 +771,8 @@ export const DmMap = ({
               }
             }}
             onTouchStart={ev => {
-              const coords = getTouchCoordinates(ev);
+              const coords = getTouchCoordinates(ev.touches[0]);
+              drawCursor(coords);
               if (tool === "brush") {
                 drawState.current.isDrawing = true;
                 drawInitial(coords);
@@ -798,8 +782,8 @@ export const DmMap = ({
             }}
             onTouchMove={ev => {
               ev.preventDefault();
-              const coords = getTouchCoordinates(ev);
-
+              const coords = getTouchCoordinates(ev.touches[0]);
+              drawCursor(coords);
               if (tool === "move") {
                 return;
               } else if (tool === "area" && areaDrawState.current.startCoords) {
