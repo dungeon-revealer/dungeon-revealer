@@ -62,15 +62,13 @@
     }
   },
   "lint-staged": {
-    "linters": {
-      "*.{js,json,md,html}": [
-        "prettier --write",
-        "git add"
-      ],
-      "*.js": [
-        "eslint --fix"
-      ]
-    }
+    "*.{js,json,md,html}": [
+      "prettier --write",
+      "git add"
+    ],
+    "*.js": [
+      "eslint --fix"
+    ]
   },
   "pkg": {
     "assets": [
