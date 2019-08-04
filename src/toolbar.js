@@ -121,16 +121,13 @@ const ToolbarLogo = styled.div`
   line-height: 2;
 `;
 
-Toolbar.Logo = () => {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+const Logo = () => {
   const { horizontal } = React.useContext(ToolbarContext);
   return <ToolbarLogo horizontal={horizontal}>DR</ToolbarLogo>;
 };
 
-Toolbar.Group = ({ children, style, divider, ...props }) => {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+const Group = ({ children, style, divider, ...props }) => {
   const { horizontal } = React.useContext(ToolbarContext);
-
   return (
     <ToolbarGroup horizontal={horizontal} divider={divider} {...props}>
       {children}
@@ -138,8 +135,7 @@ Toolbar.Group = ({ children, style, divider, ...props }) => {
   );
 };
 
-Toolbar.Item = ({ children, isActive, style, ...props }) => {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+const Item = ({ children, isActive, style, ...props }) => {
   const { horizontal } = React.useContext(ToolbarContext);
 
   return (
@@ -179,18 +175,24 @@ const LongPressButton = ({ onLongPress, ...props }) => {
 
   useEffect(() => {
     return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       clearTimeout(timeoutRef.current);
     };
   }, []);
 
   return (
-    <ToolboxButton {...props} onMouseUp={onMouseUp} onMouseDown={onMouseDown} />
+    <ToolboxButton
+      {...props}
+      onMouseDown={onMouseDown}
+      onTouchStart={onMouseDown}
+      onMouseUp={onMouseUp}
+      onTouchEnd={onMouseUp}
+    />
   );
 };
 
+Toolbar.Logo = Logo;
+Toolbar.Group = Group;
+Toolbar.Item = Item;
 Toolbar.Button = ToolboxButton;
-
 Toolbar.LongPressButton = LongPressButton;
-
 Toolbar.Popup = ToolbarItemPopup;
