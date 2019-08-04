@@ -775,6 +775,9 @@ export const DmMap = ({
               }
             }}
             onTouchStart={ev => {
+              if (tool === "move") {
+                return;
+              }
               const coords = getTouchCoordinates(ev.touches[0]);
               drawCursor(coords);
               if (tool === "brush") {
@@ -786,11 +789,13 @@ export const DmMap = ({
             }}
             onTouchMove={ev => {
               ev.preventDefault();
-              const coords = getTouchCoordinates(ev.touches[0]);
-              drawCursor(coords);
               if (tool === "move") {
                 return;
-              } else if (tool === "area" && areaDrawState.current.startCoords) {
+              }
+              const coords = getTouchCoordinates(ev.touches[0]);
+              drawCursor(coords);
+
+              if (tool === "area" && areaDrawState.current.startCoords) {
                 areaDrawState.current.currentCoords = coords;
                 drawAreaSelection();
                 return;
