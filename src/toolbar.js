@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useEffect, useRef } from "react";
 import styled from "@emotion/styled";
 
 const ToolbarContext = React.createContext({ horizontal: false });
@@ -15,8 +15,9 @@ const ToolbarBase = styled.div`
   align-items: ${p => (p.horizontal ? "center" : null)};
 
   > :first-of-type {
-    border-top-right-radius: 15px;
+    border-top-right-radius: ${p => (p.horizontal ? null : `15px`)};
     border-top-left-radius: 15px;
+    border-bottom-left-radius: ${p => (p.horizontal ? `15px` : null)};
   }
 `;
 
@@ -103,10 +104,30 @@ export const Toolbar = ({ children, horizontal, ...props }) => {
   );
 };
 
-Toolbar.Group = ({ children, style, divider, ...props }) => {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { horizontal } = React.useContext(ToolbarContext);
+const ToolbarLogo = styled.div`
+  background-color: rgb(34, 60, 7, 1);
+  padding-top: ${p => (p.horizontal ? `10px` : `25px`)};
+  padding-bottom: ${p => (p.horizontal ? null : `15px`)};
+  padding-left: ${p => (p.horizontal ? `15px` : null)};
+  padding-right: ${p => (p.horizontal ? `20px` : null)};
+  height: ${p => (p.horizontal ? `100%` : null)};
+  font-size: 20px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 1);
+  margin-bottom: ${p => (p.horizontal ? null : `24px`)};
+  font-family: folkard, palitino, serif;
+  display: ${p => (p.horizontal ? `flex` : null)};
+  align-items: ${p => (p.horizontal ? `center` : null)};
+  line-height: 2;
+`;
 
+const Logo = () => {
+  const { horizontal } = React.useContext(ToolbarContext);
+  return <ToolbarLogo horizontal={horizontal}>DR</ToolbarLogo>;
+};
+
+const Group = ({ children, style, divider, ...props }) => {
+  const { horizontal } = React.useContext(ToolbarContext);
   return (
     <ToolbarGroup horizontal={horizontal} divider={divider} {...props}>
       {children}
@@ -114,8 +135,7 @@ Toolbar.Group = ({ children, style, divider, ...props }) => {
   );
 };
 
-Toolbar.Item = ({ children, isActive, style, ...props }) => {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+const Item = ({ children, isActive, style, ...props }) => {
   const { horizontal } = React.useContext(ToolbarContext);
 
   return (
@@ -125,6 +145,54 @@ Toolbar.Item = ({ children, isActive, style, ...props }) => {
   );
 };
 
-Toolbar.Button = ToolboxButton;
+const LongPressButton = ({ onLongPress, ...props }) => {
+  const timeoutRef = useRef(null);
+  const releaseHandler = useRef(null);
 
+  const onMouseDown = useMemo(() => {
+    if (!onLongPress) {
+      return undefined;
+    }
+    return ev => {
+      ev.stopPropagation();
+      timeoutRef.current = setTimeout(() => {
+        releaseHandler.current = onLongPress();
+      }, 300);
+    };
+  }, [onLongPress]);
+
+  const onMouseUp = useMemo(() => {
+    if (!onLongPress) {
+      return undefined;
+    }
+    return () => {
+      if (releaseHandler.current) {
+        releaseHandler.current();
+      }
+      clearTimeout(timeoutRef.current);
+    };
+  }, [onLongPress]);
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  return (
+    <ToolboxButton
+      {...props}
+      onMouseDown={onMouseDown}
+      onTouchStart={onMouseDown}
+      onMouseUp={onMouseUp}
+      onTouchEnd={onMouseUp}
+    />
+  );
+};
+
+Toolbar.Logo = Logo;
+Toolbar.Group = Group;
+Toolbar.Item = Item;
+Toolbar.Button = ToolboxButton;
+Toolbar.LongPressButton = LongPressButton;
 Toolbar.Popup = ToolbarItemPopup;

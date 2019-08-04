@@ -15,6 +15,7 @@ body {
   margin: 0px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  user-select: none;
 }
 
 #root {
@@ -29,27 +30,6 @@ body {
   color: white;
   font-family: folkard, cardinal, palitino, serif;
   font-size: 150%;
-}
-
-#dm-toolbar {
-  position: fixed;
-  text-align: center;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  z-index: 100;
-}
-
-.toolbar-wrapper {
-  pointer-events: none;
-}
-
-.toolbar-wrapper > * {
-  pointer-events: all;
-}
-
-.btn-toolbar {
-  display: inline-block;
 }
 
 .splash {
