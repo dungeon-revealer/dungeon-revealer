@@ -248,7 +248,7 @@ export const PlayerArea = () => {
   /**
    * long press event for setting a map marker
    */
-  useLongPress(ev => {
+  const longPressProps = useLongPress(ev => {
     if (!mapCanvasDimensions.current) {
       return;
     }
@@ -287,6 +287,7 @@ export const PlayerArea = () => {
           width: "100vw"
         }}
         ref={panZoomRef}
+        {...longPressProps}
       >
         <div ref={mapContainerRef}>
           <canvas
