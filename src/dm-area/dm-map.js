@@ -308,16 +308,20 @@ export const DmMap = ({
     [getMapDisplayRatio]
   );
 
-  const getTouchCoordinates = useCallback(touch => {
-    if (!panZoomReferentialRef.current) {
-      throw new TypeError("Invalid state");
-    }
-    const [x, y] = panZoomReferentialRef.current.global_to_local([
-      touch.pageX,
-      touch.pageY
-    ]);
-    return { x, y };
-  }, []);
+  const getTouchCoordinates = useCallback(
+    touch => {
+      if (!panZoomReferentialRef.current) {
+        throw new TypeError("Invalid state");
+      }
+      const ratio = getMapDisplayRatio();
+      const [x, y] = panZoomReferentialRef.current.global_to_local([
+        touch.pageX,
+        touch.pageY
+      ]);
+      return { x: x / ratio, y: y / ratio };
+    },
+    [getMapDisplayRatio]
+  );
 
   const drawInitial = useCallback(
     coords => {
