@@ -6,12 +6,12 @@ export const Input = styled.input`
 
   width: 100%;
 
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 8px;
-  padding-right: 8px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  padding-left: 12px;
+  padding-right: 12px;
 
-  font-size: 18px;
+  font-size: 20px;
 
   border-radius: 8px;
 
