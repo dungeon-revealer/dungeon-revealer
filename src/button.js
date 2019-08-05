@@ -1,6 +1,7 @@
 import styled from "@emotion/styled/macro";
 
 const ButtonBase = styled.button`
+  cursor: pointer;
   border: none;
   align-items: center;
   border-radius: 4px;
