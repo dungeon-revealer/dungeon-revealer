@@ -5,13 +5,13 @@ A web app for tabletop gaming to allow the game master to reveal areas of the ga
 
 ## What the DM Sees
 
-![alt text](https://user-images.githubusercontent.com/9096667/60119974-6b491500-9745-11e9-9e13-6c52b20b605d.png "DM's View")
+![alt text](https://user-images.githubusercontent.com/14338007/62453092-e3a5eb80-b771-11e9-987d-606a2847e617.png "DM's View")
 
 You can protect the DM area by setting a password.
 
 ## What the players see
 
-![alt text](https://user-images.githubusercontent.com/9096667/60120496-86685480-9746-11e9-903d-87b23369451c.png "Player's view")
+![alt text](https://user-images.githubusercontent.com/14338007/62453091-e3a5eb80-b771-11e9-89fa-f000ca9dbd79.png "Player's view")
 
 ## Getting Started
 
