@@ -2,14 +2,11 @@ sudo: false
 language: node_js
 node_js:
   - "10"
-cache: npm
 
 services:
   - docker
 
 stages:
-  - cache
-  - eslint
   - build
   - build docker image
   - name: dockerhub dev deploy
@@ -21,16 +18,9 @@ stages:
 
 jobs:
   include:
-    - stage: cache
-      script: true
-
-    - stage: eslint
-      install: true
-      script: npm run eslint
-
     - stage: build
-      install: true
-      script: npm run build
+      script: 
+      - npm run eslint
 
     - stage: build docker image
       install: true
@@ -48,17 +38,19 @@ jobs:
       - docker push $DOCKER_USERNAME/dungeon-revealer
 
     - stage: github deploy
-      install: true
       script:
         - echo "Deploying $TRAVIS_TAG to GitHub releases ..."
-        - npm run build
         - chmod +x bin/dungeon-revealer-linux bin/dungeon-revealer-macos
-        - zip "dungeon-revealer-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-*
+        - zip "dungeon-revealer-linux-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-linux README.md
+        - zip "dungeon-revealer-macos-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-macos README.md
+        - zip "dungeon-revealer-win-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-win.exe README.md
       deploy:
         provider: releases
         api_key: $GITHUB_OAUTH_TOKEN
         file:
-          - "dungeon-revealer-$TRAVIS_TAG.zip"
+          - "dungeon-revealer-linux-$TRAVIS_TAG.zip"
+          - "dungeon-revealer-macos-$TRAVIS_TAG.zip"
+          - "dungeon-revealer-win-$TRAVIS_TAG.zip"
         skip_cleanup: true
         draft: true
         on:

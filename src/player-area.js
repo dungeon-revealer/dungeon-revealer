@@ -4,6 +4,19 @@ import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
 import { loadImage, useLongPress, getOptimalDimensions } from "./util";
 import { ObjectLayer } from "./object-layer";
+import { Toolbar } from "./toolbar";
+import styled from "@emotion/styled/macro";
+import * as Icons from "./feather-icons";
+
+const ToolbarContainer = styled.div`
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  bottom: 0;
+  bottom: 12px;
+  pointer-events: none;
+`;
 
 export const PlayerArea = () => {
   const panZoomRef = useRef(null);
@@ -28,20 +41,12 @@ export const PlayerArea = () => {
 
   const [markedAreas, setMarkedAreas] = useState(() => []);
 
-  const centerMap = (isInitial = false) => {
-    if (panZoomRef.current) {
-      // hacky approach for centering the map initially
-      // (there is no API for react-native-panzoom to do the autofocus without a transition)
-      if (isInitial) {
-        const dragContainer = panZoomRef.current.getDragContainer();
-        const transition = dragContainer.style.transition;
-        dragContainer.style.transition = "none";
-        setTimeout(() => {
-          dragContainer.style.transition = transition;
-        }, 500);
-      }
-      panZoomRef.current.autoCenter(0.8);
+  const centerMap = (isAnimated = true) => {
+    if (!panZoomRef.current) {
+      return;
     }
+
+    panZoomRef.current.autoCenter(0.8, isAnimated);
   };
 
   useEffect(() => {
@@ -212,7 +217,7 @@ export const PlayerArea = () => {
             cavasDimensions.height
           );
 
-          centerMap(true);
+          centerMap(false);
           setShowSplashScreen(false);
         })
         .catch(err => {
@@ -243,7 +248,7 @@ export const PlayerArea = () => {
   /**
    * long press event for setting a map marker
    */
-  useLongPress(ev => {
+  const longPressProps = useLongPress(ev => {
     if (!mapCanvasDimensions.current) {
       return;
     }
@@ -282,6 +287,7 @@ export const PlayerArea = () => {
           width: "100vw"
         }}
         ref={panZoomRef}
+        {...longPressProps}
       >
         <div ref={mapContainerRef}>
           <canvas
@@ -304,42 +310,63 @@ export const PlayerArea = () => {
         </div>
       </PanZoom>
       {!showSplashScreen ? (
-        <div id="dm-toolbar" className="toolbar-wrapper">
-          <div className="btn-toolbar">
-            <div className="btn-group">
-              <button
-                className="btn btn-default"
-                onClick={() => {
-                  centerMap();
-                }}
-              >
-                Center
-              </button>
-              <button
-                className="btn btn-default"
-                onClick={() => {
-                  if (!panZoomRef.current) {
-                    return;
-                  }
-                  panZoomRef.current.zoomIn();
-                }}
-              >
-                Zoom in
-              </button>
-              <button
-                className="btn btn-default"
-                onClick={() => {
-                  if (!panZoomRef.current) {
-                    return;
-                  }
-                  panZoomRef.current.zoomOut();
-                }}
-              >
-                Zoom out
-              </button>
-            </div>
-          </div>
-        </div>
+        <ToolbarContainer>
+          <Toolbar horizontal>
+            <Toolbar.Logo />
+            <Toolbar.Group>
+              <Toolbar.Item isActive>
+                <Toolbar.Button
+                  onClick={() => {
+                    centerMap();
+                  }}
+                >
+                  <Icons.Compass />
+                  <Icons.Label>Center Map</Icons.Label>
+                </Toolbar.Button>
+              </Toolbar.Item>
+              <Toolbar.Item isActive>
+                <Toolbar.LongPressButton
+                  onClick={() => {
+                    if (!panZoomRef.current) {
+                      return;
+                    }
+                    panZoomRef.current.zoomIn();
+                  }}
+                  onLongPress={() => {
+                    const interval = setInterval(() => {
+                      panZoomRef.current.zoomIn();
+                    }, 100);
+
+                    return () => clearInterval(interval);
+                  }}
+                >
+                  <Icons.ZoomIn />
+                  <Icons.Label>Zoom In</Icons.Label>
+                </Toolbar.LongPressButton>
+              </Toolbar.Item>
+              <Toolbar.Item isActive>
+                <Toolbar.LongPressButton
+                  onClick={() => {
+                    if (!panZoomRef.current) {
+                      return;
+                    }
+                    panZoomRef.current.zoomOut();
+                  }}
+                  onLongPress={() => {
+                    const interval = setInterval(() => {
+                      panZoomRef.current.zoomOut();
+                    }, 100);
+
+                    return () => clearInterval(interval);
+                  }}
+                >
+                  <Icons.ZoomOut />
+                  <Icons.Label>Zoom Out</Icons.Label>
+                </Toolbar.LongPressButton>
+              </Toolbar.Item>
+            </Toolbar.Group>
+          </Toolbar>
+        </ToolbarContainer>
       ) : null}
     </>
   );

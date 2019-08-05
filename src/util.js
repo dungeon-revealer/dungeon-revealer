@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 /**
  * Utility for preloading an image as a promise
@@ -79,11 +79,25 @@ export const useLongPress = (callback = () => {}, ms = 300) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startLogPress]);
 
-  useEffect(() => {
-    const onMouseDown = ev => {
+  const onMouseDown = useCallback(
+    ev => {
+      ev.persist();
       currentEventRef.current = ev;
       setStartLongPress(true);
-    };
+    },
+    [setStartLongPress]
+  );
+
+  const onTouchStart = useCallback(
+    ev => {
+      ev.persist();
+      currentEventRef.current = ev;
+      setStartLongPress(true);
+    },
+    [setStartLongPress]
+  );
+
+  useEffect(() => {
     const onMouseUp = () => setStartLongPress(false);
     const onMouseMove = () => setStartLongPress(false);
     const onTouchMove = () => {
@@ -91,31 +105,39 @@ export const useLongPress = (callback = () => {}, ms = 300) => {
     };
     const onMouseLeave = () => setStartLongPress(false);
 
-    const onTouchStart = ev => {
-      ev.preventDefault();
-      currentEventRef.current = ev;
-      setStartLongPress(true);
-    };
     const onTouchEnd = () => setStartLongPress(false);
 
-    window.addEventListener("mousedown", onMouseDown);
     window.addEventListener("mouseup", onMouseUp);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseleave", onMouseLeave);
-    document.addEventListener("touchstart", onTouchStart);
     document.addEventListener("touchmove", onTouchMove);
     document.addEventListener("touchend", onTouchEnd);
 
     return () => {
-      window.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mouseup", onMouseUp);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseleave", onMouseLeave);
-      document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchmove", onTouchMove);
       document.removeEventListener("touchend", onTouchEnd);
     };
   });
+
+  return {
+    onMouseDown,
+    onTouchStart
+  };
+};
+
+/**
+ * creates a ref that must be mutated but cannot be reassigned.
+ */
+export const useStaticRef = create => {
+  const ref = useRef();
+  if (!ref.current) {
+    ref.current = create();
+  }
+
+  return ref.current;
 };
 
 export const ConditionalWrap = ({ condition, wrap, children }) =>

@@ -6,214 +6,10 @@ import { PanZoom } from "react-easy-panzoom";
 import ReactTooltip from "react-tooltip";
 import Referentiel from "referentiel";
 import { loadImage, getOptimalDimensions, ConditionalWrap } from "./../util";
-import { Toolbar } from "./toolbar";
+import { Toolbar } from "./../toolbar";
 import styled from "@emotion/styled";
 import { ObjectLayer } from "../object-layer";
-
-//
-// All icons are extracted from https://feather.netlify.com/
-//
-const DropletIcon = ({ fill, filled, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill={filled ? fill : "none"}
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
-  </svg>
-);
-
-const MoveIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20" />
-  </svg>
-);
-
-const CropIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15" />
-    <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15" />
-  </svg>
-);
-
-const PenIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <path d="M12 19l7-7 3 3-7 7-3-3z" />
-    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586" />
-    <circle cx={11} cy={11} r={2} />
-  </svg>
-);
-
-const EyeIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-    <circle cx={12} cy={12} r={3} />
-  </svg>
-);
-
-const EyeOffIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" />
-  </svg>
-);
-
-const MapIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4zM8 2v16M16 6v16" />
-  </svg>
-);
-
-const SendIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-  </svg>
-);
-
-const RadioIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <circle cx={12} cy={12} r={2} />
-    <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14" />
-  </svg>
-);
-
-const PauseIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <circle cx={12} cy={12} r={10} />
-    <path d="M10 15V9M14 15V9" />
-  </svg>
-);
-
-const CrosshairIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <circle cx={12} cy={12} r={10} />
-    <path d="M22 12h-4M6 12H2M12 6V2M12 22v-4" />
-  </svg>
-);
-
-const CircleIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <circle cx={12} cy={12} r={10} />
-  </svg>
-);
-
-const SquareIcon = ({ fill, ...props }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={fill}
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    height={30}
-    {...props}
-  >
-    <rect x={3} y={3} width={18} height={18} rx={2} ry={2} />
-  </svg>
-);
+import * as Icons from "../feather-icons";
 
 const ShapeButton = styled.button`
   border: none;
@@ -229,37 +25,6 @@ const ShapeButton = styled.button`
     stroke: ${p => (p.isActive ? "rgba(0, 0, 0, 1)" : "hsl(211, 27%, 70%)")};
   }
 `;
-
-const IconLabel = ({ children, color = "inherit" }) => (
-  <div
-    style={{
-      fontSize: 10,
-      fontWeight: "bold",
-      color
-    }}
-  >
-    {children}
-  </div>
-);
-
-const ToolbarLogo = () => {
-  return (
-    <div
-      style={{
-        backgroundColor: "rgb(34, 60, 7, 1)",
-        paddingTop: 25,
-        paddingBottom: 15,
-        fontSize: 20,
-        fontWeight: "bold",
-        color: "rgba(255, 255, 255, 1)",
-        marginBottom: 24,
-        fontFamily: "folkard, palitino, serif"
-      }}
-    >
-      DR
-    </div>
-  );
-};
 
 const midPointBtw = (p1, p2) => {
   return {
@@ -531,8 +296,8 @@ export const DmMap = ({
     ev => {
       const ratio = getMapDisplayRatio();
       const [x, y] = panZoomReferentialRef.current.global_to_local([
-        ev.clientX,
-        ev.clientY
+        ev.pageX,
+        ev.pageY
       ]);
 
       return {
@@ -544,29 +309,16 @@ export const DmMap = ({
   );
 
   const getTouchCoordinates = useCallback(
-    ev => {
-      const viewportOffset = fogCanvasRef.current.getBoundingClientRect();
-      const borderTop = parseInt(
-        fogCanvasRef.current.style.borderTopWidth || 0
-      );
-      const borderLeft = parseInt(
-        fogCanvasRef.current.style.borderLeftWidth || 0
-      );
-
-      return {
-        x:
-          (ev.touches[0].pageX -
-            viewportOffset.left -
-            borderLeft -
-            document.documentElement.scrollLeft) /
-          getMapDisplayRatio(),
-        y:
-          (ev.touches[0].pageY -
-            viewportOffset.top -
-            borderTop -
-            document.documentElement.scrollTop) /
-          getMapDisplayRatio()
-      };
+    touch => {
+      if (!panZoomReferentialRef.current) {
+        throw new TypeError("Invalid state");
+      }
+      const ratio = getMapDisplayRatio();
+      const [x, y] = panZoomReferentialRef.current.global_to_local([
+        touch.pageX,
+        touch.pageY
+      ]);
+      return { x: x / ratio, y: y / ratio };
     },
     [getMapDisplayRatio]
   );
@@ -809,21 +561,11 @@ export const DmMap = ({
       };
     }
 
-    const centerMap = (isInitial = false) => {
+    const centerMap = (isAnimated = true) => {
       if (!panZoomRef.current) {
         return;
       }
-      // hacky approach for centering the map initially
-      // (there is no API for react-native-panzoom to do the autofocus without a transition)
-      if (isInitial) {
-        const dragContainer = panZoomRef.current.getDragContainer();
-        const transition = dragContainer.style.transition;
-        dragContainer.style.transition = "none";
-        setTimeout(() => {
-          dragContainer.style.transition = transition;
-        }, 500);
-      }
-      panZoomRef.current.autoCenter(0.85);
+      panZoomRef.current.autoCenter(0.85, isAnimated);
     };
 
     let tasks = [
@@ -866,7 +608,7 @@ export const DmMap = ({
           .getContext("2d")
           .drawImage(map, 0, 0, dimensions.width, dimensions.height);
 
-        centerMap(true);
+        centerMap(false);
 
         if (!fog) {
           fillFog();
@@ -1033,7 +775,11 @@ export const DmMap = ({
               }
             }}
             onTouchStart={ev => {
-              const coords = getTouchCoordinates(ev);
+              if (tool === "move") {
+                return;
+              }
+              const coords = getTouchCoordinates(ev.touches[0]);
+              drawCursor(coords);
               if (tool === "brush") {
                 drawState.current.isDrawing = true;
                 drawInitial(coords);
@@ -1043,11 +789,13 @@ export const DmMap = ({
             }}
             onTouchMove={ev => {
               ev.preventDefault();
-              const coords = getTouchCoordinates(ev);
-
               if (tool === "move") {
                 return;
-              } else if (tool === "area" && areaDrawState.current.startCoords) {
+              }
+              const coords = getTouchCoordinates(ev.touches[0]);
+              drawCursor(coords);
+
+              if (tool === "area" && areaDrawState.current.startCoords) {
                 areaDrawState.current.currentCoords = coords;
                 drawAreaSelection();
                 return;
@@ -1099,8 +847,8 @@ export const DmMap = ({
                   showMapModal();
                 }}
               >
-                <MapIcon />
-                <IconLabel>Change Map</IconLabel>
+                <Icons.MapIcon />
+                <Icons.Label>Change Map</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item>
@@ -1110,7 +858,7 @@ export const DmMap = ({
                   <Toolbar.Button onClick={hideMap}>{children}</Toolbar.Button>
                 )}
               >
-                <PauseIcon
+                <Icons.PauseIcon
                   style={{
                     stroke:
                       liveMapId !== null
@@ -1118,7 +866,7 @@ export const DmMap = ({
                         : "hsl(211, 27%, 70%)"
                   }}
                 />
-                <IconLabel
+                <Icons.Label
                   color={
                     liveMapId !== null
                       ? "hsl(360, 83%, 62%)"
@@ -1126,23 +874,23 @@ export const DmMap = ({
                   }
                 >
                   Stop Sharing
-                </IconLabel>
+                </Icons.Label>
               </ConditionalWrap>
             </Toolbar.Item>
             {isCurrentMapLive ? (
               <Toolbar.Item data-tooltip="Currently loaded map is live">
-                <RadioIcon style={{ stroke: "hsl(160, 51%, 49%)" }} />
-                <IconLabel color="hsl(160, 51%, 49%)">Live</IconLabel>
+                <Icons.RadioIcon style={{ stroke: "hsl(160, 51%, 49%)" }} />
+                <Icons.Label color="hsl(160, 51%, 49%)">Live</Icons.Label>
               </Toolbar.Item>
             ) : isOtherMapLive ? (
               <Toolbar.Item data-tooltip="A different map is live">
-                <RadioIcon style={{ stroke: "hsl(48, 94%, 68%)" }} />
-                <IconLabel color="hsl(48, 94%, 68%)">Live</IconLabel>
+                <Icons.RadioIcon style={{ stroke: "hsl(48, 94%, 68%)" }} />
+                <Icons.Label color="hsl(48, 94%, 68%)">Live</Icons.Label>
               </Toolbar.Item>
             ) : (
               <Toolbar.Item data-tooltip="A different map is live">
-                <RadioIcon style={{ stroke: "hsl(211, 27%, 70%)" }} />
-                <IconLabel color="hsl(211, 27%, 70%)">Not Live</IconLabel>
+                <Icons.RadioIcon style={{ stroke: "hsl(211, 27%, 70%)" }} />
+                <Icons.Label color="hsl(211, 27%, 70%)">Not Live</Icons.Label>
               </Toolbar.Item>
             )}
             <Toolbar.Item isEnabled>
@@ -1156,8 +904,8 @@ export const DmMap = ({
                   });
                 }}
               >
-                <SendIcon fill="rgba(0, 0, 0, 1)" />
-                <IconLabel>Send</IconLabel>
+                <Icons.SendIcon fill="rgba(0, 0, 0, 1)" />
+                <Icons.Label>Send</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
           </Toolbar.Group>
@@ -1176,7 +924,7 @@ export const DmMap = ({
         }}
       >
         <Toolbar>
-          <ToolbarLogo />
+          <Toolbar.Logo />
           <Toolbar.Group divider>
             <Toolbar.Item isActive={tool === "move"}>
               <Toolbar.Button
@@ -1184,8 +932,8 @@ export const DmMap = ({
                   setTool("move");
                 }}
               >
-                <MoveIcon />
-                <IconLabel>Move</IconLabel>
+                <Icons.MoveIcon />
+                <Icons.Label>Move</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item isActive={tool === "area"}>
@@ -1194,8 +942,8 @@ export const DmMap = ({
                   setTool("area");
                 }}
               >
-                <CropIcon />
-                <IconLabel>Select Area</IconLabel>
+                <Icons.CropIcon />
+                <Icons.Label>Select Area</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item isActive={tool === "brush"}>
@@ -1204,8 +952,8 @@ export const DmMap = ({
                   setTool("brush");
                 }}
               >
-                <PenIcon />
-                <IconLabel>Brush</IconLabel>
+                <Icons.PenIcon />
+                <Icons.Label>Brush</Icons.Label>
               </Toolbar.Button>
 
               {tool === "brush" ? (
@@ -1219,8 +967,8 @@ export const DmMap = ({
                           setBrushShape("round");
                         }}
                       >
-                        <CircleIcon />
-                        <IconLabel>Circle</IconLabel>
+                        <Icons.CircleIcon />
+                        <Icons.Label>Circle</Icons.Label>
                       </ShapeButton>
                     </div>
                     <div style={{ flex: 1, textAlign: "right" }}>
@@ -1230,8 +978,8 @@ export const DmMap = ({
                           setBrushShape("square");
                         }}
                       >
-                        <SquareIcon />
-                        <IconLabel>Square</IconLabel>
+                        <Icons.SquareIcon />
+                        <Icons.Label>Square</Icons.Label>
                       </ShapeButton>
                     </div>
                   </div>
@@ -1277,8 +1025,8 @@ export const DmMap = ({
                   setTool("mark");
                 }}
               >
-                <CrosshairIcon />
-                <IconLabel>Mark</IconLabel>
+                <Icons.CrosshairIcon />
+                <Icons.Label>Mark</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
           </Toolbar.Group>
@@ -1295,27 +1043,27 @@ export const DmMap = ({
               >
                 {mode === "shroud" ? (
                   <>
-                    <EyeOffIcon fill="rgba(0, 0, 0, 1)" />
-                    <IconLabel>Shroud</IconLabel>
+                    <Icons.EyeOffIcon fill="rgba(0, 0, 0, 1)" />
+                    <Icons.Label>Shroud</Icons.Label>
                   </>
                 ) : (
                   <>
-                    <EyeIcon fill="rgba(0, 0, 0, 1)" />
-                    <IconLabel>Reveal</IconLabel>
+                    <Icons.EyeIcon fill="rgba(0, 0, 0, 1)" />
+                    <Icons.Label>Reveal</Icons.Label>
                   </>
                 )}
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item isEnabled>
               <Toolbar.Button onClick={() => fillFog()}>
-                <DropletIcon filled />
-                <IconLabel>Shroud All</IconLabel>
+                <Icons.DropletIcon filled />
+                <Icons.Label>Shroud All</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item isEnabled>
               <Toolbar.Button onClick={() => clearFog()}>
-                <DropletIcon fill="rgba(0, 0, 0, 1)" />
-                <IconLabel>Clear All</IconLabel>
+                <Icons.DropletIcon fill="rgba(0, 0, 0, 1)" />
+                <Icons.Label>Clear All</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
           </Toolbar.Group>
