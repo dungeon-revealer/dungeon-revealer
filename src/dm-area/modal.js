@@ -74,10 +74,10 @@ const Provider = ({ children }) => {
       }
     };
 
-    window.addEventListener("keyup", keydownListener, false);
+    window.addEventListener("keydown", keydownListener);
 
     return () => {
-      window.removeEventListener("keyup", keydownListener);
+      window.removeEventListener("keydown", keydownListener);
     };
   }, [registeredModals]);
 
@@ -152,9 +152,23 @@ const DialogSizeMappings = {
   SMALL: 512
 };
 
-const Dialog = ({ children, size = ModalDialogSize.DEFAULT }) => {
+const Dialog = ({
+  children,
+  size = ModalDialogSize.DEFAULT,
+  onSubmit: onSubmitOuter
+}) => {
+  const onSubmit = useCallback(
+    ev => {
+      ev.preventDefault();
+      if (onSubmitOuter) {
+        onSubmitOuter();
+      }
+    },
+    [onSubmitOuter]
+  );
   return (
-    <div
+    <form
+      onSubmit={onSubmit}
       role="dialog"
       style={{
         width: "100%",
@@ -169,7 +183,7 @@ const Dialog = ({ children, size = ModalDialogSize.DEFAULT }) => {
       }}
     >
       {children}
-    </div>
+    </form>
   );
 };
 
@@ -192,23 +206,10 @@ const Header = ({ children, style, ...props }) => {
   );
 };
 
-const Body = ({ children, noPadding, style, ...props }) => {
-  return (
-    <div
-      {...props}
-      style={{
-        width: "100%",
-        ...(noPadding
-          ? {}
-          : { paddingLeft: 20, paddingRight: 20, paddingTop: 20 }),
-
-        ...style
-      }}
-    >
-      {children}
-    </div>
-  );
-};
+const Body = styled.div`
+  width: 100%;
+  padding: ${p => (p.noPadding ? null : `20px 20px 20px 20px`)};
+`;
 
 const Actions = styled.div`
   padding-left: 20px;
