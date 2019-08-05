@@ -3,7 +3,7 @@ import styled from "@emotion/styled/macro";
 import { Modal, ModalDialogSize } from "./modal";
 import * as Icons from "../feather-icons";
 import { Input } from "../input";
-import { Button, ButtonTertiary } from "../button";
+import * as Button from "../button";
 
 const MapListItemButton = styled.button`
   font-weight: bold;
@@ -36,7 +36,7 @@ const CreateNewMapButton = ({ onSelectFile, children, ...props }) => {
   const fileInputRef = useRef();
   return (
     <>
-      <Button
+      <Button.Primary
         {...props}
         onClick={() => {
           if (fileInputRef.current) {
@@ -45,7 +45,7 @@ const CreateNewMapButton = ({ onSelectFile, children, ...props }) => {
         }}
       >
         {children}
-      </Button>
+      </Button.Primary>
       <input
         type="file"
         style={{ display: "none" }}
@@ -127,13 +127,13 @@ export const SelectMapModal = ({
             </h2>
             <div style={{ flex: 1, textAlign: "right" }}>
               {canClose ? (
-                <ButtonTertiary
+                <Button.Tertiary
                   tabIndex="3"
                   style={{ marginLeft: 8 }}
                   onClick={closeModal}
                 >
                   Close
-                </ButtonTertiary>
+                </Button.Tertiary>
               ) : null}
             </div>
           </Modal.Header>
@@ -245,14 +245,14 @@ export const SelectMapModal = ({
                   >
                     {activeMap.title}
                   </h3>
-                  <ButtonTertiary
+                  <Button.Tertiary
                     iconOnly
                     onClick={() => {
                       setModalType(ModalType.EDIT_TITLE);
                     }}
                   >
                     <Icons.EditIcon height={16} />
-                  </ButtonTertiary>
+                  </Button.Tertiary>
                 </div>
                 <div
                   style={{
@@ -277,25 +277,25 @@ export const SelectMapModal = ({
                   }}
                 >
                   <div>
-                    <ButtonTertiary
+                    <Button.Tertiary
                       tabIndex="2"
                       onClick={() => {
                         setModalType(ModalType.DELETE_MAP);
                       }}
                     >
                       <Icons.TrashIcon height={20} width={20} /> Delete
-                    </ButtonTertiary>
+                    </Button.Tertiary>
                   </div>
 
                   <div style={{ marginLeft: "auto" }}>
-                    <Button
+                    <Button.Primary
                       tabIndex="1"
                       onClick={() => {
                         setLoadedMapId(activeMap.id);
                       }}
                     >
                       <Icons.CheckIcon height={20} width={20} /> Load Map
-                    </Button>
+                    </Button.Primary>
                   </div>
                 </div>
               </div>
@@ -388,15 +388,15 @@ const CreateNewMapModal = ({ closeModal, createMap }) => {
         </Modal.Body>
         <Modal.Actions>
           <Modal.ActionGroup>
-            <ButtonTertiary onClick={closeModal}>Abort</ButtonTertiary>
-            <Button
+            <Button.Tertiary onClick={closeModal}>Abort</Button.Tertiary>
+            <Button.Primary
               onClick={() => {
                 createMap(inputValue);
                 closeModal();
               }}
             >
               Create Map
-            </Button>
+            </Button.Primary>
           </Modal.ActionGroup>
         </Modal.Actions>
       </Modal.Dialog>
@@ -428,15 +428,15 @@ const ChangeMapTitleModal = ({ closeModal, updateMap }) => {
         </Modal.Body>
         <Modal.Actions>
           <Modal.ActionGroup>
-            <ButtonTertiary onClick={closeModal}>Abort</ButtonTertiary>
-            <Button
+            <Button.Tertiary onClick={closeModal}>Abort</Button.Tertiary>
+            <Button.Primary
               onClick={() => {
                 updateMap({ title: inputValue });
                 closeModal();
               }}
             >
               Change Map Title
-            </Button>
+            </Button.Primary>
           </Modal.ActionGroup>
         </Modal.Actions>
       </Modal.Dialog>
@@ -455,15 +455,15 @@ const DeleteMapModal = ({ closeModal, deleteMap }) => {
         <Modal.Body>Do you really want to delete this map?</Modal.Body>
         <Modal.Actions>
           <Modal.ActionGroup>
-            <ButtonTertiary onClick={closeModal}>Abort</ButtonTertiary>
-            <Button
+            <Button.Tertiary onClick={closeModal}>Abort</Button.Tertiary>
+            <Button.Primary
               onClick={() => {
                 deleteMap();
                 closeModal();
               }}
             >
               Delete
-            </Button>
+            </Button.Primary>
           </Modal.ActionGroup>
         </Modal.Actions>
       </Modal.Dialog>

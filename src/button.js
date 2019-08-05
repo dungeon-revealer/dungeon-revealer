@@ -16,7 +16,7 @@ const ButtonBase = styled.button`
   }
 `;
 
-export const Button = styled(ButtonBase)`
+export const Primary = styled(ButtonBase)`
   border: none;
   background-color: #044e54;
   color: white;
@@ -31,7 +31,7 @@ export const Button = styled(ButtonBase)`
   }
 `;
 
-export const ButtonSecondary = styled(ButtonBase)`
+export const Secondary = styled(ButtonBase)`
   background-color: #d9e2ec;
   color: black;
 
@@ -40,7 +40,7 @@ export const ButtonSecondary = styled(ButtonBase)`
   }
 `;
 
-export const ButtonTertiary = styled(ButtonBase)`
+export const Tertiary = styled(ButtonBase)`
   background-color: transparent;
   color: #627d98;
 
