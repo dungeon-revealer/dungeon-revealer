@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-const debug = require("debug")("dungeon-revealer");
+require("debug")("dungeon-revealer");
 const app = require("../app");
 const http = app.http;
 const os = require("os");
