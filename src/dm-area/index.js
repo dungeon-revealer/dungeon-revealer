@@ -49,7 +49,7 @@ export const DmArea = () => {
     <Modal.Provider>
       {showMapModal ? (
         <SelectMapModal
-          canClose={loadedMapId !== null}
+          canClose={loadedMap !== null}
           maps={data.maps}
           loadedMapId={loadedMapId}
           liveMapId={liveMapId}

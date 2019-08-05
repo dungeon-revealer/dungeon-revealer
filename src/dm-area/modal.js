@@ -117,12 +117,11 @@ const ModalPortal = ({ children, onClickOutside, onPressEscape }) => {
 
   useEffect(() => {
     modalRoot.append(modalElement);
-    const modalRegistration = createModalRegistration(onPressEscape);
-    modalRegistration.current = modalRegistration;
+    modalRegistration.current = createModalRegistration(onPressEscape);
 
     return () => {
       modalRoot.removeChild(modalElement);
-      modalRegistration.destroy();
+      modalRegistration.current.destroy();
     };
     // modalElement will never change
     // onPressEscape is omitted because the registration should only be done once.

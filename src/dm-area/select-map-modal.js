@@ -11,7 +11,7 @@ const MapListItemButton = styled.button`
   width: 100%;
   border: none;
   text-align: left;
-  padding: 12px;
+  padding: 20px;
   cursor: pointer;
   text-decoration: none;
   padding-left: 20px;
@@ -115,7 +115,7 @@ export const SelectMapModal = ({
               <Icons.MapIcon
                 width={28}
                 height={28}
-                style={{ marginBottom: -2, marginRight: 16 }}
+                style={{ marginBottom: -5, marginRight: 16 }}
               />{" "}
               Map Library
             </h2>
