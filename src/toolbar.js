@@ -105,7 +105,7 @@ export const Toolbar = ({ children, horizontal, ...props }) => {
 };
 
 const ToolbarLogo = styled.div`
-  background-color: rgb(34, 60, 7, 1);
+  background-color: #044e54;
   padding-top: ${p => (p.horizontal ? `10px` : `25px`)};
   padding-bottom: ${p => (p.horizontal ? null : `15px`)};
   padding-left: ${p => (p.horizontal ? `15px` : null)};

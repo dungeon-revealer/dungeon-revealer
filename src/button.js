@@ -20,8 +20,11 @@ export const Button = styled(ButtonBase)`
   border: none;
   background-color: #044e54;
   color: white;
+
+  &:focus,
   &:hover {
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    background-color: #0a6c74;
   }
   > svg {
     margin-right: 1rem;
