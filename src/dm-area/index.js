@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import createPersistedState from "use-persisted-state";
+import { Modal } from "./modal";
 import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
 
@@ -45,7 +46,7 @@ export const DmArea = () => {
   }, [setLoadedMapId]);
 
   return (
-    <>
+    <Modal.Provider>
       {showMapModal ? (
         <SelectMapModal
           canClose={loadedMapId !== null}
@@ -142,6 +143,6 @@ export const DmArea = () => {
           }}
         />
       ) : null}
-    </>
+    </Modal.Provider>
   );
 };

@@ -128,5 +128,17 @@ export const useLongPress = (callback = () => {}, ms = 300) => {
   };
 };
 
+/**
+ * creates a ref that must be mutated but cannot be reassigned.
+ */
+export const useStaticRef = create => {
+  const ref = useRef();
+  if (!ref.current) {
+    ref.current = create();
+  }
+
+  return ref.current;
+};
+
 export const ConditionalWrap = ({ condition, wrap, children }) =>
   condition ? wrap(children) : children;
