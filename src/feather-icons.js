@@ -10,7 +10,7 @@ export const Label = styled.div`
   color: ${p => p.color || "inherit"};
 `;
 
-export const DropletIcon = ({ fill, filled, ...props }) => (
+export const DropletIcon = ({ fill = "currentColor", filled, ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill={filled ? fill : "none"}
@@ -25,7 +25,7 @@ export const DropletIcon = ({ fill, filled, ...props }) => (
   </svg>
 );
 
-export const MoveIcon = ({ fill, ...props }) => (
+export const MoveIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -40,7 +40,7 @@ export const MoveIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const CropIcon = ({ fill, ...props }) => (
+export const CropIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -56,7 +56,7 @@ export const CropIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const PenIcon = ({ fill, ...props }) => (
+export const PenIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -73,7 +73,7 @@ export const PenIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const EyeIcon = ({ fill, ...props }) => (
+export const EyeIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -89,7 +89,7 @@ export const EyeIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const EyeOffIcon = ({ fill, ...props }) => (
+export const EyeOffIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -104,7 +104,7 @@ export const EyeOffIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const MapIcon = ({ fill, ...props }) => (
+export const MapIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -119,7 +119,7 @@ export const MapIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const SendIcon = ({ fill, ...props }) => (
+export const SendIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -134,7 +134,7 @@ export const SendIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const RadioIcon = ({ fill, ...props }) => (
+export const RadioIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -150,7 +150,7 @@ export const RadioIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const PauseIcon = ({ fill, ...props }) => (
+export const PauseIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -166,7 +166,7 @@ export const PauseIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const CrosshairIcon = ({ fill, ...props }) => (
+export const CrosshairIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -182,7 +182,7 @@ export const CrosshairIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const CircleIcon = ({ fill, ...props }) => (
+export const CircleIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -197,7 +197,7 @@ export const CircleIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const SquareIcon = ({ fill, ...props }) => (
+export const SquareIcon = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -212,7 +212,7 @@ export const SquareIcon = ({ fill, ...props }) => (
   </svg>
 );
 
-export const Compass = ({ fill, props }) => (
+export const Compass = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -228,7 +228,7 @@ export const Compass = ({ fill, props }) => (
   </svg>
 );
 
-export const ZoomOut = ({ fill, props }) => (
+export const ZoomOut = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -244,7 +244,7 @@ export const ZoomOut = ({ fill, props }) => (
   </svg>
 );
 
-export const ZoomIn = ({ fill, props }) => (
+export const ZoomIn = ({ fill = "currentColor", ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -257,5 +257,82 @@ export const ZoomIn = ({ fill, props }) => (
   >
     <circle cx={11} cy={11} r={8} />
     <path d="M21 21l-4.35-4.35M11 8v6M8 11h6" />
+  </svg>
+);
+
+export const EditIcon = ({ fill = "currentColor", ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
+
+export const Inbox = ({ fill = "currentColor", ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+    <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" />
+  </svg>
+);
+
+export const PlusIcon = ({ fill = "currentColor", ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+export const CheckIcon = ({ fill = "currentColor", ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M20 6L9 17l-5-5" />
+  </svg>
+);
+
+export const TrashIcon = ({ fill = "currentColor", ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
   </svg>
 );
