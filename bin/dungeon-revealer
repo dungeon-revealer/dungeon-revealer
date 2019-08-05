@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+"use strict";
+
 const debug = require("debug")("dungeon-revealer");
 const app = require("../app");
 const http = app.http;
@@ -9,7 +11,6 @@ app.set("port", process.env.PORT || 3000);
 
 const server = http.listen(app.get("port"), function() {
   const port = server.address().port,
-    //message = 'Listening at ' + host + ':' + port;
     message = "Listening at http://localhost:" + port;
 
   console.log(message);
