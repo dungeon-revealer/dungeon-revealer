@@ -14,16 +14,22 @@ const MapListItemButton = styled.button`
   padding: 20px;
   cursor: pointer;
   text-decoration: none;
-  padding-left: 20px;
+  padding-left: 13px;
   padding-right: 20px;
   background-color: ${p =>
     p.isActive ? "rgba(0, 0, 0, 0.04)" : "rgba(255, 255, 255, 1)"};
   color: ${p => (p.isActive ? "#044e54" : "rgba(148, 160, 175, 1)")};
 
+  &:focus,
   &:hover {
     background-color: rgba(0, 0, 0, 0.1);
     color: #044e54;
   }
+
+  border-left: ${p =>
+    p.isActive ? "7px solid #BCCCDC" : "7px solid transparent"};
+
+  outline: none;
 `;
 
 const CreateNewMapButton = ({ onSelectFile, children, ...props }) => {
@@ -115,7 +121,7 @@ export const SelectMapModal = ({
               <Icons.MapIcon
                 width={28}
                 height={28}
-                style={{ marginBottom: -5, marginRight: 16 }}
+                style={{ marginBottom: -2, marginRight: 16 }}
               />{" "}
               Map Library
             </h2>
@@ -156,9 +162,8 @@ export const SelectMapModal = ({
                     placeholder="Filter"
                     value={filter}
                     onChange={onChangeFilter}
-                    onKeyUp={ev => {
-                      ev.preventDefault();
-                      if (ev.keyCode === 27) {
+                    onKeyDown={ev => {
+                      if (ev.keyCode === 27 && filter !== "") {
                         ev.stopPropagation();
                         setFilterValue("");
                       }
@@ -204,6 +209,7 @@ export const SelectMapModal = ({
                   }}
                 >
                   <CreateNewMapButton
+                    tabIndex="1"
                     fullWidth
                     onSelectFile={file => {
                       beforeCreateMap(file);
@@ -410,7 +416,7 @@ const ChangeMapTitleModal = ({ closeModal, updateMap }) => {
     <Modal onClickOutside={closeModal} onPressEscape={closeModal}>
       <Modal.Dialog size={ModalDialogSize.SMALL}>
         <Modal.Header>
-          <h3 style={{ margin: 0 }}>Change Title</h3>
+          <h3>Change Title</h3>
         </Modal.Header>
 
         <Modal.Body>
