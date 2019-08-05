@@ -15,7 +15,7 @@ const server = http.listen(app.get("port"), () => {
 
   console.log(`Starting dungeon-revealer.\n`);
 
-  console.log(`DM Section: ${baseAddress}`);
+  console.log(`DM Section: ${baseAddress}/dm`);
 
   // This code borrowed from a SO answer
   Object.keys(ifaces).forEach(ifname => {
