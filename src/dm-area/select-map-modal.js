@@ -232,7 +232,8 @@ export const SelectMapModal = ({
                   display: "flex",
                   flexDirection: "column",
                   height: "100%",
-                  width: "100%"
+                  width: "100%",
+                  minWidth: 0
                 }}
               >
                 <div
@@ -246,7 +247,10 @@ export const SelectMapModal = ({
                 >
                   <h3
                     style={{
-                      margin: `1rem 16px 1rem 0`
+                      margin: `1rem 16px 1rem 0`,
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                      textOverflow: "ellipsis"
                     }}
                   >
                     {activeMap.title}
