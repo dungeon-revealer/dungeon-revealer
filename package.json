@@ -25,7 +25,7 @@
     "fs-extra": "8.1.0",
     "junk": "3.1.0",
     "morgan": "~1.9.1",
-    "react": "16.8.6",
+    "react": "16.9.0",
     "react-dom": "16.8.6",
     "react-easy-panzoom": "0.4.2",
     "react-tooltip": "3.10.0",
