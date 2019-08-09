@@ -1,3 +1,4 @@
+import React from "react";
 import styled from "@emotion/styled/macro";
 
 export const Input = styled.input`
@@ -26,3 +27,21 @@ export const Input = styled.input`
     box-shadow: rgba(22, 23, 26, 0.3) 0px 0px 5px;
   }
 `;
+
+const InputGroupContainer = styled.div``;
+
+const InputError = styled.div`
+  padding-top: 4px;
+  color: #ba2525;
+  font-size: 12px;
+  height: 12px;
+`;
+
+export const InputGroup = ({ error, ...props }) => {
+  return (
+    <InputGroupContainer>
+      <Input {...props} />
+      <InputError>{error}</InputError>
+    </InputGroupContainer>
+  );
+};

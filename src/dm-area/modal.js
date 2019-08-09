@@ -161,7 +161,7 @@ const Dialog = ({
     ev => {
       ev.preventDefault();
       if (onSubmitOuter) {
-        onSubmitOuter();
+        onSubmitOuter(ev);
       }
     },
     [onSubmitOuter]

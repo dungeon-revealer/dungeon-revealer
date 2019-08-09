@@ -503,6 +503,10 @@ export const DmMap = ({
 
     const { startCoords, currentCoords } = areaDrawState.current;
 
+    if (!startCoords || !currentCoords) {
+      return;
+    }
+
     const startX = startCoords.x;
     const startY = startCoords.y;
     const width = currentCoords.x - startCoords.x;
@@ -682,6 +686,15 @@ export const DmMap = ({
           panZoomReferentialRef.current = new Referentiel(
             panZoomRef.current.dragContainer.current
           );
+        }}
+        onKeyDown={ev => {
+          if (ev.key === "Escape" && tool === "area") {
+            drawState.current.isDrawing = false;
+            areaDrawState.current.startCoords = null;
+            drawState.current.lastCoords = null;
+            areaDrawState.current.currentCoords = null;
+            drawAreaSelection();
+          }
         }}
         ref={panZoomRef}
       >
