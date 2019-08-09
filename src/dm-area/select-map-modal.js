@@ -2,10 +2,14 @@ import React, { useState, useCallback, useRef } from "react";
 import styled from "@emotion/styled/macro";
 import { Modal, ModalDialogSize } from "./modal";
 import * as Icons from "../feather-icons";
-import { Input } from "../input";
+import { Input, InputGroup } from "../input";
 import * as Button from "../button";
 
 const MapListItemButton = styled.button`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
   font-weight: bold;
   display: block;
   width: 100%;
@@ -181,7 +185,9 @@ export const SelectMapModal = ({
                 >
                   {maps
                     .filter(
-                      item => filter === "" || item.title.includes(filter)
+                      item =>
+                        filter === "" ||
+                        item.title.toLowerCase().includes(filter)
                     )
                     .map(item => (
                       <li key={item.id}>
@@ -366,11 +372,14 @@ export const SelectMapModal = ({
 
 const CreateNewMapModal = ({ closeModal, createMap }) => {
   const [inputValue, setInputValue] = useState("");
+  const [error, setError] = useState("");
+
   const onChangeInputValue = useCallback(
     ev => {
       setInputValue(ev.target.value);
+      setError(null);
     },
-    [setInputValue]
+    [setInputValue, setError]
   );
 
   return (
@@ -380,17 +389,26 @@ const CreateNewMapModal = ({ closeModal, createMap }) => {
           <h3 style={{ margin: 0 }}>Create new Map</h3>
         </Modal.Header>
         <Modal.Body>
-          <Input
+          <InputGroup
+            autoFocus
             placeholder="Map title"
             value={inputValue}
             onChange={onChangeInputValue}
+            error={error}
           />
         </Modal.Body>
         <Modal.Actions>
           <Modal.ActionGroup>
-            <Button.Tertiary onClick={closeModal}>Abort</Button.Tertiary>
+            <Button.Tertiary onClick={closeModal} type="button">
+              Abort
+            </Button.Tertiary>
             <Button.Primary
+              type="submit"
               onClick={() => {
+                if (inputValue.trim().length === 0) {
+                  setError("Please enter a map name.");
+                  return;
+                }
                 createMap(inputValue);
                 closeModal();
               }}
@@ -406,37 +424,44 @@ const CreateNewMapModal = ({ closeModal, createMap }) => {
 
 const ChangeMapTitleModal = ({ closeModal, updateMap }) => {
   const [inputValue, setInputValue] = useState("");
+  const [error, setError] = useState(null);
   const onChangeInputValue = useCallback(
     ev => {
       setInputValue(ev.target.value);
     },
     [setInputValue]
   );
+  const submit = useCallback(() => {
+    if (inputValue.trim().length === 0) {
+      setError("Please enter a map name.");
+      return;
+    }
+    updateMap({ title: inputValue });
+    closeModal();
+  }, [inputValue, closeModal, updateMap, setError]);
+
   return (
     <Modal onClickOutside={closeModal} onPressEscape={closeModal}>
-      <Modal.Dialog size={ModalDialogSize.SMALL}>
+      <Modal.Dialog size={ModalDialogSize.SMALL} onSubmit={submit}>
         <Modal.Header>
           <h3>Change Title</h3>
         </Modal.Header>
 
         <Modal.Body>
-          <Input
+          <InputGroup
+            autoFocus
             placeholder="New Map title"
             value={inputValue}
             onChange={onChangeInputValue}
+            error={error}
           />
         </Modal.Body>
         <Modal.Actions>
           <Modal.ActionGroup>
-            <Button.Tertiary onClick={closeModal}>Abort</Button.Tertiary>
-            <Button.Primary
-              onClick={() => {
-                updateMap({ title: inputValue });
-                closeModal();
-              }}
-            >
-              Change Map Title
-            </Button.Primary>
+            <Button.Tertiary type="button" onClick={closeModal}>
+              Abort
+            </Button.Tertiary>
+            <Button.Primary type="submit">Change Map Title</Button.Primary>
           </Modal.ActionGroup>
         </Modal.Actions>
       </Modal.Dialog>
@@ -455,8 +480,11 @@ const DeleteMapModal = ({ closeModal, deleteMap }) => {
         <Modal.Body>Do you really want to delete this map?</Modal.Body>
         <Modal.Actions>
           <Modal.ActionGroup>
-            <Button.Tertiary onClick={closeModal}>Abort</Button.Tertiary>
+            <Button.Tertiary type="submit" onClick={closeModal}>
+              Abort
+            </Button.Tertiary>
             <Button.Primary
+              type="button"
               onClick={() => {
                 deleteMap();
                 closeModal();
