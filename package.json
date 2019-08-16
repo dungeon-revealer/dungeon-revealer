@@ -40,7 +40,7 @@
   "main": "app.js",
   "devDependencies": {
     "cross-env": "5.2.0",
-    "eslint": "5.16.0",
+    "eslint": "6.1.0",
     "eslint-config-prettier": "5.0.0",
     "husky": "3.0.3",
     "lint-staged": "9.2.1",
