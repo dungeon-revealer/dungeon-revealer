@@ -34,7 +34,7 @@
     "socket.io": "^2.2.0",
     "socket.io-client": "2.2.0",
     "use-persisted-state": "0.3.0",
-    "uuid": "3.3.2"
+    "uuid": "3.3.3"
   },
   "description": "dungeon-revealer ================",
   "main": "app.js",
