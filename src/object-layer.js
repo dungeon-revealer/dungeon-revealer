@@ -128,16 +128,27 @@ const TokenMarker = React.memo(({ x, y, id, radius }) => {
   ];
 
   return (
-    <circle
-      cx={x}
-      cy={y}
-      r={radius}
-      strokeWidth="5"
-      stroke={colorArray[id]}
-      fill="transparent"
-      opacity="1"
-      ref={circleRef}
-    />
+    <g ref={circleRef}>
+      <circle
+        cx={x}
+        cy={y}
+        r={radius}
+        strokeWidth="5"
+        stroke="red"
+        fill="transparent"
+        opacity="1"
+      />
+      <text
+        x={x}
+        y={y}
+        text-anchor="middle"
+        stroke={colorArray[id]}
+        font-size={radius}
+        dy=".3em"
+      >
+        {id}
+      </text>
+    </g>
   );
 });
 
