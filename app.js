@@ -361,6 +361,18 @@ io.on("connection", function(socket) {
       ...msg
     });
   });
+
+  socket.on("add token", msg => {
+    io.emit("add token", {
+      ...msg
+    });
+  });
+
+  socket.on("remove token", msg => {
+    io.emit("remove token", {
+      ...msg
+    });
+  });
 });
 
 module.exports = app;

@@ -50,7 +50,7 @@ const distanceBetweenCords = (cords1, cords2) => {
 };
 
 const orderByProperty = (prop, ...args) => {
-  return function(a, b) {
+  return function (a, b) {
     const equality = a[prop] - b[prop];
     if (equality === 0 && arguments.length > 1) {
       return orderByProperty.apply(null, args)(a, b);
@@ -131,13 +131,13 @@ const findOptimalRhombus = (pointCurrent, pointPrevious, lineWidth) => {
   }
 
   // count distinct distances into counts object
-  allPoints.forEach(function(x) {
+  allPoints.forEach(function (x) {
     const distance = x.distance;
     counts[distance] = (counts[distance] || 0) + 1;
   });
 
   // Sort allPoints by distance
-  allPoints.sort(function(a, b) {
+  allPoints.sort(function (a, b) {
     return a.distance - b.distance;
   });
 
@@ -189,6 +189,8 @@ const useModeState = createPersistedState("dm.settings.mode");
 const useBrushShapeState = createPersistedState("dm.settings.brushShape");
 const useToolState = createPersistedState("dm.settings.tool");
 const useLineWidthState = createPersistedState("dm.settings.lineWidth");
+const useTokenIdState = createPersistedState("dm.settings.currentTokenId");
+const useTokenSizeState = createPersistedState("dm.settings.currentTokenSize");
 
 const calculateRectProps = (p1, p2) => {
   const width = Math.max(p1.x, p2.x) - Math.min(p1.x, p2.x);
@@ -407,6 +409,8 @@ export const DmMap = ({
   const [brushShape, setBrushShape] = useBrushShapeState("square");
   const [tool, setTool] = useToolState("brush"); // "brush" or "area"
   const [lineWidth, setLineWidth] = useLineWidthState(15);
+  const [tokenId, setTokenId] = useTokenIdState(1);
+  const [tokenSize, setTokenSize] = useTokenSizeState(15);
 
   // marker related stuff
   const [mapCanvasDimensions, setMapCanvasDimensions] = useState({
@@ -417,8 +421,10 @@ export const DmMap = ({
   const latestMapCanvasDimensions = useRef(null);
   latestMapCanvasDimensions.current = mapCanvasDimensions;
 
+
   const objectSvgRef = useRef(null);
   const [markedAreas, setMarkedAreas] = useState(() => []);
+  const [tokens, setTokens] = useState(() => []);
 
   const fillFog = useCallback(() => {
     if (!fogCanvasRef.current) {
@@ -464,9 +470,14 @@ export const DmMap = ({
         throw new Error("brush shape not found");
       }
 
+      if (tool === "tokens") {
+        maskDimensions.r = tokenSize;
+        maskDimensions.startingAngle = 0;
+        maskDimensions.endingAngle = Math.PI * 2;
+      }
       return maskDimensions;
     },
-    [brushShape, lineWidth]
+    [brushShape, lineWidth, tokenSize, tool]
   );
 
   const clearFog = useCallback(() => {
@@ -672,6 +683,19 @@ export const DmMap = ({
   };
 
   useEffect(() => {
+    socket.on("add token", async data => {
+      setTokens(tokens => tokens.filter(area => area.id !== data.id));
+      setTokens(tokens => [
+        ...tokens,
+        {
+          id: data.id,
+          x: data.x * mapCanvasDimensions.current.ratio,
+          y: data.y * mapCanvasDimensions.current.ratio,
+          radius: data.radius * mapCanvasDimensions.current.ratio
+        }
+      ]);
+    });
+
     socket.on("mark area", async data => {
       const { ratio } = latestMapCanvasDimensions.current;
       setMarkedAreas(markedAreas => [
@@ -682,6 +706,10 @@ export const DmMap = ({
           y: data.y * ratio
         }
       ]);
+    });
+
+    socket.on("remove token", async data => {
+      setTokens(tokens => tokens.filter(area => area.id !== data.id));
     });
 
     return () => {
@@ -834,13 +862,30 @@ export const DmMap = ({
           cursor
         }}
         onClick={ev => {
-          if (tool !== "mark") {
-            return;
-          }
           const ref = new Referentiel(panZoomRef.current.dragContainer.current);
           const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
-          const { ratio } = mapCanvasDimensions;
-          socket.emit("mark area", { x: x / ratio, y: y / ratio });
+
+          switch (tool) {
+            case "tokens": {
+              socketRef.current.emit("add token", {
+                x: x / ratio,
+                y: y / ratio,
+                id: tokenId,
+                radius: tokenSize
+              });
+              break;
+            }
+            case "mark": {
+              socketRef.current.emit("mark area", {
+                x: x / ratio,
+                y: y / ratio
+              });
+              break;
+            }
+            default: {
+              return;
+            }
+          }
         }}
         onStateChange={() => {
           panZoomReferentialRef.current = new Referentiel(
@@ -865,6 +910,7 @@ export const DmMap = ({
           <canvas
             ref={mapCanvasRef}
             style={{ position: "absolute" }}
+
             onMouseMove={ev => {
               if (tool === "move" || tool === "mark") {
                 return;
@@ -985,6 +1031,7 @@ export const DmMap = ({
           <ObjectLayer
             defs={<>{gridPatternDefinition}</>}
             ref={objectSvgRef}
+            tokens={tokens}
             areaMarkers={markedAreas}
             removeAreaMarker={id => {
               setMarkedAreas(markedAreas =>
@@ -1101,11 +1148,11 @@ export const DmMap = ({
                 <Icons.Label color="hsl(48, 94%, 68%)">Live</Icons.Label>
               </Toolbar.Item>
             ) : (
-              <Toolbar.Item data-tooltip="A different map is live">
-                <Icons.RadioIcon style={{ stroke: "hsl(211, 27%, 70%)" }} />
-                <Icons.Label color="hsl(211, 27%, 70%)">Not Live</Icons.Label>
-              </Toolbar.Item>
-            )}
+                  <Toolbar.Item data-tooltip="A different map is live">
+                    <Icons.RadioIcon style={{ stroke: "hsl(211, 27%, 70%)" }} />
+                    <Icons.Label color="hsl(211, 27%, 70%)">Not Live</Icons.Label>
+                  </Toolbar.Item>
+                )}
             <Toolbar.Item isEnabled>
               <Toolbar.Button
                 onClick={async () => {
@@ -1245,6 +1292,52 @@ export const DmMap = ({
                 <Icons.Label>Mark</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
+            <Toolbar.Item isActive={tool === "tokens"}>
+              <Toolbar.Button
+                onClick={() => {
+                  setTool("tokens");
+                }}
+              >
+                <Icons.EditIcon />
+                <Icons.Label>Add Token</Icons.Label>
+              </Toolbar.Button>
+              {tool === "tokens" ? (
+                <Toolbar.Popup>
+                  <h6>Token Number</h6>
+                  <div style={{ display: "flex" }}>
+                    <input
+                      type="number"
+                      min="1"
+                      max="28"
+                      step="1"
+                      value={tokenId}
+                      onChange={ev => {
+                        setTokenId(Math.min(28, Math.max(0, ev.target.value)));
+                      }}
+                    />
+                  </div>
+                  <h6>Token Size</h6>
+                  <input
+                    type="range"
+                    min="1"
+                    max="200"
+                    step="1"
+                    value={tokenSize}
+                    onChange={ev => {
+                      setTokenSize(Math.min(200, Math.max(0, ev.target.value)));
+                    }}
+                  />
+
+                  <button
+                    onClick={ev => {
+                      socketRef.current.emit("remove token", { id: tokenId });
+                    }}
+                  >
+                    Remove Token
+                  </button>
+                </Toolbar.Popup>
+              ) : null}
+            </Toolbar.Item>
           </Toolbar.Group>
           <Toolbar.Group>
             <Toolbar.Item isEnabled>
@@ -1263,11 +1356,11 @@ export const DmMap = ({
                     <Icons.Label>Shroud</Icons.Label>
                   </>
                 ) : (
-                  <>
-                    <Icons.EyeIcon fill="rgba(0, 0, 0, 1)" />
-                    <Icons.Label>Reveal</Icons.Label>
-                  </>
-                )}
+                    <>
+                      <Icons.EyeIcon fill="rgba(0, 0, 0, 1)" />
+                      <Icons.Label>Reveal</Icons.Label>
+                    </>
+                  )}
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item isEnabled>
