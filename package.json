@@ -13,6 +13,7 @@
   "dependencies": {
     "@emotion/core": "10.0.16",
     "@emotion/styled": "10.0.11",
+    "@n1ru4l/use-async-effect": "1.0.5",
     "body-parser": "~1.19.0",
     "body-scroll-lock": "2.6.4",
     "connect-busboy": "0.0.2",
@@ -42,6 +43,7 @@
     "cross-env": "5.2.0",
     "eslint": "6.1.0",
     "eslint-config-prettier": "5.0.0",
+    "eslint-plugin-react-app": "6.0.1",
     "husky": "3.0.4",
     "lint-staged": "9.2.5",
     "pkg": "^4.3.7",

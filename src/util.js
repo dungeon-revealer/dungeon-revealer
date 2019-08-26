@@ -53,19 +53,19 @@ export const getOptimalDimensions = (
   };
 };
 
-/**
- * longpress hook inspired by https://stackoverflow.com/a/54749871/4202031
- * works with touch an mouse events
- */
+// longpress hook inspired by https://stackoverflow.com/a/54749871/4202031
+// works with touch an mouse events
+// the callback function can return a cleanup function which is invoked after the longpress ends
 export const useLongPress = (callback = () => {}, ms = 300) => {
   const [startLogPress, setStartLongPress] = useState(false);
   const currentEventRef = useRef(null);
+  const onReleaseRef = useRef(null);
 
   useEffect(() => {
     let timerId;
     if (startLogPress) {
       timerId = setTimeout(() => {
-        callback(currentEventRef.current);
+        onReleaseRef.current = callback(currentEventRef.current);
         currentEventRef.current = null;
       }, ms);
     } else {
@@ -98,27 +98,28 @@ export const useLongPress = (callback = () => {}, ms = 300) => {
   );
 
   useEffect(() => {
-    const onMouseUp = () => setStartLongPress(false);
-    const onMouseMove = () => setStartLongPress(false);
-    const onTouchMove = () => {
+    const onUp = () => {
       setStartLongPress(false);
+      if (onReleaseRef.current) {
+        onReleaseRef.current();
+        onReleaseRef.current = null;
+      }
     };
+    const onMove = () => setStartLongPress(false);
     const onMouseLeave = () => setStartLongPress(false);
 
-    const onTouchEnd = () => setStartLongPress(false);
-
-    window.addEventListener("mouseup", onMouseUp);
-    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseleave", onMouseLeave);
-    document.addEventListener("touchmove", onTouchMove);
-    document.addEventListener("touchend", onTouchEnd);
+    document.addEventListener("touchmove", onMove);
+    document.addEventListener("touchend", onUp);
 
     return () => {
-      window.removeEventListener("mouseup", onMouseUp);
-      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseleave", onMouseLeave);
-      document.removeEventListener("touchmove", onTouchMove);
-      document.removeEventListener("touchend", onTouchEnd);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onUp);
     };
   });
 

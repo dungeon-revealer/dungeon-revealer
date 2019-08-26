@@ -11,8 +11,11 @@ const ButtonBase = styled.button`
   line-height: 1.25;
   padding: ${p => (p.big ? `1.5rem 2rem` : `1rem 1.5rem`)};
   width: ${p => (p.fullWidth ? "100%" : null)};
-  > svg {
+  > svg:first-child {
     margin-right: ${p => (p.iconOnly ? null : `1rem`)};
+  }
+  > svg:last-child {
+    margin-left: ${p => (p.iconOnly ? null : `1rem`)};
   }
 `;
 
@@ -25,9 +28,6 @@ export const Primary = styled(ButtonBase)`
   &:hover {
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
     background-color: #0a6c74;
-  }
-  > svg {
-    margin-right: 1rem;
   }
 `;
 

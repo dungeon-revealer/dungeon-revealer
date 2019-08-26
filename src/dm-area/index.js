@@ -1,18 +1,39 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback
+} from "react";
 import createPersistedState from "use-persisted-state";
 import { Modal } from "./modal";
 import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
+import { SetMapGrid } from "./set-map-grid";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
+
+const INITIAL_MODE = {
+  title: "EDIT_MAP",
+  data: null
+};
 
 export const DmArea = () => {
   const [data, setData] = useState(null);
   const [loadedMapId, setLoadedMapId] = useLoadedMapId(null);
   const loadedMapIdRef = useRef(loadedMapId);
   const [liveMapId, setLiveMapId] = useState(null);
-  const [showMapModal, setShowMapModal] = useState(false);
+  // EDIT_MAP, SET_MAP_GRID, SHOW_MAP_LIBRARY
+  const [mode, setMode] = useState(INITIAL_MODE);
 
+  const setMapGridTargetMap = useMemo(
+    () =>
+      (data &&
+        mode.title === "SET_MAP_GRID" &&
+        data.maps.find(map => map.id === mode.data.mapId)) ||
+      null,
+    [data, mode]
+  );
   const loadedMap = useMemo(
     () => (data ? data.maps.find(map => map.id === loadedMapId) || null : null),
     [data, loadedMapId]
@@ -33,7 +54,7 @@ export const DmArea = () => {
         );
 
         if (!isLiveMapAvailable && !isLoadedMapAvailable) {
-          setShowMapModal(true);
+          setMode({ title: "EDIT_MAP" });
           setLoadedMapId(null);
           return;
         }
@@ -45,45 +66,47 @@ export const DmArea = () => {
       });
   }, [setLoadedMapId]);
 
+  const updateMap = useCallback(async (mapId, data) => {
+    const res = await fetch(`/map/${mapId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    }).then(res => res.json());
+
+    if (!res.data.map) {
+      return;
+    }
+
+    setData(data => ({
+      ...data,
+      maps: data.maps.map(map => {
+        if (map.id !== res.data.map.id) {
+          return map;
+        } else {
+          return { ...map, ...res.data.map };
+        }
+      })
+    }));
+  }, []);
+
   return (
     <Modal.Provider>
-      {showMapModal ? (
+      {mode.title === "SHOW_MAP_LIBRARY" ? (
         <SelectMapModal
           canClose={loadedMap !== null}
           maps={data.maps}
           loadedMapId={loadedMapId}
           liveMapId={liveMapId}
           closeModal={() => {
-            setShowMapModal(false);
+            setMode({ title: "EDIT_MAP" });
           }}
           setLoadedMapId={loadedMapId => {
-            setShowMapModal(false);
+            setMode({ title: "EDIT_MAP" });
             setLoadedMapId(loadedMapId);
           }}
-          updateMap={async (mapId, data) => {
-            const res = await fetch(`/map/${mapId}`, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify(data)
-            }).then(res => res.json());
-
-            if (!res.data.map) {
-              return;
-            }
-
-            setData(data => ({
-              ...data,
-              maps: data.maps.map(map => {
-                if (map.id !== res.data.map.id) {
-                  return map;
-                } else {
-                  return { ...map, ...res.data.map };
-                }
-              })
-            }));
-          }}
+          updateMap={updateMap}
           deleteMap={async mapId => {
             await fetch(`/map/${mapId}`, {
               method: "DELETE"
@@ -108,10 +131,27 @@ export const DmArea = () => {
               maps: [...data.maps, res.data.map]
             }));
           }}
+          enterGridMode={mapId =>
+            setMode({ title: "SET_MAP_GRID", data: { mapId } })
+          }
         />
       ) : null}
-      {loadedMap ? (
+      {setMapGridTargetMap ? (
+        <SetMapGrid
+          map={setMapGridTargetMap}
+          onSuccess={(mapId, grid) => {
+            updateMap(mapId, {
+              grid
+            });
+            setMode({ title: "SHOW_MAP_LIBRARY" });
+          }}
+          onAbort={() => {
+            setMode({ title: "SHOW_MAP_LIBRARY" });
+          }}
+        />
+      ) : loadedMap ? (
         <DmMap
+          map={loadedMap}
           loadedMapId={loadedMap.id}
           liveMapId={liveMapId}
           sendLiveMap={async ({ image }) => {
@@ -139,7 +179,7 @@ export const DmArea = () => {
             setLiveMapId(null);
           }}
           showMapModal={() => {
-            setShowMapModal(true);
+            setMode({ title: "SHOW_MAP_LIBRARY" });
           }}
         />
       ) : null}
