@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import io from "socket.io-client";
+
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
 import { PanZoom } from "react-easy-panzoom";
@@ -11,6 +11,7 @@ import styled from "@emotion/styled";
 import { ObjectLayer } from "../object-layer";
 import * as Icons from "../feather-icons";
 import { useGrid } from "./grid";
+import { useSocket } from "../socket";
 
 const ShapeButton = styled.button`
   border: none;
@@ -206,6 +207,7 @@ export const DmMap = ({
   const hasPreviousMap = useRef(false);
   const panZoomRef = useRef(null);
   const panZoomReferentialRef = useRef(null);
+  const socket = useSocket();
 
   /**
    * function for saving the fog to the server.
@@ -219,8 +221,10 @@ export const DmMap = ({
   const [showGrid, setShowGrid] = useShowGridState(false);
 
   // marker related stuff
-  const socketRef = useRef(null);
   const [mapCanvasDimensions, setMapCanvasDimensions] = useState(null);
+  const latestMapCanvasDimensions = useRef(null);
+  latestMapCanvasDimensions.current = mapCanvasDimensions;
+
   const objectSvgRef = useRef(null);
   const [markedAreas, setMarkedAreas] = useState(() => []);
 
@@ -541,26 +545,23 @@ export const DmMap = ({
   }, [drawCursor, mode]);
 
   useEffect(() => {
-    const socket = io();
-    socketRef.current = socket;
-
     socket.on("mark area", async data => {
+      const { ratio } = latestMapCanvasDimensions.current;
       setMarkedAreas(markedAreas => [
         ...markedAreas,
         {
           id: data.id,
-          x: data.x * mapCanvasDimensions.ratio,
-          y: data.y * mapCanvasDimensions.ratio
+          x: data.x * ratio,
+          y: data.y * ratio
         }
       ]);
     });
 
     return () => {
-      socket.close();
-      socketRef.current = null;
+      socket.off("mark area");
       panZoomReferentialRef.current = null;
     };
-  }, []);
+  }, [socket]);
 
   useEffect(() => {
     if (!loadedMapId) {
@@ -690,7 +691,7 @@ export const DmMap = ({
           const ref = new Referentiel(panZoomRef.current.dragContainer.current);
           const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
           const { ratio } = mapCanvasDimensions;
-          socketRef.current.emit("mark area", { x: x / ratio, y: y / ratio });
+          socket.emit("mark area", { x: x / ratio, y: y / ratio });
         }}
         onStateChange={() => {
           panZoomReferentialRef.current = new Referentiel(

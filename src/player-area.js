@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import io from "socket.io-client";
 import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
 import { loadImage, useLongPress, getOptimalDimensions } from "./util";
@@ -7,6 +6,7 @@ import { ObjectLayer } from "./object-layer";
 import { Toolbar } from "./toolbar";
 import styled from "@emotion/styled/macro";
 import * as Icons from "./feather-icons";
+import { useSocket } from "./socket";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -21,7 +21,7 @@ const ToolbarContainer = styled.div`
 export const PlayerArea = () => {
   const panZoomRef = useRef(null);
   const currentMapId = useRef(null);
-  const socketRef = useRef(null);
+  const socket = useSocket();
   const [showSplashScreen, setShowSplashScreen] = useState(true);
 
   /**
@@ -50,9 +50,6 @@ export const PlayerArea = () => {
   };
 
   useEffect(() => {
-    const socket = io();
-    socketRef.current = socket;
-
     socket.on("connect", function() {
       console.log("connected to server");
     });
@@ -240,10 +237,8 @@ export const PlayerArea = () => {
         });
         pendingImageLoads.current = null;
       }
-
-      socket.close();
     };
-  }, []);
+  }, [socket]);
 
   /**
    * long press event for setting a map marker
@@ -266,7 +261,7 @@ export const PlayerArea = () => {
     const [x, y] = ref.global_to_local(input);
     const { ratio } = mapCanvasDimensions.current;
 
-    socketRef.current.emit("mark area", { x: x / ratio, y: y / ratio });
+    socket.emit("mark area", { x: x / ratio, y: y / ratio });
   }, 500);
 
   return (
