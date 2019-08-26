@@ -10,6 +10,7 @@ import { Toolbar } from "./../toolbar";
 import styled from "@emotion/styled";
 import { ObjectLayer } from "../object-layer";
 import * as Icons from "../feather-icons";
+import { useGrid } from "./grid";
 
 const ShapeButton = styled.button`
   border: none;
@@ -182,12 +183,14 @@ const useModeState = createPersistedState("dm.settings.mode");
 const useBrushShapeState = createPersistedState("dm.settings.brushShape");
 const useToolState = createPersistedState("dm.settings.tool");
 const useLineWidthState = createPersistedState("dm.settings.lineWidth");
+const useShowGridState = createPersistedState("dm.settings.showGrid");
 
 /**
  * loadedMapId = id of the map that is currently visible in the editor
  * liveMapId = id of the map that is currently visible to the players
  */
 export const DmMap = ({
+  map,
   loadedMapId,
   liveMapId,
   sendLiveMap,
@@ -213,10 +216,11 @@ export const DmMap = ({
   const [brushShape, setBrushShape] = useBrushShapeState("square");
   const [tool, setTool] = useToolState("brush"); // "brush" or "area"
   const [lineWidth, setLineWidth] = useLineWidthState(15);
+  const [showGrid, setShowGrid] = useShowGridState(false);
 
   // marker related stuff
   const socketRef = useRef(null);
-  const mapCanvasDimensions = useRef(null);
+  const [mapCanvasDimensions, setMapCanvasDimensions] = useState(null);
   const objectSvgRef = useRef(null);
   const [markedAreas, setMarkedAreas] = useState(() => []);
 
@@ -545,8 +549,8 @@ export const DmMap = ({
         ...markedAreas,
         {
           id: data.id,
-          x: data.x * mapCanvasDimensions.current.ratio,
-          y: data.y * mapCanvasDimensions.current.ratio
+          x: data.x * mapCanvasDimensions.ratio,
+          y: data.y * mapCanvasDimensions.ratio
         }
       ]);
     });
@@ -588,8 +592,8 @@ export const DmMap = ({
         const dimensions = getOptimalDimensions(
           map.width,
           map.height,
-          3000,
-          8000
+          Math.min(map.width, 3000),
+          Math.min(map.height, 8000)
         );
         mapCanvasRef.current.width = dimensions.width;
         mapCanvasRef.current.height = dimensions.height;
@@ -601,7 +605,7 @@ export const DmMap = ({
         objectSvgRef.current.setAttribute("width", dimensions.width);
         objectSvgRef.current.setAttribute("height", dimensions.height);
 
-        mapCanvasDimensions.current = dimensions;
+        setMapCanvasDimensions(dimensions);
 
         const widthPx = `${dimensions.width}px`;
         const heightPx = `${dimensions.height}px`;
@@ -657,6 +661,12 @@ export const DmMap = ({
   const isCurrentMapLive = liveMapId && loadedMapId === liveMapId;
   const isOtherMapLive = liveMapId && loadedMapId !== liveMapId;
 
+  const [gridPatternDefinition, gridRectangleElement] = useGrid(
+    map.grid,
+    mapCanvasDimensions,
+    showGrid
+  );
+
   let cursor = "default";
   if (tool === "move") {
     cursor = "grab";
@@ -679,7 +689,7 @@ export const DmMap = ({
           }
           const ref = new Referentiel(panZoomRef.current.dragContainer.current);
           const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
-          const { ratio } = mapCanvasDimensions.current;
+          const { ratio } = mapCanvasDimensions;
           socketRef.current.emit("mark area", { x: x / ratio, y: y / ratio });
         }}
         onStateChange={() => {
@@ -705,6 +715,7 @@ export const DmMap = ({
             style={{ position: "absolute", opacity: 0.5 }}
           />
           <ObjectLayer
+            defs={<>{gridPatternDefinition}</>}
             ref={objectSvgRef}
             areaMarkers={markedAreas}
             removeAreaMarker={id => {
@@ -712,7 +723,9 @@ export const DmMap = ({
                 markedAreas.filter(area => area.id !== id)
               );
             }}
-          />
+          >
+            {gridRectangleElement}
+          </ObjectLayer>
           <canvas
             ref={mouseCanvasRef}
             style={{ position: "absolute", touchAction: "none" }}
@@ -857,11 +870,23 @@ export const DmMap = ({
             <Toolbar.Item isEnabled>
               <Toolbar.Button
                 onClick={() => {
+                  setShowGrid(setShowGrid => !setShowGrid);
+                }}
+              >
+                <Icons.GridIcon />
+                <Icons.Label>
+                  {showGrid ? "Show Grid" : "Hide Grid"}
+                </Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
+            <Toolbar.Item isEnabled>
+              <Toolbar.Button
+                onClick={() => {
                   showMapModal();
                 }}
               >
                 <Icons.MapIcon />
-                <Icons.Label>Change Map</Icons.Label>
+                <Icons.Label>Map Library</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item>

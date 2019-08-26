@@ -93,7 +93,7 @@ const AreaMarker = React.memo(({ x, y, onFinishAnimation }) => {
 });
 
 export const ObjectLayer = React.forwardRef(
-  ({ areaMarkers, removeAreaMarker }, ref) => {
+  ({ areaMarkers, removeAreaMarker, defs, children }, ref) => {
     return (
       <svg
         ref={ref}
@@ -104,6 +104,8 @@ export const ObjectLayer = React.forwardRef(
           overflow: "visible"
         }}
       >
+        <defs>{defs}</defs>
+        {children}
         {areaMarkers.map(markedArea => (
           <AreaMarker
             {...markedArea}
