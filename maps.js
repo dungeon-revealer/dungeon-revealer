@@ -50,7 +50,8 @@ class Maps {
       fogProgressPath: null,
       // progress becomes live when DM publishes map
       fogLivePath: null,
-      mapPath
+      mapPath,
+      grid: null
     };
 
     fs.moveSync(file.path, path.join(mapDirectory, id, mapPath));
