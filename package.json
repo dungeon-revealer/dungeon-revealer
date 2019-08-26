@@ -40,6 +40,7 @@
   "description": "dungeon-revealer ================",
   "main": "app.js",
   "devDependencies": {
+    "babel-eslint": "10.0.2",
     "cross-env": "5.2.0",
     "eslint": "6.1.0",
     "eslint-config-prettier": "5.0.0",
