@@ -196,7 +196,8 @@ export const DmMap = ({
   liveMapId,
   sendLiveMap,
   hideMap,
-  showMapModal
+  showMapModal,
+  enterGridMode
 }) => {
   const mapContainerRef = useRef(null);
   const mapCanvasRef = useRef(null);
@@ -868,15 +869,23 @@ export const DmMap = ({
       >
         <Toolbar horizontal>
           <Toolbar.Group>
-            <Toolbar.Item isEnabled>
+            <Toolbar.Item isEnabled={Boolean(map.grid)}>
               <Toolbar.Button
                 onClick={() => {
-                  setShowGrid(setShowGrid => !setShowGrid);
+                  if (!map.grid) {
+                    enterGridMode();
+                  } else {
+                    setShowGrid(setShowGrid => !setShowGrid);
+                  }
                 }}
               >
                 <Icons.GridIcon />
                 <Icons.Label>
-                  {showGrid ? "Show Grid" : "Hide Grid"}
+                  {map.grid
+                    ? showGrid
+                      ? "Show Grid"
+                      : "Hide Grid"
+                    : "Add Grid"}
                 </Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>

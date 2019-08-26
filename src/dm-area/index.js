@@ -181,6 +181,9 @@ export const DmArea = () => {
           showMapModal={() => {
             setMode({ title: "SHOW_MAP_LIBRARY" });
           }}
+          enterGridMode={() => {
+            setMode({ title: "SET_MAP_GRID", data: { mapId: loadedMapId } });
+          }}
         />
       ) : null}
     </Modal.Provider>
