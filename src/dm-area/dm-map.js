@@ -201,6 +201,7 @@ export const DmMap = ({
 }) => {
   const mapContainerRef = useRef(null);
   const mapCanvasRef = useRef(null);
+  const mapImageCanvasRef = useRef(null);
   const fogCanvasRef = useRef(null);
   const mouseCanvasRef = useRef(null);
   const drawState = useRef({ isDrawing: false, lastCoords: null });
@@ -247,6 +248,7 @@ export const DmMap = ({
     if (saveFogCanvasRef.current) {
       saveFogCanvasRef.current();
     }
+    redrawCanvas();
   }, []);
 
   const constructMask = useCallback(
@@ -292,6 +294,7 @@ export const DmMap = ({
     if (saveFogCanvasRef.current) {
       saveFogCanvasRef.current();
     }
+    redrawCanvas();
   }, []);
 
   const getMapDisplayRatio = useCallback(() => {
@@ -491,6 +494,7 @@ export const DmMap = ({
           fogContext.fill();
         }
       }
+      redrawCanvas();
     },
     [brushShape, constructMask, drawInitial, lineWidth, mode]
   );
@@ -543,7 +547,17 @@ export const DmMap = ({
     const height = currentCoords.y - startCoords.y;
     context.fillRect(startX, startY, width, height);
     drawCursor(currentCoords);
+    redrawCanvas();
   }, [drawCursor, mode]);
+
+  const redrawCanvas = () => {
+    const mapContext = mapCanvasRef.current.getContext("2d");
+    const { width, height } = mapCanvasRef.current;
+    mapContext.globalAlpha = 1;
+    mapContext.drawImage(mapImageCanvasRef.current, 0, 0, width, height);
+    mapContext.globalAlpha = 0.5;
+    mapContext.drawImage(fogCanvasRef.current, 0, 0, width, height);
+  };
 
   useEffect(() => {
     socket.on("mark area", async data => {
@@ -599,8 +613,18 @@ export const DmMap = ({
         );
         mapCanvasRef.current.width = dimensions.width;
         mapCanvasRef.current.height = dimensions.height;
-        fogCanvasRef.current.width = dimensions.width;
-        fogCanvasRef.current.height = dimensions.height;
+        fogCanvasRef.current = new OffscreenCanvas(
+          dimensions.width,
+          dimensions.height
+        );
+        mapImageCanvasRef.current = new OffscreenCanvas(
+          dimensions.width,
+          dimensions.height
+        );
+
+        mapImageCanvasRef.current
+          .getContext("2d")
+          .drawImage(map, 0, 0, dimensions.width, dimensions.height);
         mouseCanvasRef.current.width = dimensions.width;
         mouseCanvasRef.current.height = dimensions.height;
 
@@ -611,39 +635,54 @@ export const DmMap = ({
 
         const widthPx = `${dimensions.width}px`;
         const heightPx = `${dimensions.height}px`;
-        mapContainerRef.current.style.width = mapCanvasRef.current.style.width = fogCanvasRef.current.style.width = objectSvgRef.current.style.width = widthPx;
-        mapContainerRef.current.style.height = mapCanvasRef.current.style.height = fogCanvasRef.current.style.height = objectSvgRef.current.style.height = heightPx;
+        mapContainerRef.current.style.width = mapCanvasRef.current.style.width = objectSvgRef.current.style.width = widthPx;
+        mapContainerRef.current.style.height = mapCanvasRef.current.style.height = objectSvgRef.current.style.height = heightPx;
 
-        mapCanvasRef.current.src = map.src;
+        const mapContext = mapCanvasRef.current.getContext("2d");
+        mapContext.drawImage(
+          mapImageCanvasRef.current,
+          0,
+          0,
+          dimensions.width,
+          dimensions.height
+        );
 
         centerMap(false);
 
         if (!fog) {
           fillFog();
+          redrawCanvas();
           return;
         }
 
         fogCanvasRef.current
           .getContext("2d")
           .drawImage(fog, 0, 0, dimensions.width, dimensions.height);
+
+        redrawCanvas();
       })
       .catch(err => {
         // @TODO: distinguish between network error (rertry?) and cancel error
         console.error(err);
       });
 
-    saveFogCanvasRef.current = debounce(() => {
+    saveFogCanvasRef.current = debounce(async () => {
       if (!fogCanvasRef.current) {
         return;
       }
-      fetch(`/map/${loadedMapId}/fog`, {
+
+      const formData = new FormData();
+      const blob = await fogCanvasRef.current.convertToBlob();
+      formData.append(
+        "image",
+        new File([blob], "fog.png", {
+          type: "image/png"
+        })
+      );
+
+      await fetch(`/map/${loadedMapId}/fog`, {
         method: "POST",
-        body: JSON.stringify({
-          image: fogCanvasRef.current.toDataURL("image/png")
-        }),
-        headers: {
-          "Content-Type": "application/json"
-        }
+        body: formData
       });
     }, 500);
 
@@ -709,15 +748,7 @@ export const DmMap = ({
         ref={panZoomRef}
       >
         <div ref={mapContainerRef} style={{ backfaceVisibility: "hidden" }}>
-          <img
-            ref={mapCanvasRef}
-            style={{ position: "absolute" }}
-            alt="The Map"
-          />
-          <canvas
-            ref={fogCanvasRef}
-            style={{ position: "absolute", opacity: 0.5 }}
-          />
+          <canvas ref={mapCanvasRef} style={{ position: "absolute" }} />
           <ObjectLayer
             defs={<>{gridPatternDefinition}</>}
             ref={objectSvgRef}
@@ -949,8 +980,11 @@ export const DmMap = ({
                   if (!fogCanvasRef.current) {
                     return;
                   }
+                  const blob = await fogCanvasRef.current.convertToBlob();
                   sendLiveMap({
-                    image: fogCanvasRef.current.toDataURL("image/png")
+                    image: new File([blob], "fog.live.png", {
+                      type: "image/png"
+                    })
                   });
                 }}
               >

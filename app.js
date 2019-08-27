@@ -154,9 +154,11 @@ app.post("/map/:id/fog", authMiddleware, (req, res) => {
     return res.send(404);
   }
 
-  const imageData = req.body.image.replace(/^data:image\/png;base64,/, "");
-  maps.updateFogProgressImage(req.params.id, imageData).then(map => {
-    res.json({ success: true, data: map });
+  req.pipe(req.busboy);
+  req.busboy.once("file", (fieldname, file, filename) => {
+    maps.updateFogProgressImage(req.params.id, file).then(map => {
+      res.json({ success: true, data: map });
+    });
   });
 });
 
@@ -165,14 +167,15 @@ app.post("/map/:id/send", authMiddleware, (req, res) => {
   if (!map) {
     return res.send(404);
   }
-  const imageData = req.body.image.replace(/^data:image\/png;base64,/, "");
-
-  maps.updateFogLiveImage(req.params.id, imageData).then(map => {
-    settings.set("currentMapId", map.id);
-    res.json({ success: true, data: map });
-    io.emit("map update", {
-      mapId: map.id,
-      image: req.body.image
+  req.pipe(req.busboy);
+  req.busboy.once("file", (fieldname, file, filename) => {
+    maps.updateFogLiveImage(req.params.id, file).then(map => {
+      settings.set("currentMapId", map.id);
+      res.json({ success: true, data: map });
+      io.emit("map update", {
+        mapId: map.id,
+        image: req.body.image
+      });
     });
   });
 });

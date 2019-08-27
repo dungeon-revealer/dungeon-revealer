@@ -155,14 +155,12 @@ export const DmArea = () => {
           loadedMapId={loadedMap.id}
           liveMapId={liveMapId}
           sendLiveMap={async ({ image }) => {
+            const formData = new FormData();
+            formData.append("image", image);
+
             await fetch(`/map/${loadedMap.id}/send`, {
               method: "POST",
-              body: JSON.stringify({
-                image
-              }),
-              headers: {
-                "Content-Type": "application/json"
-              }
+              body: formData
             });
             setLiveMapId(loadedMap.id);
           }}
