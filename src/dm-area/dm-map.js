@@ -614,9 +614,7 @@ export const DmMap = ({
         mapContainerRef.current.style.width = mapCanvasRef.current.style.width = fogCanvasRef.current.style.width = objectSvgRef.current.style.width = widthPx;
         mapContainerRef.current.style.height = mapCanvasRef.current.style.height = fogCanvasRef.current.style.height = objectSvgRef.current.style.height = heightPx;
 
-        mapCanvasRef.current
-          .getContext("2d")
-          .drawImage(map, 0, 0, dimensions.width, dimensions.height);
+        mapCanvasRef.current.src = map.src;
 
         centerMap(false);
 
@@ -710,8 +708,12 @@ export const DmMap = ({
         }}
         ref={panZoomRef}
       >
-        <div ref={mapContainerRef}>
-          <canvas ref={mapCanvasRef} style={{ position: "absolute" }} />
+        <div ref={mapContainerRef} style={{ backfaceVisibility: "hidden" }}>
+          <img
+            ref={mapCanvasRef}
+            style={{ position: "absolute" }}
+            alt="The Map"
+          />
           <canvas
             ref={fogCanvasRef}
             style={{ position: "absolute", opacity: 0.5 }}
