@@ -9,12 +9,13 @@ const ButtonBase = styled.button`
   font-size: ${p => (p.big ? `24px` : `18px`)};
   font-weight: 700;
   line-height: 1.25;
-  padding: ${p => (p.big ? `1.5rem 2rem` : `1rem 1.5rem`)};
+  padding: ${p =>
+    p.big ? `1.5rem 2rem` : p.small ? `0.5rem 1.5rem` : `1rem 1.5rem`};
   width: ${p => (p.fullWidth ? "100%" : null)};
-  > svg:first-of-type {
-    margin-right: ${p => (p.iconOnly ? null : `1rem`)};
+  > svg + span {
+    margin-left: ${p => (p.iconOnly ? null : `1rem`)};
   }
-  > svg:last-child {
+  > span + svg {
     margin-left: ${p => (p.iconOnly ? null : `1rem`)};
   }
 `;
