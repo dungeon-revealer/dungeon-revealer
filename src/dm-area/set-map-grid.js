@@ -128,36 +128,46 @@ const SideLengthControls = ({ sideLength, setSideLength }) => {
   return (
     <div style={{ display: "flex" }}>
       <div style={{ flex: 1 }}>
-        Side Length
-        <Input
-          placeholder="Side Length"
-          value={sideLength}
-          onChange={ev => {
-            setSideLength(ev.target.value);
-          }}
-          type="text"
-        />
+        <label>
+          <div style={{ fontWeight: "bold", marginBottom: 8 }}>Side Length</div>
+          <div style={{ display: "flex" }}>
+            <div style={{ flexGrow: 1 }}>
+              <Input
+                placeholder="Side Length"
+                value={sideLength}
+                disabled
+                type="text"
+              />
+            </div>
+            <div>
+              <Button.Tertiary
+                {...plusLongPressProps}
+                onClick={() => {
+                  setSideLength(sideLength =>
+                    String(roundPrecise(parseFloat(sideLength, 10) + 0.1, 2))
+                  );
+                }}
+                small
+              >
+                <Icons.PlusIcon />
+              </Button.Tertiary>
+            </div>
+            <div>
+              <Button.Tertiary
+                {...minusLongPressProps}
+                onClick={() => {
+                  setSideLength(sideLength =>
+                    String(roundPrecise(parseFloat(sideLength, 10) - 0.1, 2))
+                  );
+                }}
+                small
+              >
+                <Icons.MinusIcon />
+              </Button.Tertiary>
+            </div>
+          </div>
+        </label>
       </div>
-      <Button.Tertiary
-        {...plusLongPressProps}
-        onClick={() => {
-          setSideLength(sideLength =>
-            String(roundPrecise(parseFloat(sideLength, 10) + 0.1, 2))
-          );
-        }}
-      >
-        <Icons.PlusIcon />
-      </Button.Tertiary>
-      <Button.Tertiary
-        {...minusLongPressProps}
-        onClick={() => {
-          setSideLength(sideLength =>
-            String(roundPrecise(parseFloat(sideLength, 10) - 0.1, 2))
-          );
-        }}
-      >
-        <Icons.MinusIcon />
-      </Button.Tertiary>
     </div>
   );
 };
@@ -198,27 +208,69 @@ const OffsetControls = ({ offset, setOffset }) => {
   });
 
   return (
-    <div style={{ display: "flex" }}>
+    <div style={{ display: "flex", marginTop: 16 }}>
       <div style={{ flex: 1, display: "flex" }}>
-        <div>
-          <div>X</div> <Input value={offset.x} />
+        <div style={{ marginRight: 8 }}>
+          <label>
+            <div style={{ fontWeight: "bold", marginBottom: 8 }}>
+              X-Coordinate
+            </div>
+            <div style={{ display: "flex" }}>
+              <div style={{ flexGrow: 1 }}>
+                <Input value={offset.x} disabled />
+              </div>
+              <div>
+                <Button.Tertiary
+                  {...rightLongPressProps}
+                  onClick={rightHandler}
+                  small
+                >
+                  <Icons.PlusIcon />
+                </Button.Tertiary>
+              </div>
+              <div>
+                <Button.Tertiary
+                  {...leftLongPressProps}
+                  onClick={leftHandler}
+                  small
+                >
+                  <Icons.MinusIcon />
+                </Button.Tertiary>
+              </div>
+            </div>
+          </label>
         </div>
-        <div>
-          <div>Y</div> <Input value={offset.y} />
+        <div style={{ marginLeft: 8 }}>
+          <label>
+            <div style={{ fontWeight: "bold", marginBottom: 8 }}>
+              Y-Coordinate
+            </div>
+            <div style={{ display: "flex" }}>
+              <div style={{ flexGrow: 1 }}>
+                <Input value={offset.y} disabled />
+              </div>
+              <div>
+                <Button.Tertiary
+                  {...downLongPressProps}
+                  onClick={downHandler}
+                  small
+                >
+                  <Icons.PlusIcon />
+                </Button.Tertiary>
+              </div>
+              <div>
+                <Button.Tertiary
+                  {...upLongPressProps}
+                  onClick={upHandler}
+                  small
+                >
+                  <Icons.MinusIcon />
+                </Button.Tertiary>
+              </div>
+            </div>
+          </label>
         </div>
       </div>
-      <button {...upLongPressProps} onClick={upHandler}>
-        <Icons.ChevronUpIcon />
-      </button>
-      <button {...downLongPressProps} onClick={downHandler}>
-        <Icons.ChevronDownIcon />
-      </button>
-      <button {...leftLongPressProps} onClick={leftHandler}>
-        <Icons.ChevronLeftIcon />
-      </button>
-      <button {...rightLongPressProps} onClick={rightHandler}>
-        <Icons.ChevronRightIcon />
-      </button>
     </div>
   );
 };
@@ -627,7 +679,8 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                       });
                     }}
                   >
-                    <Icons.CheckIcon /> <span>Done</span>
+                    <span>Done</span>
+                    <Icons.CheckIcon />
                   </Button.Primary>
                 </div>
               </InstructionBubbleActions>
