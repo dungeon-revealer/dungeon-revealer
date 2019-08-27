@@ -186,6 +186,95 @@ const useToolState = createPersistedState("dm.settings.tool");
 const useLineWidthState = createPersistedState("dm.settings.lineWidth");
 const useShowGridState = createPersistedState("dm.settings.showGrid");
 
+const calculateRectProps = (p1, p2) => {
+  const width = Math.max(p1.x, p2.x) - Math.min(p1.x, p2.x);
+  const height = Math.max(p1.y, p2.y) - Math.min(p1.y, p2.y);
+  const x = Math.min(p1.x, p2.x);
+  const y = Math.min(p1.y, p2.y);
+
+  return { x, y, width, height };
+};
+
+const Cursor = ({
+  coordinates,
+  tool,
+  brushShape,
+  lineWidth,
+  areaSelectStart
+}) => {
+  if (!coordinates) return null;
+  if (tool === "area") {
+    if (
+      areaSelectStart &&
+      areaSelectStart.x !== coordinates.x &&
+      areaSelectStart.y !== coordinates.y
+    ) {
+      const { x, y, width, height } = calculateRectProps(
+        coordinates,
+        areaSelectStart
+      );
+      return (
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          stroke="aqua"
+          strokeWidth="2"
+          fill="transparent"
+        />
+      );
+    }
+    return (
+      <g transform={`translate(${coordinates.x}, ${coordinates.y})`}>
+        <line
+          x1="-10"
+          x2="10"
+          y2="0"
+          y1="0"
+          stroke="aqua"
+          strokeWidth="2"
+        ></line>
+        <line
+          y1="-10"
+          y2="10"
+          x1="0"
+          x2="0"
+          stroke="aqua"
+          strokeWidth="2"
+        ></line>
+      </g>
+    );
+  } else if (tool === "brush") {
+    if (brushShape === "round") {
+      return (
+        <circle
+          cy={coordinates.y}
+          cx={coordinates.x}
+          r={lineWidth / 2 - 2}
+          fill="transparent"
+          strokeWidth="2"
+          stroke="aqua"
+        />
+      );
+    } else if (brushShape === "square") {
+      return (
+        <rect
+          x={coordinates.x - lineWidth / 2}
+          y={coordinates.y - lineWidth / 2}
+          width={lineWidth - 2}
+          height={lineWidth - 2}
+          fill="transparent"
+          strokeWidth="2"
+          stroke="aqua"
+        />
+      );
+    }
+  }
+
+  return null;
+};
+
 /**
  * loadedMapId = id of the map that is currently visible in the editor
  * liveMapId = id of the map that is currently visible to the players
@@ -203,13 +292,17 @@ export const DmMap = ({
   const mapCanvasRef = useRef(null);
   const mapImageCanvasRef = useRef(null);
   const fogCanvasRef = useRef(null);
-  const mouseCanvasRef = useRef(null);
   const drawState = useRef({ isDrawing: false, lastCoords: null });
   const areaDrawState = useRef({ startCoords: null, currentCoords: null });
   const hasPreviousMap = useRef(false);
   const panZoomRef = useRef(null);
   const panZoomReferentialRef = useRef(null);
   const socket = useSocket();
+  const [cursorCoordinates, setCursorCoodinates] = useState(null);
+  const [
+    areaSelectionStartCoordinates,
+    setAreaSelectionStartCoordinates
+  ] = useState(null);
 
   /**
    * function for saving the fog to the server.
@@ -366,65 +459,9 @@ export const DmMap = ({
       }
 
       fogContext.fill();
+      redrawCanvas();
     },
     [constructMask, brushShape, mode]
-  );
-
-  const drawCursor = useCallback(
-    ({ x, y }) => {
-      const mouseContext = mouseCanvasRef.current.getContext("2d");
-      // draw cursor
-      mouseContext.clearRect(
-        0,
-        0,
-        mouseCanvasRef.current.width,
-        mouseCanvasRef.current.height
-      );
-
-      if (tool === "area") {
-        mouseContext.strokeStyle = "aqua";
-        mouseContext.fillStyle = "aqua";
-        mouseContext.lineWidth = 2;
-
-        mouseContext.beginPath();
-        mouseContext.moveTo(x - 10, y);
-        mouseContext.lineTo(x + 10, y);
-        mouseContext.moveTo(x, y - 10);
-        mouseContext.lineTo(x, y + 10);
-        mouseContext.stroke();
-        return;
-      }
-
-      // brush
-
-      const cursorMask = constructMask({ x, y });
-      mouseContext.strokeStyle = cursorMask.line;
-      mouseContext.fillStyle = cursorMask.fill;
-      mouseContext.lineWidth = cursorMask.lineWidth;
-
-      mouseContext.beginPath();
-      if (brushShape === "round") {
-        mouseContext.arc(
-          cursorMask.x,
-          cursorMask.y,
-          cursorMask.r,
-          cursorMask.startingAngle,
-          cursorMask.endingAngle,
-          true
-        );
-      } else if (brushShape === "square") {
-        mouseContext.rect(
-          cursorMask.centerX,
-          cursorMask.centerY,
-          cursorMask.height,
-          cursorMask.width
-        );
-      }
-
-      mouseContext.fill();
-      mouseContext.stroke();
-    },
-    [brushShape, constructMask, tool]
   );
 
   const drawFog = useCallback(
@@ -499,37 +536,6 @@ export const DmMap = ({
     [brushShape, constructMask, drawInitial, lineWidth, mode]
   );
 
-  const drawAreaSelection = useCallback(() => {
-    const mouseContext = mouseCanvasRef.current.getContext("2d");
-    mouseContext.clearRect(
-      0,
-      0,
-      mouseCanvasRef.current.width,
-      mouseCanvasRef.current.height
-    );
-
-    mouseContext.strokeStyle = "aqua";
-    mouseContext.fillStyle = "transparent";
-    mouseContext.lineWidth = 2;
-
-    mouseContext.beginPath();
-
-    const { startCoords, currentCoords } = areaDrawState.current;
-
-    if (!startCoords || !currentCoords) {
-      return;
-    }
-
-    const startX = startCoords.x;
-    const startY = startCoords.y;
-    const width = currentCoords.x - startCoords.x;
-    const height = currentCoords.y - startCoords.y;
-
-    mouseContext.rect(startX, startY, width, height);
-    mouseContext.fill();
-    mouseContext.stroke();
-  }, []);
-
   const handleAreaSelection = useCallback(() => {
     const context = fogCanvasRef.current.getContext("2d");
 
@@ -546,9 +552,8 @@ export const DmMap = ({
     const width = currentCoords.x - startCoords.x;
     const height = currentCoords.y - startCoords.y;
     context.fillRect(startX, startY, width, height);
-    drawCursor(currentCoords);
     redrawCanvas();
-  }, [drawCursor, mode]);
+  }, [mode]);
 
   const redrawCanvas = () => {
     const mapContext = mapCanvasRef.current.getContext("2d");
@@ -625,8 +630,6 @@ export const DmMap = ({
         mapImageCanvasRef.current
           .getContext("2d")
           .drawImage(map, 0, 0, dimensions.width, dimensions.height);
-        mouseCanvasRef.current.width = dimensions.width;
-        mouseCanvasRef.current.height = dimensions.height;
 
         objectSvgRef.current.setAttribute("width", dimensions.width);
         objectSvgRef.current.setAttribute("height", dimensions.height);
@@ -742,40 +745,29 @@ export const DmMap = ({
             areaDrawState.current.startCoords = null;
             drawState.current.lastCoords = null;
             areaDrawState.current.currentCoords = null;
-            drawAreaSelection();
+            setAreaSelectionStartCoordinates(null);
           }
         }}
         ref={panZoomRef}
       >
-        <div ref={mapContainerRef} style={{ backfaceVisibility: "hidden" }}>
-          <canvas ref={mapCanvasRef} style={{ position: "absolute" }} />
-          <ObjectLayer
-            defs={<>{gridPatternDefinition}</>}
-            ref={objectSvgRef}
-            areaMarkers={markedAreas}
-            removeAreaMarker={id => {
-              setMarkedAreas(markedAreas =>
-                markedAreas.filter(area => area.id !== id)
-              );
-            }}
-          >
-            {gridRectangleElement}
-          </ObjectLayer>
+        <div
+          ref={mapContainerRef}
+          style={{ backfaceVisibility: "hidden", touchAction: "none" }}
+        >
           <canvas
-            ref={mouseCanvasRef}
-            style={{ position: "absolute", touchAction: "none" }}
+            ref={mapCanvasRef}
+            style={{ position: "absolute" }}
             onMouseMove={ev => {
               if (tool === "move" || tool === "mark") {
                 return;
               }
 
               const coords = getMouseCoordinates(ev);
-              drawCursor(coords);
+              setCursorCoodinates(coords);
 
               if (tool === "area" && areaDrawState.current.startCoords) {
                 if (areaDrawState.current.startCoords) {
                   areaDrawState.current.currentCoords = coords;
-                  drawAreaSelection();
                 }
                 return;
               }
@@ -788,15 +780,7 @@ export const DmMap = ({
               drawState.current.lastCoords = coords;
             }}
             onMouseLeave={() => {
-              const mouseContext = mouseCanvasRef.current.getContext("2d");
-              // draw cursor
-              mouseContext.clearRect(
-                0,
-                0,
-                mouseCanvasRef.current.width,
-                mouseCanvasRef.current.height
-              );
-
+              setCursorCoodinates(null);
               if (
                 (drawState.current.isDrawing || drawState.current.lastCoords) &&
                 saveFogCanvasRef.current
@@ -808,6 +792,7 @@ export const DmMap = ({
               drawState.current.lastCoords = null;
               areaDrawState.current.currentCoords = null;
               areaDrawState.current.startCoords = null;
+              setAreaSelectionStartCoordinates(null);
             }}
             onMouseDown={ev => {
               const coords = getMouseCoordinates(ev);
@@ -817,6 +802,7 @@ export const DmMap = ({
                 drawInitial(coords);
               } else if (tool === "area") {
                 areaDrawState.current.startCoords = coords;
+                setAreaSelectionStartCoordinates(coords);
               }
             }}
             onMouseUp={() => {
@@ -830,6 +816,7 @@ export const DmMap = ({
               }
               areaDrawState.current.currentCoords = null;
               areaDrawState.current.startCoords = null;
+              setAreaSelectionStartCoordinates(null);
 
               if (saveFogCanvasRef.current) {
                 saveFogCanvasRef.current();
@@ -840,12 +827,13 @@ export const DmMap = ({
                 return;
               }
               const coords = getTouchCoordinates(ev.touches[0]);
-              drawCursor(coords);
+              setCursorCoodinates(coords);
               if (tool === "brush") {
                 drawState.current.isDrawing = true;
                 drawInitial(coords);
               } else if (tool === "area") {
                 areaDrawState.current.startCoords = coords;
+                setAreaSelectionStartCoordinates(coords);
               }
             }}
             onTouchMove={ev => {
@@ -854,11 +842,10 @@ export const DmMap = ({
                 return;
               }
               const coords = getTouchCoordinates(ev.touches[0]);
-              drawCursor(coords);
+              setCursorCoodinates(coords);
 
               if (tool === "area" && areaDrawState.current.startCoords) {
                 areaDrawState.current.currentCoords = coords;
-                drawAreaSelection();
                 return;
               }
 
@@ -880,12 +867,32 @@ export const DmMap = ({
               }
               areaDrawState.current.currentCoords = null;
               areaDrawState.current.startCoords = null;
+              setAreaSelectionStartCoordinates(null);
 
               if (saveFogCanvasRef.current) {
                 saveFogCanvasRef.current();
               }
             }}
           />
+          <ObjectLayer
+            defs={<>{gridPatternDefinition}</>}
+            ref={objectSvgRef}
+            areaMarkers={markedAreas}
+            removeAreaMarker={id => {
+              setMarkedAreas(markedAreas =>
+                markedAreas.filter(area => area.id !== id)
+              );
+            }}
+          >
+            {gridRectangleElement}
+            <Cursor
+              coordinates={cursorCoordinates}
+              tool={tool}
+              brushShape={brushShape}
+              lineWidth={lineWidth}
+              areaSelectStart={areaSelectionStartCoordinates}
+            />
+          </ObjectLayer>
         </div>
       </PanZoom>
 
