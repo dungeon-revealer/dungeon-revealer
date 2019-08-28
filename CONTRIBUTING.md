@@ -2,12 +2,12 @@
 
 Install dependencies:
 
-- `npm run install`
-
-Run the react development server:
-
-- `npm run start:dev` (visit `localhost:3001`)
+- `npm install`
 
 Run the backend:
 
-- `npm run start` (available on `localhost:3000`)
+- `npm run start:backend` (available on `localhost:3000`)
+
+Run the react development server:
+
+- `npm run start:frontend` (available on `localhost:3001`)
