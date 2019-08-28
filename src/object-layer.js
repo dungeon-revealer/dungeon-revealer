@@ -98,6 +98,7 @@ const TokenMarker = React.memo(({ x, y, id, radius }) => {
   return (
     <g ref={circleRef}>
       <circle
+        class="tokenCircle"
         cx={x}
         cy={y}
         r={radius}
