@@ -101,7 +101,7 @@ const TokenMarker = React.memo(({ x, y, id, radius }) => {
         cx={x}
         cy={y}
         r={radius}
-        strokeWidth="5"
+        strokeWidth="0.5%"
         stroke="black"
         fill="red"
         opacity="1"
@@ -109,8 +109,9 @@ const TokenMarker = React.memo(({ x, y, id, radius }) => {
       <text
         x={x}
         y={y}
+        strokeWidth="0.25%"
         text-anchor="middle"
-        stroke="white"
+        stroke="black"
         font-size={radius}
         dy=".3em"
       >
