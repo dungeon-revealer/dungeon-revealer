@@ -1331,7 +1331,7 @@ export const DmMap = ({
                 }}
               >
                 <Icons.EditIcon />
-                <Icons.Label>Add Token</Icons.Label>
+                <Icons.Label>Tokens</Icons.Label>
               </Toolbar.Button>
               {tool === "tokens" ? (
                 <Toolbar.Popup>
