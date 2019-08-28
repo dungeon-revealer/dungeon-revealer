@@ -182,6 +182,7 @@ export const DmArea = () => {
           enterGridMode={() => {
             setMode({ title: "SET_MAP_GRID", data: { mapId: loadedMapId } });
           }}
+          updateMap={updateMap}
         />
       ) : null}
     </Modal.Provider>

@@ -173,7 +173,7 @@ app.post("/map/:id/send", authMiddleware, (req, res) => {
       settings.set("currentMapId", map.id);
       res.json({ success: true, data: map });
       io.emit("map update", {
-        mapId: map.id,
+        map,
         image: req.body.image
       });
     });
@@ -220,7 +220,7 @@ app.post("/active-map", authMiddleware, (req, res) => {
   }
   settings.set("currentMapId", mapId);
   io.emit("map update", {
-    mapId: null,
+    map: null,
     image: null
   });
   res.json({
@@ -283,6 +283,10 @@ app.patch("/map/:id", authMiddleware, (req, res) => {
   }
   if (req.body.grid) {
     updates.grid = req.body.grid;
+    updates.showGrid = true;
+  }
+  if ({}.hasOwnProperty.call(req.body, "showGrid")) {
+    updates.showGrid = req.body.showGrid;
   }
 
   if (Object.keys(updates).length) {
@@ -341,16 +345,6 @@ app.use(function(err, req, res) {
 });
 
 io.on("connection", function(socket) {
-  const currentMapId = settings.get("currentMapId");
-
-  if (currentMapId) {
-    console.log("sending current map to newly connected user");
-
-    socket.emit("map update", {
-      mapId: currentMapId
-    });
-  }
-
   socket.once("disconnect", function() {
     console.log("a user disconnected");
   });

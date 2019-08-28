@@ -184,7 +184,6 @@ const useModeState = createPersistedState("dm.settings.mode");
 const useBrushShapeState = createPersistedState("dm.settings.brushShape");
 const useToolState = createPersistedState("dm.settings.tool");
 const useLineWidthState = createPersistedState("dm.settings.lineWidth");
-const useShowGridState = createPersistedState("dm.settings.showGrid");
 
 const calculateRectProps = (p1, p2) => {
   const width = Math.max(p1.x, p2.x) - Math.min(p1.x, p2.x);
@@ -286,7 +285,8 @@ export const DmMap = ({
   sendLiveMap,
   hideMap,
   showMapModal,
-  enterGridMode
+  enterGridMode,
+  updateMap
 }) => {
   const mapContainerRef = useRef(null);
   const mapCanvasRef = useRef(null);
@@ -313,7 +313,6 @@ export const DmMap = ({
   const [brushShape, setBrushShape] = useBrushShapeState("square");
   const [tool, setTool] = useToolState("brush"); // "brush" or "area"
   const [lineWidth, setLineWidth] = useLineWidthState(15);
-  const [showGrid, setShowGrid] = useShowGridState(false);
 
   // marker related stuff
   const [mapCanvasDimensions, setMapCanvasDimensions] = useState(null);
@@ -706,7 +705,7 @@ export const DmMap = ({
   const [gridPatternDefinition, gridRectangleElement] = useGrid(
     map.grid,
     mapCanvasDimensions,
-    showGrid
+    map.showGrid
   );
 
   let cursor = "default";
@@ -915,14 +914,14 @@ export const DmMap = ({
                   if (!map.grid) {
                     enterGridMode();
                   } else {
-                    setShowGrid(setShowGrid => !setShowGrid);
+                    updateMap(map.id, { showGrid: !map.showGrid });
                   }
                 }}
               >
                 <Icons.GridIcon />
                 <Icons.Label>
                   {map.grid
-                    ? showGrid
+                    ? !map.showGrid
                       ? "Show Grid"
                       : "Hide Grid"
                     : "Add Grid"}

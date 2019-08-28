@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
+import useAsyncEffect from "@n1ru4l/use-async-effect";
 import { loadImage, useLongPress, getOptimalDimensions } from "./util";
 import { ObjectLayer } from "./object-layer";
 import { Toolbar } from "./toolbar";
@@ -18,9 +19,39 @@ const ToolbarContainer = styled.div`
   pointer-events: none;
 `;
 
+const reduceOffsetToMinimum = (offset, sideLength) => {
+  const newOffset = offset - sideLength;
+  if (newOffset > 0) return reduceOffsetToMinimum(newOffset, sideLength);
+  return offset;
+};
+
+const drawGridToContext = (grid, dimensions, canvas) => {
+  if (!grid) return;
+  const context = canvas.getContext("2d");
+  context.strokeStyle = "rgba(0, 0, 0, .5)";
+  context.lineWidth = 2;
+
+  const sideLength = grid.sideLength * dimensions.ratio;
+  const offsetX = reduceOffsetToMinimum(grid.x * dimensions.ratio, sideLength);
+  const offsetY = reduceOffsetToMinimum(grid.y * dimensions.ratio, sideLength);
+
+  for (let i = 0; i < canvas.width / sideLength; i++) {
+    context.beginPath();
+    context.moveTo(offsetX + i * sideLength, 0);
+    context.lineTo(offsetX + i * sideLength, canvas.height);
+    context.stroke();
+  }
+  for (let i = 0; i < canvas.height / sideLength; i++) {
+    context.beginPath();
+    context.moveTo(0, offsetY + i * sideLength);
+    context.lineTo(canvas.width, offsetY + i * sideLength);
+    context.stroke();
+  }
+};
+
 export const PlayerArea = () => {
   const panZoomRef = useRef(null);
-  const currentMapId = useRef(null);
+  const currentMap = useRef(null);
   const socket = useSocket();
   const [showSplashScreen, setShowSplashScreen] = useState(true);
 
@@ -49,200 +80,226 @@ export const PlayerArea = () => {
     panZoomRef.current.autoCenter(0.8, isAnimated);
   };
 
-  useEffect(() => {
-    socket.on("connect", function() {
-      console.log("connected to server");
-    });
+  useAsyncEffect(
+    function*() {
+      socket.on("connect", function() {
+        console.log("connected to server");
+      });
 
-    socket.on("reconnecting", function() {
-      console.log("reconnecting to server");
-    });
+      socket.on("reconnecting", function() {
+        console.log("reconnecting to server");
+      });
 
-    socket.on("reconnect", function() {
-      console.log("reconnected to server");
-    });
+      socket.on("reconnect", function() {
+        console.log("reconnected to server");
+      });
 
-    socket.on("reconnect_failed", function() {
-      console.log("reconnect failed!");
-    });
+      socket.on("reconnect_failed", function() {
+        console.log("reconnect failed!");
+      });
 
-    socket.on("disconnect", function() {
-      console.log("disconnected from server");
-    });
+      socket.on("disconnect", function() {
+        console.log("disconnected from server");
+      });
 
-    socket.on("mark area", async data => {
-      setMarkedAreas(markedAreas => [
-        ...markedAreas,
-        {
-          id: data.id,
-          x: data.x * mapCanvasDimensions.current.ratio,
-          y: data.y * mapCanvasDimensions.current.ratio
+      const onReceiveMap = async data => {
+        if (!data) {
+          return;
         }
-      ]);
-    });
 
-    socket.on("map update", async data => {
-      if (!data) {
-        return;
-      }
+        fogCacheBusterCounter++;
 
-      const context = mapCanvasRef.current.getContext("2d");
+        const context = mapCanvasRef.current.getContext("2d");
 
-      if (pendingImageLoads.current) {
-        pendingImageLoads.current.forEach(task => {
-          task.cancel();
-        });
-        pendingImageLoads.current = null;
-      }
+        if (pendingImageLoads.current) {
+          pendingImageLoads.current.forEach(task => {
+            task.cancel();
+          });
+          pendingImageLoads.current = null;
+        }
 
-      /**
-       * Hide map (show splashscreen)
-       */
-      if (!data.mapId) {
-        currentMapId.current = null;
-        mapCanvasDimensions.current = null;
-        mapImageRef.current = null;
+        /**
+         * Hide map (show splashscreen)
+         */
+        if (!data.map) {
+          currentMap.current = null;
+          mapCanvasDimensions.current = null;
+          mapImageRef.current = null;
 
-        context.clearRect(
-          0,
-          0,
-          mapCanvasRef.current.width,
-          mapCanvasRef.current.height
-        );
-        setShowSplashScreen(true);
-        return;
-      }
+          context.clearRect(
+            0,
+            0,
+            mapCanvasRef.current.width,
+            mapCanvasRef.current.height
+          );
+          setShowSplashScreen(true);
+          return;
+        }
+        /**
+         * Fog has updated
+         */
+        if (currentMap.current && currentMap.current.id === data.map.id) {
+          const task = loadImage(
+            `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}`
+          );
+          fogCacheBusterCounter++;
+          pendingImageLoads.current = [task];
 
-      /**
-       * Fog has updated
-       */
-      if (currentMapId.current === data.mapId) {
-        const task = loadImage(data.image);
-        pendingImageLoads.current = [task];
+          task.promise
+            .then(fogImage => {
+              pendingImageLoads.current = null;
 
-        task.promise
-          .then(fogImage => {
+              context.clearRect(
+                0,
+                0,
+                mapCanvasRef.current.width,
+                mapCanvasRef.current.height
+              );
+              context.drawImage(
+                mapImageRef.current,
+                0,
+                0,
+                mapCanvasRef.current.width,
+                mapCanvasRef.current.height
+              );
+              if (data.map.showGrid) {
+                drawGridToContext(
+                  data.map.grid,
+                  mapCanvasDimensions.current,
+                  mapCanvasRef.current
+                );
+              }
+
+              context.drawImage(
+                fogImage,
+                0,
+                0,
+                mapCanvasRef.current.width,
+                mapCanvasRef.current.height
+              );
+            })
+            .catch(err => {
+              // @TODO: distinguish between network error (rertry?) and cancel error
+              console.error(err);
+            });
+          return;
+        }
+
+        /**
+         * Load new map
+         */
+        currentMap.current = data.map;
+        const tasks = [
+          loadImage(
+            `/map/${data.map.id}/map?cache_buster=${fogCacheBusterCounter}`
+          ),
+          loadImage(
+            `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}`
+          )
+        ];
+        pendingImageLoads.current = tasks;
+
+        Promise.all(tasks.map(task => task.promise))
+          .then(([map, fog]) => {
             pendingImageLoads.current = null;
 
-            context.clearRect(
-              0,
-              0,
-              mapCanvasRef.current.width,
-              mapCanvasRef.current.height
+            mapImageRef.current = map;
+            const mapCanvas = mapCanvasRef.current;
+            const objectSvg = objectSvgRef.current;
+            const mapContainer = mapContainerRef.current;
+
+            const mapContext = mapCanvas.getContext("2d");
+
+            const canvasDimensions = getOptimalDimensions(
+              map.width,
+              map.height,
+              Math.max(window.innerWidth, 3000),
+              Math.max(window.innerHeight, 9000)
             );
-            context.drawImage(
-              mapImageRef.current,
+
+            mapCanvas.width = canvasDimensions.width;
+            mapCanvas.height = canvasDimensions.height;
+            objectSvg.setAttribute("width", canvasDimensions.width);
+            objectSvg.setAttribute("height", canvasDimensions.height);
+
+            mapCanvasDimensions.current = canvasDimensions;
+
+            const widthPx = `${canvasDimensions.width}px`;
+            const heightPx = `${canvasDimensions.height}px`;
+            mapCanvas.style.width = mapContainer.style.width = objectSvg.style.width = widthPx;
+            mapCanvas.style.height = mapContainer.style.height = objectSvg.style.height = heightPx;
+
+            mapContext.drawImage(
+              map,
               0,
               0,
-              mapCanvasRef.current.width,
-              mapCanvasRef.current.height
+              canvasDimensions.width,
+              canvasDimensions.height
             );
-            context.drawImage(
-              fogImage,
+            if (data.map.showGrid) {
+              drawGridToContext(data.map.grid, canvasDimensions, mapCanvas);
+            }
+            mapContext.drawImage(
+              fog,
               0,
               0,
-              mapCanvasRef.current.width,
-              mapCanvasRef.current.height
+              canvasDimensions.width,
+              canvasDimensions.height
             );
+
+            centerMap(false);
+            setShowSplashScreen(false);
           })
           .catch(err => {
             // @TODO: distinguish between network error (rertry?) and cancel error
             console.error(err);
           });
-        return;
+      };
+
+      const {
+        data: { activeMap }
+      } = yield fetch("/active-map").then(res => res.json());
+
+      if (activeMap) {
+        yield onReceiveMap({ map: activeMap });
       }
 
-      /**
-       * Load new map
-       */
-      currentMapId.current = data.mapId;
-      const tasks = [
-        loadImage(`/map/${data.mapId}/map`),
-        loadImage(`/map/${data.mapId}/fog`)
-      ];
-      pendingImageLoads.current = tasks;
+      socket.on("mark area", async data => {
+        setMarkedAreas(markedAreas => [
+          ...markedAreas,
+          {
+            id: data.id,
+            x: data.x * mapCanvasDimensions.current.ratio,
+            y: data.y * mapCanvasDimensions.current.ratio
+          }
+        ]);
+      });
+      let fogCacheBusterCounter = 0;
 
-      Promise.all(tasks.map(task => task.promise))
-        .then(([map, fog]) => {
-          pendingImageLoads.current = null;
+      socket.on("map update", onReceiveMap);
 
-          mapImageRef.current = map;
-          const mapCanvas = mapCanvasRef.current;
-          const objectSvg = objectSvgRef.current;
-          const mapContainer = mapContainerRef.current;
+      const contextmenuListener = ev => {
+        ev.preventDefault();
+      };
+      window.addEventListener("contextmenu", contextmenuListener);
 
-          const mapContext = mapCanvas.getContext("2d");
+      // TODO: handle cleanup (this is currently not required since there is no unmounting)
+      // But in case we add some client side routing this must be done
+      // Cleanup is currently not covered by useAsyncEffect.
+      // () => {
+      //   window.removeEventListener("contextmenu", contextmenuListener);
+      //   if (pendingImageLoads.current) {
+      //     pendingImageLoads.current.forEach(task => {
+      //       task.cancel();
+      //     });
+      //     pendingImageLoads.current = null;
+      //   }
+      // };
+    },
+    [socket]
+  );
 
-          const dimensions = getOptimalDimensions(
-            map.width,
-            map.height,
-            window.innerWidth,
-            window.innerHeight
-          );
-
-          const cavasDimensions = getOptimalDimensions(
-            map.width,
-            map.height,
-            3000,
-            9000
-          );
-
-          mapCanvas.width = cavasDimensions.width;
-          mapCanvas.height = cavasDimensions.height;
-          objectSvg.setAttribute("width", cavasDimensions.width);
-          objectSvg.setAttribute("height", cavasDimensions.height);
-
-          mapCanvasDimensions.current = dimensions;
-
-          const widthPx = `${dimensions.width}px`;
-          const heightPx = `${dimensions.height}px`;
-          mapCanvas.style.width = mapContainer.style.width = objectSvg.style.width = widthPx;
-          mapCanvas.style.height = mapContainer.style.height = objectSvg.style.height = heightPx;
-
-          mapContext.drawImage(
-            map,
-            0,
-            0,
-            cavasDimensions.width,
-            cavasDimensions.height
-          );
-          mapContext.drawImage(
-            fog,
-            0,
-            0,
-            cavasDimensions.width,
-            cavasDimensions.height
-          );
-
-          centerMap(false);
-          setShowSplashScreen(false);
-        })
-        .catch(err => {
-          // @TODO: distinguish between network error (rertry?) and cancel error
-          console.error(err);
-        });
-    });
-
-    const contextmenuListener = ev => {
-      ev.preventDefault();
-    };
-    window.addEventListener("contextmenu", contextmenuListener);
-
-    return () => {
-      window.removeEventListener("contextmenu", contextmenuListener);
-
-      if (pendingImageLoads.current) {
-        pendingImageLoads.current.forEach(task => {
-          task.cancel();
-        });
-        pendingImageLoads.current = null;
-      }
-    };
-  }, [socket]);
-
-  /**
-   * long press event for setting a map marker
-   */
+  // long press event for setting a map marker
   const longPressProps = useLongPress(ev => {
     if (!mapCanvasDimensions.current) {
       return;
