@@ -861,6 +861,27 @@ export const DmMap = ({
           ...panZoomContainerStyles,
           cursor
         }}
+        onContextMenu={ev => {
+          if (tool === "tokens") {
+            const ref = new Referentiel(
+              panZoomRef.current.dragContainer.current
+            );
+            const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
+            const token = [...document.querySelectorAll(".tokenCircle")].filter(
+              function(circle) {
+                return (
+                  Math.sqrt(
+                    Math.pow(circle.cx.baseVal.value - x, 2) +
+                      Math.pow(circle.cy.baseVal.value - y, 2)
+                  ) < circle.r.baseVal.value
+                );
+              }
+            );
+            if (token.length !== 0) {
+              token[0].dispatchEvent(ev);
+            }
+          }
+        }}
         onClick={ev => {
           const ref = new Referentiel(panZoomRef.current.dragContainer.current);
           const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
