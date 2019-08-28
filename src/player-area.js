@@ -112,7 +112,8 @@ export const PlayerArea = () => {
             id: data.id,
             x: data.x * mapCanvasDimensions.current.ratio,
             y: data.y * mapCanvasDimensions.current.ratio,
-            radius: data.radius * mapCanvasDimensions.current.ratio
+            radius: data.radius * mapCanvasDimensions.current.ratio,
+            color: data.color
           }
         ]);
       });

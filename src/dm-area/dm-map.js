@@ -17,6 +17,7 @@ import { ToggleSwitch } from "../toggle-switch";
 import { useResetState } from "../hooks/use-reset-state";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useSvgGrid } from "../hooks/use-svg-grid";
+import { GithubPicker } from "react-color";
 
 const ShapeButton = styled.button`
   border: none;
@@ -191,6 +192,9 @@ const useToolState = createPersistedState("dm.settings.tool");
 const useLineWidthState = createPersistedState("dm.settings.lineWidth");
 const useTokenIdState = createPersistedState("dm.settings.currentTokenId");
 const useTokenSizeState = createPersistedState("dm.settings.currentTokenSize");
+const useTokenColorState = createPersistedState(
+  "dm.settings.currentTokenColor"
+);
 
 const calculateRectProps = (p1, p2) => {
   const width = Math.max(p1.x, p2.x) - Math.min(p1.x, p2.x);
@@ -411,6 +415,7 @@ export const DmMap = ({
   const [lineWidth, setLineWidth] = useLineWidthState(15);
   const [tokenId, setTokenId] = useTokenIdState(1);
   const [tokenSize, setTokenSize] = useTokenSizeState(15);
+  const [tokenColor, setTokenColor] = useTokenColorState("#b80000");
 
   // marker related stuff
   const [mapCanvasDimensions, setMapCanvasDimensions] = useState({
@@ -691,7 +696,8 @@ export const DmMap = ({
           id: data.id,
           x: data.x * mapCanvasDimensions.current.ratio,
           y: data.y * mapCanvasDimensions.current.ratio,
-          radius: data.radius * mapCanvasDimensions.current.ratio
+          radius: data.radius * mapCanvasDimensions.current.ratio,
+          color: data.color
         }
       ]);
     });
@@ -869,17 +875,17 @@ export const DmMap = ({
             );
             const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
             const token = [...document.querySelectorAll(".tokenCircle")].filter(
-              function(circle) {
+              function (circle) {
                 return (
                   Math.sqrt(
                     Math.pow(circle.cx.baseVal.value - x, 2) +
-                      Math.pow(circle.cy.baseVal.value - y, 2)
+                    Math.pow(circle.cy.baseVal.value - y, 2)
                   ) < circle.r.baseVal.value
                 );
               }
             );
             if (token.length !== 0) {
-              socketRef.current.emit("remove token", {
+              socket.emit("remove token", {
                 id: parseInt(token[token.length - 1].getAttribute("tokenid"))
               });
             }
@@ -888,19 +894,21 @@ export const DmMap = ({
         onClick={ev => {
           const ref = new Referentiel(panZoomRef.current.dragContainer.current);
           const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
-
+          const { ratio } = mapCanvasDimensions;
           switch (tool) {
             case "tokens": {
-              socketRef.current.emit("add token", {
+              socket.emit("add token", {
                 x: x / ratio,
                 y: y / ratio,
                 id: tokenId,
-                radius: tokenSize
+                radius: tokenSize,
+                color: tokenColor.hex
               });
               break;
             }
+
             case "mark": {
-              socketRef.current.emit("mark area", {
+              socket.emit("mark area", {
                 x: x / ratio,
                 y: y / ratio
               });
@@ -1351,6 +1359,14 @@ export const DmMap = ({
                       setTokenSize(Math.min(200, Math.max(0, ev.target.value)));
                     }}
                   />
+                  <h6>Token Color</h6>
+                  <div>
+                    <GithubPicker
+                      onChange={(color, ev) => {
+                        setTokenColor(color);
+                      }}
+                    />
+                  </div>
                 </Toolbar.Popup>
               ) : null}
             </Toolbar.Item>
