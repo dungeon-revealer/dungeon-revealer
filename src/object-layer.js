@@ -92,7 +92,7 @@ const AreaMarker = React.memo(({ x, y, onFinishAnimation }) => {
   );
 });
 
-const TokenMarker = React.memo(({ x, y, id, radius }) => {
+const TokenMarker = React.memo(({ x, y, id, radius, color }) => {
   const circleRef = useRef(null);
 
   return (
@@ -105,7 +105,7 @@ const TokenMarker = React.memo(({ x, y, id, radius }) => {
         r={radius}
         strokeWidth="0.5%"
         stroke="black"
-        fill="red"
+        fill={color}
         opacity="1"
       />
 
