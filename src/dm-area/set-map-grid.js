@@ -612,7 +612,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
             </>
           ) : step === "SELECT_GRID_BASE" ? (
             <>
-              <h1>Select a single field</h1>
+              <h1>Select a single grid square</h1>
               <InstructionBubbleActions>
                 <div>
                   <Button.Tertiary
