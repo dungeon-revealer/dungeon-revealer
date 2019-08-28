@@ -1,3 +1,4 @@
+import "./offscreen-canvas-polyfill";
 import React, {
   useState,
   useEffect,
