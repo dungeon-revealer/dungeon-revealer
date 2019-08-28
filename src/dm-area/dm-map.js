@@ -194,12 +194,70 @@ const calculateRectProps = (p1, p2) => {
   return { x, y, width, height };
 };
 
+const reduceOffsetToMinimum = (offset, sideLength) => {
+  const newOffset = offset - sideLength;
+  if (newOffset > 0) return reduceOffsetToMinimum(newOffset, sideLength);
+  return offset;
+};
+
+const getNextPossibleLowerValue = (value, maximum, step) => {
+  const newValue = value + step;
+  if (newValue < maximum) {
+    return getNextPossibleLowerValue(newValue, maximum, step);
+  }
+  return value;
+};
+
+const getSnappedSelectionMask = (grid, ratio, selection) => {
+  const xMinimum = reduceOffsetToMinimum(
+    grid.x * ratio,
+    grid.sideLength * ratio
+  );
+  const yMinimum = reduceOffsetToMinimum(
+    grid.y * ratio,
+    grid.sideLength * ratio
+  );
+
+  const x1 = getNextPossibleLowerValue(
+    xMinimum,
+    selection.x,
+    grid.sideLength * ratio
+  );
+  const y1 = getNextPossibleLowerValue(
+    yMinimum,
+    selection.y,
+    grid.sideLength * ratio
+  );
+
+  const x2 = getNextPossibleLowerValue(
+    xMinimum,
+    selection.x + selection.width,
+    grid.sideLength * ratio
+  );
+  const y2 = getNextPossibleLowerValue(
+    yMinimum,
+    selection.y + selection.height,
+    grid.sideLength * ratio
+  );
+
+  const p1 = { x: x1, y: y1 };
+  const p2 = {
+    x: x2 + grid.sideLength * ratio,
+    y: y2 + grid.sideLength * ratio
+  };
+
+  return calculateRectProps(p1, p2);
+};
+
 const Cursor = ({
   coordinates,
   tool,
   brushShape,
   lineWidth,
-  areaSelectStart
+  areaSelectStart,
+  showGrid,
+  grid,
+  ratio
 }) => {
   if (!coordinates) return null;
   if (tool === "area") {
@@ -208,20 +266,30 @@ const Cursor = ({
       areaSelectStart.x !== coordinates.x &&
       areaSelectStart.y !== coordinates.y
     ) {
-      const { x, y, width, height } = calculateRectProps(
-        coordinates,
-        areaSelectStart
-      );
+      const selection = calculateRectProps(coordinates, areaSelectStart);
+
+      let snappedSelection = null;
+      if (showGrid && grid) {
+        const snappedSelectionMask = getSnappedSelectionMask(
+          grid,
+          ratio,
+          selection
+        );
+        snappedSelection = (
+          <rect fill="rgba(0, 255, 255, .5)" {...snappedSelectionMask} />
+        );
+      }
+
       return (
-        <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          stroke="aqua"
-          strokeWidth="2"
-          fill="transparent"
-        />
+        <>
+          {snappedSelection}
+          <rect
+            stroke="aqua"
+            strokeWidth="2"
+            fill="transparent"
+            {...selection}
+          />
+        </>
       );
     }
     return (
@@ -315,7 +383,11 @@ export const DmMap = ({
   const [lineWidth, setLineWidth] = useLineWidthState(15);
 
   // marker related stuff
-  const [mapCanvasDimensions, setMapCanvasDimensions] = useState(null);
+  const [mapCanvasDimensions, setMapCanvasDimensions] = useState({
+    width: 0,
+    height: 0,
+    ratio: 1
+  });
   const latestMapCanvasDimensions = useRef(null);
   latestMapCanvasDimensions.current = mapCanvasDimensions;
 
@@ -543,16 +615,26 @@ export const DmMap = ({
     } else {
       context.globalCompositeOperation = "source-over";
     }
-    context.beginPath();
-    const { startCoords, currentCoords } = areaDrawState.current;
+    if (map.showGrid) {
+      const { startCoords, currentCoords } = areaDrawState.current;
+      const selectionMask = calculateRectProps(startCoords, currentCoords);
+      const { x, y, width, height } = getSnappedSelectionMask(
+        map.grid,
+        mapCanvasDimensions.ratio,
+        selectionMask
+      );
+      context.fillRect(x, y, width, height);
+    } else {
+      const { startCoords, currentCoords } = areaDrawState.current;
+      const { x, y, width, height } = calculateRectProps(
+        startCoords,
+        currentCoords
+      );
+      context.fillRect(x, y, width, height);
+    }
 
-    const startX = startCoords.x;
-    const startY = startCoords.y;
-    const width = currentCoords.x - startCoords.x;
-    const height = currentCoords.y - startCoords.y;
-    context.fillRect(startX, startY, width, height);
     redrawCanvas();
-  }, [mode]);
+  }, [mode, map, mapCanvasDimensions.ratio]);
 
   const redrawCanvas = () => {
     const mapContext = mapCanvasRef.current.getContext("2d");
@@ -890,6 +972,9 @@ export const DmMap = ({
               brushShape={brushShape}
               lineWidth={lineWidth}
               areaSelectStart={areaSelectionStartCoordinates}
+              showGrid={map.showGrid}
+              grid={map.grid}
+              ratio={mapCanvasDimensions.ratio}
             />
           </ObjectLayer>
         </div>
