@@ -17,7 +17,7 @@ import { ToggleSwitch } from "../toggle-switch";
 import { useResetState } from "../hooks/use-reset-state";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useSvgGrid } from "../hooks/use-svg-grid";
-import { GithubPicker } from "react-color";
+import { CirclePicker, GithubPicker } from "react-color";
 
 const ShapeButton = styled.button`
   border: none;
