@@ -283,18 +283,23 @@ export const PlayerArea = () => {
       };
       window.addEventListener("contextmenu", contextmenuListener);
 
-      // TODO: handle cleanup (this is currently not required since there is no unmounting)
-      // But in case we add some client side routing this must be done
-      // Cleanup is currently not covered by useAsyncEffect.
-      // () => {
-      //   window.removeEventListener("contextmenu", contextmenuListener);
-      //   if (pendingImageLoads.current) {
-      //     pendingImageLoads.current.forEach(task => {
-      //       task.cancel();
-      //     });
-      //     pendingImageLoads.current = null;
-      //   }
-      // };
+      return () => {
+        socket.off("connect");
+        socket.off("reconnecting");
+        socket.off("reconnect");
+        socket.off("reconnect_failed");
+        socket.off("disconnect");
+        socket.off("mark area");
+        socket.off("map update");
+
+        window.removeEventListener("contextmenu", contextmenuListener);
+        if (pendingImageLoads.current) {
+          pendingImageLoads.current.forEach(task => {
+            task.cancel();
+          });
+          pendingImageLoads.current = null;
+        }
+      };
     },
     [socket]
   );
