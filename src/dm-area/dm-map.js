@@ -863,6 +863,7 @@ export const DmMap = ({
         }}
         onContextMenu={ev => {
           if (tool === "tokens") {
+            ev.preventDefault();
             const ref = new Referentiel(
               panZoomRef.current.dragContainer.current
             );
@@ -878,7 +879,9 @@ export const DmMap = ({
               }
             );
             if (token.length !== 0) {
-              token[0].dispatchEvent(ev);
+              socketRef.current.emit("remove token", {
+                id: parseInt(token[token.length - 1].getAttribute("tokenid"))
+              });
             }
           }
         }}
@@ -1348,14 +1351,6 @@ export const DmMap = ({
                       setTokenSize(Math.min(200, Math.max(0, ev.target.value)));
                     }}
                   />
-
-                  <button
-                    onClick={ev => {
-                      socketRef.current.emit("remove token", { id: tokenId });
-                    }}
-                  >
-                    Remove Token
-                  </button>
                 </Toolbar.Popup>
               ) : null}
             </Toolbar.Item>
