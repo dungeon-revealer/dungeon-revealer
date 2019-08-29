@@ -5,13 +5,16 @@ import createPersistedState from "use-persisted-state";
 import { PanZoom } from "react-easy-panzoom";
 import ReactTooltip from "react-tooltip";
 import Referentiel from "referentiel";
+import { AlphaPicker, HuePicker } from "react-color";
+import parseColor from "parse-color";
 import { loadImage, getOptimalDimensions, ConditionalWrap } from "./../util";
 import { Toolbar } from "./../toolbar";
-import styled from "@emotion/styled";
+import styled from "@emotion/styled/macro";
 import { ObjectLayer } from "../object-layer";
 import * as Icons from "../feather-icons";
 import { useGrid } from "./grid";
 import { useSocket } from "../socket";
+import { ToggleSwitch } from "../toggle-switch";
 
 const ShapeButton = styled.button`
   border: none;
@@ -342,6 +345,68 @@ const Cursor = ({
   return null;
 };
 
+const fallbackGridColor = { r: 0, g: 0, b: 0, a: 0.5 };
+
+const buildRGBAColorString = ({ r, g, b, a }) => `rgba(${r}, ${g}, ${b}, ${a})`;
+const parseMapColor = input => {
+  if (!input) return fallbackGridColor;
+  const {
+    rgba: [r, g, b, a]
+  } = parseColor(input);
+  return { r, g, b, a };
+};
+
+const useOnClickOutside = onClickOutside => {
+  const handlerRef = React.useRef(onClickOutside);
+  const elementRef = React.useRef(null);
+  if (onClickOutside !== handlerRef.current) {
+    handlerRef.current = onClickOutside;
+  }
+  useEffect(() => {
+    const handleClick = e => {
+      if (elementRef.current.contains(e.target)) {
+        return;
+      }
+      handlerRef.current(e);
+    };
+
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return elementRef;
+};
+
+// useState that recreates the initial value in case the deps change
+const NO_VALUE_SYMBOL = Symbol("USE_RESET_STATE_NO_VALUE");
+const useResetState = (createValue, deps = []) => {
+  const [, triggerRerender] = useState(createValue);
+  const stateRef = useRef(NO_VALUE_SYMBOL);
+  const depsRef = useRef(deps);
+
+  if (stateRef.current === NO_VALUE_SYMBOL) {
+    stateRef.current = createValue();
+  }
+  if (depsRef.current.some((value, index) => value !== deps[index])) {
+    depsRef.current = deps;
+    stateRef.current = createValue();
+  }
+
+  const setState = useCallback(
+    newState => {
+      if (typeof newState === "function") {
+        stateRef.current = newState(stateRef.current);
+      } else {
+        stateRef.current = newState;
+      }
+      triggerRerender(i => i + 1);
+    },
+    [triggerRerender]
+  );
+
+  return [stateRef.current, setState];
+};
+
 /**
  * loadedMapId = id of the map that is currently visible in the editor
  * liveMapId = id of the map that is currently visible to the players
@@ -371,6 +436,16 @@ export const DmMap = ({
     areaSelectionStartCoordinates,
     setAreaSelectionStartCoordinates
   ] = useState(null);
+  const [showGridSettings, setShowGridSettings] = useState(false);
+
+  const [gridColor, setGridColor] = useResetState(
+    () => parseMapColor(map.gridColor),
+    [map.gridColor]
+  );
+
+  const onGridColorChangeComplete = useCallback(() => {
+    updateMap(map.id, { gridColor: buildRGBAColorString(gridColor) });
+  }, [map, updateMap, gridColor]);
 
   /**
    * function for saving the fog to the server.
@@ -787,7 +862,8 @@ export const DmMap = ({
   const [gridPatternDefinition, gridRectangleElement] = useGrid(
     map.grid,
     mapCanvasDimensions,
-    map.showGrid
+    map.showGrid,
+    buildRGBAColorString(gridColor)
   );
 
   let cursor = "default";
@@ -999,19 +1075,33 @@ export const DmMap = ({
                   if (!map.grid) {
                     enterGridMode();
                   } else {
-                    updateMap(map.id, { showGrid: !map.showGrid });
+                    setShowGridSettings(showGridSettings => !showGridSettings);
                   }
                 }}
               >
                 <Icons.GridIcon />
                 <Icons.Label>
-                  {map.grid
-                    ? !map.showGrid
-                      ? "Show Grid"
-                      : "Hide Grid"
-                    : "Add Grid"}
+                  {map.grid ? "Grid Settings" : "Add Grid"}
                 </Icons.Label>
               </Toolbar.Button>
+              {showGridSettings ? (
+                <ShowGridSettingsPopup
+                  gridColor={gridColor}
+                  setGridColor={setGridColor}
+                  showGrid={map.showGrid}
+                  setShowGrid={showGrid => {
+                    updateMap(map.id, { showGrid });
+                  }}
+                  showGridToPlayers={map.showGridToPlayers}
+                  setShowGridToPlayers={showGridToPlayers => {
+                    updateMap(map.id, { showGridToPlayers });
+                  }}
+                  onGridColorChangeComplete={onGridColorChangeComplete}
+                  onClickOutside={() => {
+                    setShowGridSettings(false);
+                  }}
+                />
+              ) : null}
             </Toolbar.Item>
             <Toolbar.Item isEnabled>
               <Toolbar.Button
@@ -1248,3 +1338,90 @@ export const DmMap = ({
     </>
   );
 };
+
+// rerendering this component has a huge impact on performance
+const ShowGridSettingsPopup = React.memo(
+  ({
+    gridColor,
+    setGridColor,
+    showGrid,
+    setShowGrid,
+    setShowGridToPlayers,
+    showGridToPlayers,
+    onGridColorChangeComplete,
+    onClickOutside
+  }) => {
+    const popupRef = useOnClickOutside(onClickOutside);
+    const onGridColorChange = useCallback(
+      ({ rgb: { r, g, b } }) => {
+        setGridColor(({ a }) => ({ r, g, b, a }));
+      },
+      [setGridColor]
+    );
+    const onAlphaChange = useCallback(
+      ({ rgb: { r, g, b, a } }) => {
+        setGridColor({ r, g, b, a });
+      },
+      [setGridColor]
+    );
+    return (
+      <Toolbar.Popup ref={popupRef}>
+        <h4 style={{ textAlign: "left", marginTop: 8 }}>Grid Settings</h4>
+        <div>
+          <div>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                textAlign: "left",
+                cursor: "pointer"
+              }}
+            >
+              <div style={{ flexGrow: 1 }}>Show Grid</div>
+              <div style={{ marginLeft: 8 }}>
+                <ToggleSwitch
+                  checked={showGrid}
+                  onChange={ev => {
+                    setShowGrid(ev.target.checked);
+                  }}
+                />
+              </div>
+            </label>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                textAlign: "left",
+                marginTop: 8,
+                cursor: "pointer"
+              }}
+            >
+              <div style={{ flexGrow: 1 }}>Show Grid to Players</div>
+              <div style={{ marginLeft: 8 }}>
+                <ToggleSwitch
+                  checked={showGridToPlayers}
+                  onChange={ev => {
+                    setShowGridToPlayers(ev.target.checked);
+                  }}
+                />
+              </div>
+            </label>
+          </div>
+          <div style={{ marginTop: 16, marginBottom: 8 }}>
+            <HuePicker
+              color={gridColor}
+              onChange={onGridColorChange}
+              onChangeComplete={onGridColorChangeComplete}
+            />
+            <div style={{ height: 16 }} />
+            <AlphaPicker
+              color={gridColor}
+              onChange={onAlphaChange}
+              onChangeComplete={onGridColorChangeComplete}
+            />
+          </div>
+        </div>
+      </Toolbar.Popup>
+    );
+  }
+);

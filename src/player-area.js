@@ -25,10 +25,10 @@ const reduceOffsetToMinimum = (offset, sideLength) => {
   return offset;
 };
 
-const drawGridToContext = (grid, dimensions, canvas) => {
+const drawGridToContext = (grid, dimensions, canvas, gridColor) => {
   if (!grid) return;
   const context = canvas.getContext("2d");
-  context.strokeStyle = "rgba(0, 0, 0, .5)";
+  context.strokeStyle = gridColor || "rgba(0, 0, 0, .5)";
   context.lineWidth = 2;
 
   const sideLength = grid.sideLength * dimensions.ratio;
@@ -162,11 +162,13 @@ export const PlayerArea = () => {
                 mapCanvasRef.current.width,
                 mapCanvasRef.current.height
               );
-              if (data.map.showGrid) {
+
+              if (data.map.showGridToPlayers) {
                 drawGridToContext(
                   data.map.grid,
                   mapCanvasDimensions.current,
-                  mapCanvasRef.current
+                  mapCanvasRef.current,
+                  data.map.gridColor
                 );
               }
 
@@ -236,8 +238,13 @@ export const PlayerArea = () => {
               canvasDimensions.width,
               canvasDimensions.height
             );
-            if (data.map.showGrid) {
-              drawGridToContext(data.map.grid, canvasDimensions, mapCanvas);
+            if (data.map.showGridToPlayers) {
+              drawGridToContext(
+                data.map.grid,
+                canvasDimensions,
+                mapCanvas,
+                data.map.gridColor
+              );
             }
             mapContext.drawImage(
               fog,

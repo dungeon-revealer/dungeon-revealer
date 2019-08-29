@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef } from "react";
-import styled from "@emotion/styled";
+import styled from "@emotion/styled/macro";
 
 const ToolbarContext = React.createContext({ horizontal: false });
 
@@ -80,17 +80,28 @@ const ToolboxButton = styled.button`
   color: inherit;
 `;
 
-const ToolbarItemPopup = styled.div`
+const ToolbarItemPopupContainer = styled.div`
   position: absolute;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
   border-radius: 15px;
   background-color: rgba(255, 255, 255, 1);
-  top: 0;
-  left: 80px;
+  top: ${p => (p.horizontal ? null : `0`)};
+  bottom: ${p => (p.horizontal ? `80px` : null)};
+  left: ${p => (p.horizontal ? `-16px` : `80px`)};
   padding: 8px 12px;
   filter: none;
   min-width: 120px;
+  width: max-content;
 `;
+
+const ToolbarItemPopup = React.forwardRef(({ children }, ref) => {
+  const { horizontal } = React.useContext(ToolbarContext);
+  return (
+    <ToolbarItemPopupContainer horizontal={horizontal} ref={ref}>
+      {children}
+    </ToolbarItemPopupContainer>
+  );
+});
 
 export const Toolbar = ({ children, horizontal, ...props }) => {
   const contextValue = React.useMemo(() => ({ horizontal }), [horizontal]);
