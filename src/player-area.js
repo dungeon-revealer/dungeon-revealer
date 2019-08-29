@@ -105,7 +105,6 @@ export const PlayerArea = () => {
       });
 
       socket.on("add token", async data => {
-        setTokens(tokens => tokens.filter(area => area.id !== data.id));
         setTokens(tokens => [
           ...tokens,
           {
@@ -115,7 +114,7 @@ export const PlayerArea = () => {
             radius: data.radius * mapCanvasDimensions.current.ratio,
             color: data.color
           }
-        ]);
+        ].filter(area => area.id !== data.id));
       });
 
       socket.on("remove token", async data => {
@@ -126,7 +125,6 @@ export const PlayerArea = () => {
         if (!data) {
           return;
         }
-
 
         const context = mapCanvasRef.current.getContext("2d");
 
