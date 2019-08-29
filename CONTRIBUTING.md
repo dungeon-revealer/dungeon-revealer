@@ -2,7 +2,7 @@
 
 Install dependencies:
 
-- `npm run install`
+- `npm install`
 
 Run the react development server:
 
