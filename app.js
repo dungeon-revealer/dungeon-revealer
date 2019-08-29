@@ -288,6 +288,12 @@ app.patch("/map/:id", authMiddleware, (req, res) => {
   if ({}.hasOwnProperty.call(req.body, "showGrid")) {
     updates.showGrid = req.body.showGrid;
   }
+  if ({}.hasOwnProperty.call(req.body, "showGridToPlayers")) {
+    updates.showGridToPlayers = req.body.showGridToPlayers;
+  }
+  if ({}.hasOwnProperty.call(req.body, "gridColor")) {
+    updates.gridColor = req.body.gridColor;
+  }
 
   if (Object.keys(updates).length) {
     map = maps.updateMapSettings(map.id, updates);

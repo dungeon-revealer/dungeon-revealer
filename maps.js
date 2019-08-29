@@ -52,7 +52,9 @@ class Maps {
       fogLivePath: null,
       mapPath,
       grid: null,
-      showGrid: false
+      showGrid: false,
+      showGridToPlayers: false,
+      gridColor: "rgba(0, 0, 0, 0.5)"
     };
 
     fs.moveSync(file.path, path.join(mapDirectory, id, mapPath));
@@ -88,16 +90,18 @@ class Maps {
     if (!map) {
       throw new Error(`Map with id "${id}" not found.`);
     }
-    const filePath = path.join(mapDirectory, id, map.fogProgressPath);
+    const mapFolderPath = path.join(mapDirectory, id);
     if (map.fogProgressPath) {
-      fs.removeSync(filePath);
+      fs.removeSync(path.join(mapFolderPath, map.fogProgressPath));
     }
 
     const newMapData = {
       fogProgressPath: "fog.progress.png"
     };
 
-    const writeStream = fs.createWriteStream(filePath);
+    const writeStream = fs.createWriteStream(
+      path.join(mapFolderPath, newMapData.fogProgressPath)
+    );
     fileStream.pipe(writeStream);
 
     return new Promise((res, rej) => {
@@ -105,7 +109,6 @@ class Maps {
         if (err) {
           return rej(err);
         }
-        console.log("Ok");
         res(this.updateMapSettings(id, newMapData));
       });
     });
