@@ -28,7 +28,7 @@
     "react": "16.9.0",
     "react-dom": "16.9.0",
     "react-easy-panzoom": "0.4.3",
-    "react-tooltip": "3.10.0",
+    "react-tooltip": "3.11.0",
     "referentiel": "0.0.8",
     "serve-favicon": "~2.5.0",
     "socket.io": "^2.2.0",
