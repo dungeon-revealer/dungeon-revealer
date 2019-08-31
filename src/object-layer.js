@@ -104,7 +104,7 @@ export const ObjectLayer = React.forwardRef(
           overflow: "visible"
         }}
       >
-        <defs>{defs}</defs>
+        {defs ? <defs>{defs}</defs> : null}
         {children}
         {areaMarkers.map(markedArea => (
           <AreaMarker
