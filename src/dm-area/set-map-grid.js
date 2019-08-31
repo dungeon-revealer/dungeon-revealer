@@ -68,8 +68,9 @@ const PartialContainer = styled.div`
 
 const getEventPoint = ev => {
   const rect = ev.target.getBoundingClientRect();
-  const x = ev.clientX - rect.left;
-  const y = ev.clientY - rect.top;
+  const target = ev.touches ? ev.touches[0] : ev;
+  const x = target.clientX - rect.left;
+  const y = target.clientY - rect.top;
   return { x, y };
 };
 
@@ -379,6 +380,89 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
     start: null,
     end: null
   });
+  const partialCursorStateRef = useRef(partialCursorState);
+  partialCursorStateRef.current = partialCursorState;
+
+  const onBlueBoxDown = useCallback(
+    ev => {
+      if (step !== "MOVE_BLUE_SQUARE") return;
+      const offset = getSvgMousePosition(gridRef.current, ev);
+      offset.x -= parseFloat(ev.target.getAttributeNS(null, "x"));
+      offset.y -= parseFloat(ev.target.getAttributeNS(null, "y"));
+      const listener = ev => {
+        ev.preventDefault();
+        const coords = getSvgMousePosition(gridRef.current, ev);
+
+        setPartialCoordinates({
+          x: coords.x - offset.x,
+          y: coords.y - offset.y,
+          width: 120,
+          height: 120
+        });
+      };
+      window.addEventListener("mousemove", listener);
+      window.addEventListener("touchmove", listener);
+
+      const endListener = () => {
+        window.removeEventListener("mousemove", listener);
+        window.removeEventListener("touchmove", listener);
+        window.removeEventListener("touchend", endListener);
+        window.removeEventListener("mouseup", endListener);
+      };
+
+      window.addEventListener("mouseup", endListener);
+      window.addEventListener("touchend", endListener);
+    },
+    [step]
+  );
+
+  const onPartialDown = useCallback(
+    ev => {
+      const p1 = getEventPoint(ev);
+      setPartialCursorState(state => ({
+        ...state,
+        start: p1,
+        isSelecting: true
+      }));
+      const moveListener = ev => {
+        const p = getEventPoint(ev);
+        if (!partialCursorStateRef.current.isSelecting) {
+          setPartialCursorState(state => ({ ...state, start: p }));
+          return;
+        }
+        setPartialCursorState(state => ({ ...state, end: p }));
+      };
+
+      const endListener = ev => {
+        ev.stopPropagation();
+        window.removeEventListener("mouseup", endListener);
+        window.removeEventListener("touchend", endListener);
+        window.removeEventListener("mousemove", moveListener);
+        window.removeEventListener("touchmove", moveListener);
+        const p2 =
+          ev.touches && ev.touches
+            ? partialCursorStateRef.current.end
+            : getEventPoint(ev);
+        const partialCoords = calculatePartialCoords(p1, p2);
+        const realX = partialCoordinates.x + partialCoords.x / sizeFactor;
+        const realY = partialCoordinates.y + partialCoords.y / sizeFactor;
+        const realWidth = partialCoords.width / sizeFactor;
+        setSideLength(realWidth);
+        setOffset({ y: realY, x: realX });
+        setPartialCursorState(state => ({
+          ...state,
+          isSelecting: false,
+          end: null
+        }));
+      };
+
+      window.addEventListener("mouseup", endListener);
+      window.addEventListener("touchend", endListener);
+      window.addEventListener("mousemove", moveListener);
+      window.addEventListener("touchmove", moveListener);
+    },
+    [partialCoordinates.x, partialCoordinates.y]
+  );
 
   return (
     <Container>
@@ -435,31 +519,8 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                 fill="transparent"
                 strokeWidth="2"
                 cursor={step === "MOVE_BLUE_SQUARE" ? "move" : undefined}
-                onMouseDown={ev => {
-                  if (step !== "MOVE_BLUE_SQUARE") return;
-                  const offset = getSvgMousePosition(gridRef.current, ev);
-                  offset.x -= parseFloat(ev.target.getAttributeNS(null, "x"));
-                  offset.y -= parseFloat(ev.target.getAttributeNS(null, "y"));
-                  const listener = ev => {
-                    ev.preventDefault();
-                    const coords = getSvgMousePosition(gridRef.current, ev);
-
-                    setPartialCoordinates({
-                      x: coords.x - offset.x,
-                      y: coords.y - offset.y,
-                      width: 120,
-                      height: 120
-                    });
-                  };
-                  window.addEventListener("mousemove", listener);
-                  window.addEventListener(
-                    "mouseup",
-                    () => {
-                      window.removeEventListener("mousemove", listener);
-                    },
-                    { once: true }
-                  );
-                }}
+                onMouseDown={onBlueBoxDown}
+                onTouchStart={onBlueBoxDown}
               />
             </SvgGridOverlay>
           </>
@@ -478,14 +539,8 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
               ref={partialCanvasRef}
               width={partialCoordinates.width * sizeFactor}
               height={partialCoordinates.height * sizeFactor}
-              onMouseMove={ev => {
-                const p = getEventPoint(ev);
-                if (!partialCursorState.isSelecting) {
-                  setPartialCursorState(state => ({ ...state, start: p }));
-                  return;
-                }
-                setPartialCursorState(state => ({ ...state, end: p }));
-              }}
+              onMouseDown={onPartialDown}
+              onTouchStart={onPartialDown}
               onMouseLeave={() => {
                 setPartialCursorState(state => ({
                   ...state,
@@ -493,34 +548,6 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                   start: null,
                   end: null
                 }));
-              }}
-              onMouseDown={ev => {
-                const p1 = getEventPoint(ev);
-                setPartialCursorState(state => ({
-                  ...state,
-                  start: p1,
-                  isSelecting: true
-                }));
-                window.addEventListener(
-                  "mouseup",
-                  ev => {
-                    const p2 = getEventPoint(ev);
-                    const partialCoords = calculatePartialCoords(p1, p2);
-                    const realX =
-                      partialCoordinates.x + partialCoords.x / sizeFactor;
-                    const realY =
-                      partialCoordinates.y + partialCoords.y / sizeFactor;
-                    const realWidth = partialCoords.width / sizeFactor;
-                    setSideLength(realWidth);
-                    setOffset({ y: realY, x: realX });
-                    setPartialCursorState(state => ({
-                      ...state,
-                      isSelecting: false,
-                      end: null
-                    }));
-                  },
-                  { once: true }
-                );
               }}
             />
             <SvgGridOverlay
