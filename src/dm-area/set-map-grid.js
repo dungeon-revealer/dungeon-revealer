@@ -3,7 +3,8 @@ import styled from "@emotion/styled/macro";
 import * as Icons from "../feather-icons";
 import * as Button from "../button";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
-import { loadImage, useLongPress } from "../util";
+import { loadImage } from "../util";
+import { useLongPress } from "../hooks/use-long-press";
 import { Input } from "../input";
 
 const Container = styled.div`
