@@ -13,7 +13,7 @@ module.exports = {
     "react-hooks/exhaustive-deps": [
       "warn",
       {
-        additionalHooks: "useAsyncEffect"
+        additionalHooks: "useAsyncEffect|useResetState"
       }
     ]
   },

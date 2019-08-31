@@ -13,7 +13,7 @@ const useUniqueId = () => {
 // hook that returns a tuple with two jsx nodes
 // the first node is the pattern definition which must be located inside the <defs></defs> section of an svg
 // the second node is a rect which uses the pattern definition. It must be placed inside the svg element.
-export const useGrid = (grid, dimensions, showGrid, gridColor) => {
+export const useSvgGrid = (grid, dimensions, showGrid, gridColor) => {
   const { width, height, ratio = 1 } = dimensions || {};
   const id = useUniqueId();
   const patternDefinition = useMemo(() => {

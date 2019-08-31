@@ -12,9 +12,11 @@ import { Toolbar } from "./../toolbar";
 import styled from "@emotion/styled/macro";
 import { ObjectLayer } from "../object-layer";
 import * as Icons from "../feather-icons";
-import { useGrid } from "./grid";
 import { useSocket } from "../socket";
 import { ToggleSwitch } from "../toggle-switch";
+import { useResetState } from "../hooks/use-reset-state";
+import { useOnClickOutside } from "../hooks/use-on-click-outside";
+import { useSvgGrid } from "../hooks/use-svg-grid";
 
 const ShapeButton = styled.button`
   border: none;
@@ -354,57 +356,6 @@ const parseMapColor = input => {
     rgba: [r, g, b, a]
   } = parseColor(input);
   return { r, g, b, a };
-};
-
-const useOnClickOutside = onClickOutside => {
-  const handlerRef = React.useRef(onClickOutside);
-  const elementRef = React.useRef(null);
-  if (onClickOutside !== handlerRef.current) {
-    handlerRef.current = onClickOutside;
-  }
-  useEffect(() => {
-    const handleClick = e => {
-      if (elementRef.current.contains(e.target)) {
-        return;
-      }
-      handlerRef.current(e);
-    };
-
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  return elementRef;
-};
-
-// useState that recreates the initial value in case the deps change
-const NO_VALUE_SYMBOL = Symbol("USE_RESET_STATE_NO_VALUE");
-const useResetState = (createValue, deps = []) => {
-  const [, triggerRerender] = useState(createValue);
-  const stateRef = useRef(NO_VALUE_SYMBOL);
-  const depsRef = useRef(deps);
-
-  if (stateRef.current === NO_VALUE_SYMBOL) {
-    stateRef.current = createValue();
-  }
-  if (depsRef.current.some((value, index) => value !== deps[index])) {
-    depsRef.current = deps;
-    stateRef.current = createValue();
-  }
-
-  const setState = useCallback(
-    newState => {
-      if (typeof newState === "function") {
-        stateRef.current = newState(stateRef.current);
-      } else {
-        stateRef.current = newState;
-      }
-      triggerRerender(i => i + 1);
-    },
-    [triggerRerender]
-  );
-
-  return [stateRef.current, setState];
 };
 
 /**
@@ -859,7 +810,7 @@ export const DmMap = ({
   const isCurrentMapLive = liveMapId && loadedMapId === liveMapId;
   const isOtherMapLive = liveMapId && loadedMapId !== liveMapId;
 
-  const [gridPatternDefinition, gridRectangleElement] = useGrid(
+  const [gridPatternDefinition, gridRectangleElement] = useSvgGrid(
     map.grid,
     mapCanvasDimensions,
     map.showGrid,
