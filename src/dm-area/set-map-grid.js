@@ -576,8 +576,8 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                 </pattern>
               </defs>
               <rect
-                width={image.width}
-                height={image.height}
+                width={partialCoordinates.width * sizeFactor}
+                height={partialCoordinates.height * sizeFactor}
                 fill="url(#grid1)"
                 x={0}
                 y={0}
