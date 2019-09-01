@@ -17,7 +17,7 @@ const MapContainer = styled.div`
   position: relative;
   height: 100vh;
   width: 100vw;
-  overflow-y: scroll;
+  overflow: hidden;
 `;
 
 const ToolbarContainer = styled.div`
@@ -277,8 +277,6 @@ const OffsetControls = ({ offset, setOffset }) => {
   );
 };
 
-const sizeFactor = 5;
-
 const PartialCursor = ({ isSelecting, start, end }) => {
   if (!start) return null;
   if (!isSelecting && start) {
@@ -320,6 +318,8 @@ const PartialCursor = ({ isSelecting, start, end }) => {
   return null;
 };
 
+const sizeFactor = 5;
+
 export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
   const [image, setImage] = useState(null);
   const [sideLength, setSideLength] = useState(
@@ -330,15 +330,15 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
     y: map.grid ? map.grid.y : 0
   });
 
+  const [partialSideLength, setPartialSideLength] = useState(120);
+
   const canvasRef = useRef();
   const partialCanvasRef = useRef();
-  const [step, setStep] = useState("MOVE_BLUE_SQUARE");
-  const [partialCoordinates, setPartialCoordinates] = useState({
-    x: 0,
-    y: 0,
-    width: 120,
-    height: 120
-  });
+  const [step, setStep] = useState("SELECT_PARTIAL");
+  const [partialCoordinates, setPartialCoordinates] = useState(() => ({
+    x: Math.ceil(window.innerWidth / 2) - partialSideLength / 2,
+    y: Math.ceil(window.innerHeight / 2) - partialSideLength / 2
+  }));
 
   const gridRef = useRef(null);
   const blueBoxRef = useRef(null);
@@ -366,14 +366,14 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
       canvas,
       partialCoordinates.x,
       partialCoordinates.y,
-      partialCoordinates.width,
-      partialCoordinates.height,
+      partialSideLength,
+      partialSideLength,
       0,
       0,
       partialCanvas.width,
       partialCanvas.height
     );
-  }, [partialCoordinates, image]);
+  }, [partialCoordinates, image, partialSideLength]);
 
   const [partialCursorState, setPartialCursorState] = useState({
     isSelecting: false,
@@ -385,7 +385,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
 
   const onBlueBoxDown = useCallback(
     ev => {
-      if (step !== "MOVE_BLUE_SQUARE") return;
+      if (step !== "SELECT_PARTIAL") return;
       const offset = getSvgMousePosition(gridRef.current, ev);
       offset.x -= parseFloat(ev.target.getAttributeNS(null, "x"));
       offset.y -= parseFloat(ev.target.getAttributeNS(null, "y"));
@@ -511,14 +511,14 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
               />
               <rect
                 ref={blueBoxRef}
-                width={partialCoordinates.width}
-                height={partialCoordinates.height}
+                width={partialSideLength}
+                height={partialSideLength}
                 x={partialCoordinates.x}
                 y={partialCoordinates.y}
                 stroke="blue"
                 fill="transparent"
                 strokeWidth="2"
-                cursor={step === "MOVE_BLUE_SQUARE" ? "move" : undefined}
+                cursor={step === "SELECT_PARTIAL" ? "move" : undefined}
                 onMouseDown={onBlueBoxDown}
                 onTouchStart={onBlueBoxDown}
               />
@@ -528,7 +528,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
       </MapContainer>
       {partialCoordinates && image ? (
         <PartialContainer
-          style={{ display: step === "SELECT_GRID_BASE" ? undefined : "none" }}
+          style={{ display: step === "SELECT_GRID" ? undefined : "none" }}
         >
           <div
             style={{
@@ -537,8 +537,8 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
           >
             <canvas
               ref={partialCanvasRef}
-              width={partialCoordinates.width * sizeFactor}
-              height={partialCoordinates.height * sizeFactor}
+              width={partialSideLength * sizeFactor}
+              height={partialSideLength * sizeFactor}
               onMouseDown={onPartialDown}
               onTouchStart={onPartialDown}
               onMouseLeave={() => {
@@ -551,10 +551,10 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
               }}
             />
             <SvgGridOverlay
-              viewBox={`0 0 ${partialCoordinates.width *
-                sizeFactor} ${partialCoordinates.height * sizeFactor}`}
-              height={partialCoordinates.height * sizeFactor}
-              width={partialCoordinates.width * sizeFactor}
+              viewBox={`0 0 ${partialSideLength *
+                sizeFactor} ${partialSideLength * sizeFactor}`}
+              height={partialSideLength * sizeFactor}
+              width={partialSideLength * sizeFactor}
               style={{ pointerEvents: "none" }}
             >
               <defs>
@@ -576,8 +576,8 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                 </pattern>
               </defs>
               <rect
-                width={partialCoordinates.width * sizeFactor}
-                height={partialCoordinates.height * sizeFactor}
+                width={partialSideLength * sizeFactor}
+                height={partialSideLength * sizeFactor}
                 fill="url(#grid1)"
                 x={0}
                 y={0}
@@ -610,7 +610,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
         }}
       >
         <InstructionBubble>
-          {step === "MOVE_BLUE_SQUARE" ? (
+          {step === "SELECT_PARTIAL" ? (
             <>
               <h1>
                 Move the blue square to a area where you want to select your
@@ -630,7 +630,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                 <div>
                   <Button.Primary
                     onClick={() => {
-                      setStep("SELECT_GRID_BASE");
+                      setStep("SELECT_GRID");
                     }}
                   >
                     <span>Next</span> <Icons.ChevronRightIcon />
@@ -638,7 +638,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                 </div>
               </InstructionBubbleActions>
             </>
-          ) : step === "SELECT_GRID_BASE" ? (
+          ) : step === "SELECT_GRID" ? (
             <>
               <h1>Select a single grid square</h1>
               <InstructionBubbleActions>
@@ -656,7 +656,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                   <Button.Primary
                     style={{ marginRight: 16 }}
                     onClick={() => {
-                      setStep("MOVE_BLUE_SQUARE");
+                      setStep("SELECT_PARTIAL");
                     }}
                   >
                     <Icons.ChevronLeftIcon /> <span>Back</span>
@@ -665,7 +665,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                 <div>
                   <Button.Primary
                     onClick={() => {
-                      setStep("FINE_TUNE_VALUES");
+                      setStep("FINE_TUNE_GRID");
                     }}
                   >
                     <span>Next</span> <Icons.ChevronRightIcon />
@@ -673,7 +673,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                 </div>
               </InstructionBubbleActions>
             </>
-          ) : step === "FINE_TUNE_VALUES" ? (
+          ) : step === "FINE_TUNE_GRID" ? (
             <>
               <h1>Fine tune grid values</h1>
               <InstructionBubbleActions>
@@ -691,7 +691,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                   <Button.Primary
                     style={{ marginRight: 16 }}
                     onClick={() => {
-                      setStep("SELECT_GRID_BASE");
+                      setStep("SELECT_GRID");
                     }}
                   >
                     <Icons.ChevronLeftIcon /> <span>Back</span>
@@ -717,24 +717,56 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
         </InstructionBubble>
       </div>
 
-      {step === "FINE_TUNE_VALUES" ? (
-        <ToolbarContainer>
-          <div
-            style={{
-              backgroundColor: "white",
-              padding: 20,
-              borderRadius: 16,
-              marginRight: 16
-            }}
-          >
-            <SideLengthControls
-              sideLength={sideLength}
-              setSideLength={setSideLength}
-            />
+      {step === "FINE_TUNE_GRID" || step === "SELECT_PARTIAL" ? (
+        step === "FINE_TUNE_GRID" ? (
+          <ToolbarContainer>
+            <div
+              style={{
+                backgroundColor: "white",
+                padding: 20,
+                borderRadius: 16,
+                marginRight: 16
+              }}
+            >
+              <SideLengthControls
+                sideLength={sideLength}
+                setSideLength={setSideLength}
+              />
 
-            <OffsetControls offset={offset} setOffset={setOffset} />
-          </div>
-        </ToolbarContainer>
+              <OffsetControls offset={offset} setOffset={setOffset} />
+            </div>
+          </ToolbarContainer>
+        ) : (
+          <ToolbarContainer>
+            <div
+              style={{
+                backgroundColor: "white",
+                padding: 20,
+                borderRadius: 16,
+                marginRight: 16
+              }}
+            >
+              <label style={{ display: "flex", alignItems: "center" }}>
+                <div
+                  style={{ flexGrow: 1, fontWeight: "bold", marginRight: 16 }}
+                >
+                  Selection Size
+                </div>
+                <div>
+                  <input
+                    type="range"
+                    value={partialSideLength}
+                    onChange={ev =>
+                      setPartialSideLength(Math.ceil(ev.target.value))
+                    }
+                    min="100"
+                    max="200"
+                  />
+                </div>
+              </label>
+            </div>
+          </ToolbarContainer>
+        )
       ) : null}
     </Container>
   );
