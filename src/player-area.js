@@ -83,30 +83,30 @@ export const PlayerArea = () => {
   };
 
   useAsyncEffect(
-    function* () {
-      socket.on("connect", function () {
+    function*() {
+      socket.on("connect", function() {
         console.log("connected to server");
       });
 
-      socket.on("reconnecting", function () {
+      socket.on("reconnecting", function() {
         console.log("reconnecting to server");
       });
 
-      socket.on("reconnect", function () {
+      socket.on("reconnect", function() {
         console.log("reconnected to server");
       });
 
-      socket.on("reconnect_failed", function () {
+      socket.on("reconnect_failed", function() {
         console.log("reconnect failed!");
       });
 
-      socket.on("disconnect", function () {
+      socket.on("disconnect", function() {
         console.log("disconnected from server");
       });
 
       socket.on("add token", async data => {
         setTokens(tokens => [
-          ...tokens,
+          ...tokens.filter(token => token.id !== data.id),
           {
             id: data.id,
             x: data.x * mapCanvasDimensions.current.ratio,
@@ -114,7 +114,7 @@ export const PlayerArea = () => {
             radius: data.radius * mapCanvasDimensions.current.ratio,
             color: data.color
           }
-        ].filter(area => area.id !== data.id));
+        ]);
       });
 
       socket.on("remove token", async data => {

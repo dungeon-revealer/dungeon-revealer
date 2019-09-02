@@ -17,7 +17,7 @@ import { ToggleSwitch } from "../toggle-switch";
 import { useResetState } from "../hooks/use-reset-state";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useSvgGrid } from "../hooks/use-svg-grid";
-import { CirclePicker, GithubPicker } from "react-color";
+import { CirclePicker } from "react-color";
 
 const ShapeButton = styled.button`
   border: none;
@@ -51,7 +51,7 @@ const distanceBetweenCords = (cords1, cords2) => {
 };
 
 const orderByProperty = (prop, ...args) => {
-  return function (a, b) {
+  return function(a, b) {
     const equality = a[prop] - b[prop];
     if (equality === 0 && arguments.length > 1) {
       return orderByProperty.apply(null, args)(a, b);
@@ -132,13 +132,13 @@ const findOptimalRhombus = (pointCurrent, pointPrevious, lineWidth) => {
   }
 
   // count distinct distances into counts object
-  allPoints.forEach(function (x) {
+  allPoints.forEach(function(x) {
     const distance = x.distance;
     counts[distance] = (counts[distance] || 0) + 1;
   });
 
   // Sort allPoints by distance
-  allPoints.sort(function (a, b) {
+  allPoints.sort(function(a, b) {
     return a.distance - b.distance;
   });
 
@@ -426,7 +426,6 @@ export const DmMap = ({
   const latestMapCanvasDimensions = useRef(null);
   latestMapCanvasDimensions.current = mapCanvasDimensions;
 
-
   const objectSvgRef = useRef(null);
   const [markedAreas, setMarkedAreas] = useState(() => []);
   const [tokens, setTokens] = useState(() => []);
@@ -689,16 +688,17 @@ export const DmMap = ({
 
   useEffect(() => {
     socket.on("add token", async data => {
+      const { ratio } = latestMapCanvasDimensions.current;
       setTokens(tokens => [
-        ...tokens,
+        ...tokens.filter(area => area.id !== data.id),
         {
           id: data.id,
-          x: data.x * mapCanvasDimensions.current.ratio,
-          y: data.y * mapCanvasDimensions.current.ratio,
-          radius: data.radius * mapCanvasDimensions.current.ratio,
+          x: data.x * ratio,
+          y: data.y * ratio,
+          radius: data.radius * ratio,
           color: data.color
         }
-      ].filter(area => area.id !== data.id));
+      ]);
     });
 
     socket.on("mark area", async data => {
@@ -874,11 +874,11 @@ export const DmMap = ({
             );
             const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
             const token = [...document.querySelectorAll(".tokenCircle")].filter(
-              function (circle) {
+              function(circle) {
                 return (
                   Math.sqrt(
                     Math.pow(circle.cx.baseVal.value - x, 2) +
-                    Math.pow(circle.cy.baseVal.value - y, 2)
+                      Math.pow(circle.cy.baseVal.value - y, 2)
                   ) < circle.r.baseVal.value
                 );
               }
@@ -941,7 +941,6 @@ export const DmMap = ({
           <canvas
             ref={mapCanvasRef}
             style={{ position: "absolute" }}
-
             onMouseMove={ev => {
               if (tool === "move" || tool === "mark") {
                 return;
@@ -1179,11 +1178,11 @@ export const DmMap = ({
                 <Icons.Label color="hsl(48, 94%, 68%)">Live</Icons.Label>
               </Toolbar.Item>
             ) : (
-                  <Toolbar.Item data-tooltip="A different map is live">
-                    <Icons.RadioIcon style={{ stroke: "hsl(211, 27%, 70%)" }} />
-                    <Icons.Label color="hsl(211, 27%, 70%)">Not Live</Icons.Label>
-                  </Toolbar.Item>
-                )}
+              <Toolbar.Item data-tooltip="A different map is live">
+                <Icons.RadioIcon style={{ stroke: "hsl(211, 27%, 70%)" }} />
+                <Icons.Label color="hsl(211, 27%, 70%)">Not Live</Icons.Label>
+              </Toolbar.Item>
+            )}
             <Toolbar.Item isEnabled>
               <Toolbar.Button
                 onClick={async () => {
@@ -1360,7 +1359,7 @@ export const DmMap = ({
                   />
                   <h6>Token Color</h6>
                   <div>
-                    <GithubPicker
+                    <CirclePicker
                       onChange={(color, ev) => {
                         setTokenColor(color);
                       }}
@@ -1387,11 +1386,11 @@ export const DmMap = ({
                     <Icons.Label>Shroud</Icons.Label>
                   </>
                 ) : (
-                    <>
-                      <Icons.EyeIcon fill="rgba(0, 0, 0, 1)" />
-                      <Icons.Label>Reveal</Icons.Label>
-                    </>
-                  )}
+                  <>
+                    <Icons.EyeIcon fill="rgba(0, 0, 0, 1)" />
+                    <Icons.Label>Reveal</Icons.Label>
+                  </>
+                )}
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item isEnabled>
