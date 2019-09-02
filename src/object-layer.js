@@ -125,8 +125,7 @@ const TokenMarker = React.memo(({ x, y, id, radius, color }) => {
 });
 
 export const ObjectLayer = React.forwardRef(
-
-  ({ areaMarkers, removeAreaMarker, defs, children, tokens, removeToken }, ref) => {
+  ({ areaMarkers, removeAreaMarker, defs, children, tokens }, ref) => {
     return (
       <svg
         ref={ref}
