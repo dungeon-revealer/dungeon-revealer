@@ -50,7 +50,11 @@ class Maps {
       fogProgressPath: null,
       // progress becomes live when DM publishes map
       fogLivePath: null,
-      mapPath
+      mapPath,
+      grid: null,
+      showGrid: false,
+      showGridToPlayers: false,
+      gridColor: "rgba(0, 0, 0, 0.5)"
     };
 
     fs.moveSync(file.path, path.join(mapDirectory, id, mapPath));
@@ -81,31 +85,36 @@ class Maps {
     return map;
   }
 
-  async updateFogProgressImage(id, imageData) {
+  async updateFogProgressImage(id, fileStream) {
     const map = this.maps.find(map => map.id === id);
     if (!map) {
       throw new Error(`Map with id "${id}" not found.`);
     }
+    const mapFolderPath = path.join(mapDirectory, id);
     if (map.fogProgressPath) {
-      fs.removeSync(path.join(mapDirectory, id, map.fogProgressPath));
+      fs.removeSync(path.join(mapFolderPath, map.fogProgressPath));
     }
 
     const newMapData = {
       fogProgressPath: "fog.progress.png"
     };
 
-    fs.writeFileSync(
-      path.join(mapDirectory, id, newMapData.fogProgressPath),
-      imageData,
-      "base64"
+    const writeStream = fs.createWriteStream(
+      path.join(mapFolderPath, newMapData.fogProgressPath)
     );
+    fileStream.pipe(writeStream);
 
-    await this.updateMapSettings(id, newMapData);
-
-    return map;
+    return new Promise((res, rej) => {
+      writeStream.on("close", err => {
+        if (err) {
+          return rej(err);
+        }
+        res(this.updateMapSettings(id, newMapData));
+      });
+    });
   }
 
-  async updateFogLiveImage(id, imageData) {
+  async updateFogLiveImage(id, fileStream) {
     const map = this.maps.find(map => map.id === id);
     if (!map) {
       throw new Error(`Map with id "${id}" not found.`);
@@ -123,16 +132,34 @@ class Maps {
       fs.removeSync(path.join(mapDirectory, id, map.fogLivePath));
     }
 
-    fs.writeFileSync(
-      path.join(mapDirectory, id, newMapData.fogLivePath),
-      imageData,
-      "base64"
+    const liveFogWriteStream = fs.createWriteStream(
+      path.join(mapDirectory, id, newMapData.fogLivePath)
     );
-    fs.writeFileSync(
-      path.join(mapDirectory, id, newMapData.fogProgressPath),
-      imageData,
-      "base64"
+    fileStream.pipe(liveFogWriteStream);
+
+    const fogProgressWriteStream = fs.createWriteStream(
+      path.join(mapDirectory, id, newMapData.fogProgressPath)
     );
+    fileStream.pipe(fogProgressWriteStream);
+
+    await Promise.all([
+      new Promise((res, rej) => {
+        liveFogWriteStream.on("close", err => {
+          if (err) {
+            return rej(err);
+          }
+          res();
+        });
+      }),
+      new Promise((res, rej) => {
+        fogProgressWriteStream.on("close", err => {
+          if (err) {
+            return rej(err);
+          }
+          res();
+        });
+      })
+    ]);
 
     await this.updateMapSettings(id, newMapData);
 

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from "react";
+
 import styled from "@emotion/styled/macro";
 import { Modal, ModalDialogSize } from "./modal";
 import * as Icons from "../feather-icons";
@@ -85,7 +86,8 @@ export const SelectMapModal = ({
   deleteMap,
   updateMap,
   createMap,
-  canClose
+  canClose,
+  enterGridMode
 }) => {
   const [activeMapId, setActiveMapId] = useState(loadedMapId);
   const [modalType, setModalType] = useState(null);
@@ -221,7 +223,8 @@ export const SelectMapModal = ({
                       beforeCreateMap(file);
                     }}
                   >
-                    <Icons.PlusIcon height={20} width={20} /> Create New Map
+                    <Icons.PlusIcon height={20} width={20} />{" "}
+                    <span>Create New Map</span>
                   </CreateNewMapButton>
                 </div>
               </div>
@@ -293,7 +296,19 @@ export const SelectMapModal = ({
                         setModalType(ModalType.DELETE_MAP);
                       }}
                     >
-                      <Icons.TrashIcon height={20} width={20} /> Delete
+                      <Icons.TrashIcon height={20} width={20} />
+                      <span>Delete</span>
+                    </Button.Tertiary>
+                  </div>
+                  <div>
+                    <Button.Tertiary
+                      tabIndex="2"
+                      onClick={() => {
+                        enterGridMode(activeMap.id);
+                      }}
+                    >
+                      <Icons.GridIcon height={20} width={20} />
+                      <span>Grid</span>
                     </Button.Tertiary>
                   </div>
 
@@ -304,7 +319,8 @@ export const SelectMapModal = ({
                         setLoadedMapId(activeMap.id);
                       }}
                     >
-                      <Icons.CheckIcon height={20} width={20} /> Load Map
+                      <Icons.CheckIcon height={20} width={20} />
+                      <span>Load Map</span>
                     </Button.Primary>
                   </div>
                 </div>

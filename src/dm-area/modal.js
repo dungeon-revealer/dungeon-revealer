@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { disableBodyScroll, enableBodyScroll } from "body-scroll-lock";
 import FocusTrap from "focus-trap-react";
 import styled from "@emotion/styled/macro";
-import { useStaticRef } from "../util";
+import { useStaticRef } from "../hooks/use-static-ref";
 
 const modalRoot = document.getElementById("modal");
 if (!modalRoot) {

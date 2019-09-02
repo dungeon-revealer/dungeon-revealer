@@ -9,10 +9,14 @@ const ButtonBase = styled.button`
   font-size: ${p => (p.big ? `24px` : `18px`)};
   font-weight: 700;
   line-height: 1.25;
-  padding: ${p => (p.big ? `1.5rem 2rem` : `1rem 1.5rem`)};
+  padding: ${p =>
+    p.big ? `1.5rem 2rem` : p.small ? `0.5rem 1.5rem` : `1rem 1.5rem`};
   width: ${p => (p.fullWidth ? "100%" : null)};
-  > svg {
-    margin-right: ${p => (p.iconOnly ? null : `1rem`)};
+  > svg + span {
+    margin-left: ${p => (p.iconOnly ? null : `1rem`)};
+  }
+  > span + svg {
+    margin-left: ${p => (p.iconOnly ? null : `1rem`)};
   }
 `;
 
@@ -25,9 +29,6 @@ export const Primary = styled(ButtonBase)`
   &:hover {
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
     background-color: #0a6c74;
-  }
-  > svg {
-    margin-right: 1rem;
   }
 `;
 
