@@ -37,6 +37,19 @@ const SvgGridOverlay = styled.svg`
   left: 0;
 `;
 
+const InstructionBubbleContainer = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  padding-top: 20px;
+  padding-left: 24px;
+  padding-right: 24px;
+`;
+
 const InstructionBubble = styled.div`
   pointer-events: all;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
@@ -608,18 +621,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
         </PartialContainer>
       ) : null}
 
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          display: "flex",
-          justifyContent: "center",
-          pointerEvents: "none",
-          paddingTop: "20px"
-        }}
-      >
+      <InstructionBubbleContainer>
         <InstructionBubble>
           {step === "SELECT_PARTIAL" ? (
             <>
@@ -726,7 +728,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
             </>
           ) : null}
         </InstructionBubble>
-      </div>
+      </InstructionBubbleContainer>
 
       {step === "FINE_TUNE_GRID" || step === "SELECT_PARTIAL" ? (
         step === "FINE_TUNE_GRID" ? (
@@ -754,7 +756,8 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                 backgroundColor: "white",
                 padding: 20,
                 borderRadius: 16,
-                marginRight: 16
+                marginRight: 24,
+                marginLeft: 24
               }}
             >
               <label style={{ display: "flex", alignItems: "center" }}>
