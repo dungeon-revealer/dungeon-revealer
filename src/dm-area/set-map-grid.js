@@ -6,6 +6,7 @@ import useAsyncEffect from "@n1ru4l/use-async-effect";
 import { loadImage } from "../util";
 import { useLongPress } from "../hooks/use-long-press";
 import { Input } from "../input";
+import { useStaticRef } from "../hooks/use-static-ref";
 
 const Container = styled.div`
   height: 100vh;
@@ -331,14 +332,12 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
   });
 
   const [partialSideLength, setPartialSideLength] = useState(120);
+  const initialPartialSideLength = useStaticRef(() => partialSideLength);
 
   const canvasRef = useRef();
   const partialCanvasRef = useRef();
   const [step, setStep] = useState("SELECT_PARTIAL");
-  const [partialCoordinates, setPartialCoordinates] = useState(() => ({
-    x: Math.ceil(window.innerWidth / 2) - partialSideLength / 2,
-    y: Math.ceil(window.innerHeight / 2) - partialSideLength / 2
-  }));
+  const [partialCoordinates, setPartialCoordinates] = useState(null);
 
   const gridRef = useRef(null);
   const blueBoxRef = useRef(null);
@@ -353,12 +352,20 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
       const canvas = canvasRef.current;
       const context = canvas.getContext("2d");
       context.drawImage(image, 0, 0);
+      setPartialCoordinates({
+        x:
+          Math.min(Math.ceil(window.innerWidth / 2), image.width / 2) -
+          initialPartialSideLength / 2,
+        y:
+          Math.min(Math.ceil(window.innerHeight / 2), image.height / 2) -
+          initialPartialSideLength / 2
+      });
     },
-    [map]
+    [map, initialPartialSideLength]
   );
 
   useEffect(() => {
-    if (!partialCanvasRef.current) return;
+    if (!partialCanvasRef.current || !partialCoordinates) return;
     const canvas = canvasRef.current;
     const partialCanvas = partialCanvasRef.current;
     const partialContext = partialCanvas.getContext("2d");
@@ -395,9 +402,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
 
         setPartialCoordinates({
           x: coords.x - offset.x,
-          y: coords.y - offset.y,
-          width: 120,
-          height: 120
+          y: coords.y - offset.y
         });
       };
       window.addEventListener("mousemove", listener);
@@ -461,7 +466,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
       window.addEventListener("mousemove", moveListener);
       window.addEventListener("touchmove", moveListener);
     },
-    [partialCoordinates.x, partialCoordinates.y]
+    [partialCoordinates]
   );
 
   return (
@@ -509,19 +514,21 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
                 x={offset.x}
                 y={offset.y}
               />
-              <rect
-                ref={blueBoxRef}
-                width={partialSideLength}
-                height={partialSideLength}
-                x={partialCoordinates.x}
-                y={partialCoordinates.y}
-                stroke="blue"
-                fill="transparent"
-                strokeWidth="2"
-                cursor={step === "SELECT_PARTIAL" ? "move" : undefined}
-                onMouseDown={onBlueBoxDown}
-                onTouchStart={onBlueBoxDown}
-              />
+              {partialCoordinates && step !== "FINE_TUNE_GRID" ? (
+                <rect
+                  ref={blueBoxRef}
+                  width={partialSideLength}
+                  height={partialSideLength}
+                  x={partialCoordinates.x}
+                  y={partialCoordinates.y}
+                  stroke="blue"
+                  fill="transparent"
+                  strokeWidth="2"
+                  cursor={step === "SELECT_PARTIAL" ? "move" : undefined}
+                  onMouseDown={onBlueBoxDown}
+                  onTouchStart={onBlueBoxDown}
+                />
+              ) : null}
             </SvgGridOverlay>
           </>
         ) : null}
