@@ -1,14 +1,5 @@
-import React, { useMemo, useRef } from "react";
-import uniqueId from "lodash/uniqueId";
-
-// hook that returns a unique id which stays the same as long as the in which the hook is used does not unmount
-const useUniqueId = () => {
-  const ref = useRef();
-  if (!ref.current) {
-    ref.current = uniqueId();
-  }
-  return ref.current;
-};
+import React, { useMemo } from "react";
+import { useUniqueId } from "./use-unique-id";
 
 // hook that returns a tuple with two jsx nodes
 // the first node is the pattern definition which must be located inside the <defs></defs> section of an svg

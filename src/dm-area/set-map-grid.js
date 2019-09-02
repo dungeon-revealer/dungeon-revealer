@@ -7,6 +7,7 @@ import { loadImage } from "../util";
 import { useLongPress } from "../hooks/use-long-press";
 import { Input } from "../input";
 import { useStaticRef } from "../hooks/use-static-ref";
+import { useUniqueId } from "../hooks/use-unique-id";
 
 const Container = styled.div`
   height: 100vh;
@@ -331,6 +332,9 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
     y: map.grid ? map.grid.y : 0
   });
 
+  const gridId = useUniqueId();
+  const partialGridId = useUniqueId();
+
   const [partialSideLength, setPartialSideLength] = useState(120);
   const initialPartialSideLength = useStaticRef(() => partialSideLength);
 
@@ -483,7 +487,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
             >
               <defs>
                 <pattern
-                  id="grid"
+                  id={gridId}
                   width={sideLength}
                   height={sideLength}
                   patternUnits="userSpaceOnUse"
@@ -501,7 +505,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
               <rect
                 width={image.width}
                 height={image.height}
-                fill="url(#grid)"
+                fill={`url(#${gridId})`}
                 x={0}
                 y={0}
               />
@@ -566,7 +570,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
             >
               <defs>
                 <pattern
-                  id="grid1"
+                  id={partialGridId}
                   width={sideLength * sizeFactor}
                   height={sideLength * sizeFactor}
                   patternUnits="userSpaceOnUse"
@@ -585,7 +589,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
               <rect
                 width={partialSideLength * sizeFactor}
                 height={partialSideLength * sizeFactor}
-                fill="url(#grid1)"
+                fill={`url(#${partialGridId})`}
                 x={0}
                 y={0}
               />
