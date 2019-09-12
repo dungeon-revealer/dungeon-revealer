@@ -1,15 +1,22 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import io from "socket.io-client";
+
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
 import { PanZoom } from "react-easy-panzoom";
 import ReactTooltip from "react-tooltip";
 import Referentiel from "referentiel";
+import { AlphaPicker, HuePicker } from "react-color";
+import parseColor from "parse-color";
 import { loadImage, getOptimalDimensions, ConditionalWrap } from "./../util";
 import { Toolbar } from "./../toolbar";
-import styled from "@emotion/styled";
+import styled from "@emotion/styled/macro";
 import { ObjectLayer } from "../object-layer";
 import * as Icons from "../feather-icons";
+import { useSocket } from "../socket";
+import { ToggleSwitch } from "../toggle-switch";
+import { useResetState } from "../hooks/use-reset-state";
+import { useOnClickOutside } from "../hooks/use-on-click-outside";
+import { useSvgGrid } from "../hooks/use-svg-grid";
 
 const ShapeButton = styled.button`
   border: none;
@@ -183,26 +190,213 @@ const useBrushShapeState = createPersistedState("dm.settings.brushShape");
 const useToolState = createPersistedState("dm.settings.tool");
 const useLineWidthState = createPersistedState("dm.settings.lineWidth");
 
+const calculateRectProps = (p1, p2) => {
+  const width = Math.max(p1.x, p2.x) - Math.min(p1.x, p2.x);
+  const height = Math.max(p1.y, p2.y) - Math.min(p1.y, p2.y);
+  const x = Math.min(p1.x, p2.x);
+  const y = Math.min(p1.y, p2.y);
+
+  return { x, y, width, height };
+};
+
+const reduceOffsetToMinimum = (offset, sideLength) => {
+  const newOffset = offset - sideLength;
+  if (newOffset > 0) return reduceOffsetToMinimum(newOffset, sideLength);
+  return offset;
+};
+
+const getNextPossibleLowerValue = (value, maximum, step) => {
+  const newValue = value + step;
+  if (newValue < maximum) {
+    return getNextPossibleLowerValue(newValue, maximum, step);
+  }
+  return value;
+};
+
+const getSnappedSelectionMask = (grid, ratio, selection) => {
+  const xMinimum = reduceOffsetToMinimum(
+    grid.x * ratio,
+    grid.sideLength * ratio
+  );
+  const yMinimum = reduceOffsetToMinimum(
+    grid.y * ratio,
+    grid.sideLength * ratio
+  );
+
+  const x1 = getNextPossibleLowerValue(
+    xMinimum,
+    selection.x,
+    grid.sideLength * ratio
+  );
+  const y1 = getNextPossibleLowerValue(
+    yMinimum,
+    selection.y,
+    grid.sideLength * ratio
+  );
+
+  const x2 = getNextPossibleLowerValue(
+    xMinimum,
+    selection.x + selection.width,
+    grid.sideLength * ratio
+  );
+  const y2 = getNextPossibleLowerValue(
+    yMinimum,
+    selection.y + selection.height,
+    grid.sideLength * ratio
+  );
+
+  const p1 = { x: x1, y: y1 };
+  const p2 = {
+    x: x2 + grid.sideLength * ratio,
+    y: y2 + grid.sideLength * ratio
+  };
+
+  return calculateRectProps(p1, p2);
+};
+
+const Cursor = ({
+  coordinates,
+  tool,
+  brushShape,
+  lineWidth,
+  areaSelectStart,
+  showGrid,
+  grid,
+  ratio
+}) => {
+  if (!coordinates) return null;
+  if (tool === "area") {
+    if (
+      areaSelectStart &&
+      areaSelectStart.x !== coordinates.x &&
+      areaSelectStart.y !== coordinates.y
+    ) {
+      const selection = calculateRectProps(coordinates, areaSelectStart);
+
+      let snappedSelection = null;
+      if (showGrid && grid) {
+        const snappedSelectionMask = getSnappedSelectionMask(
+          grid,
+          ratio,
+          selection
+        );
+        snappedSelection = (
+          <rect fill="rgba(0, 255, 255, .5)" {...snappedSelectionMask} />
+        );
+      }
+
+      return (
+        <>
+          {snappedSelection}
+          <rect
+            stroke="aqua"
+            strokeWidth="2"
+            fill="transparent"
+            {...selection}
+          />
+        </>
+      );
+    }
+    return (
+      <g transform={`translate(${coordinates.x}, ${coordinates.y})`}>
+        <line
+          x1="-10"
+          x2="10"
+          y2="0"
+          y1="0"
+          stroke="aqua"
+          strokeWidth="2"
+        ></line>
+        <line
+          y1="-10"
+          y2="10"
+          x1="0"
+          x2="0"
+          stroke="aqua"
+          strokeWidth="2"
+        ></line>
+      </g>
+    );
+  } else if (tool === "brush") {
+    if (brushShape === "round") {
+      return (
+        <circle
+          cy={coordinates.y}
+          cx={coordinates.x}
+          r={lineWidth / 2 - 2}
+          fill="transparent"
+          strokeWidth="2"
+          stroke="aqua"
+        />
+      );
+    } else if (brushShape === "square") {
+      return (
+        <rect
+          x={coordinates.x - lineWidth / 2}
+          y={coordinates.y - lineWidth / 2}
+          width={lineWidth - 2}
+          height={lineWidth - 2}
+          fill="transparent"
+          strokeWidth="2"
+          stroke="aqua"
+        />
+      );
+    }
+  }
+
+  return null;
+};
+
+const fallbackGridColor = { r: 0, g: 0, b: 0, a: 0.5 };
+
+const buildRGBAColorString = ({ r, g, b, a }) => `rgba(${r}, ${g}, ${b}, ${a})`;
+const parseMapColor = input => {
+  if (!input) return fallbackGridColor;
+  const {
+    rgba: [r, g, b, a]
+  } = parseColor(input);
+  return { r, g, b, a };
+};
+
 /**
  * loadedMapId = id of the map that is currently visible in the editor
  * liveMapId = id of the map that is currently visible to the players
  */
 export const DmMap = ({
+  map,
   loadedMapId,
   liveMapId,
   sendLiveMap,
   hideMap,
-  showMapModal
+  showMapModal,
+  enterGridMode,
+  updateMap
 }) => {
   const mapContainerRef = useRef(null);
   const mapCanvasRef = useRef(null);
+  const mapImageCanvasRef = useRef(null);
   const fogCanvasRef = useRef(null);
-  const mouseCanvasRef = useRef(null);
   const drawState = useRef({ isDrawing: false, lastCoords: null });
   const areaDrawState = useRef({ startCoords: null, currentCoords: null });
   const hasPreviousMap = useRef(false);
   const panZoomRef = useRef(null);
   const panZoomReferentialRef = useRef(null);
+  const socket = useSocket();
+  const [cursorCoordinates, setCursorCoodinates] = useState(null);
+  const [
+    areaSelectionStartCoordinates,
+    setAreaSelectionStartCoordinates
+  ] = useState(null);
+  const [showGridSettings, setShowGridSettings] = useState(false);
+
+  const [gridColor, setGridColor] = useResetState(
+    () => parseMapColor(map.gridColor),
+    [map.gridColor]
+  );
+
+  const onGridColorChangeComplete = useCallback(() => {
+    updateMap(map.id, { gridColor: buildRGBAColorString(gridColor) });
+  }, [map, updateMap, gridColor]);
 
   /**
    * function for saving the fog to the server.
@@ -215,8 +409,14 @@ export const DmMap = ({
   const [lineWidth, setLineWidth] = useLineWidthState(15);
 
   // marker related stuff
-  const socketRef = useRef(null);
-  const mapCanvasDimensions = useRef(null);
+  const [mapCanvasDimensions, setMapCanvasDimensions] = useState({
+    width: 0,
+    height: 0,
+    ratio: 1
+  });
+  const latestMapCanvasDimensions = useRef(null);
+  latestMapCanvasDimensions.current = mapCanvasDimensions;
+
   const objectSvgRef = useRef(null);
   const [markedAreas, setMarkedAreas] = useState(() => []);
 
@@ -238,6 +438,7 @@ export const DmMap = ({
     if (saveFogCanvasRef.current) {
       saveFogCanvasRef.current();
     }
+    redrawCanvas();
   }, []);
 
   const constructMask = useCallback(
@@ -283,6 +484,7 @@ export const DmMap = ({
     if (saveFogCanvasRef.current) {
       saveFogCanvasRef.current();
     }
+    redrawCanvas();
   }, []);
 
   const getMapDisplayRatio = useCallback(() => {
@@ -354,65 +556,9 @@ export const DmMap = ({
       }
 
       fogContext.fill();
+      redrawCanvas();
     },
     [constructMask, brushShape, mode]
-  );
-
-  const drawCursor = useCallback(
-    ({ x, y }) => {
-      const mouseContext = mouseCanvasRef.current.getContext("2d");
-      // draw cursor
-      mouseContext.clearRect(
-        0,
-        0,
-        mouseCanvasRef.current.width,
-        mouseCanvasRef.current.height
-      );
-
-      if (tool === "area") {
-        mouseContext.strokeStyle = "aqua";
-        mouseContext.fillStyle = "aqua";
-        mouseContext.lineWidth = 2;
-
-        mouseContext.beginPath();
-        mouseContext.moveTo(x - 10, y);
-        mouseContext.lineTo(x + 10, y);
-        mouseContext.moveTo(x, y - 10);
-        mouseContext.lineTo(x, y + 10);
-        mouseContext.stroke();
-        return;
-      }
-
-      // brush
-
-      const cursorMask = constructMask({ x, y });
-      mouseContext.strokeStyle = cursorMask.line;
-      mouseContext.fillStyle = cursorMask.fill;
-      mouseContext.lineWidth = cursorMask.lineWidth;
-
-      mouseContext.beginPath();
-      if (brushShape === "round") {
-        mouseContext.arc(
-          cursorMask.x,
-          cursorMask.y,
-          cursorMask.r,
-          cursorMask.startingAngle,
-          cursorMask.endingAngle,
-          true
-        );
-      } else if (brushShape === "square") {
-        mouseContext.rect(
-          cursorMask.centerX,
-          cursorMask.centerY,
-          cursorMask.height,
-          cursorMask.width
-        );
-      }
-
-      mouseContext.fill();
-      mouseContext.stroke();
-    },
-    [brushShape, constructMask, tool]
   );
 
   const drawFog = useCallback(
@@ -482,40 +628,10 @@ export const DmMap = ({
           fogContext.fill();
         }
       }
+      redrawCanvas();
     },
     [brushShape, constructMask, drawInitial, lineWidth, mode]
   );
-
-  const drawAreaSelection = useCallback(() => {
-    const mouseContext = mouseCanvasRef.current.getContext("2d");
-    mouseContext.clearRect(
-      0,
-      0,
-      mouseCanvasRef.current.width,
-      mouseCanvasRef.current.height
-    );
-
-    mouseContext.strokeStyle = "aqua";
-    mouseContext.fillStyle = "transparent";
-    mouseContext.lineWidth = 2;
-
-    mouseContext.beginPath();
-
-    const { startCoords, currentCoords } = areaDrawState.current;
-
-    if (!startCoords || !currentCoords) {
-      return;
-    }
-
-    const startX = startCoords.x;
-    const startY = startCoords.y;
-    const width = currentCoords.x - startCoords.x;
-    const height = currentCoords.y - startCoords.y;
-
-    mouseContext.rect(startX, startY, width, height);
-    mouseContext.fill();
-    mouseContext.stroke();
-  }, []);
 
   const handleAreaSelection = useCallback(() => {
     const context = fogCanvasRef.current.getContext("2d");
@@ -525,38 +641,54 @@ export const DmMap = ({
     } else {
       context.globalCompositeOperation = "source-over";
     }
-    context.beginPath();
-    const { startCoords, currentCoords } = areaDrawState.current;
+    if (map.showGrid) {
+      const { startCoords, currentCoords } = areaDrawState.current;
+      const selectionMask = calculateRectProps(startCoords, currentCoords);
+      const { x, y, width, height } = getSnappedSelectionMask(
+        map.grid,
+        mapCanvasDimensions.ratio,
+        selectionMask
+      );
+      context.fillRect(x, y, width, height);
+    } else {
+      const { startCoords, currentCoords } = areaDrawState.current;
+      const { x, y, width, height } = calculateRectProps(
+        startCoords,
+        currentCoords
+      );
+      context.fillRect(x, y, width, height);
+    }
 
-    const startX = startCoords.x;
-    const startY = startCoords.y;
-    const width = currentCoords.x - startCoords.x;
-    const height = currentCoords.y - startCoords.y;
-    context.fillRect(startX, startY, width, height);
-    drawCursor(currentCoords);
-  }, [drawCursor, mode]);
+    redrawCanvas();
+  }, [mode, map, mapCanvasDimensions.ratio]);
+
+  const redrawCanvas = () => {
+    const mapContext = mapCanvasRef.current.getContext("2d");
+    const { width, height } = mapCanvasRef.current;
+    mapContext.globalAlpha = 1;
+    mapContext.drawImage(mapImageCanvasRef.current, 0, 0, width, height);
+    mapContext.globalAlpha = 0.5;
+    mapContext.drawImage(fogCanvasRef.current, 0, 0, width, height);
+  };
 
   useEffect(() => {
-    const socket = io();
-    socketRef.current = socket;
-
     socket.on("mark area", async data => {
+      const { ratio } = latestMapCanvasDimensions.current;
       setMarkedAreas(markedAreas => [
         ...markedAreas,
         {
           id: data.id,
-          x: data.x * mapCanvasDimensions.current.ratio,
-          y: data.y * mapCanvasDimensions.current.ratio
+          x: data.x * ratio,
+          y: data.y * ratio
         }
       ]);
     });
 
     return () => {
-      socket.close();
-      socketRef.current = null;
+      socket.off("mark area");
       panZoomReferentialRef.current = null;
     };
-  }, []);
+  }, [socket]);
 
   useEffect(() => {
     if (!loadedMapId) {
@@ -588,58 +720,79 @@ export const DmMap = ({
         const dimensions = getOptimalDimensions(
           map.width,
           map.height,
-          3000,
-          8000
+          Math.min(map.width, 3000),
+          Math.min(map.height, 8000)
         );
         mapCanvasRef.current.width = dimensions.width;
         mapCanvasRef.current.height = dimensions.height;
-        fogCanvasRef.current.width = dimensions.width;
-        fogCanvasRef.current.height = dimensions.height;
-        mouseCanvasRef.current.width = dimensions.width;
-        mouseCanvasRef.current.height = dimensions.height;
+        fogCanvasRef.current = new OffscreenCanvas(
+          dimensions.width,
+          dimensions.height
+        );
+        mapImageCanvasRef.current = new OffscreenCanvas(
+          dimensions.width,
+          dimensions.height
+        );
+
+        mapImageCanvasRef.current
+          .getContext("2d")
+          .drawImage(map, 0, 0, dimensions.width, dimensions.height);
 
         objectSvgRef.current.setAttribute("width", dimensions.width);
         objectSvgRef.current.setAttribute("height", dimensions.height);
 
-        mapCanvasDimensions.current = dimensions;
+        setMapCanvasDimensions(dimensions);
 
         const widthPx = `${dimensions.width}px`;
         const heightPx = `${dimensions.height}px`;
-        mapContainerRef.current.style.width = mapCanvasRef.current.style.width = fogCanvasRef.current.style.width = objectSvgRef.current.style.width = widthPx;
-        mapContainerRef.current.style.height = mapCanvasRef.current.style.height = fogCanvasRef.current.style.height = objectSvgRef.current.style.height = heightPx;
+        mapContainerRef.current.style.width = mapCanvasRef.current.style.width = objectSvgRef.current.style.width = widthPx;
+        mapContainerRef.current.style.height = mapCanvasRef.current.style.height = objectSvgRef.current.style.height = heightPx;
 
-        mapCanvasRef.current
-          .getContext("2d")
-          .drawImage(map, 0, 0, dimensions.width, dimensions.height);
+        const mapContext = mapCanvasRef.current.getContext("2d");
+        mapContext.drawImage(
+          mapImageCanvasRef.current,
+          0,
+          0,
+          dimensions.width,
+          dimensions.height
+        );
 
         centerMap(false);
 
         if (!fog) {
           fillFog();
+          redrawCanvas();
           return;
         }
 
         fogCanvasRef.current
           .getContext("2d")
           .drawImage(fog, 0, 0, dimensions.width, dimensions.height);
+
+        redrawCanvas();
       })
       .catch(err => {
         // @TODO: distinguish between network error (rertry?) and cancel error
         console.error(err);
       });
 
-    saveFogCanvasRef.current = debounce(() => {
+    saveFogCanvasRef.current = debounce(async () => {
       if (!fogCanvasRef.current) {
         return;
       }
-      fetch(`/map/${loadedMapId}/fog`, {
+
+      const formData = new FormData();
+      const blob = await fogCanvasRef.current.convertToBlob();
+      formData.append(
+        "image",
+        new File([blob], "fog.png", {
+          type: "image/png"
+        })
+      );
+
+      await fetch(`/map/${loadedMapId}/fog`, {
         method: "POST",
-        body: JSON.stringify({
-          image: fogCanvasRef.current.toDataURL("image/png")
-        }),
-        headers: {
-          "Content-Type": "application/json"
-        }
+        body: formData
       });
     }, 500);
 
@@ -656,6 +809,13 @@ export const DmMap = ({
 
   const isCurrentMapLive = liveMapId && loadedMapId === liveMapId;
   const isOtherMapLive = liveMapId && loadedMapId !== liveMapId;
+
+  const [gridPatternDefinition, gridRectangleElement] = useSvgGrid(
+    map.grid,
+    mapCanvasDimensions,
+    map.showGrid,
+    buildRGBAColorString(gridColor)
+  );
 
   let cursor = "default";
   if (tool === "move") {
@@ -679,8 +839,8 @@ export const DmMap = ({
           }
           const ref = new Referentiel(panZoomRef.current.dragContainer.current);
           const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
-          const { ratio } = mapCanvasDimensions.current;
-          socketRef.current.emit("mark area", { x: x / ratio, y: y / ratio });
+          const { ratio } = mapCanvasDimensions;
+          socket.emit("mark area", { x: x / ratio, y: y / ratio });
         }}
         onStateChange={() => {
           panZoomReferentialRef.current = new Referentiel(
@@ -693,41 +853,29 @@ export const DmMap = ({
             areaDrawState.current.startCoords = null;
             drawState.current.lastCoords = null;
             areaDrawState.current.currentCoords = null;
-            drawAreaSelection();
+            setAreaSelectionStartCoordinates(null);
           }
         }}
         ref={panZoomRef}
       >
-        <div ref={mapContainerRef}>
-          <canvas ref={mapCanvasRef} style={{ position: "absolute" }} />
+        <div
+          ref={mapContainerRef}
+          style={{ backfaceVisibility: "hidden", touchAction: "none" }}
+        >
           <canvas
-            ref={fogCanvasRef}
-            style={{ position: "absolute", opacity: 0.5 }}
-          />
-          <ObjectLayer
-            ref={objectSvgRef}
-            areaMarkers={markedAreas}
-            removeAreaMarker={id => {
-              setMarkedAreas(markedAreas =>
-                markedAreas.filter(area => area.id !== id)
-              );
-            }}
-          />
-          <canvas
-            ref={mouseCanvasRef}
-            style={{ position: "absolute", touchAction: "none" }}
+            ref={mapCanvasRef}
+            style={{ position: "absolute" }}
             onMouseMove={ev => {
               if (tool === "move" || tool === "mark") {
                 return;
               }
 
               const coords = getMouseCoordinates(ev);
-              drawCursor(coords);
+              setCursorCoodinates(coords);
 
               if (tool === "area" && areaDrawState.current.startCoords) {
                 if (areaDrawState.current.startCoords) {
                   areaDrawState.current.currentCoords = coords;
-                  drawAreaSelection();
                 }
                 return;
               }
@@ -740,15 +888,7 @@ export const DmMap = ({
               drawState.current.lastCoords = coords;
             }}
             onMouseLeave={() => {
-              const mouseContext = mouseCanvasRef.current.getContext("2d");
-              // draw cursor
-              mouseContext.clearRect(
-                0,
-                0,
-                mouseCanvasRef.current.width,
-                mouseCanvasRef.current.height
-              );
-
+              setCursorCoodinates(null);
               if (
                 (drawState.current.isDrawing || drawState.current.lastCoords) &&
                 saveFogCanvasRef.current
@@ -760,6 +900,7 @@ export const DmMap = ({
               drawState.current.lastCoords = null;
               areaDrawState.current.currentCoords = null;
               areaDrawState.current.startCoords = null;
+              setAreaSelectionStartCoordinates(null);
             }}
             onMouseDown={ev => {
               const coords = getMouseCoordinates(ev);
@@ -769,6 +910,7 @@ export const DmMap = ({
                 drawInitial(coords);
               } else if (tool === "area") {
                 areaDrawState.current.startCoords = coords;
+                setAreaSelectionStartCoordinates(coords);
               }
             }}
             onMouseUp={() => {
@@ -782,6 +924,7 @@ export const DmMap = ({
               }
               areaDrawState.current.currentCoords = null;
               areaDrawState.current.startCoords = null;
+              setAreaSelectionStartCoordinates(null);
 
               if (saveFogCanvasRef.current) {
                 saveFogCanvasRef.current();
@@ -792,12 +935,13 @@ export const DmMap = ({
                 return;
               }
               const coords = getTouchCoordinates(ev.touches[0]);
-              drawCursor(coords);
+              setCursorCoodinates(coords);
               if (tool === "brush") {
                 drawState.current.isDrawing = true;
                 drawInitial(coords);
               } else if (tool === "area") {
                 areaDrawState.current.startCoords = coords;
+                setAreaSelectionStartCoordinates(coords);
               }
             }}
             onTouchMove={ev => {
@@ -806,11 +950,10 @@ export const DmMap = ({
                 return;
               }
               const coords = getTouchCoordinates(ev.touches[0]);
-              drawCursor(coords);
+              setCursorCoodinates(coords);
 
               if (tool === "area" && areaDrawState.current.startCoords) {
                 areaDrawState.current.currentCoords = coords;
-                drawAreaSelection();
                 return;
               }
 
@@ -832,12 +975,35 @@ export const DmMap = ({
               }
               areaDrawState.current.currentCoords = null;
               areaDrawState.current.startCoords = null;
+              setAreaSelectionStartCoordinates(null);
 
               if (saveFogCanvasRef.current) {
                 saveFogCanvasRef.current();
               }
             }}
           />
+          <ObjectLayer
+            defs={<>{gridPatternDefinition}</>}
+            ref={objectSvgRef}
+            areaMarkers={markedAreas}
+            removeAreaMarker={id => {
+              setMarkedAreas(markedAreas =>
+                markedAreas.filter(area => area.id !== id)
+              );
+            }}
+          >
+            {gridRectangleElement}
+            <Cursor
+              coordinates={cursorCoordinates}
+              tool={tool}
+              brushShape={brushShape}
+              lineWidth={lineWidth}
+              areaSelectStart={areaSelectionStartCoordinates}
+              showGrid={map.showGrid}
+              grid={map.grid}
+              ratio={mapCanvasDimensions.ratio}
+            />
+          </ObjectLayer>
         </div>
       </PanZoom>
 
@@ -854,6 +1020,40 @@ export const DmMap = ({
       >
         <Toolbar horizontal>
           <Toolbar.Group>
+            <Toolbar.Item isEnabled={Boolean(map.grid)}>
+              <Toolbar.Button
+                onClick={() => {
+                  if (!map.grid) {
+                    enterGridMode();
+                  } else {
+                    setShowGridSettings(showGridSettings => !showGridSettings);
+                  }
+                }}
+              >
+                <Icons.GridIcon />
+                <Icons.Label>
+                  {map.grid ? "Grid Settings" : "Add Grid"}
+                </Icons.Label>
+              </Toolbar.Button>
+              {showGridSettings ? (
+                <ShowGridSettingsPopup
+                  gridColor={gridColor}
+                  setGridColor={setGridColor}
+                  showGrid={map.showGrid}
+                  setShowGrid={showGrid => {
+                    updateMap(map.id, { showGrid });
+                  }}
+                  showGridToPlayers={map.showGridToPlayers}
+                  setShowGridToPlayers={showGridToPlayers => {
+                    updateMap(map.id, { showGridToPlayers });
+                  }}
+                  onGridColorChangeComplete={onGridColorChangeComplete}
+                  onClickOutside={() => {
+                    setShowGridSettings(false);
+                  }}
+                />
+              ) : null}
+            </Toolbar.Item>
             <Toolbar.Item isEnabled>
               <Toolbar.Button
                 onClick={() => {
@@ -861,7 +1061,7 @@ export const DmMap = ({
                 }}
               >
                 <Icons.MapIcon />
-                <Icons.Label>Change Map</Icons.Label>
+                <Icons.Label>Map Library</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item>
@@ -912,8 +1112,11 @@ export const DmMap = ({
                   if (!fogCanvasRef.current) {
                     return;
                   }
+                  const blob = await fogCanvasRef.current.convertToBlob();
                   sendLiveMap({
-                    image: fogCanvasRef.current.toDataURL("image/png")
+                    image: new File([blob], "fog.live.png", {
+                      type: "image/png"
+                    })
                   });
                 }}
               >
@@ -1086,3 +1289,90 @@ export const DmMap = ({
     </>
   );
 };
+
+// rerendering this component has a huge impact on performance
+const ShowGridSettingsPopup = React.memo(
+  ({
+    gridColor,
+    setGridColor,
+    showGrid,
+    setShowGrid,
+    setShowGridToPlayers,
+    showGridToPlayers,
+    onGridColorChangeComplete,
+    onClickOutside
+  }) => {
+    const popupRef = useOnClickOutside(onClickOutside);
+    const onGridColorChange = useCallback(
+      ({ rgb: { r, g, b } }) => {
+        setGridColor(({ a }) => ({ r, g, b, a }));
+      },
+      [setGridColor]
+    );
+    const onAlphaChange = useCallback(
+      ({ rgb: { r, g, b, a } }) => {
+        setGridColor({ r, g, b, a });
+      },
+      [setGridColor]
+    );
+    return (
+      <Toolbar.Popup ref={popupRef}>
+        <h4 style={{ textAlign: "left", marginTop: 8 }}>Grid Settings</h4>
+        <div>
+          <div>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                textAlign: "left",
+                cursor: "pointer"
+              }}
+            >
+              <div style={{ flexGrow: 1 }}>Show Grid</div>
+              <div style={{ marginLeft: 8 }}>
+                <ToggleSwitch
+                  checked={showGrid}
+                  onChange={ev => {
+                    setShowGrid(ev.target.checked);
+                  }}
+                />
+              </div>
+            </label>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                textAlign: "left",
+                marginTop: 8,
+                cursor: "pointer"
+              }}
+            >
+              <div style={{ flexGrow: 1 }}>Show Grid to Players</div>
+              <div style={{ marginLeft: 8 }}>
+                <ToggleSwitch
+                  checked={showGridToPlayers}
+                  onChange={ev => {
+                    setShowGridToPlayers(ev.target.checked);
+                  }}
+                />
+              </div>
+            </label>
+          </div>
+          <div style={{ marginTop: 16, marginBottom: 8 }}>
+            <HuePicker
+              color={gridColor}
+              onChange={onGridColorChange}
+              onChangeComplete={onGridColorChangeComplete}
+            />
+            <div style={{ height: 16 }} />
+            <AlphaPicker
+              color={gridColor}
+              onChange={onAlphaChange}
+              onChangeComplete={onGridColorChangeComplete}
+            />
+          </div>
+        </div>
+      </Toolbar.Popup>
+    );
+  }
+);

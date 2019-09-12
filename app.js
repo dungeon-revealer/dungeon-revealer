@@ -74,9 +74,7 @@ app.get("/map/:id/map", (req, res) => {
     return res.status(404).json({
       data: null,
       error: {
-        message: `Map with id '${
-          req.params.id
-        }' does not have a map image yet.`,
+        message: `Map with id '${req.params.id}' does not have a map image yet.`,
         code: "ERR_MAP_NO_IMAGE"
       }
     });
@@ -101,9 +99,7 @@ app.get("/map/:id/fog", (req, res) => {
     return res.status(404).json({
       data: null,
       error: {
-        message: `Map with id '${
-          req.params.id
-        }' does not have a fog image yet.`,
+        message: `Map with id '${req.params.id}' does not have a fog image yet.`,
         code: "ERR_MAP_NO_FOG"
       }
     });
@@ -125,9 +121,7 @@ app.get("/map/:id/fog-live", (req, res) => {
     return res.status(404).json({
       data: null,
       error: {
-        message: `Map with id '${
-          req.params.id
-        }' does not have a fog image yet.`,
+        message: `Map with id '${req.params.id}' does not have a fog image yet.`,
         code: "ERR_MAP_NO_FOG"
       }
     });
@@ -160,9 +154,11 @@ app.post("/map/:id/fog", authMiddleware, (req, res) => {
     return res.send(404);
   }
 
-  const imageData = req.body.image.replace(/^data:image\/png;base64,/, "");
-  maps.updateFogProgressImage(req.params.id, imageData).then(map => {
-    res.json({ success: true, data: map });
+  req.pipe(req.busboy);
+  req.busboy.once("file", (fieldname, file, filename) => {
+    maps.updateFogProgressImage(req.params.id, file).then(map => {
+      res.json({ success: true, data: map });
+    });
   });
 });
 
@@ -171,14 +167,15 @@ app.post("/map/:id/send", authMiddleware, (req, res) => {
   if (!map) {
     return res.send(404);
   }
-  const imageData = req.body.image.replace(/^data:image\/png;base64,/, "");
-
-  maps.updateFogLiveImage(req.params.id, imageData).then(map => {
-    settings.set("currentMapId", map.id);
-    res.json({ success: true, data: map });
-    io.emit("map update", {
-      mapId: map.id,
-      image: req.body.image
+  req.pipe(req.busboy);
+  req.busboy.once("file", (fieldname, file, filename) => {
+    maps.updateFogLiveImage(req.params.id, file).then(map => {
+      settings.set("currentMapId", map.id);
+      res.json({ success: true, data: map });
+      io.emit("map update", {
+        map,
+        image: req.body.image
+      });
     });
   });
 });
@@ -223,7 +220,7 @@ app.post("/active-map", authMiddleware, (req, res) => {
   }
   settings.set("currentMapId", mapId);
   io.emit("map update", {
-    mapId: null,
+    map: null,
     image: null
   });
   res.json({
@@ -284,6 +281,19 @@ app.patch("/map/:id", authMiddleware, (req, res) => {
   if (req.body.title) {
     updates.title = req.body.title;
   }
+  if (req.body.grid) {
+    updates.grid = req.body.grid;
+    updates.showGrid = true;
+  }
+  if ({}.hasOwnProperty.call(req.body, "showGrid")) {
+    updates.showGrid = req.body.showGrid;
+  }
+  if ({}.hasOwnProperty.call(req.body, "showGridToPlayers")) {
+    updates.showGridToPlayers = req.body.showGridToPlayers;
+  }
+  if ({}.hasOwnProperty.call(req.body, "gridColor")) {
+    updates.gridColor = req.body.gridColor;
+  }
 
   if (Object.keys(updates).length) {
     map = maps.updateMapSettings(map.id, updates);
@@ -341,16 +351,6 @@ app.use(function(err, req, res) {
 });
 
 io.on("connection", function(socket) {
-  const currentMapId = settings.get("currentMapId");
-
-  if (currentMapId) {
-    console.log("sending current map to newly connected user");
-
-    socket.emit("map update", {
-      mapId: currentMapId
-    });
-  }
-
   socket.once("disconnect", function() {
     console.log("a user disconnected");
   });

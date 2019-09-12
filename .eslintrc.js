@@ -9,7 +9,13 @@ module.exports = {
     eqeqeq: ["error"],
     camelcase: ["error"],
     "no-console": ["off"],
-    "no-unused-vars": ["error"]
+    "no-unused-vars": ["error"],
+    "react-hooks/exhaustive-deps": [
+      "warn",
+      {
+        additionalHooks: "useAsyncEffect|useResetState"
+      }
+    ]
   },
   parserOptions: {
     ecmaVersion: 2017

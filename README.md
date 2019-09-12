@@ -1,6 +1,5 @@
 # dungeon-revealer [![Build Status](https://travis-ci.org/apclary/dungeon-revealer.svg?branch=master)](https://travis-ci.org/apclary/dungeon-revealer)
 
-
 A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
 
 ## What the DM Sees
@@ -27,19 +26,21 @@ We provide builds for Windows, Linux, and OSX.
 Running from the command prompt will present connection information and some debugging.
 Optionally, you may set a password for the dungeon master page by setting the environmental variable `DM_PASSWORD` when starting the app. e.g. for linux `DM_PASSWORD='password' ./dungeon-revealer-linux`
 
-
 ##### Linux
+
 Open the zip file and extract the files to your preferred location.
 
 Then you can run the app directly in the terminal.
+
 ```
 ./dungeon-revealer-linux
 ```
+
 Then go to `localhost:3000` in your browser and point your players to `<YOUR_IPADDRESS>:3000`.
 This information is also present in the terminal window.
 
-
 ##### OSX
+
 Open the zip file and extract the files to your preferred location.
 
 Double click the app. A terminal will open with useful information.
@@ -47,12 +48,12 @@ Then go to `localhost:3000` in your browser and point your players to `<YOUR_IPA
 This information is also present in the terminal window.
 
 ##### Windows
+
 Double click the app. A command prompt will open with useful information.
 Then go to `localhost:3000` in your browser and point your players to `<YOUR_IPADDRESS>:3000`.
 This information is also present in the command prompt window.
 
 ##### Docker
-
 
 To create a docker instance, run the following:
 
@@ -65,12 +66,11 @@ docker run -e DM_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/d
 - Replace `<PORT>` with your preferred port.
 - `<DATA_DIR>` is the directory on the host filesystem in which you want to store the maps and settings. `<DATA_DIR>` **must be an absolute path.** One way to achieve this in linux is to navigate to the directory you want in the terminal and then use `$PWD/data` as `<DATA_DIR>`.
 
-
 In your browser, go to `<YOUR_IPADDRESS>:<PORT>`.
 
 ### Using the app
-The app is separated into two sections. One for the dungeon master and one for the players.
 
+The app is separated into two sections. One for the dungeon master and one for the players.
 
 #### Dungeon Master
 
@@ -78,9 +78,7 @@ To use dungeon-revealer, the game master and the players must be on the same loc
 
 To clear areas of the map, click and draw on the map. You can switch the brush mode by clicking the "Reveal" or "Shroud" button. Alternatively, you can select an area to clear or shroud by clicking the "Select Area" button. Whenever the game master clears some of the fog of war from the map and it is ready to share with the players, they will click "Send" and the revealed areas of the map will appear in the players' browsers. What appears as a shadow to the DM will appear as pure blackness to players, thus only revealing the cleared sections of the map to them. The "Mark" button will display a circle for a period of time to indicate a point of interest.
 
-To switch to a different map, click "Change map", and then select one of the maps you have already uploaded and click "Load". The "LIVE" indicator in the lower right indicates if the map currently on the dungeon master page is being presented on the player page. the "Stop Sharing" button will blank the player page in preparation for a new map to be loaded.
-
-
+To switch to a different map, click "Map Library", and then select one of the maps you have already uploaded and click "Load". The "LIVE" indicator in the lower right indicates if the map currently on the dungeon master page is being presented on the player page. the "Stop Sharing" button will blank the player page in preparation for a new map to be loaded.
 
 #### Players
 
