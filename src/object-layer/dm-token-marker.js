@@ -2,13 +2,17 @@ import React, { useRef, useState, useEffect } from "react";
 import { TokenMarker } from "./token-marker";
 import { CirclePicker } from "react-color";
 import { Input } from "../input";
+import * as Button from "../button";
+import * as Icon from "../feather-icons";
 import { Modal } from "../dm-area/modal";
 import { useResetState } from "../hooks/use-reset-state";
 
 const TokenContextMenu = ({
   token: { label, color, radius },
   updateToken,
-  styles
+  deleteToken,
+  styles,
+  close
 }) => {
   const ref = useRef();
 
@@ -38,6 +42,7 @@ const TokenContextMenu = ({
         backgroundColor: "white",
         padding: 10,
         borderRadius: 5,
+        width: "260px",
         ...styles
       }}
       onClick={ev => {
@@ -48,11 +53,28 @@ const TokenContextMenu = ({
         ev.stopPropagation();
       }}
     >
-      <Input
-        value={labelValue}
-        onChange={ev => setLabelValue(ev.target.value)}
-        style={{ marginBottom: 24 }}
-      />
+      <div style={{ display: "flex", width: "100%" }}>
+        <div style={{ flexGrow: 1 }}>
+          <Input
+            placeholder="Label"
+            value={labelValue}
+            onChange={ev => setLabelValue(ev.target.value)}
+            style={{ marginBottom: 24 }}
+          />
+        </div>
+        <div style={{ paddingLeft: 8 }}>
+          <Button.Tertiary
+            iconOnly
+            onClick={() => {
+              deleteToken();
+              close();
+            }}
+          >
+            <Icon.TrashIcon height={16} />
+          </Button.Tertiary>
+        </div>
+      </div>
+
       <input
         type="range"
         min="1"
@@ -111,7 +133,7 @@ const calculatePerfectContextMenuPositionStyles = event => {
 };
 
 export const DmTokenMarker = React.memo(
-  ({ getRelativePosition, updateToken, ...props }) => {
+  ({ getRelativePosition, updateToken, deleteToken, ...props }) => {
     const tokenRef = useRef();
     const [contextMenuEvent, setContextMenuEvent] = useState(null);
 
@@ -183,9 +205,11 @@ export const DmTokenMarker = React.memo(
             <TokenContextMenu
               token={props}
               updateToken={updateToken}
+              deleteToken={deleteToken}
               styles={calculatePerfectContextMenuPositionStyles(
                 contextMenuEvent
               )}
+              close={() => setContextMenuEvent(null)}
             />
           </Modal>
         ) : null}

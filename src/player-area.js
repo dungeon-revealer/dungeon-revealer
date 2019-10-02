@@ -56,6 +56,7 @@ export const PlayerArea = () => {
   const panZoomRef = useRef(null);
   const currentMapRef = useRef(null);
   const [currentMap, setCurrentMap] = useState(null);
+
   const mapId = currentMap ? currentMap.id : null;
   const socket = useSocket();
   const [showSplashScreen, setShowSplashScreen] = useState(true);
@@ -195,7 +196,6 @@ export const PlayerArea = () => {
          * Load new map
          */
         currentMapRef.current = data.map;
-        setCurrentMap(data.map);
 
         const tasks = [
           loadImage(
@@ -231,6 +231,7 @@ export const PlayerArea = () => {
             objectSvg.setAttribute("height", canvasDimensions.height);
 
             mapCanvasDimensions.current = canvasDimensions;
+            setCurrentMap(data.map);
 
             const widthPx = `${canvasDimensions.width}px`;
             const heightPx = `${canvasDimensions.height}px`;
@@ -344,6 +345,11 @@ export const PlayerArea = () => {
               y: data.token.y
             };
           })
+        }));
+      } else if (type === "remove") {
+        setCurrentMap(map => ({
+          ...map,
+          tokens: map.tokens.filter(token => token.id !== data.tokenId)
         }));
       }
     });

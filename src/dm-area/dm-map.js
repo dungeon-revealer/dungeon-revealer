@@ -724,6 +724,17 @@ export const DmMap = ({
             };
           })
         }));
+      } else if (type === "remove") {
+        setAppData(appData => ({
+          ...appData,
+          maps: appData.maps.map(map => {
+            if (map.id !== loadedMapId) return map;
+            return {
+              ...map,
+              tokens: map.tokens.filter(token => token.id !== data.tokenId)
+            };
+          })
+        }));
       }
     });
 
@@ -914,6 +925,18 @@ export const DmMap = ({
           color,
           label
         })
+      });
+    },
+    [loadedMapId]
+  );
+
+  const deleteToken = useCallback(
+    tokenId => {
+      fetch(`/map/${loadedMapId}/token/${tokenId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json"
+        }
       });
     },
     [loadedMapId]
@@ -1119,6 +1142,7 @@ export const DmMap = ({
               tokens={tokens}
               getRelativePosition={getRelativePosition}
               updateToken={updateToken}
+              deleteToken={deleteToken}
               ratio={mapCanvasDimensions.ratio}
             />
             <AreaMarkerRenderer
