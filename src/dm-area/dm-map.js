@@ -17,8 +17,8 @@ import { useResetState } from "../hooks/use-reset-state";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useSvgGrid } from "../hooks/use-svg-grid";
 import { CirclePicker } from "react-color";
-import { AreaMarker } from "../object-layer/area-marker";
-import { TokenMarker } from "../object-layer/token-marker";
+import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
+import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 
 const ShapeButton = styled.button`
   border: none;
@@ -261,98 +261,100 @@ const getSnappedSelectionMask = (grid, ratio, selection) => {
   return calculateRectProps(p1, p2);
 };
 
-const Cursor = ({
-  coordinates,
-  tool,
-  brushShape,
-  lineWidth,
-  areaSelectStart,
-  showGrid,
-  grid,
-  ratio
-}) => {
-  if (!coordinates) return null;
-  if (tool === "area") {
-    if (
-      areaSelectStart &&
-      areaSelectStart.x !== coordinates.x &&
-      areaSelectStart.y !== coordinates.y
-    ) {
-      const selection = calculateRectProps(coordinates, areaSelectStart);
+const Cursor = React.memo(
+  ({
+    coordinates,
+    tool,
+    brushShape,
+    lineWidth,
+    areaSelectStart,
+    showGrid,
+    grid,
+    ratio
+  }) => {
+    if (!coordinates) return null;
+    if (tool === "area") {
+      if (
+        areaSelectStart &&
+        areaSelectStart.x !== coordinates.x &&
+        areaSelectStart.y !== coordinates.y
+      ) {
+        const selection = calculateRectProps(coordinates, areaSelectStart);
 
-      let snappedSelection = null;
-      if (showGrid && grid) {
-        const snappedSelectionMask = getSnappedSelectionMask(
-          grid,
-          ratio,
-          selection
-        );
-        snappedSelection = (
-          <rect fill="rgba(0, 255, 255, .5)" {...snappedSelectionMask} />
+        let snappedSelection = null;
+        if (showGrid && grid) {
+          const snappedSelectionMask = getSnappedSelectionMask(
+            grid,
+            ratio,
+            selection
+          );
+          snappedSelection = (
+            <rect fill="rgba(0, 255, 255, .5)" {...snappedSelectionMask} />
+          );
+        }
+
+        return (
+          <>
+            {snappedSelection}
+            <rect
+              stroke="aqua"
+              strokeWidth="2"
+              fill="transparent"
+              {...selection}
+            />
+          </>
         );
       }
-
       return (
-        <>
-          {snappedSelection}
-          <rect
+        <g transform={`translate(${coordinates.x}, ${coordinates.y})`}>
+          <line
+            x1="-10"
+            x2="10"
+            y2="0"
+            y1="0"
             stroke="aqua"
             strokeWidth="2"
+          ></line>
+          <line
+            y1="-10"
+            y2="10"
+            x1="0"
+            x2="0"
+            stroke="aqua"
+            strokeWidth="2"
+          ></line>
+        </g>
+      );
+    } else if (tool === "brush") {
+      if (brushShape === "round") {
+        return (
+          <circle
+            cy={coordinates.y}
+            cx={coordinates.x}
+            r={lineWidth / 2 - 2}
             fill="transparent"
-            {...selection}
+            strokeWidth="2"
+            stroke="aqua"
           />
-        </>
-      );
+        );
+      } else if (brushShape === "square") {
+        return (
+          <rect
+            x={coordinates.x - lineWidth / 2}
+            y={coordinates.y - lineWidth / 2}
+            width={lineWidth - 2}
+            height={lineWidth - 2}
+            fill="transparent"
+            strokeWidth="2"
+            stroke="aqua"
+          />
+        );
+      }
     }
-    return (
-      <g transform={`translate(${coordinates.x}, ${coordinates.y})`}>
-        <line
-          x1="-10"
-          x2="10"
-          y2="0"
-          y1="0"
-          stroke="aqua"
-          strokeWidth="2"
-        ></line>
-        <line
-          y1="-10"
-          y2="10"
-          x1="0"
-          x2="0"
-          stroke="aqua"
-          strokeWidth="2"
-        ></line>
-      </g>
-    );
-  } else if (tool === "brush") {
-    if (brushShape === "round") {
-      return (
-        <circle
-          cy={coordinates.y}
-          cx={coordinates.x}
-          r={lineWidth / 2 - 2}
-          fill="transparent"
-          strokeWidth="2"
-          stroke="aqua"
-        />
-      );
-    } else if (brushShape === "square") {
-      return (
-        <rect
-          x={coordinates.x - lineWidth / 2}
-          y={coordinates.y - lineWidth / 2}
-          width={lineWidth - 2}
-          height={lineWidth - 2}
-          fill="transparent"
-          strokeWidth="2"
-          stroke="aqua"
-        />
-      );
-    }
-  }
 
-  return null;
-};
+    return null;
+  }
+);
 
 const fallbackGridColor = { r: 0, g: 0, b: 0, a: 0.5 };
 
@@ -1108,27 +1110,15 @@ export const DmMap = ({
           />
           <ObjectLayer defs={<>{gridPatternDefinition}</>} ref={objectSvgRef}>
             {gridRectangleElement}
-            {tokens.map(token => (
-              <TokenMarker
-                {...token}
-                key={token.id}
-                getRelativePosition={getRelativePosition}
-                updateTokenPosition={props =>
-                  updateTokenPosition({ ...props, tokenId: token.id })
-                }
-              />
-            ))}
-            {markedAreas.map(markedArea => (
-              <AreaMarker
-                {...markedArea}
-                onFinishAnimation={id => {
-                  setMarkedAreas(markedAreas =>
-                    markedAreas.filter(area => area.id !== id)
-                  );
-                }}
-                key={markedArea.id}
-              />
-            ))}
+            <DmTokenRenderer
+              tokens={tokens}
+              getRelativePosition={getRelativePosition}
+              updateTokenPosition={updateTokenPosition}
+            />
+            <AreaMarkerRenderer
+              markedAreas={markedAreas}
+              setMarkedAreas={setMarkedAreas}
+            />
             <Cursor
               coordinates={cursorCoordinates}
               tool={tool}

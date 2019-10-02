@@ -9,7 +9,7 @@ import { Toolbar } from "./toolbar";
 import styled from "@emotion/styled/macro";
 import * as Icons from "./feather-icons";
 import { useSocket } from "./socket";
-import { AreaMarker } from "./object-layer/area-marker";
+import { AreaMarkerRenderer } from "./object-layer/area-marker-renderer";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -363,17 +363,10 @@ export const PlayerArea = () => {
             }}
           />
           <ObjectLayer ref={objectSvgRef}>
-            {markedAreas.map(markedArea => (
-              <AreaMarker
-                {...markedArea}
-                onFinishAnimation={id => {
-                  setMarkedAreas(markedAreas =>
-                    markedAreas.filter(area => area.id !== id)
-                  );
-                }}
-                key={markedArea.id}
-              />
-            ))}
+            <AreaMarkerRenderer
+              markedAreas={markedAreas}
+              setMarkedAreas={setMarkedAreas}
+            />
           </ObjectLayer>
         </div>
       </PanZoom>
