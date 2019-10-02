@@ -16,7 +16,6 @@ import { ToggleSwitch } from "../toggle-switch";
 import { useResetState } from "../hooks/use-reset-state";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useSvgGrid } from "../hooks/use-svg-grid";
-import { CirclePicker } from "react-color";
 import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 
@@ -191,11 +190,6 @@ const useModeState = createPersistedState("dm.settings.mode");
 const useBrushShapeState = createPersistedState("dm.settings.brushShape");
 const useToolState = createPersistedState("dm.settings.tool");
 const useLineWidthState = createPersistedState("dm.settings.lineWidth");
-const useTokenIdState = createPersistedState("dm.settings.currentTokenId");
-const useTokenSizeState = createPersistedState("dm.settings.currentTokenSize");
-const useTokenColorState = createPersistedState(
-  "dm.settings.currentTokenColor"
-);
 
 const calculateRectProps = (p1, p2) => {
   const width = Math.max(p1.x, p2.x) - Math.min(p1.x, p2.x);
@@ -367,6 +361,8 @@ const parseMapColor = input => {
   return { r, g, b, a };
 };
 
+const DEFAULT_TOKEN_COLOR = "#b80000";
+
 /**
  * loadedMapId = id of the map that is currently visible in the editor
  * liveMapId = id of the map that is currently visible to the players
@@ -415,10 +411,8 @@ export const DmMap = ({
   const [brushShape, setBrushShape] = useBrushShapeState("square");
   const [tool, setTool] = useToolState("brush"); // "brush" or "area"
   const [lineWidth, setLineWidth] = useLineWidthState(15);
-  const [tokenId, setTokenId] = useTokenIdState(1);
-  const [tokenSize, setTokenSize] = useTokenSizeState(15);
-  const [tokenColor, setTokenColor] = useTokenColorState("#b80000");
 
+  const tokenColor = DEFAULT_TOKEN_COLOR;
   const tokens = map.tokens || [];
 
   // marker related stuff
@@ -432,6 +426,10 @@ export const DmMap = ({
 
   const objectSvgRef = useRef(null);
   const [markedAreas, setMarkedAreas] = useState(() => []);
+  const tokenSize =
+    map && map.grid
+      ? (map.grid.sideLength / 2 - 10) * mapCanvasDimensions.ratio
+      : 15;
 
   const fillFog = useCallback(() => {
     if (!fogCanvasRef.current) {
@@ -711,7 +709,7 @@ export const DmMap = ({
             };
           })
         }));
-      } else if (type === "move") {
+      } else if (type === "update") {
         setAppData(appData => ({
           ...appData,
           maps: appData.maps.map(map => {
@@ -719,7 +717,7 @@ export const DmMap = ({
             return {
               ...map,
               tokens: map.tokens.map(token => {
-                if (token.id !== data.token.id) return map;
+                if (token.id !== data.token.id) return token;
                 return {
                   ...token,
                   ...data.token,
@@ -906,8 +904,8 @@ export const DmMap = ({
     [mapCanvasDimensions]
   );
 
-  const updateTokenPosition = useCallback(
-    ({ id, x, y, radius, color }) => {
+  const updateToken = useCallback(
+    ({ id, x, y, radius, color, label }) => {
       fetch(`/map/${loadedMapId}/token/${id}`, {
         method: "PATCH",
         headers: {
@@ -917,7 +915,8 @@ export const DmMap = ({
           x,
           y,
           radius,
-          color
+          color,
+          label
         })
       });
     },
@@ -948,7 +947,7 @@ export const DmMap = ({
                   x: x / ratio,
                   y: y / ratio,
                   radius: tokenSize,
-                  color: tokenColor.hex,
+                  color: tokenColor,
                   label: "1"
                 })
               });
@@ -1123,7 +1122,7 @@ export const DmMap = ({
             <DmTokenRenderer
               tokens={tokens}
               getRelativePosition={getRelativePosition}
-              updateTokenPosition={updateTokenPosition}
+              updateToken={updateToken}
             />
             <AreaMarkerRenderer
               markedAreas={markedAreas}
@@ -1392,42 +1391,6 @@ export const DmMap = ({
                 <Icons.TargetIcon />
                 <Icons.Label>Token</Icons.Label>
               </Toolbar.Button>
-              {tool === "tokens" ? (
-                <Toolbar.Popup>
-                  <h6>Token Number</h6>
-                  <div style={{ display: "flex" }}>
-                    <input
-                      type="number"
-                      min="1"
-                      max="28"
-                      step="1"
-                      value={tokenId}
-                      onChange={ev => {
-                        setTokenId(Math.min(28, Math.max(0, ev.target.value)));
-                      }}
-                    />
-                  </div>
-                  <h6>Token Size</h6>
-                  <input
-                    type="range"
-                    min="1"
-                    max="200"
-                    step="1"
-                    value={tokenSize}
-                    onChange={ev => {
-                      setTokenSize(Math.min(200, Math.max(0, ev.target.value)));
-                    }}
-                  />
-                  <h6>Token Color</h6>
-                  <div>
-                    <CirclePicker
-                      onChange={(color, ev) => {
-                        setTokenColor(color);
-                      }}
-                    />
-                  </div>
-                </Toolbar.Popup>
-              ) : null}
             </Toolbar.Item>
           </Toolbar.Group>
           <Toolbar.Group>
