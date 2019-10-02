@@ -428,7 +428,8 @@ export const DmMap = ({
   const [markedAreas, setMarkedAreas] = useState(() => []);
   const tokenSize =
     map && map.grid
-      ? (map.grid.sideLength / 2 - 10) * mapCanvasDimensions.ratio
+      ? (map.grid.sideLength / 2 - map.grid.sideLength * 0.05) *
+        mapCanvasDimensions.ratio
       : 15;
 
   const fillFog = useCallback(() => {
