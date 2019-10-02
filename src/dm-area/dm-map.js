@@ -701,9 +701,7 @@ export const DmMap = ({
               tokens: [
                 ...map.tokens,
                 {
-                  ...data.token,
-                  x: data.token.x / latestMapCanvasDimensions.current.ratio,
-                  y: data.token.y / latestMapCanvasDimensions.current.ratio
+                  ...data.token
                 }
               ]
             };
@@ -720,9 +718,7 @@ export const DmMap = ({
                 if (token.id !== data.token.id) return token;
                 return {
                   ...token,
-                  ...data.token,
-                  x: data.token.x / latestMapCanvasDimensions.current.ratio,
-                  y: data.token.y / latestMapCanvasDimensions.current.ratio
+                  ...data.token
                 };
               })
             };
@@ -1123,6 +1119,7 @@ export const DmMap = ({
               tokens={tokens}
               getRelativePosition={getRelativePosition}
               updateToken={updateToken}
+              ratio={mapCanvasDimensions.ratio}
             />
             <AreaMarkerRenderer
               markedAreas={markedAreas}

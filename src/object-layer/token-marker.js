@@ -14,16 +14,21 @@ export const TokenMarker = React.memo(
         onClick,
         onMouseDown,
         onContextMenu,
+        ratio = 1,
         ...props
       },
       ref
     ) => {
       return (
-        <g ref={ref} transform={`translate(${x}, ${y})`} {...props}>
+        <g
+          ref={ref}
+          transform={`translate(${x * ratio}, ${y * ratio})`}
+          {...props}
+        >
           <circle
             tokenid={id}
-            r={radius}
-            strokeWidth={radius * 0.05}
+            r={radius * ratio}
+            strokeWidth={radius * ratio * 0.05}
             stroke={darken(0.1, color)}
             fill={color}
             opacity="1"

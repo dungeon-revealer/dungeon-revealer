@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
@@ -10,6 +10,7 @@ import styled from "@emotion/styled/macro";
 import * as Icons from "./feather-icons";
 import { useSocket } from "./socket";
 import { AreaMarkerRenderer } from "./object-layer/area-marker-renderer";
+import { TokenRenderer } from "./object-layer/token-renderer";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -53,7 +54,9 @@ const drawGridToContext = (grid, dimensions, canvas, gridColor) => {
 
 export const PlayerArea = () => {
   const panZoomRef = useRef(null);
-  const currentMap = useRef(null);
+  const currentMapRef = useRef(null);
+  const [currentMap, setCurrentMap] = useState(null);
+  const mapId = currentMap ? currentMap.id : null;
   const socket = useSocket();
   const [showSplashScreen, setShowSplashScreen] = useState(true);
 
@@ -122,7 +125,8 @@ export const PlayerArea = () => {
          * Hide map (show splashscreen)
          */
         if (!data.map) {
-          currentMap.current = null;
+          currentMapRef.current = null;
+          setCurrentMap(null);
           mapCanvasDimensions.current = null;
           mapImageRef.current = null;
 
@@ -138,7 +142,7 @@ export const PlayerArea = () => {
         /**
          * Fog has updated
          */
-        if (currentMap.current && currentMap.current.id === data.map.id) {
+        if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
           const task = loadImage(
             `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}`
           );
@@ -190,7 +194,9 @@ export const PlayerArea = () => {
         /**
          * Load new map
          */
-        currentMap.current = data.map;
+        currentMapRef.current = data.map;
+        setCurrentMap(data.map);
+
         const tasks = [
           loadImage(
             `/map/${data.map.id}/map?cache_buster=${fogCacheBusterCounter}`
@@ -311,6 +317,40 @@ export const PlayerArea = () => {
     [socket]
   );
 
+  useEffect(() => {
+    const eventName = `token:mapId:${mapId}`;
+    socket.on(eventName, ({ type, data }) => {
+      if (type === "add") {
+        setCurrentMap(map => ({
+          ...map,
+          tokens: [
+            ...map.tokens,
+            {
+              ...data.token,
+              x: data.token.x,
+              y: data.token.y
+            }
+          ]
+        }));
+      } else if (type === "update") {
+        setCurrentMap(map => ({
+          ...map,
+          tokens: map.tokens.map(token => {
+            if (token.id !== data.token.id) return token;
+            return {
+              ...token,
+              ...data.token,
+              x: data.token.x,
+              y: data.token.y
+            };
+          })
+        }));
+      }
+    });
+
+    return () => socket.off(eventName);
+  }, [socket, mapId]);
+
   // long press event for setting a map marker
   const longPressProps = useLongPress(ev => {
     if (!mapCanvasDimensions.current) {
@@ -363,6 +403,15 @@ export const PlayerArea = () => {
             }}
           />
           <ObjectLayer ref={objectSvgRef}>
+            <TokenRenderer
+              tokens={(currentMap && currentMap.tokens) || []}
+              ratio={
+                mapCanvasDimensions.current
+                  ? mapCanvasDimensions.current.ratio
+                  : 1
+              }
+            />
+
             <AreaMarkerRenderer
               markedAreas={markedAreas}
               setMarkedAreas={setMarkedAreas}

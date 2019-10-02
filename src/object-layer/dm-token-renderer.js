@@ -2,7 +2,7 @@ import React from "react";
 import { DmTokenMarker } from "./dm-token-marker";
 
 export const DmTokenRenderer = React.memo(
-  ({ tokens, getRelativePosition, updateToken }) => {
+  ({ tokens, getRelativePosition, updateToken, ratio }) => {
     return (
       <>
         {tokens.map(token => (
@@ -11,6 +11,7 @@ export const DmTokenRenderer = React.memo(
             key={token.id}
             getRelativePosition={getRelativePosition}
             updateToken={props => updateToken({ ...props, id: token.id })}
+            ratio={ratio}
           />
         ))}
       </>

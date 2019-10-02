@@ -1,11 +1,11 @@
 import React from "react";
-import { DmTokenMarker } from "./token-marker";
+import { TokenMarker } from "./token-marker";
 
-export const TokenRenderer = React.memo(({ tokens }) => {
+export const TokenRenderer = React.memo(({ tokens, ratio }) => {
   return (
     <>
       {tokens.map(token => (
-        <DmTokenMarker {...token} key={token.id} />
+        <TokenMarker {...token} key={token.id} ratio={ratio} />
       ))}
     </>
   );
