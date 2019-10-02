@@ -946,7 +946,7 @@ export const DmMap = ({
     <>
       <PanZoom
         disableDoubleClickZoom={tool !== "move"}
-        disabled={tool !== "move"}
+        preventPan={() => tool !== "move"}
         style={{
           ...panZoomContainerStyles,
           cursor
