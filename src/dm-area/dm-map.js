@@ -12,12 +12,13 @@ import { Toolbar } from "./../toolbar";
 import styled from "@emotion/styled/macro";
 import { ObjectLayer } from "../object-layer";
 import * as Icons from "../feather-icons";
-import { useSocket } from "../socket";
 import { ToggleSwitch } from "../toggle-switch";
 import { useResetState } from "../hooks/use-reset-state";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useSvgGrid } from "../hooks/use-svg-grid";
 import { CirclePicker } from "react-color";
+import { AreaMarker } from "../object-layer/area-marker";
+import { TokenMarker } from "../object-layer/token-marker";
 
 const ShapeButton = styled.button`
   border: none;
@@ -369,6 +370,8 @@ const parseMapColor = input => {
  * liveMapId = id of the map that is currently visible to the players
  */
 export const DmMap = ({
+  socket,
+  setAppData,
   map,
   loadedMapId,
   liveMapId,
@@ -387,7 +390,6 @@ export const DmMap = ({
   const hasPreviousMap = useRef(false);
   const panZoomRef = useRef(null);
   const panZoomReferentialRef = useRef(null);
-  const socket = useSocket();
   const [cursorCoordinates, setCursorCoodinates] = useState(null);
   const [
     areaSelectionStartCoordinates,
@@ -417,6 +419,8 @@ export const DmMap = ({
   const [tokenSize, setTokenSize] = useTokenSizeState(15);
   const [tokenColor, setTokenColor] = useTokenColorState("#b80000");
 
+  const tokens = map.tokens || [];
+
   // marker related stuff
   const [mapCanvasDimensions, setMapCanvasDimensions] = useState({
     width: 0,
@@ -428,7 +432,6 @@ export const DmMap = ({
 
   const objectSvgRef = useRef(null);
   const [markedAreas, setMarkedAreas] = useState(() => []);
-  const [tokens, setTokens] = useState(() => []);
 
   const fillFog = useCallback(() => {
     if (!fogCanvasRef.current) {
@@ -687,20 +690,52 @@ export const DmMap = ({
   };
 
   useEffect(() => {
-    socket.on("add token", async data => {
-      const { ratio } = latestMapCanvasDimensions.current;
-      setTokens(tokens => [
-        ...tokens.filter(area => area.id !== data.id),
-        {
-          id: data.id,
-          x: data.x * ratio,
-          y: data.y * ratio,
-          radius: data.radius * ratio,
-          color: data.color
-        }
-      ]);
+    const eventName = `token:mapId:${loadedMapId}`;
+    socket.on(eventName, ({ type, data }) => {
+      if (type === "add") {
+        setAppData(appData => ({
+          ...appData,
+          maps: appData.maps.map(map => {
+            if (map.id !== loadedMapId) return map;
+            return {
+              ...map,
+              tokens: [
+                ...map.tokens,
+                {
+                  ...data.token,
+                  x: data.token.x / latestMapCanvasDimensions.current.ratio,
+                  y: data.token.y / latestMapCanvasDimensions.current.ratio
+                }
+              ]
+            };
+          })
+        }));
+      } else if (type === "move") {
+        setAppData(appData => ({
+          ...appData,
+          maps: appData.maps.map(map => {
+            if (map.id !== loadedMapId) return map;
+            return {
+              ...map,
+              tokens: map.tokens.map(token => {
+                if (token.id !== data.token.id) return map;
+                return {
+                  ...token,
+                  ...data.token,
+                  x: data.token.x / latestMapCanvasDimensions.current.ratio,
+                  y: data.token.y / latestMapCanvasDimensions.current.ratio
+                };
+              })
+            };
+          })
+        }));
+      }
     });
 
+    return () => socket.off(eventName);
+  }, [socket, loadedMapId, setAppData]);
+
+  useEffect(() => {
     socket.on("mark area", async data => {
       const { ratio } = latestMapCanvasDimensions.current;
       setMarkedAreas(markedAreas => [
@@ -713,9 +748,9 @@ export const DmMap = ({
       ]);
     });
 
-    socket.on("remove token", async data => {
-      setTokens(tokens => tokens.filter(area => area.id !== data.id));
-    });
+    // socket.on("remove token", async data => {
+    //   setTokens(tokens => tokens.filter(area => area.id !== data.id));
+    // });
 
     return () => {
       socket.off("mark area");
@@ -857,6 +892,37 @@ export const DmMap = ({
     cursor = "pointer";
   }
 
+  const getRelativePosition = useCallback(
+    pageCoordinates => {
+      const ref = new Referentiel(panZoomRef.current.dragContainer.current);
+      const [x, y] = ref.global_to_local([
+        pageCoordinates.x,
+        pageCoordinates.y
+      ]);
+      const { ratio } = mapCanvasDimensions;
+      return { x: x / ratio, y: y / ratio };
+    },
+    [mapCanvasDimensions]
+  );
+
+  const updateTokenPosition = useCallback(
+    ({ id, x, y, radius, color }) => {
+      fetch(`/map/${loadedMapId}/token/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          x,
+          y,
+          radius,
+          color
+        })
+      });
+    },
+    [loadedMapId]
+  );
+
   return (
     <>
       <PanZoom
@@ -866,42 +932,24 @@ export const DmMap = ({
           ...panZoomContainerStyles,
           cursor
         }}
-        onContextMenu={ev => {
-          if (tool === "tokens") {
-            ev.preventDefault();
-            const ref = new Referentiel(
-              panZoomRef.current.dragContainer.current
-            );
-            const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
-            const token = [...document.querySelectorAll(".tokenCircle")].filter(
-              function(circle) {
-                return (
-                  Math.sqrt(
-                    Math.pow(circle.cx.baseVal.value - x, 2) +
-                      Math.pow(circle.cy.baseVal.value - y, 2)
-                  ) < circle.r.baseVal.value
-                );
-              }
-            );
-            if (token.length !== 0) {
-              socket.emit("remove token", {
-                id: parseInt(token[token.length - 1].getAttribute("tokenid"))
-              });
-            }
-          }
-        }}
         onClick={ev => {
           const ref = new Referentiel(panZoomRef.current.dragContainer.current);
           const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
           const { ratio } = mapCanvasDimensions;
           switch (tool) {
             case "tokens": {
-              socket.emit("add token", {
-                x: x / ratio,
-                y: y / ratio,
-                id: tokenId,
-                radius: tokenSize,
-                color: tokenColor.hex
+              fetch(`/map/${loadedMapId}/token`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  x: x / ratio,
+                  y: y / ratio,
+                  radius: tokenSize,
+                  color: tokenColor.hex,
+                  label: "1"
+                })
               });
               break;
             }
@@ -1058,18 +1106,29 @@ export const DmMap = ({
               }
             }}
           />
-          <ObjectLayer
-            defs={<>{gridPatternDefinition}</>}
-            ref={objectSvgRef}
-            tokens={tokens}
-            areaMarkers={markedAreas}
-            removeAreaMarker={id => {
-              setMarkedAreas(markedAreas =>
-                markedAreas.filter(area => area.id !== id)
-              );
-            }}
-          >
+          <ObjectLayer defs={<>{gridPatternDefinition}</>} ref={objectSvgRef}>
             {gridRectangleElement}
+            {tokens.map(token => (
+              <TokenMarker
+                {...token}
+                key={token.id}
+                getRelativePosition={getRelativePosition}
+                updateTokenPosition={props =>
+                  updateTokenPosition({ ...props, tokenId: token.id })
+                }
+              />
+            ))}
+            {markedAreas.map(markedArea => (
+              <AreaMarker
+                {...markedArea}
+                onFinishAnimation={id => {
+                  setMarkedAreas(markedAreas =>
+                    markedAreas.filter(area => area.id !== id)
+                  );
+                }}
+                key={markedArea.id}
+              />
+            ))}
             <Cursor
               coordinates={cursorCoordinates}
               tool={tool}

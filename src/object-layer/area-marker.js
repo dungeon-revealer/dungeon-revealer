@@ -46,7 +46,7 @@ const createAnimation = ({ animate, duration, onFinish }) => {
   return { cancel, start };
 };
 
-const AreaMarker = React.memo(({ x, y, onFinishAnimation }) => {
+export const AreaMarker = React.memo(({ x, y, onFinishAnimation }) => {
   const circleRef = useRef(null);
   const onFinishAnimationRef = useRef(onFinishAnimation);
 
@@ -91,66 +91,3 @@ const AreaMarker = React.memo(({ x, y, onFinishAnimation }) => {
     />
   );
 });
-
-const TokenMarker = React.memo(({ x, y, id, radius, color }) => {
-  const circleRef = useRef(null);
-
-  return (
-    <g ref={circleRef}>
-      <circle
-        tokenid={id}
-        className="tokenCircle"
-        cx={x}
-        cy={y}
-        r={radius}
-        strokeWidth="0.5%"
-        stroke="black"
-        fill={color}
-        opacity="1"
-      />
-
-      <text
-        x={x}
-        y={y}
-        strokeWidth="0.25%"
-        textAnchor="middle"
-        stroke="black"
-        fontSize={radius}
-        dy=".3em"
-      >
-        {id}
-      </text>
-    </g>
-  );
-});
-
-export const ObjectLayer = React.forwardRef(
-  ({ areaMarkers, removeAreaMarker, defs, children, tokens }, ref) => {
-    return (
-      <svg
-        ref={ref}
-        style={{
-          pointerEvents: "none",
-          backfaceVisibility: "hidden",
-          position: "absolute",
-          overflow: "visible"
-        }}
-      >
-        {defs ? <defs>{defs}</defs> : null}
-        {children}
-        {areaMarkers.map(markedArea => (
-          <AreaMarker
-            {...markedArea}
-            onFinishAnimation={() => {
-              removeAreaMarker(markedArea.id);
-            }}
-            key={markedArea.id}
-          />
-        ))}
-        {tokens.map(token => (
-          <TokenMarker {...token} key={token.id} />
-        ))}
-      </svg>
-    );
-  }
-);

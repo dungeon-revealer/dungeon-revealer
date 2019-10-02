@@ -307,6 +307,101 @@ app.patch("/map/:id", authMiddleware, (req, res) => {
   });
 });
 
+app.post("/map/:id/token", authMiddleware, (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.status(404).json({
+      success: false,
+      data: null,
+      error: {
+        message: `Map with id '${req.params.id}' does not exist.`,
+        code: "ERR_MAP_DOES_NOT_EXIST"
+      }
+    });
+  }
+
+  const { token } = maps.addToken(map.id, {
+    x: req.body.x,
+    y: req.body.y,
+    color: req.body.color,
+    label: req.body.label,
+    radius: req.body.radius
+  });
+
+  res.json({
+    success: true,
+    data: {
+      token
+    }
+  });
+
+  io.emit(`token:mapId:${map.id}`, {
+    type: "add",
+    data: { token }
+  });
+});
+
+app.delete("/map/:id/token/:tokenId", authMiddleware, (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.status(404).json({
+      success: false,
+      data: null,
+      error: {
+        message: `Map with id '${req.params.id}' does not exist.`,
+        code: "ERR_MAP_DOES_NOT_EXIST"
+      }
+    });
+  }
+
+  const updatedMap = maps.removeToken(map.id, req.params.tokenId);
+  res.json({
+    success: true,
+    data: {
+      map: updatedMap
+    }
+  });
+
+  io.emit(`token:mapId:${map.id}`, {
+    type: "remove",
+    data: { tokenId: req.params.tokenId }
+  });
+});
+
+app.patch("/map/:id/token/:tokenId", authMiddleware, (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.status(404).json({
+      success: false,
+      data: null,
+      error: {
+        message: `Map with id '${req.params.id}' does not exist.`,
+        code: "ERR_MAP_DOES_NOT_EXIST"
+      }
+    });
+  }
+
+  const result = maps.updateToken(map.id, req.params.tokenId, {
+    x: req.body.x,
+    y: req.body.y,
+    color: req.body.color,
+    label: req.body.label,
+    radius: req.body.radius
+  });
+
+  res.json({
+    success: true,
+    data: {
+      map: result.map
+    }
+  });
+
+  io.emit(`token:mapId:${map.id}`, {
+    type: "update",
+    data: { token: result.token }
+  });
+});
+
 app.get("/", function(req, res) {
   res.sendfile("/build/index.html", { root: __dirname });
 });
@@ -358,12 +453,6 @@ io.on("connection", function(socket) {
   socket.on("mark area", msg => {
     io.emit("mark area", {
       id: createUniqueId(),
-      ...msg
-    });
-  });
-
-  socket.on("add token", msg => {
-    io.emit("add token", {
       ...msg
     });
   });

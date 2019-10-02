@@ -11,6 +11,7 @@ import { Modal } from "./modal";
 import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
 import { SetMapGrid } from "./set-map-grid";
+import { useSocket } from "../socket";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 
@@ -20,6 +21,7 @@ const INITIAL_MODE = {
 };
 
 export const DmArea = () => {
+  const socket = useSocket();
   const [data, setData] = useState(null);
   const [loadedMapId, setLoadedMapId] = useLoadedMapId(null);
   const loadedMapIdRef = useRef(loadedMapId);
@@ -152,6 +154,8 @@ export const DmArea = () => {
         />
       ) : loadedMap ? (
         <DmMap
+          setAppData={setData}
+          socket={socket}
           map={loadedMap}
           loadedMapId={loadedMap.id}
           liveMapId={liveMapId}

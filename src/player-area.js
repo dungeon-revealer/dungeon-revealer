@@ -9,6 +9,7 @@ import { Toolbar } from "./toolbar";
 import styled from "@emotion/styled/macro";
 import * as Icons from "./feather-icons";
 import { useSocket } from "./socket";
+import { AreaMarker } from "./object-layer/area-marker";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -72,7 +73,6 @@ export const PlayerArea = () => {
   const mapImageRef = useRef(null);
 
   const [markedAreas, setMarkedAreas] = useState(() => []);
-  const [tokens, setTokens] = useState(() => []);
 
   const centerMap = (isAnimated = true) => {
     if (!panZoomRef.current) {
@@ -102,23 +102,6 @@ export const PlayerArea = () => {
 
       socket.on("disconnect", function() {
         console.log("disconnected from server");
-      });
-
-      socket.on("add token", async data => {
-        setTokens(tokens => [
-          ...tokens.filter(token => token.id !== data.id),
-          {
-            id: data.id,
-            x: data.x * mapCanvasDimensions.current.ratio,
-            y: data.y * mapCanvasDimensions.current.ratio,
-            radius: data.radius * mapCanvasDimensions.current.ratio,
-            color: data.color
-          }
-        ]);
-      });
-
-      socket.on("remove token", async data => {
-        setTokens(tokens => tokens.filter(area => area.id !== data.id));
       });
 
       const onReceiveMap = async data => {
@@ -379,16 +362,19 @@ export const PlayerArea = () => {
               position: "absolute"
             }}
           />
-          <ObjectLayer
-            ref={objectSvgRef}
-            areaMarkers={markedAreas}
-            tokens={tokens}
-            removeAreaMarker={id => {
-              setMarkedAreas(markedAreas =>
-                markedAreas.filter(area => area.id !== id)
-              );
-            }}
-          />
+          <ObjectLayer ref={objectSvgRef}>
+            {markedAreas.map(markedArea => (
+              <AreaMarker
+                {...markedArea}
+                onFinishAnimation={id => {
+                  setMarkedAreas(markedAreas =>
+                    markedAreas.filter(area => area.id !== id)
+                  );
+                }}
+                key={markedArea.id}
+              />
+            ))}
+          </ObjectLayer>
         </div>
       </PanZoom>
       {!showSplashScreen ? (

@@ -54,7 +54,8 @@ class Maps {
       grid: null,
       showGrid: false,
       showGridToPlayers: false,
-      gridColor: "rgba(0, 0, 0, 0.5)"
+      gridColor: "rgba(0, 0, 0, 0.5)",
+      tokens: []
     };
 
     fs.moveSync(file.path, path.join(mapDirectory, id, mapPath));
@@ -188,6 +189,84 @@ class Maps {
         res(this.updateMapSettings(id, { mapPath: fileName }));
       });
     });
+  }
+
+  addToken(mapId, { x, y, radius, color, label }) {
+    const token = {
+      id: uuid(),
+      x,
+      y,
+      radius,
+      color,
+      label
+    };
+
+    const map = this.get(mapId);
+    if (!map) {
+      throw new Error(`Map with id "${mapId}" not found.`);
+    }
+
+    const tokens = map.tokens || [];
+
+    tokens.push(token);
+
+    this.updateMapSettings(mapId, { tokens });
+
+    return {
+      map,
+      token
+    };
+  }
+
+  updateToken(mapId, tokenId, { x, y, radius, color, label }) {
+    const map = this.get(mapId);
+    if (!map) {
+      throw new Error(`Map with id "${mapId}" not found.`);
+    }
+    const token = (map.tokens || []).find(token => token.id === tokenId);
+
+    if (!token) {
+      throw new Error(
+        `Token with id "${tokenId}" does not exist on map with id "${mapId}".`
+      );
+    }
+
+    if (x !== undefined) {
+      token.x = x;
+    }
+    if (y !== undefined) {
+      token.y = y;
+    }
+    if (radius !== undefined) {
+      token.radius = radius;
+    }
+    if (color !== undefined) {
+      token.color = color;
+    }
+    if (label !== undefined) {
+      token.label = label;
+    }
+
+    const updatedMap = this.updateMapSettings(mapId, {
+      tokens: map.tokens
+    });
+
+    return {
+      map: updatedMap,
+      token
+    };
+  }
+
+  removeToken(mapId, tokenId) {
+    const map = this.get(mapId);
+    if (!map) {
+      throw new Error(`Map with id "${mapId}" not found.`);
+    }
+
+    const tokens = (map.tokens || []).filter(token => token.id !== tokenId);
+    const updatedMap = this.updateMapSettings(mapId, { tokens });
+
+    return { map: updatedMap };
   }
 
   deleteMap(id) {
