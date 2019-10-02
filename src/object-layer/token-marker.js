@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import { darken } from "polished";
 
 export const TokenMarker = React.memo(
   React.forwardRef(
@@ -22,8 +23,8 @@ export const TokenMarker = React.memo(
           <circle
             tokenid={id}
             r={radius}
-            strokeWidth="0.5%"
-            stroke="black"
+            strokeWidth="10"
+            stroke={darken(0.1, color)}
             fill={color}
             opacity="1"
             onClick={onClick}
