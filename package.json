@@ -44,7 +44,7 @@
   "devDependencies": {
     "babel-eslint": "10.0.2",
     "cross-env": "6.0.0",
-    "eslint": "6.1.0",
+    "eslint": "6.5.1",
     "eslint-config-prettier": "6.3.0",
     "eslint-plugin-react-app": "6.0.1",
     "husky": "3.0.7",
