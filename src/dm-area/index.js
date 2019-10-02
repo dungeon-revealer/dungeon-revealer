@@ -6,6 +6,8 @@ import React, {
   useRef,
   useCallback
 } from "react";
+import produce from "immer";
+import useAsyncEffect from "@n1ru4l/use-async-effect";
 import createPersistedState from "use-persisted-state";
 import { Modal } from "./modal";
 import { DmMap } from "./dm-map";
@@ -42,32 +44,85 @@ export const DmArea = () => {
     [data, loadedMapId]
   );
 
+  // load initial state
+  useAsyncEffect(
+    function*() {
+      const { data } = yield fetch("/map").then(res => res.json());
+      setData(data);
+      const isLoadedMapAvailable = Boolean(
+        data.maps.find(map => map.id === loadedMapIdRef.current)
+      );
+
+      const isLiveMapAvailable = Boolean(
+        data.maps.find(map => map.id === data.currentMapId)
+      );
+
+      if (!isLiveMapAvailable && !isLoadedMapAvailable) {
+        setMode({ title: "SHOW_MAP_LIBRARY" });
+        setLoadedMapId(null);
+        return;
+      }
+
+      setLiveMapId(isLiveMapAvailable ? data.currentMapId : null);
+      setLoadedMapId(
+        isLoadedMapAvailable ? loadedMapIdRef.current : data.currentMapId
+      );
+    },
+    [setLoadedMapId]
+  );
+
+  // token add/remove/update event handlers
   useEffect(() => {
-    fetch("/map")
-      .then(res => {
-        return res.json();
-      })
-      .then(res => {
-        setData(res.data);
-        const isLoadedMapAvailable = Boolean(
-          res.data.maps.find(map => map.id === loadedMapIdRef.current)
+    const eventName = `token:mapId:${loadedMapId}`;
+    socket.on(eventName, ({ type, data }) => {
+      if (type === "add") {
+        setData(
+          produce(appData => {
+            const map = appData.maps.find(map => map.id === loadedMapId);
+            map.tokens.push(data.token);
+          })
         );
-        const isLiveMapAvailable = Boolean(
-          res.data.maps.find(map => map.id === res.data.currentMapId)
+      } else if (type === "update") {
+        setData(
+          produce(appData => {
+            const map = appData.maps.find(map => map.id === loadedMapId);
+            map.tokens = map.tokens.map(token => {
+              if (token.id !== data.token.id) return token;
+              return {
+                ...token,
+                ...data.token
+              };
+            });
+          })
         );
+      } else if (type === "remove") {
+        setData(
+          produce(appData => {
+            const map = appData.maps.find(map => map.id === loadedMapId);
+            map.tokens = map.tokens.filter(token => token.id !== data.tokenId);
+          })
+        );
+      }
+    });
 
-        if (!isLiveMapAvailable && !isLoadedMapAvailable) {
-          setMode({ title: "SHOW_MAP_LIBRARY" });
-          setLoadedMapId(null);
-          return;
-        }
+    return () => socket.off(eventName);
+  }, [socket, loadedMapId, setData]);
 
-        setLiveMapId(isLiveMapAvailable ? res.data.currentMapId : null);
-        setLoadedMapId(
-          isLoadedMapAvailable ? loadedMapIdRef.current : res.data.currentMapId
-        );
-      });
-  }, [setLoadedMapId]);
+  const createMap = useCallback(async ({ file, title }) => {
+    const formData = new FormData();
+
+    formData.append("file", file);
+    formData.append("title", title);
+
+    const res = await fetch(`/map`, {
+      method: "POST",
+      body: formData
+    }).then(res => res.json());
+    setData(data => ({
+      ...data,
+      maps: [...data.maps, res.data.map]
+    }));
+  }, []);
 
   const updateMap = useCallback(async (mapId, data) => {
     const res = await fetch(`/map/${mapId}`, {
@@ -82,17 +137,59 @@ export const DmArea = () => {
       return;
     }
 
+    setData(
+      produce(data => {
+        data.maps = data.maps.map(map => {
+          if (map.id !== res.data.map.id) {
+            return map;
+          } else {
+            return { ...map, ...res.data.map };
+          }
+        });
+      })
+    );
+  }, []);
+
+  const deleteMap = useCallback(async mapId => {
+    await fetch(`/map/${mapId}`, {
+      method: "DELETE"
+    });
     setData(data => ({
       ...data,
-      maps: data.maps.map(map => {
-        if (map.id !== res.data.map.id) {
-          return map;
-        } else {
-          return { ...map, ...res.data.map };
-        }
-      })
+      maps: data.maps.filter(map => map.id !== mapId)
     }));
   }, []);
+
+  const deleteToken = useCallback(
+    tokenId => {
+      fetch(`/map/${loadedMapId}/token/${tokenId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+    },
+    [loadedMapId]
+  );
+
+  const updateToken = useCallback(
+    ({ id, x, y, radius, color, label }) => {
+      fetch(`/map/${loadedMapId}/token/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          x,
+          y,
+          radius,
+          color,
+          label
+        })
+      });
+    },
+    [loadedMapId]
+  );
 
   return (
     <Modal.Provider>
@@ -110,30 +207,8 @@ export const DmArea = () => {
             setLoadedMapId(loadedMapId);
           }}
           updateMap={updateMap}
-          deleteMap={async mapId => {
-            await fetch(`/map/${mapId}`, {
-              method: "DELETE"
-            });
-            setData(data => ({
-              ...data,
-              maps: data.maps.filter(map => map.id !== mapId)
-            }));
-          }}
-          createMap={async ({ file, title }) => {
-            const formData = new FormData();
-
-            formData.append("file", file);
-            formData.append("title", title);
-
-            const res = await fetch(`/map`, {
-              method: "POST",
-              body: formData
-            }).then(res => res.json());
-            setData(data => ({
-              ...data,
-              maps: [...data.maps, res.data.map]
-            }));
-          }}
+          deleteMap={deleteMap}
+          createMap={createMap}
           enterGridMode={mapId =>
             setMode({ title: "SET_MAP_GRID", data: { mapId } })
           }
@@ -188,6 +263,8 @@ export const DmArea = () => {
             setMode({ title: "SET_MAP_GRID", data: { mapId: loadedMapId } });
           }}
           updateMap={updateMap}
+          deleteToken={deleteToken}
+          updateToken={updateToken}
         />
       ) : null}
     </Modal.Provider>

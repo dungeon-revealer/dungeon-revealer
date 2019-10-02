@@ -368,7 +368,6 @@ const DEFAULT_TOKEN_COLOR = "#b80000";
  */
 export const DmMap = ({
   socket,
-  setAppData,
   map,
   loadedMapId,
   liveMapId,
@@ -376,7 +375,9 @@ export const DmMap = ({
   hideMap,
   showMapModal,
   enterGridMode,
-  updateMap
+  updateMap,
+  deleteToken,
+  updateToken
 }) => {
   const mapContainerRef = useRef(null);
   const mapCanvasRef = useRef(null);
@@ -689,59 +690,6 @@ export const DmMap = ({
   };
 
   useEffect(() => {
-    const eventName = `token:mapId:${loadedMapId}`;
-    socket.on(eventName, ({ type, data }) => {
-      if (type === "add") {
-        setAppData(appData => ({
-          ...appData,
-          maps: appData.maps.map(map => {
-            if (map.id !== loadedMapId) return map;
-            return {
-              ...map,
-              tokens: [
-                ...map.tokens,
-                {
-                  ...data.token
-                }
-              ]
-            };
-          })
-        }));
-      } else if (type === "update") {
-        setAppData(appData => ({
-          ...appData,
-          maps: appData.maps.map(map => {
-            if (map.id !== loadedMapId) return map;
-            return {
-              ...map,
-              tokens: map.tokens.map(token => {
-                if (token.id !== data.token.id) return token;
-                return {
-                  ...token,
-                  ...data.token
-                };
-              })
-            };
-          })
-        }));
-      } else if (type === "remove") {
-        setAppData(appData => ({
-          ...appData,
-          maps: appData.maps.map(map => {
-            if (map.id !== loadedMapId) return map;
-            return {
-              ...map,
-              tokens: map.tokens.filter(token => token.id !== data.tokenId)
-            };
-          })
-        }));
-      }
-    });
-
-    return () => socket.off(eventName);
-  }, [socket, loadedMapId, setAppData]);
-
-  useEffect(() => {
     socket.on("mark area", async data => {
       const { ratio } = latestMapCanvasDimensions.current;
       setMarkedAreas(markedAreas => [
@@ -753,10 +701,6 @@ export const DmMap = ({
         }
       ]);
     });
-
-    // socket.on("remove token", async data => {
-    //   setTokens(tokens => tokens.filter(area => area.id !== data.id));
-    // });
 
     return () => {
       socket.off("mark area");
@@ -909,37 +853,6 @@ export const DmMap = ({
       return { x: x / ratio, y: y / ratio };
     },
     [mapCanvasDimensions]
-  );
-
-  const updateToken = useCallback(
-    ({ id, x, y, radius, color, label }) => {
-      fetch(`/map/${loadedMapId}/token/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          x,
-          y,
-          radius,
-          color,
-          label
-        })
-      });
-    },
-    [loadedMapId]
-  );
-
-  const deleteToken = useCallback(
-    tokenId => {
-      fetch(`/map/${loadedMapId}/token/${tokenId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
-    },
-    [loadedMapId]
   );
 
   return (

@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import produce from "immer";
 import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
@@ -322,35 +323,31 @@ export const PlayerArea = () => {
     const eventName = `token:mapId:${mapId}`;
     socket.on(eventName, ({ type, data }) => {
       if (type === "add") {
-        setCurrentMap(map => ({
-          ...map,
-          tokens: [
-            ...map.tokens,
-            {
-              ...data.token,
-              x: data.token.x,
-              y: data.token.y
-            }
-          ]
-        }));
-      } else if (type === "update") {
-        setCurrentMap(map => ({
-          ...map,
-          tokens: map.tokens.map(token => {
-            if (token.id !== data.token.id) return token;
-            return {
-              ...token,
-              ...data.token,
-              x: data.token.x,
-              y: data.token.y
-            };
+        setCurrentMap(
+          produce(map => {
+            map.tokens.push(data.token);
           })
-        }));
+        );
+      } else if (type === "update") {
+        setCurrentMap(
+          produce(map => {
+            map.tokens = map.tokens.map(token => {
+              if (token.id !== data.token.id) return token;
+              return {
+                ...token,
+                ...data.token
+              };
+            });
+          })
+        );
       } else if (type === "remove") {
-        setCurrentMap(map => ({
-          ...map,
-          tokens: map.tokens.filter(token => token.id !== data.tokenId)
-        }));
+        setCurrentMap(
+          produce(map => {
+            map.tokens = map.tokens = map.tokens.filter(
+              token => token.id !== data.tokenId
+            );
+          })
+        );
       }
     });
 
