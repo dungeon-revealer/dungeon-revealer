@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
 import { PanZoom } from "react-easy-panzoom";
-import ReactTooltip from "react-tooltip";
 import Referentiel from "referentiel";
 import { AlphaPicker, HuePicker } from "react-color";
 import parseColor from "parse-color";
@@ -1010,7 +1009,6 @@ export const DmMap = ({
               setCursorCoodinates(coords);
             }}
             onMouseDown={ev => {
-              console.log("scurr");
               const coords = getMouseCoordinates(ev);
 
               if (tool === "brush") {
@@ -1019,7 +1017,6 @@ export const DmMap = ({
 
                 const onMouseMove = ev => {
                   const currentCoords = getMouseCoordinates(ev);
-                  setCursorCoodinates(currentCoords);
 
                   drawFog(lastCoords, currentCoords);
                   lastCoords = currentCoords;
@@ -1040,13 +1037,7 @@ export const DmMap = ({
                 const startCoords = coords;
                 setAreaSelectionStartCoordinates(coords);
 
-                const onMouseMove = ev => {
-                  const coords = getMouseCoordinates(ev);
-                  setCursorCoodinates(coords);
-                };
-
                 const onMouseUp = ev => {
-                  window.removeEventListener("mousemove", onMouseMove);
                   window.removeEventListener("mouseup", onMouseUp);
                   window.removeEventListener("keydown", onKeyDown);
                   const endCoords = getMouseCoordinates(ev);
@@ -1062,13 +1053,11 @@ export const DmMap = ({
                 const onKeyDown = ev => {
                   if (ev.key === "Escape" && tool === "area") {
                     setAreaSelectionStartCoordinates(null);
-                    window.removeEventListener("mousemove", onMouseMove);
                     window.removeEventListener("mouseup", onMouseUp);
                     window.removeEventListener("keydown", onKeyDown);
                   }
                 };
 
-                window.addEventListener("mousemove", onMouseMove);
                 window.addEventListener("mouseup", onMouseUp);
                 window.addEventListener("keydown", onKeyDown);
               }
@@ -1250,17 +1239,17 @@ export const DmMap = ({
               </ConditionalWrap>
             </Toolbar.Item>
             {isCurrentMapLive ? (
-              <Toolbar.Item data-tooltip="Currently loaded map is live">
+              <Toolbar.Item>
                 <Icons.RadioIcon style={{ stroke: "hsl(160, 51%, 49%)" }} />
                 <Icons.Label color="hsl(160, 51%, 49%)">Live</Icons.Label>
               </Toolbar.Item>
             ) : isOtherMapLive ? (
-              <Toolbar.Item data-tooltip="A different map is live">
+              <Toolbar.Item>
                 <Icons.RadioIcon style={{ stroke: "hsl(48, 94%, 68%)" }} />
                 <Icons.Label color="hsl(48, 94%, 68%)">Live</Icons.Label>
               </Toolbar.Item>
             ) : (
-              <Toolbar.Item data-tooltip="A different map is live">
+              <Toolbar.Item>
                 <Icons.RadioIcon style={{ stroke: "hsl(211, 27%, 70%)" }} />
                 <Icons.Label color="hsl(211, 27%, 70%)">Not Live</Icons.Label>
               </Toolbar.Item>
@@ -1454,7 +1443,6 @@ export const DmMap = ({
           </Toolbar.Group>
         </Toolbar>
       </div>
-      <ReactTooltip />
     </>
   );
 };
