@@ -1,31 +1,50 @@
 import React, { useRef } from "react";
 
 export const TokenMarker = React.memo(
-  React.forwardRef(({ x, y, id, radius, color, label, ...props }, ref) => {
-    return (
-      <g ref={ref} transform={`translate(${x}, ${y})`} {...props}>
-        <circle
-          tokenid={id}
-          className="tokenCircle"
-          r={radius}
-          strokeWidth="0.5%"
-          stroke="black"
-          fill={color}
-          opacity="1"
-        />
+  React.forwardRef(
+    (
+      {
+        x,
+        y,
+        id,
+        radius,
+        color,
+        label,
+        onClick,
+        onMouseDown,
+        onContextMenu,
+        ...props
+      },
+      ref
+    ) => {
+      return (
+        <g ref={ref} transform={`translate(${x}, ${y})`} {...props}>
+          <circle
+            tokenid={id}
+            r={radius}
+            strokeWidth="0.5%"
+            stroke="black"
+            fill={color}
+            opacity="1"
+            onClick={onClick}
+            onMouseDown={onMouseDown}
+            onContextMenu={onContextMenu}
+          />
 
-        <text
-          strokeWidth="0.25%"
-          textAnchor="middle"
-          stroke="black"
-          fontSize={radius}
-          dy=".3em"
-        >
-          {label}
-        </text>
-      </g>
-    );
-  })
+          <text
+            pointerEvents="none"
+            strokeWidth="0.25%"
+            textAnchor="middle"
+            stroke="black"
+            fontSize={radius}
+            dy=".3em"
+          >
+            {label}
+          </text>
+        </g>
+      );
+    }
+  )
 );
 
 export const DmTokenMarker = React.memo(
@@ -36,13 +55,13 @@ export const DmTokenMarker = React.memo(
       <TokenMarker
         ref={tokenRef}
         {...props}
-        pointerEvents="all"
-        cursor="pointer"
         onClick={ev => {
           ev.preventDefault();
           ev.stopPropagation();
         }}
         onMouseDown={ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
           if (ev.button !== 0) return;
           ev.preventDefault();
           ev.stopPropagation();

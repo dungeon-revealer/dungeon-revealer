@@ -387,8 +387,6 @@ export const DmMap = ({
   const mapCanvasRef = useRef(null);
   const mapImageCanvasRef = useRef(null);
   const fogCanvasRef = useRef(null);
-  const drawState = useRef({ isDrawing: false, lastCoords: null });
-  const areaDrawState = useRef({ startCoords: null, currentCoords: null });
   const hasPreviousMap = useRef(false);
   const panZoomRef = useRef(null);
   const panZoomReferentialRef = useRef(null);
@@ -653,34 +651,35 @@ export const DmMap = ({
     [brushShape, constructMask, drawInitial, lineWidth, mode]
   );
 
-  const handleAreaSelection = useCallback(() => {
-    const context = fogCanvasRef.current.getContext("2d");
+  const handleAreaSelection = useCallback(
+    (startCoords, endCoords) => {
+      const context = fogCanvasRef.current.getContext("2d");
 
-    if (mode === "clear") {
-      context.globalCompositeOperation = "destination-out";
-    } else {
-      context.globalCompositeOperation = "source-over";
-    }
-    if (map.showGrid) {
-      const { startCoords, currentCoords } = areaDrawState.current;
-      const selectionMask = calculateRectProps(startCoords, currentCoords);
-      const { x, y, width, height } = getSnappedSelectionMask(
-        map.grid,
-        mapCanvasDimensions.ratio,
-        selectionMask
-      );
-      context.fillRect(x, y, width, height);
-    } else {
-      const { startCoords, currentCoords } = areaDrawState.current;
-      const { x, y, width, height } = calculateRectProps(
-        startCoords,
-        currentCoords
-      );
-      context.fillRect(x, y, width, height);
-    }
+      if (mode === "clear") {
+        context.globalCompositeOperation = "destination-out";
+      } else {
+        context.globalCompositeOperation = "source-over";
+      }
+      if (map.showGrid) {
+        const selectionMask = calculateRectProps(startCoords, endCoords);
+        const { x, y, width, height } = getSnappedSelectionMask(
+          map.grid,
+          mapCanvasDimensions.ratio,
+          selectionMask
+        );
+        context.fillRect(x, y, width, height);
+      } else {
+        const { x, y, width, height } = calculateRectProps(
+          startCoords,
+          endCoords
+        );
+        context.fillRect(x, y, width, height);
+      }
 
-    redrawCanvas();
-  }, [mode, map, mapCanvasDimensions.ratio]);
+      redrawCanvas();
+    },
+    [mode, map, mapCanvasDimensions.ratio]
+  );
 
   const redrawCanvas = () => {
     const mapContext = mapCanvasRef.current.getContext("2d");
@@ -973,24 +972,16 @@ export const DmMap = ({
             panZoomRef.current.dragContainer.current
           );
         }}
-        onKeyDown={ev => {
-          if (ev.key === "Escape" && tool === "area") {
-            drawState.current.isDrawing = false;
-            areaDrawState.current.startCoords = null;
-            drawState.current.lastCoords = null;
-            areaDrawState.current.currentCoords = null;
-            setAreaSelectionStartCoordinates(null);
-          }
-        }}
         ref={panZoomRef}
       >
         <div
           ref={mapContainerRef}
           style={{ backfaceVisibility: "hidden", touchAction: "none" }}
         >
-          <canvas
-            ref={mapCanvasRef}
-            style={{ position: "absolute" }}
+          <canvas ref={mapCanvasRef} style={{ position: "absolute" }} />
+          <ObjectLayer
+            defs={<>{gridPatternDefinition}</>}
+            ref={objectSvgRef}
             onMouseMove={ev => {
               if (tool === "move" || tool === "mark") {
                 return;
@@ -998,117 +989,136 @@ export const DmMap = ({
 
               const coords = getMouseCoordinates(ev);
               setCursorCoodinates(coords);
-
-              if (tool === "area" && areaDrawState.current.startCoords) {
-                if (areaDrawState.current.startCoords) {
-                  areaDrawState.current.currentCoords = coords;
-                }
-                return;
-              }
-
-              if (!drawState.current.isDrawing) {
-                return;
-              }
-
-              drawFog(drawState.current.lastCoords, coords);
-              drawState.current.lastCoords = coords;
-            }}
-            onMouseLeave={() => {
-              setCursorCoodinates(null);
-              if (
-                (drawState.current.isDrawing || drawState.current.lastCoords) &&
-                saveFogCanvasRef.current
-              ) {
-                saveFogCanvasRef.current();
-              }
-
-              drawState.current.isDrawing = false;
-              drawState.current.lastCoords = null;
-              areaDrawState.current.currentCoords = null;
-              areaDrawState.current.startCoords = null;
-              setAreaSelectionStartCoordinates(null);
             }}
             onMouseDown={ev => {
+              console.log("scurr");
               const coords = getMouseCoordinates(ev);
 
               if (tool === "brush") {
-                drawState.current.isDrawing = true;
-                drawInitial(coords);
-              } else if (tool === "area") {
-                areaDrawState.current.startCoords = coords;
-                setAreaSelectionStartCoordinates(coords);
-              }
-            }}
-            onMouseUp={() => {
-              drawState.current.isDrawing = false;
-              drawState.current.lastCoords = null;
-              if (
-                areaDrawState.current.currentCoords &&
-                areaDrawState.current.startCoords
-              ) {
-                handleAreaSelection();
-              }
-              areaDrawState.current.currentCoords = null;
-              areaDrawState.current.startCoords = null;
-              setAreaSelectionStartCoordinates(null);
+                let lastCoords = coords;
+                drawInitial(lastCoords);
 
-              if (saveFogCanvasRef.current) {
-                saveFogCanvasRef.current();
+                const onMouseMove = ev => {
+                  const currentCoords = getMouseCoordinates(ev);
+                  setCursorCoodinates(currentCoords);
+
+                  drawFog(lastCoords, currentCoords);
+                  lastCoords = currentCoords;
+                };
+
+                const onMouseUp = () => {
+                  window.removeEventListener("mousemove", onMouseMove);
+                  window.removeEventListener("mouseup", onMouseUp);
+
+                  if (saveFogCanvasRef.current) {
+                    saveFogCanvasRef.current();
+                  }
+                };
+
+                window.addEventListener("mousemove", onMouseMove);
+                window.addEventListener("mouseup", onMouseUp);
+              } else if (tool === "area") {
+                const startCoords = coords;
+                setAreaSelectionStartCoordinates(coords);
+
+                const onMouseMove = ev => {
+                  const coords = getMouseCoordinates(ev);
+                  setCursorCoodinates(coords);
+                };
+
+                const onMouseUp = ev => {
+                  window.removeEventListener("mousemove", onMouseMove);
+                  window.removeEventListener("mouseup", onMouseUp);
+                  window.removeEventListener("keydown", onKeyDown);
+                  const endCoords = getMouseCoordinates(ev);
+
+                  handleAreaSelection(startCoords, endCoords);
+                  setAreaSelectionStartCoordinates(null);
+
+                  if (saveFogCanvasRef.current) {
+                    saveFogCanvasRef.current();
+                  }
+                };
+
+                const onKeyDown = ev => {
+                  if (ev.key === "Escape" && tool === "area") {
+                    setAreaSelectionStartCoordinates(null);
+                    window.removeEventListener("mousemove", onMouseMove);
+                    window.removeEventListener("mouseup", onMouseUp);
+                    window.removeEventListener("keydown", onKeyDown);
+                  }
+                };
+
+                window.addEventListener("mousemove", onMouseMove);
+                window.addEventListener("mouseup", onMouseUp);
+                window.addEventListener("keydown", onKeyDown);
               }
             }}
             onTouchStart={ev => {
               if (tool === "move") {
                 return;
               }
+
               const coords = getTouchCoordinates(ev.touches[0]);
               setCursorCoodinates(coords);
+
               if (tool === "brush") {
-                drawState.current.isDrawing = true;
-                drawInitial(coords);
+                let lastCoords = coords;
+                drawInitial(lastCoords);
+
+                const onTouchMove = ev => {
+                  ev.preventDefault();
+                  const currentCoords = getTouchCoordinates(ev.touches[0]);
+                  setCursorCoodinates(currentCoords);
+
+                  drawFog(lastCoords, currentCoords);
+                  lastCoords = currentCoords;
+                };
+
+                const onTouchEnd = () => {
+                  window.removeEventListener("touchmove", onTouchMove);
+                  window.removeEventListener("touchend", onTouchEnd);
+
+                  if (saveFogCanvasRef.current) {
+                    saveFogCanvasRef.current();
+                  }
+                };
+
+                window.addEventListener("touchmove", onTouchMove);
+                window.addEventListener("touchend", onTouchEnd);
               } else if (tool === "area") {
-                areaDrawState.current.startCoords = coords;
+                const startCoords = coords;
+                let lastTouchCoordinates = coords;
                 setAreaSelectionStartCoordinates(coords);
+
+                const onTouchMove = ev => {
+                  lastTouchCoordinates = getTouchCoordinates(ev.touches[0]);
+                  setCursorCoodinates(lastTouchCoordinates);
+                };
+
+                const onTouchEnd = () => {
+                  window.removeEventListener("touchmove", onTouchMove);
+                  window.removeEventListener("touchend", onTouchEnd);
+
+                  handleAreaSelection(startCoords, lastTouchCoordinates);
+                  setAreaSelectionStartCoordinates(null);
+
+                  if (saveFogCanvasRef.current) {
+                    saveFogCanvasRef.current();
+                  }
+                };
+
+                window.addEventListener("touchmove", onTouchMove);
+                window.addEventListener("touchend", onTouchEnd);
               }
             }}
             onTouchMove={ev => {
               ev.preventDefault();
-              if (tool === "move") {
-                return;
-              }
-              const coords = getTouchCoordinates(ev.touches[0]);
-              setCursorCoodinates(coords);
-
-              if (tool === "area" && areaDrawState.current.startCoords) {
-                areaDrawState.current.currentCoords = coords;
-                return;
-              }
-
-              if (!drawState.current.isDrawing) {
-                return;
-              }
-
-              drawFog(drawState.current.lastCoords, coords);
-              drawState.current.lastCoords = coords;
             }}
-            onTouchEnd={() => {
-              drawState.current.isDrawing = false;
-              drawState.current.lastCoords = null;
-              if (
-                areaDrawState.current.currentCoords &&
-                areaDrawState.current.startCoords
-              ) {
-                handleAreaSelection();
-              }
-              areaDrawState.current.currentCoords = null;
-              areaDrawState.current.startCoords = null;
-              setAreaSelectionStartCoordinates(null);
-
-              if (saveFogCanvasRef.current) {
-                saveFogCanvasRef.current();
-              }
+            onContextMenu={ev => {
+              ev.preventDefault();
             }}
-          />
-          <ObjectLayer defs={<>{gridPatternDefinition}</>} ref={objectSvgRef}>
+          >
             {gridRectangleElement}
             <DmTokenRenderer
               tokens={tokens}
@@ -1119,16 +1129,18 @@ export const DmMap = ({
               markedAreas={markedAreas}
               setMarkedAreas={setMarkedAreas}
             />
-            <Cursor
-              coordinates={cursorCoordinates}
-              tool={tool}
-              brushShape={brushShape}
-              lineWidth={lineWidth}
-              areaSelectStart={areaSelectionStartCoordinates}
-              showGrid={map.showGrid}
-              grid={map.grid}
-              ratio={mapCanvasDimensions.ratio}
-            />
+            <g pointerEvents="none">
+              <Cursor
+                coordinates={cursorCoordinates}
+                tool={tool}
+                brushShape={brushShape}
+                lineWidth={lineWidth}
+                areaSelectStart={areaSelectionStartCoordinates}
+                showGrid={map.showGrid}
+                grid={map.grid}
+                ratio={mapCanvasDimensions.ratio}
+              />
+            </g>
           </ObjectLayer>
         </div>
       </PanZoom>
