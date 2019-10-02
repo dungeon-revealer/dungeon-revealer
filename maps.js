@@ -27,7 +27,7 @@ class Maps {
         path.join(directory, "settings.json"),
         "utf-8"
       );
-      return JSON.parse(rawConfig);
+      return { grid: null, tokens: [], ...JSON.parse(rawConfig) };
     });
   }
 
