@@ -143,8 +143,14 @@ export const DmTokenMarker = React.memo(
             ev.preventDefault();
             ev.stopPropagation();
             if (ev.button !== 0) return;
-            ev.preventDefault();
-            ev.stopPropagation();
+
+            const { x, y } = getRelativePosition({
+              x: ev.pageX,
+              y: ev.pageY
+            });
+
+            const diffX = x - props.x;
+            const diffY = y - props.y;
 
             const onMouseMove = ev => {
               ev.preventDefault();
@@ -154,9 +160,10 @@ export const DmTokenMarker = React.memo(
                 x: ev.pageX,
                 y: ev.pageY
               });
+
               tokenRef.current.setAttribute(
                 "transform",
-                `translate(${x}, ${y})`
+                `translate(${x - diffX}, ${y - diffY})`
               );
             };
             const onMouseUp = ev => {
@@ -170,7 +177,7 @@ export const DmTokenMarker = React.memo(
                 y: ev.pageY
               });
 
-              updateToken({ x, y });
+              updateToken({ x: x - diffX, y: y - diffY });
             };
             window.addEventListener("mousemove", onMouseMove);
             window.addEventListener("mouseup", onMouseUp);
