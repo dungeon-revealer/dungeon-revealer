@@ -91,6 +91,16 @@ const Provider = ({ children }) => {
 const ModalBackground = ({ children, styles, ...props }) => (
   <FocusTrap>
     <div
+      onClick={ev => {
+        ev.stopPropagation();
+        if (props.onClick) props.onClick(ev);
+      }}
+      onMouseDown={ev => {
+        ev.stopPropagation();
+      }}
+      onDoubleClick={ev => {
+        ev.stopPropagation();
+      }}
       style={{
         backgroundColor: "rgba(0, 0, 0, 0.5)",
         position: "fixed",

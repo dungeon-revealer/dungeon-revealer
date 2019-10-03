@@ -191,14 +191,25 @@ class Maps {
     });
   }
 
-  addToken(mapId, { x, y, radius, color, label }) {
+  addToken(
+    mapId,
+    {
+      x = 0,
+      y = 0,
+      radius = 50,
+      color = "red",
+      label = "A",
+      isVisibleForPlayers = false
+    }
+  ) {
     const token = {
       id: uuid(),
       x,
       y,
       radius,
       color,
-      label
+      label,
+      isVisibleForPlayers
     };
 
     const map = this.get(mapId);
@@ -218,7 +229,11 @@ class Maps {
     };
   }
 
-  updateToken(mapId, tokenId, { x, y, radius, color, label }) {
+  updateToken(
+    mapId,
+    tokenId,
+    { x, y, radius, color, label, isVisibleForPlayers }
+  ) {
     const map = this.get(mapId);
     if (!map) {
       throw new Error(`Map with id "${mapId}" not found.`);
@@ -245,6 +260,9 @@ class Maps {
     }
     if (label !== undefined) {
       token.label = label;
+    }
+    if (isVisibleForPlayers !== undefined) {
+      token.isVisibleForPlayers = isVisibleForPlayers;
     }
 
     const updatedMap = this.updateMapSettings(mapId, {

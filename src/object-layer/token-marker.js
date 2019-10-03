@@ -11,6 +11,7 @@ export const TokenMarker = React.memo(
         radius,
         color,
         label,
+        isVisibleForPlayers,
         onClick,
         onMouseDown,
         onContextMenu,
@@ -23,6 +24,7 @@ export const TokenMarker = React.memo(
         <g
           ref={ref}
           transform={`translate(${x * ratio}, ${y * ratio})`}
+          opacity={isVisibleForPlayers ? 1 : 0.7}
           {...props}
         >
           <circle

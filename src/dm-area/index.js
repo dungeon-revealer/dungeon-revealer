@@ -7,6 +7,7 @@ import React, {
   useCallback
 } from "react";
 import produce from "immer";
+import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import createPersistedState from "use-persisted-state";
 import { Modal } from "./modal";
@@ -14,6 +15,7 @@ import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
 import { SetMapGrid } from "./set-map-grid";
 import { useSocket } from "../socket";
+import { useStaticRef } from "../hooks/use-static-ref";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 
@@ -172,23 +174,35 @@ export const DmArea = () => {
     [loadedMapId]
   );
 
-  const updateToken = useCallback(
-    ({ id, x, y, radius, color, label }) => {
+  const persistTokenChanges = useStaticRef(() =>
+    debounce((loadedMapId, id, updates) => {
       fetch(`/map/${loadedMapId}/token/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          x,
-          y,
-          radius,
-          color,
-          label
+          ...updates
         })
       });
+    }, 100)
+  );
+
+  const updateToken = useCallback(
+    ({ id, ...updates }) => {
+      setData(
+        produce(data => {
+          const map = data.maps.find(map => map.id === loadedMapId);
+          map.tokens = map.tokens.map(token => {
+            if (token.id !== id) return token;
+            return { ...token, ...updates };
+          });
+        })
+      );
+
+      persistTokenChanges(loadedMapId, id, updates);
     },
-    [loadedMapId]
+    [loadedMapId, persistTokenChanges]
   );
 
   return (

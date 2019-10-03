@@ -1,14 +1,14 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import { TokenMarker } from "./token-marker";
 import { CirclePicker } from "react-color";
 import { Input } from "../input";
 import * as Button from "../button";
 import * as Icon from "../feather-icons";
 import { Modal } from "../dm-area/modal";
-import { useResetState } from "../hooks/use-reset-state";
+import { ToggleSwitch } from "../toggle-switch";
 
 const TokenContextMenu = ({
-  token: { label, color, radius },
+  token: { label, color, radius, isVisibleForPlayers },
   updateToken,
   deleteToken,
   styles,
@@ -16,49 +16,27 @@ const TokenContextMenu = ({
 }) => {
   const ref = useRef();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const [labelValue, setLabelValue] = useResetState(() => label, []);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const [colorValue, setColorValue] = useResetState(() => color, []);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const [radiusValue, setRadiusValue] = useResetState(() => radius, []);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      updateToken({
-        label: labelValue,
-        color: colorValue,
-        radius: radiusValue
-      });
-    }, 300);
-    return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [labelValue, colorValue, radiusValue]);
-
   return (
     <div
       ref={ref}
+      onClick={ev => {
+        ev.stopPropagation();
+      }}
       style={{
         backgroundColor: "white",
         padding: 10,
         borderRadius: 5,
         width: "260px",
+        boxShadow: "0 0 15px rgba(0,0,0,0.1)",
         ...styles
-      }}
-      onClick={ev => {
-        ev.stopPropagation();
-        ev.preventDefault();
-      }}
-      onMouseDown={ev => {
-        ev.stopPropagation();
       }}
     >
       <div style={{ display: "flex", width: "100%" }}>
         <div style={{ flexGrow: 1 }}>
           <Input
             placeholder="Label"
-            value={labelValue}
-            onChange={ev => setLabelValue(ev.target.value)}
+            value={label}
+            onChange={ev => updateToken({ label: ev.target.value })}
             style={{ marginBottom: 24 }}
           />
         </div>
@@ -74,22 +52,37 @@ const TokenContextMenu = ({
           </Button.Tertiary>
         </div>
       </div>
+      <label
+        style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+      >
+        <div style={{ flexGrow: 1 }}>Visible to Players</div>
+        <div style={{ marginLeft: 8 }}>
+          <ToggleSwitch
+            checked={isVisibleForPlayers}
+            onChange={ev => {
+              updateToken({ isVisibleForPlayers: ev.target.checked });
+            }}
+          />
+        </div>
+      </label>
 
+      <h6 style={{ marginBottom: 16 }}>Radius</h6>
       <input
         type="range"
         min="1"
         max="200"
         step="1"
-        value={radiusValue}
+        value={radius}
         onChange={ev => {
-          setRadiusValue(Math.min(200, Math.max(0, ev.target.value)));
+          updateToken({ radius: Math.min(200, Math.max(0, ev.target.value)) });
         }}
-        style={{ width: "100%", display: "block" }}
+        style={{ width: "100%", display: "block", marginTop: 0 }}
       />
+      <h6 style={{ marginBottom: 16 }}>Color</h6>
       <CirclePicker
-        color={colorValue}
+        color={color}
         onChangeComplete={color => {
-          setColorValue(color.hex);
+          updateToken({ color: color.hex });
         }}
       />
     </div>

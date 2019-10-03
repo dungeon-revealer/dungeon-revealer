@@ -386,7 +386,8 @@ app.patch("/map/:id/token/:tokenId", authMiddleware, (req, res) => {
     y: req.body.y,
     color: req.body.color,
     label: req.body.label,
-    radius: req.body.radius
+    radius: req.body.radius,
+    isVisibleForPlayers: req.body.isVisibleForPlayers
   });
 
   res.json({
