@@ -4,12 +4,12 @@ module.exports = {
   root: true,
   extends: ["eslint:recommended", "react-app", "prettier"],
   rules: {
-    "prefer-const": ["error"],
-    "no-var": ["error"],
-    eqeqeq: ["error"],
-    camelcase: ["error"],
+    "prefer-const": ["warn"],
+    "no-var": ["warn"],
+    eqeqeq: ["warn"],
+    camelcase: ["warn"],
     "no-console": ["off"],
-    "no-unused-vars": ["error"],
+    "no-unused-vars": ["warn"],
     "react-hooks/exhaustive-deps": [
       "warn",
       {
@@ -30,8 +30,8 @@ module.exports = {
       },
       files: ["*/**.js", "!src/**/*.js"],
       rules: {
-        strict: ["error", "global"],
-        "no-path-concat": ["error"]
+        strict: ["warn", "global"],
+        "no-path-concat": ["warn"]
       }
     },
     {
