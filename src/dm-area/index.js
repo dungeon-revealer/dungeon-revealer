@@ -75,6 +75,7 @@ export const DmArea = () => {
 
   // token add/remove/update event handlers
   useEffect(() => {
+    if (!loadedMapId) return;
     const eventName = `token:mapId:${loadedMapId}`;
     socket.on(eventName, ({ type, data }) => {
       if (type === "add") {
