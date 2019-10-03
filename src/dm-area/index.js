@@ -55,7 +55,7 @@ export const DmArea = () => {
         );
 
         if (!isLiveMapAvailable && !isLoadedMapAvailable) {
-          setMode({ title: "EDIT_MAP" });
+          setMode({ title: "SHOW_MAP_LIBRARY" });
           setLoadedMapId(null);
           return;
         }
