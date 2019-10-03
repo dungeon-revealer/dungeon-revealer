@@ -202,7 +202,7 @@ const calculateRectProps = (p1, p2) => {
 const reduceOffsetToMinimum = (offset, sideLength) => {
   const newOffset = offset - sideLength;
   if (newOffset > 0) return reduceOffsetToMinimum(newOffset, sideLength);
-  return offset;
+  return offset - sideLength;
 };
 
 const getNextPossibleLowerValue = (value, maximum, step) => {
