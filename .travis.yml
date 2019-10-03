@@ -3,8 +3,7 @@ language: node_js
 node_js:
   - "10"
 cache:
-  npm: false
-
+  yarn: false
 
 services:
   - docker
@@ -22,23 +21,23 @@ stages:
 jobs:
   include:
     - stage: build
-      script: 
-      - npm run eslint
+      script:
+        - yarn run eslint
 
     - stage: build docker image
       install: true
       script:
-      - docker build -t dungeon-revealer .
-      - docker run --rm dungeon-revealer echo "hello"
+        - docker build -t dungeon-revealer .
+        - docker run --rm dungeon-revealer echo "hello"
 
     - stage: dockerhub dev deploy
       install: true
       script:
-      - echo "Deploying dev to Dockerhub..."
-      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      - docker build -t $DOCKER_USERNAME/dungeon-revealer:dev .
-      - docker images
-      - docker push $DOCKER_USERNAME/dungeon-revealer
+        - echo "Deploying dev to Dockerhub..."
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        - docker build -t $DOCKER_USERNAME/dungeon-revealer:dev .
+        - docker images
+        - docker push $DOCKER_USERNAME/dungeon-revealer
 
     - stage: github deploy
       script:
@@ -62,10 +61,8 @@ jobs:
     - stage: dockerhub deploy
       install: true
       script:
-      - echo "Deploying $TRAVIS_TAG, latest to Dockerhub..."
-      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      - docker build -t $DOCKER_USERNAME/dungeon-revealer:$TRAVIS_TAG -t $DOCKER_USERNAME/dungeon-revealer:latest .
-      - docker images
-      - docker push $DOCKER_USERNAME/dungeon-revealer
-
-
+        - echo "Deploying $TRAVIS_TAG, latest to Dockerhub..."
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        - docker build -t $DOCKER_USERNAME/dungeon-revealer:$TRAVIS_TAG -t $DOCKER_USERNAME/dungeon-revealer:latest .
+        - docker images
+        - docker push $DOCKER_USERNAME/dungeon-revealer
