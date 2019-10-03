@@ -263,7 +263,8 @@ const Cursor = React.memo(
     areaSelectStart,
     showGrid,
     grid,
-    ratio
+    ratio,
+    tokenSize
   }) => {
     if (!coordinates) return null;
     if (tool === "area") {
@@ -343,6 +344,17 @@ const Cursor = React.memo(
           />
         );
       }
+    } else if (tool === "tokens") {
+      return (
+        <circle
+          cx={coordinates.x}
+          cy={coordinates.y}
+          r={tokenSize}
+          strokeWidth="2"
+          stroke="aqua"
+          fill="transparent"
+        />
+      );
     }
 
     return null;
@@ -360,7 +372,7 @@ const parseMapColor = input => {
   return { r, g, b, a };
 };
 
-const DEFAULT_TOKEN_COLOR = "#b80000";
+const DEFAULT_TOKEN_COLOR = "#e91e63";
 
 /**
  * loadedMapId = id of the map that is currently visible in the editor
@@ -476,14 +488,9 @@ export const DmMap = ({
         throw new Error("brush shape not found");
       }
 
-      if (tool === "tokens") {
-        maskDimensions.r = tokenSize;
-        maskDimensions.startingAngle = 0;
-        maskDimensions.endingAngle = Math.PI * 2;
-      }
       return maskDimensions;
     },
-    [brushShape, lineWidth, tokenSize, tool]
+    [brushShape, lineWidth]
   );
 
   const clearFog = useCallback(() => {
@@ -1055,6 +1062,7 @@ export const DmMap = ({
             <g pointerEvents="none">
               <Cursor
                 coordinates={cursorCoordinates}
+                tokenSize={tokenSize}
                 tool={tool}
                 brushShape={brushShape}
                 lineWidth={lineWidth}
