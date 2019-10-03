@@ -29,7 +29,6 @@ node_modules
 *.rar
 *.tar
 *.zip
-*.lock
 
 # Logs and databases #
 ######################
