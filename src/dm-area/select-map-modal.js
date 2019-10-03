@@ -357,7 +357,8 @@ export const SelectMapModal = ({
                         beforeCreateMap(file);
                       }}
                     >
-                      <Icons.MapIcon height={24} width={24} /> Create a new Map
+                      <Icons.MapIcon height={24} width={24} />
+                      <span>Create a new Map</span>
                     </CreateNewMapButton>
                   </>
                 )}
