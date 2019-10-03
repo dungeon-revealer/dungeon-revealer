@@ -101,6 +101,9 @@ const ModalBackground = ({ children, styles, ...props }) => (
       onDoubleClick={ev => {
         ev.stopPropagation();
       }}
+      onTouchStart={ev => {
+        ev.stopPropagation();
+      }}
       style={{
         backgroundColor: "rgba(0, 0, 0, 0.5)",
         position: "fixed",

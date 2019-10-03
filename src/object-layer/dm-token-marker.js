@@ -139,6 +139,48 @@ export const DmTokenMarker = React.memo(
             ev.preventDefault();
             ev.stopPropagation();
           }}
+          onTouchStart={ev => {
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            const { x, y } = getRelativePosition({
+              x: ev.touches[0].pageX,
+              y: ev.touches[0].pageY
+            });
+
+            const diffX = x - props.x;
+            const diffY = y - props.y;
+            let currentX = x;
+            let currentY = y;
+
+            const onTouchMove = ev => {
+              ev.preventDefault();
+              ev.stopPropagation();
+
+              const { x, y } = getRelativePosition({
+                x: ev.touches[0].pageX,
+                y: ev.touches[0].pageY
+              });
+              currentX = x;
+              currentY = y;
+
+              tokenRef.current.setAttribute(
+                "transform",
+                `translate(${x - diffX}, ${y - diffY})`
+              );
+            };
+            const onTouchEnd = ev => {
+              ev.preventDefault();
+              ev.stopPropagation();
+
+              window.removeEventListener("touchend", onTouchEnd);
+              window.removeEventListener("touchmove", onTouchMove);
+
+              updateToken({ x: currentX - diffX, y: currentY - diffY });
+            };
+            window.addEventListener("touchmove", onTouchMove);
+            window.addEventListener("touchend", onTouchEnd);
+          }}
           onMouseDown={ev => {
             ev.preventDefault();
             ev.stopPropagation();
