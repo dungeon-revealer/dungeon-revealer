@@ -2,9 +2,16 @@ import React from "react";
 import { DmTokenMarker } from "./dm-token-marker";
 
 export const DmTokenRenderer = React.memo(
-  ({ tokens, getRelativePosition, updateToken, deleteToken, ratio }) => {
+  ({
+    tokens,
+    getRelativePosition,
+    updateToken,
+    deleteToken,
+    ratio,
+    isDisabled
+  }) => {
     return (
-      <>
+      <g pointerEvents={isDisabled ? "none" : undefined}>
         {tokens.map(token => (
           <DmTokenMarker
             {...token}
@@ -15,7 +22,7 @@ export const DmTokenRenderer = React.memo(
             ratio={ratio}
           />
         ))}
-      </>
+      </g>
     );
   }
 );

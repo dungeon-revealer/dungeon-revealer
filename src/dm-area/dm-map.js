@@ -17,6 +17,8 @@ import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useSvgGrid } from "../hooks/use-svg-grid";
 import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
+import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
+import { useOnKeyDown } from "../hooks/use-on-key-down";
 
 const ShapeButton = styled.button`
   border: none;
@@ -405,6 +407,8 @@ export const DmMap = ({
   ] = useState(null);
   const [showGridSettings, setShowGridSettings] = useState(false);
 
+  const isAltPressed = useIsKeyPressed("Alt");
+
   const [gridColor, setGridColor] = useResetState(
     () => parseMapColor(map.gridColor),
     [map.gridColor]
@@ -696,6 +700,59 @@ export const DmMap = ({
     mapContext.drawImage(fogCanvasRef.current, 0, 0, width, height);
   };
 
+  const sendMap = useCallback(async () => {
+    if (!fogCanvasRef.current) {
+      return;
+    }
+    const blob = await fogCanvasRef.current.convertToBlob();
+    sendLiveMap({
+      image: new File([blob], "fog.live.png", {
+        type: "image/png"
+      })
+    });
+  }, [sendLiveMap]);
+
+  useOnKeyDown(ev => {
+    /**
+     * overwrite CMD + S
+     * @source: https://michilehr.de/overwrite-cmds-and-ctrls-in-javascript/
+     */
+    if (
+      (window.navigator.platform.match("Mac") ? ev.metaKey : ev.ctrlKey) &&
+      ev.keyCode === 83
+    ) {
+      // eslint-disable-next-line default-case
+      switch (ev.key) {
+        case "s":
+          ev.preventDefault();
+          sendMap();
+          return;
+      }
+    }
+
+    // eslint-disable-next-line default-case
+    switch (ev.key) {
+      case "Shift":
+        setMode(mode => (mode === "shroud" ? "clear" : "shroud"));
+        break;
+      case "1":
+        setTool("move");
+        break;
+      case "2":
+        setTool("area");
+        break;
+      case "3":
+        setTool("brush");
+        break;
+      case "4":
+        setTool("mark");
+        break;
+      case "5":
+        setTool("tokens");
+        break;
+    }
+  });
+
   useEffect(() => {
     socket.on("mark area", async data => {
       const { ratio } = latestMapCanvasDimensions.current;
@@ -843,7 +900,7 @@ export const DmMap = ({
   );
 
   let cursor = "default";
-  if (tool === "move") {
+  if (tool === "move" || isAltPressed) {
     cursor = "grab";
   } else if (tool === "mark") {
     cursor = "pointer";
@@ -866,12 +923,13 @@ export const DmMap = ({
     <>
       <PanZoom
         disableDoubleClickZoom={tool !== "move"}
-        preventPan={() => tool !== "move"}
+        preventPan={() => tool !== "move" && !isAltPressed}
         style={{
           ...panZoomContainerStyles,
           cursor
         }}
         onClick={ev => {
+          if (isAltPressed) return;
           const ref = new Referentiel(panZoomRef.current.dragContainer.current);
           const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
           const { ratio } = mapCanvasDimensions;
@@ -921,7 +979,7 @@ export const DmMap = ({
             defs={<>{gridPatternDefinition}</>}
             ref={objectSvgRef}
             onMouseMove={ev => {
-              if (tool === "move" || tool === "mark") {
+              if (tool === "move" || tool === "mark" || isAltPressed) {
                 return;
               }
 
@@ -929,6 +987,7 @@ export const DmMap = ({
               setCursorCoodinates(coords);
             }}
             onMouseDown={ev => {
+              if (isAltPressed) return;
               const coords = getMouseCoordinates(ev);
 
               if (tool === "brush") {
@@ -1054,23 +1113,26 @@ export const DmMap = ({
               updateToken={updateToken}
               deleteToken={deleteToken}
               ratio={mapCanvasDimensions.ratio}
+              isDisabled={isAltPressed}
             />
             <AreaMarkerRenderer
               markedAreas={markedAreas}
               setMarkedAreas={setMarkedAreas}
             />
             <g pointerEvents="none">
-              <Cursor
-                coordinates={cursorCoordinates}
-                tokenSize={tokenSize}
-                tool={tool}
-                brushShape={brushShape}
-                lineWidth={lineWidth}
-                areaSelectStart={areaSelectionStartCoordinates}
-                showGrid={map.showGrid}
-                grid={map.grid}
-                ratio={mapCanvasDimensions.ratio}
-              />
+              {isAltPressed === false ? (
+                <Cursor
+                  coordinates={cursorCoordinates}
+                  tokenSize={tokenSize}
+                  tool={tool}
+                  brushShape={brushShape}
+                  lineWidth={lineWidth}
+                  areaSelectStart={areaSelectionStartCoordinates}
+                  showGrid={map.showGrid}
+                  grid={map.grid}
+                  ratio={mapCanvasDimensions.ratio}
+                />
+              ) : null}
             </g>
           </ObjectLayer>
         </div>
@@ -1176,19 +1238,7 @@ export const DmMap = ({
               </Toolbar.Item>
             )}
             <Toolbar.Item isEnabled>
-              <Toolbar.Button
-                onClick={async () => {
-                  if (!fogCanvasRef.current) {
-                    return;
-                  }
-                  const blob = await fogCanvasRef.current.convertToBlob();
-                  sendLiveMap({
-                    image: new File([blob], "fog.live.png", {
-                      type: "image/png"
-                    })
-                  });
-                }}
-              >
+              <Toolbar.Button onClick={sendMap}>
                 <Icons.SendIcon fill="rgba(0, 0, 0, 1)" />
                 <Icons.Label>Send</Icons.Label>
               </Toolbar.Button>

@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "@emotion/styled/macro";
 
-export const Input = styled.input`
+const InputInner = styled.input`
   border: none;
   box-shadow: rgba(22, 23, 26, 0.15) 0px 0px 5px;
 
@@ -27,6 +27,18 @@ export const Input = styled.input`
     box-shadow: rgba(22, 23, 26, 0.3) 0px 0px 5px;
   }
 `;
+
+export const Input = ({ onKeyDown, ...props }) => {
+  return (
+    <InputInner
+      onKeyDown={ev => {
+        if (ev.key !== "Escape") ev.stopPropagation();
+        if (onKeyDown) onKeyDown(ev);
+      }}
+      {...props}
+    />
+  );
+};
 
 const InputGroupContainer = styled.div``;
 
