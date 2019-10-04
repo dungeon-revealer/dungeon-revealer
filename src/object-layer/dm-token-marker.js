@@ -126,7 +126,7 @@ const calculatePerfectContextMenuPositionStyles = event => {
 };
 
 export const DmTokenMarker = React.memo(
-  ({ getRelativePosition, updateToken, deleteToken, ...props }) => {
+  ({ getRelativePosition, updateToken, deleteToken, ratio, ...props }) => {
     const tokenRef = useRef();
     const [contextMenuEvent, setContextMenuEvent] = useState(null);
 
@@ -134,6 +134,7 @@ export const DmTokenMarker = React.memo(
       <>
         <TokenMarker
           ref={tokenRef}
+          ratio={ratio}
           {...props}
           onClick={ev => {
             ev.preventDefault();
@@ -161,12 +162,13 @@ export const DmTokenMarker = React.memo(
                 x: ev.touches[0].pageX,
                 y: ev.touches[0].pageY
               });
-              currentX = x;
-              currentY = y;
+
+              currentX = x - diffX;
+              currentY = y - diffY;
 
               tokenRef.current.setAttribute(
                 "transform",
-                `translate(${x - diffX}, ${y - diffY})`
+                `translate(${currentX * ratio}, ${currentY * ratio})`
               );
             };
             const onTouchEnd = ev => {
@@ -176,7 +178,7 @@ export const DmTokenMarker = React.memo(
               window.removeEventListener("touchend", onTouchEnd);
               window.removeEventListener("touchmove", onTouchMove);
 
-              updateToken({ x: currentX - diffX, y: currentY - diffY });
+              updateToken({ x: currentX, y: currentY });
             };
             window.addEventListener("touchmove", onTouchMove);
             window.addEventListener("touchend", onTouchEnd);
@@ -205,7 +207,7 @@ export const DmTokenMarker = React.memo(
 
               tokenRef.current.setAttribute(
                 "transform",
-                `translate(${x - diffX}, ${y - diffY})`
+                `translate(${(x - diffX) * ratio}, ${(y - diffY) * ratio})`
               );
             };
             const onMouseUp = ev => {
