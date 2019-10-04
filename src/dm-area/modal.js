@@ -88,9 +88,22 @@ const Provider = ({ children }) => {
   );
 };
 
-const ModalBackground = ({ children, ...props }) => (
+const ModalBackground = ({ children, styles, ...props }) => (
   <FocusTrap>
     <div
+      onClick={ev => {
+        ev.stopPropagation();
+        if (props.onClick) props.onClick(ev);
+      }}
+      onMouseDown={ev => {
+        ev.stopPropagation();
+      }}
+      onDoubleClick={ev => {
+        ev.stopPropagation();
+      }}
+      onTouchStart={ev => {
+        ev.stopPropagation();
+      }}
       style={{
         backgroundColor: "rgba(0, 0, 0, 0.5)",
         position: "fixed",
@@ -101,7 +114,8 @@ const ModalBackground = ({ children, ...props }) => (
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 200
+        zIndex: 200,
+        ...styles
       }}
       {...props}
     >
@@ -110,7 +124,12 @@ const ModalBackground = ({ children, ...props }) => (
   </FocusTrap>
 );
 
-const ModalPortal = ({ children, onClickOutside, onPressEscape }) => {
+const ModalPortal = ({
+  children,
+  onClickOutside,
+  onPressEscape,
+  backgroundStyles
+}) => {
   const createModalRegistration = React.useContext(Context);
   const modalElement = useStaticRef(() => document.createElement("div"));
   const modalRegistration = React.useRef(null);
@@ -137,7 +156,9 @@ const ModalPortal = ({ children, onClickOutside, onPressEscape }) => {
   }, [onPressEscape]);
 
   return createPortal(
-    <ModalBackground onClick={onClickOutside}>{children}</ModalBackground>,
+    <ModalBackground onClick={onClickOutside} styles={backgroundStyles}>
+      {children}
+    </ModalBackground>,
     modalElement
   );
 };

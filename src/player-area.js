@@ -1,4 +1,5 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
+import produce from "immer";
 import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
@@ -9,6 +10,8 @@ import { Toolbar } from "./toolbar";
 import styled from "@emotion/styled/macro";
 import * as Icons from "./feather-icons";
 import { useSocket } from "./socket";
+import { AreaMarkerRenderer } from "./object-layer/area-marker-renderer";
+import { TokenRenderer } from "./object-layer/token-renderer";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -52,7 +55,10 @@ const drawGridToContext = (grid, dimensions, canvas, gridColor) => {
 
 export const PlayerArea = () => {
   const panZoomRef = useRef(null);
-  const currentMap = useRef(null);
+  const currentMapRef = useRef(null);
+  const [currentMap, setCurrentMap] = useState(null);
+
+  const mapId = currentMap ? currentMap.id : null;
   const socket = useSocket();
   const [showSplashScreen, setShowSplashScreen] = useState(true);
 
@@ -108,8 +114,6 @@ export const PlayerArea = () => {
           return;
         }
 
-        fogCacheBusterCounter++;
-
         const context = mapCanvasRef.current.getContext("2d");
 
         if (pendingImageLoads.current) {
@@ -123,7 +127,8 @@ export const PlayerArea = () => {
          * Hide map (show splashscreen)
          */
         if (!data.map) {
-          currentMap.current = null;
+          currentMapRef.current = null;
+          setCurrentMap(null);
           mapCanvasDimensions.current = null;
           mapImageRef.current = null;
 
@@ -139,7 +144,7 @@ export const PlayerArea = () => {
         /**
          * Fog has updated
          */
-        if (currentMap.current && currentMap.current.id === data.map.id) {
+        if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
           const task = loadImage(
             `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}`
           );
@@ -191,7 +196,8 @@ export const PlayerArea = () => {
         /**
          * Load new map
          */
-        currentMap.current = data.map;
+        currentMapRef.current = data.map;
+
         const tasks = [
           loadImage(
             `/map/${data.map.id}/map?cache_buster=${fogCacheBusterCounter}`
@@ -226,6 +232,7 @@ export const PlayerArea = () => {
             objectSvg.setAttribute("height", canvasDimensions.height);
 
             mapCanvasDimensions.current = canvasDimensions;
+            setCurrentMap(data.map);
 
             const widthPx = `${canvasDimensions.width}px`;
             const heightPx = `${canvasDimensions.height}px`;
@@ -312,6 +319,41 @@ export const PlayerArea = () => {
     [socket]
   );
 
+  useEffect(() => {
+    const eventName = `token:mapId:${mapId}`;
+    socket.on(eventName, ({ type, data }) => {
+      if (type === "add") {
+        setCurrentMap(
+          produce(map => {
+            map.tokens.push(data.token);
+          })
+        );
+      } else if (type === "update") {
+        setCurrentMap(
+          produce(map => {
+            map.tokens = map.tokens.map(token => {
+              if (token.id !== data.token.id) return token;
+              return {
+                ...token,
+                ...data.token
+              };
+            });
+          })
+        );
+      } else if (type === "remove") {
+        setCurrentMap(
+          produce(map => {
+            map.tokens = map.tokens = map.tokens.filter(
+              token => token.id !== data.tokenId
+            );
+          })
+        );
+      }
+    });
+
+    return () => socket.off(eventName);
+  }, [socket, mapId]);
+
   // long press event for setting a map marker
   const longPressProps = useLongPress(ev => {
     if (!mapCanvasDimensions.current) {
@@ -363,15 +405,21 @@ export const PlayerArea = () => {
               position: "absolute"
             }}
           />
-          <ObjectLayer
-            ref={objectSvgRef}
-            areaMarkers={markedAreas}
-            removeAreaMarker={id => {
-              setMarkedAreas(markedAreas =>
-                markedAreas.filter(area => area.id !== id)
-              );
-            }}
-          />
+          <ObjectLayer ref={objectSvgRef}>
+            <TokenRenderer
+              tokens={(currentMap && currentMap.tokens) || []}
+              ratio={
+                mapCanvasDimensions.current
+                  ? mapCanvasDimensions.current.ratio
+                  : 1
+              }
+            />
+
+            <AreaMarkerRenderer
+              markedAreas={markedAreas}
+              setMarkedAreas={setMarkedAreas}
+            />
+          </ObjectLayer>
         </div>
       </PanZoom>
       {!showSplashScreen ? (

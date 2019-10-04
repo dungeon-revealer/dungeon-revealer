@@ -80,6 +80,8 @@ To clear areas of the map, click and draw on the map. You can switch the brush m
 
 To switch to a different map, click "Map Library", and then select one of the maps you have already uploaded and click "Load". The "LIVE" indicator in the lower right indicates if the map currently on the dungeon master page is being presented on the player page. the "Stop Sharing" button will blank the player page in preparation for a new map to be loaded.
 
+You can add token from "Token" tab, by providing number, color and size of the token, and then clicking anywhere on the map to place it. You can also remove already added token by right-clicking on existing token when "Token" tool is selected.
+
 #### Players
 
 Navigate to the server using a web browser and wait at the home page. (The connection information is displayed in command prompt for convenience.) When the dungeon master is ready, they will push a map to your webpage. You will see either a black screen or a partially covered image. You can zoom in/out and pan the map. On a long click you will place a "point of interest" on the map that will show as a red circle.
