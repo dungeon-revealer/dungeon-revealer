@@ -206,6 +206,41 @@ export const DmArea = () => {
     [loadedMapId, persistTokenChanges]
   );
 
+  const sendLiveMap = useCallback(
+    async ({ image }) => {
+      const formData = new FormData();
+      formData.append("image", image);
+
+      await fetch(`/map/${loadedMapId}/send`, {
+        method: "POST",
+        body: formData
+      });
+      setLiveMapId(loadedMapId);
+    },
+    [loadedMapId]
+  );
+
+  const hideMap = useCallback(async () => {
+    await fetch("/active-map", {
+      method: "POST",
+      body: JSON.stringify({
+        mapId: null
+      }),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+    setLiveMapId(null);
+  }, []);
+
+  const showMapModal = useCallback(() => {
+    setMode({ title: "SHOW_MAP_LIBRARY" });
+  }, []);
+
+  const enterGridMode = useCallback(() => {
+    setMode({ title: "SET_MAP_GRID", data: { mapId: loadedMapId } });
+  }, [loadedMapId]);
+
   return (
     <Modal.Provider>
       {mode.title === "SHOW_MAP_LIBRARY" ? (
@@ -249,34 +284,10 @@ export const DmArea = () => {
           map={loadedMap}
           loadedMapId={loadedMap.id}
           liveMapId={liveMapId}
-          sendLiveMap={async ({ image }) => {
-            const formData = new FormData();
-            formData.append("image", image);
-
-            await fetch(`/map/${loadedMap.id}/send`, {
-              method: "POST",
-              body: formData
-            });
-            setLiveMapId(loadedMap.id);
-          }}
-          hideMap={async () => {
-            await fetch("/active-map", {
-              method: "POST",
-              body: JSON.stringify({
-                mapId: null
-              }),
-              headers: {
-                "Content-Type": "application/json"
-              }
-            });
-            setLiveMapId(null);
-          }}
-          showMapModal={() => {
-            setMode({ title: "SHOW_MAP_LIBRARY" });
-          }}
-          enterGridMode={() => {
-            setMode({ title: "SET_MAP_GRID", data: { mapId: loadedMapId } });
-          }}
+          sendLiveMap={sendLiveMap}
+          hideMap={hideMap}
+          showMapModal={showMapModal}
+          enterGridMode={enterGridMode}
           updateMap={updateMap}
           deleteToken={deleteToken}
           updateToken={updateToken}
