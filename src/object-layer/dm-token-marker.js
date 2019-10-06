@@ -1,6 +1,6 @@
-import React, { useRef, useState } from "react";
-import { TokenMarker } from "./token-marker";
+import React, { useRef, useState, useEffect } from "react";
 import { CirclePicker } from "react-color";
+import { TokenMarker } from "./token-marker";
 import { Input } from "../input";
 import * as Button from "../button";
 import * as Icon from "../feather-icons";
@@ -8,17 +8,21 @@ import { Modal } from "../dm-area/modal";
 import { ToggleSwitch } from "../toggle-switch";
 
 const TokenContextMenu = ({
+  tokenRef,
   token: { label, color, radius, isVisibleForPlayers },
   updateToken,
   deleteToken,
   styles,
   close
 }) => {
-  const ref = useRef();
+  const rangeSlideRef = useRef();
+
+  useEffect(() => {
+    rangeSlideRef.current.value = radius;
+  }, [radius]);
 
   return (
     <div
-      ref={ref}
       onClick={ev => {
         ev.stopPropagation();
       }}
@@ -68,12 +72,16 @@ const TokenContextMenu = ({
 
       <h6 style={{ marginBottom: 16 }}>Radius</h6>
       <input
+        ref={rangeSlideRef}
         type="range"
         min="1"
         max="200"
         step="1"
-        value={radius}
         onChange={ev => {
+          const radiusValue = Math.min(200, Math.max(0, ev.target.value));
+          tokenRef.current.setRadius(radiusValue);
+        }}
+        onMouseUp={ev => {
           updateToken({ radius: Math.min(200, Math.max(0, ev.target.value)) });
         }}
         style={{ width: "100%", display: "block", marginTop: 0 }}
@@ -166,10 +174,7 @@ export const DmTokenMarker = React.memo(
               currentX = x - diffX;
               currentY = y - diffY;
 
-              tokenRef.current.setAttribute(
-                "transform",
-                `translate(${currentX * ratio}, ${currentY * ratio})`
-              );
+              tokenRef.current.setTransform(currentX, currentY);
             };
             const onTouchEnd = ev => {
               ev.preventDefault();
@@ -205,10 +210,7 @@ export const DmTokenMarker = React.memo(
                 y: ev.pageY
               });
 
-              tokenRef.current.setAttribute(
-                "transform",
-                `translate(${(x - diffX) * ratio}, ${(y - diffY) * ratio})`
-              );
+              tokenRef.current.setTransform(x - diffX, y - diffY);
             };
             const onMouseUp = ev => {
               ev.preventDefault();
@@ -247,6 +249,7 @@ export const DmTokenMarker = React.memo(
             onPressEscape={() => setContextMenuEvent(null)}
           >
             <TokenContextMenu
+              tokenRef={tokenRef}
               token={props}
               updateToken={updateToken}
               deleteToken={deleteToken}
