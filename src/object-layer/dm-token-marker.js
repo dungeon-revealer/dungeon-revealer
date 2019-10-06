@@ -144,6 +144,7 @@ export const DmTokenMarker = React.memo(
           ref={tokenRef}
           ratio={ratio}
           {...props}
+          isAnimated={false}
           onClick={ev => {
             ev.preventDefault();
             ev.stopPropagation();
