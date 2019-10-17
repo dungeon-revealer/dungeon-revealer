@@ -25,29 +25,25 @@ fs.mkdirpSync(getDataDirectory());
 const maps = new Maps();
 const settings = new Settings();
 
-if (process.env.DM_PASSWORD) {
-  const authMiddlewareDM = basicAuth({
-  challenge: true,
+const authMiddlewareDM = basicAuth({
+  challenge: process.env.DM_PASSWORD,
   authorizer: function(user, password) {
-    return password === process.env.DM_PASSWORD;
-    return true;
+    if (process.env.DM_PASSWORD) {
+      return password === process.env.DM_PASSWORD;
     }
-   });
-  } else {
-  const authMiddlewareDM = basicAuth({authorizer: function(user, password) {return true;}});
+    return true;
   }
+});
 
-if (process.env.PC_PASSWORD) {
-  const authMiddlewarePC = basicAuth({
-  challenge: true,
+const authMiddlewarePC = basicAuth({
+  challenge: process.env.PC_PASSWORD,
   authorizer: function(user, password) {
-    return password === process.env.PC_PASSWORD;
-    return true;
+    if (process.env.PC_PASSWORD) {
+      return password === process.env.PC_PASSWORD;
     }
-   });
-  } else {
-  const authMiddlewarePC = basicAuth({authorizer: function(user, password) {return true;}});
+    return true;
   }
+});
 
 // Used to generate session keys
 const generateKey = () => {
