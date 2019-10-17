@@ -39,7 +39,7 @@ const authMiddlewarePC = basicAuth({
   challenge: process.env.PC_PASSWORD,
   authorizer: function(user, password) {
     if (process.env.PC_PASSWORD) {
-      return password === process.env.PC_PASSWORD;
+      return password === process.env.PC_PASSWORD || password === process.env.DM_PASSWORD;
     }
     return true;
   }
