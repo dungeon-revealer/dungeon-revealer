@@ -25,15 +25,29 @@ fs.mkdirpSync(getDataDirectory());
 const maps = new Maps();
 const settings = new Settings();
 
-const authMiddleware = basicAuth({
+if (process.env.DM_PASSWORD) {
+  const authMiddlewareDM = basicAuth({
   challenge: true,
   authorizer: function(user, password) {
-    if (process.env.DM_PASSWORD) {
-      return password === process.env.DM_PASSWORD;
-    }
+    return password === process.env.DM_PASSWORD;
     return true;
+    }
+   });
+  } else {
+  const authMiddlewareDM = basicAuth({authorizer: function(user, password) {return true;}});
   }
-});
+
+if (process.env.PC_PASSWORD) {
+  const authMiddlewarePC = basicAuth({
+  challenge: true,
+  authorizer: function(user, password) {
+    return password === process.env.PC_PASSWORD;
+    return true;
+    }
+   });
+  } else {
+  const authMiddlewarePC = basicAuth({authorizer: function(user, password) {return true;}});
+  }
 
 // Used to generate session keys
 const generateKey = () => {
@@ -129,7 +143,7 @@ app.get("/map/:id/fog-live", (req, res) => {
   return res.sendFile(path.join(maps.getBasePath(map), map.fogLivePath));
 });
 
-app.post("/map/:id/map", authMiddleware, (req, res) => {
+app.post("/map/:id/map", authMiddlewarePC, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -148,7 +162,7 @@ app.post("/map/:id/map", authMiddleware, (req, res) => {
   });
 });
 
-app.post("/map/:id/fog", authMiddleware, (req, res) => {
+app.post("/map/:id/fog", authMiddlewarePC, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -162,7 +176,7 @@ app.post("/map/:id/fog", authMiddleware, (req, res) => {
   });
 });
 
-app.post("/map/:id/send", authMiddleware, (req, res) => {
+app.post("/map/:id/send", authMiddlewarePC, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -180,7 +194,7 @@ app.post("/map/:id/send", authMiddleware, (req, res) => {
   });
 });
 
-app.delete("/map/:id", authMiddleware, (req, res) => {
+app.delete("/map/:id", authMiddlewarePC, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -193,7 +207,7 @@ app.delete("/map/:id", authMiddleware, (req, res) => {
   });
 });
 
-app.get("/active-map", authMiddleware, (req, res) => {
+app.get("/active-map", authMiddlewarePC, (req, res) => {
   let activeMap = null;
   const activeMapId = settings.get("currentMapId");
   if (activeMapId) {
@@ -208,7 +222,7 @@ app.get("/active-map", authMiddleware, (req, res) => {
   });
 });
 
-app.post("/active-map", authMiddleware, (req, res) => {
+app.post("/active-map", authMiddlewarePC, (req, res) => {
   const mapId = req.body.mapId;
   if (mapId === undefined) {
     res.status(404).json({
@@ -228,7 +242,7 @@ app.post("/active-map", authMiddleware, (req, res) => {
   });
 });
 
-app.get("/map", authMiddleware, (req, res) => {
+app.get("/map", authMiddlewarePC, (req, res) => {
   res.json({
     success: true,
     data: {
@@ -264,7 +278,7 @@ app.post("/map", (req, res) => {
   });
 });
 
-app.patch("/map/:id", authMiddleware, (req, res) => {
+app.patch("/map/:id", authMiddlewarePC, (req, res) => {
   let map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -307,7 +321,7 @@ app.patch("/map/:id", authMiddleware, (req, res) => {
   });
 });
 
-app.post("/map/:id/token", authMiddleware, (req, res) => {
+app.post("/map/:id/token", authMiddlewarePC, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -341,7 +355,7 @@ app.post("/map/:id/token", authMiddleware, (req, res) => {
   });
 });
 
-app.delete("/map/:id/token/:tokenId", authMiddleware, (req, res) => {
+app.delete("/map/:id/token/:tokenId", authMiddlewarePC, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -368,7 +382,7 @@ app.delete("/map/:id/token/:tokenId", authMiddleware, (req, res) => {
   });
 });
 
-app.patch("/map/:id/token/:tokenId", authMiddleware, (req, res) => {
+app.patch("/map/:id/token/:tokenId", authMiddlewarePC, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -407,7 +421,7 @@ app.get("/", function(req, res) {
   res.sendfile("/build/index.html", { root: __dirname });
 });
 
-app.get("/dm", authMiddleware, function(req, res) {
+app.get("/dm", authMiddlewareDM, function(req, res) {
   res.sendfile("/build/index.html", { root: __dirname });
 });
 
