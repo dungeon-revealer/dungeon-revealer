@@ -24,7 +24,8 @@ The easiest way to use dungeon-revealer is to download the app from the [release
 We provide builds for Windows, Linux, and OSX.
 
 Running from the command prompt will present connection information and some debugging.
-Optionally, you may set a password for the dungeon master page by setting the environmental variable `DM_PASSWORD` when starting the app. e.g. for linux `DM_PASSWORD='password' ./dungeon-revealer-linux`
+Optionally, you may set a password for the dungeon master and/or players by setting the environmental variables `DM_PASSWORD` and `PC_PASSWORD` when starting the app. e.g. for linux `PC_PASSWORD='password1' DM_PASSWORD='password2' ./dungeon-revealer-linux`
+Leaving a variable undefined will disable authentication and allow public access for that section of the map.
 
 ##### Linux
 
