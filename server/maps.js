@@ -9,6 +9,23 @@ const { getDataDirectory } = require("./util");
 const mapDirectory = path.join(getDataDirectory(), "maps");
 const isDirectory = source => fs.lstatSync(source).isDirectory();
 
+const prepareToken = token => {
+  if (typeof token.type !== "string") {
+    token.type = "entity";
+  }
+  if (typeof token.title !== "string") {
+    token.title = "";
+  }
+  if (typeof token.title !== "string") {
+    token.description = "";
+  }
+  if (token.isLocked === undefined) {
+    token.isLocked = false;
+  }
+
+  return token;
+};
+
 class Maps {
   constructor() {
     fs.mkdirpSync(mapDirectory);
@@ -27,7 +44,9 @@ class Maps {
         path.join(directory, "settings.json"),
         "utf-8"
       );
-      return { grid: null, tokens: [], ...JSON.parse(rawConfig) };
+      const map = { grid: null, tokens: [], ...JSON.parse(rawConfig) };
+      map.tokens = map.tokens.map(prepareToken);
+      return map;
     });
   }
 
@@ -199,18 +218,20 @@ class Maps {
       radius = 50,
       color = "red",
       label = "A",
-      isVisibleForPlayers = false
+      isVisibleForPlayers = false,
+      type = "entity"
     }
   ) {
-    const token = {
+    const token = prepareToken({
       id: uuid(),
       x,
       y,
       radius,
       color,
       label,
-      isVisibleForPlayers
-    };
+      isVisibleForPlayers,
+      type
+    });
 
     const map = this.get(mapId);
     if (!map) {
@@ -232,7 +253,18 @@ class Maps {
   updateToken(
     mapId,
     tokenId,
-    { x, y, radius, color, label, isVisibleForPlayers }
+    {
+      type,
+      x,
+      y,
+      radius,
+      color,
+      label,
+      isVisibleForPlayers,
+      isLocked,
+      title,
+      description
+    }
   ) {
     const map = this.get(mapId);
     if (!map) {
@@ -246,6 +278,18 @@ class Maps {
       );
     }
 
+    if (type !== undefined) {
+      token.type = type;
+    }
+    if (isLocked !== undefined) {
+      token.isLocked = isLocked;
+    }
+    if (title !== undefined) {
+      token.title = title;
+    }
+    if (description !== undefined) {
+      token.description = description;
+    }
     if (x !== undefined) {
       token.x = x;
     }

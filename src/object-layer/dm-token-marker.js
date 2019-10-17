@@ -1,4 +1,5 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import { useSpring, animated, to } from "react-spring";
 import { CirclePicker } from "react-color";
 import { TokenMarker } from "./token-marker";
 import { Input } from "../input";
@@ -6,19 +7,28 @@ import * as Button from "../button";
 import * as Icon from "../feather-icons";
 import { Modal } from "../dm-area/modal";
 import { ToggleSwitch } from "../toggle-switch";
-import { useSpring, animated, to } from "react-spring";
+import { Dropdown } from "../dropdown";
+
+const ColorPicker = React.memo(({ color, onChange, styles }) => {
+  return (
+    <CirclePicker
+      color={color}
+      onChangeComplete={color => onChange(color.hex)}
+      styles={styles}
+    />
+  );
+});
 
 const TokenContextMenu = ({
   tokenRef,
   position,
-  token: { label, color, radius, isVisibleForPlayers },
+  token: { label, color, radius, isVisibleForPlayers, isLocked, type },
   updateToken,
   deleteToken,
   close
 }) => {
   const containerRef = useRef(null);
-  const rangeSlideRef = useRef();
-
+  const rangeSlideRef = useRef(null);
   const initialCoords = useRef({
     x: window.innerWidth,
     y: window.innerHeight
@@ -62,6 +72,36 @@ const TokenContextMenu = ({
     rangeSlideRef.current.value = radius;
   }, [radius]);
 
+  const onChangeComplete = useCallback(
+    color => {
+      updateToken({ color: color });
+    },
+    [updateToken]
+  );
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    setTimeout(() => {
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      const { clientHeight, clientWidth } = document.documentElement;
+      let { x, y } = position;
+      if (x + width > clientWidth) {
+        x = x - width;
+      }
+      if (y + height > clientHeight) {
+        y = y - height;
+      }
+
+      if (y < 0) {
+        y = 5;
+      }
+      initialCoords.current.x = x;
+      initialCoords.current.y = y;
+      set({ to: { x, y }, immediate: true });
+    }, 0);
+  }, [set, position]);
+
   return (
     <animated.div
       ref={containerRef}
@@ -69,20 +109,21 @@ const TokenContextMenu = ({
         ev.stopPropagation();
       }}
       style={{
-        position: "absolute",
-        left: 0,
-        top: 0,
         backgroundColor: "white",
         padding: 10,
         borderRadius: 5,
         width: "260px",
         boxShadow: "0 0 15px rgba(0,0,0,0.1)",
-        transform: to([x, y], (x, y) => `translate(${x}px, ${y}px)`)
+        transform: to([x, y], (x, y) => `translate(${x}px, ${y}px)`),
+        top: 0,
+        left: 0,
+        position: "absolute"
       }}
     >
       <div style={{ display: "flex", width: "100%" }}>
         <div style={{ flexGrow: 1 }}>
           <Input
+            disabled={isLocked}
             placeholder="Label"
             value={label}
             onChange={ev => updateToken({ label: ev.target.value })}
@@ -93,14 +134,18 @@ const TokenContextMenu = ({
           <Button.Tertiary
             iconOnly
             onClick={() => {
-              deleteToken();
-              close();
+              updateToken({ isLocked: !isLocked });
             }}
           >
-            <Icon.TrashIcon height={16} />
+            {isLocked ? (
+              <Icon.LockIcon height={16} />
+            ) : (
+              <Icon.UnlockIcon height={16} />
+            )}
           </Button.Tertiary>
         </div>
       </div>
+
       <label
         style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
       >
@@ -108,13 +153,13 @@ const TokenContextMenu = ({
         <div style={{ marginLeft: 8 }}>
           <ToggleSwitch
             checked={isVisibleForPlayers}
+            disabled={isLocked}
             onChange={ev => {
               updateToken({ isVisibleForPlayers: ev.target.checked });
             }}
           />
         </div>
       </label>
-
       <h6 style={{ marginBottom: 16 }}>Radius</h6>
       <input
         ref={rangeSlideRef}
@@ -122,30 +167,77 @@ const TokenContextMenu = ({
         min="1"
         max="200"
         step="1"
+        disabled={isLocked}
         onChange={ev => {
           const radiusValue = Math.min(200, Math.max(0, ev.target.value));
           tokenRef.current.setRadius(radiusValue);
         }}
         onMouseUp={ev => {
-          updateToken({ radius: Math.min(200, Math.max(0, ev.target.value)) });
+          updateToken({
+            radius: Math.min(200, Math.max(0, ev.target.value))
+          });
         }}
         style={{ width: "100%", display: "block", marginTop: 0 }}
       />
       <h6 style={{ marginBottom: 16 }}>Color</h6>
-      <CirclePicker
-        color={color}
-        onChangeComplete={color => {
-          updateToken({ color: color.hex });
+      <ColorPicker color={color} onChange={onChangeComplete} />
+      <div
+        style={{
+          paddingTop: 16,
+          display: "flex",
+          justifyContent: "flex-end"
         }}
-      />
+      >
+        <div style={{ flex: 1 }}>
+          <Dropdown
+            isDisabled={isLocked}
+            value={type}
+            items={[
+              {
+                label: "Entity",
+                value: "entity"
+              },
+              {
+                label: "Area",
+                value: "area"
+              }
+            ]}
+            onChange={value => {
+              updateToken({ type: value });
+            }}
+          />
+        </div>
+        <div>
+          <Button.Tertiary
+            iconOnly
+            onClick={() => {
+              if (isLocked) return;
+              deleteToken();
+              close();
+            }}
+            disabled={isLocked}
+          >
+            <Icon.TrashIcon height={16} />
+          </Button.Tertiary>
+        </div>
+      </div>
     </animated.div>
   );
 };
 
 export const DmTokenMarker = React.memo(
-  ({ getRelativePosition, updateToken, deleteToken, ratio, token }) => {
+  ({
+    getRelativePosition,
+    updateToken,
+    deleteToken,
+    ratio,
+    onClick,
+    token
+  }) => {
     const tokenRef = useRef();
     const [contextMenuCoordinates, setContextMenuCoordinates] = useState(null);
+
+    const isDraggingRef = useRef(false);
 
     return (
       <>
@@ -154,11 +246,17 @@ export const DmTokenMarker = React.memo(
           ratio={ratio}
           {...token}
           isAnimated={false}
+          onDoubleClick={ev => ev.stopPropagation()}
           onClick={ev => {
             ev.preventDefault();
             ev.stopPropagation();
+            if (isDraggingRef.current === false) {
+              onClick();
+            }
+            isDraggingRef.current = false;
           }}
           onTouchStart={ev => {
+            if (token.isLocked) return;
             ev.preventDefault();
             ev.stopPropagation();
 
@@ -173,6 +271,7 @@ export const DmTokenMarker = React.memo(
             let currentY = y;
 
             const onTouchMove = ev => {
+              isDraggingRef.current = true;
               ev.preventDefault();
               ev.stopPropagation();
 
@@ -199,6 +298,7 @@ export const DmTokenMarker = React.memo(
             window.addEventListener("touchend", onTouchEnd);
           }}
           onMouseDown={ev => {
+            if (token.isLocked) return;
             ev.preventDefault();
             ev.stopPropagation();
             if (ev.button !== 0) return;
@@ -212,6 +312,7 @@ export const DmTokenMarker = React.memo(
             const diffY = y - token.y;
 
             const onMouseMove = ev => {
+              isDraggingRef.current = true;
               ev.preventDefault();
               ev.stopPropagation();
 

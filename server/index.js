@@ -426,12 +426,16 @@ app.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
   }
 
   const result = maps.updateToken(map.id, req.params.tokenId, {
+    type: req.body.type,
+    label: req.body.label,
     x: req.body.x,
     y: req.body.y,
     color: req.body.color,
-    label: req.body.label,
     radius: req.body.radius,
-    isVisibleForPlayers: req.body.isVisibleForPlayers
+    isVisibleForPlayers: req.body.isVisibleForPlayers,
+    isLocked: req.body.isLocked,
+    title: req.body.title,
+    description: req.body.description
   });
 
   res.json({

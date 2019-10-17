@@ -8,7 +8,8 @@ export const DmTokenRenderer = React.memo(
     updateToken,
     deleteToken,
     ratio,
-    isDisabled
+    isDisabled,
+    onClickToken
   }) => {
     return (
       <g pointerEvents={isDisabled ? "none" : undefined}>
@@ -20,6 +21,9 @@ export const DmTokenRenderer = React.memo(
             updateToken={props => updateToken({ ...props, id: token.id })}
             deleteToken={() => deleteToken(token.id)}
             ratio={ratio}
+            onClick={() => {
+              onClickToken(token);
+            }}
           />
         ))}
       </g>

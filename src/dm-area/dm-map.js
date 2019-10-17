@@ -19,6 +19,7 @@ import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useOnKeyDown } from "../hooks/use-on-key-down";
+import { AreaTokenDescription } from "./area-token-description";
 
 const ShapeButton = styled.button`
   border: none;
@@ -439,6 +440,7 @@ export const DmMap = ({
   const [brushShape, setBrushShape] = useBrushShapeState("square");
   const [tool, setTool] = useToolState("brush"); // "brush" or "area"
   const [lineWidth, setLineWidth] = useLineWidthState(15);
+  const [activeTokenId, setActiveTokenId] = useState(null);
 
   const tokenColor = DEFAULT_TOKEN_COLOR;
   const tokens = map.tokens || [];
@@ -934,6 +936,14 @@ export const DmMap = ({
     [mapCanvasDimensions]
   );
 
+  const onClickToken = useCallback(token => {
+    if (token.type === "area") {
+      setActiveTokenId(activeTokenId =>
+        activeTokenId === token.id ? null : token.id
+      );
+    }
+  }, []);
+
   return (
     <>
       <PanZoom
@@ -1124,6 +1134,7 @@ export const DmMap = ({
           >
             {gridRectangleElement}
             <DmTokenRenderer
+              onClickToken={onClickToken}
               tokens={tokens}
               getRelativePosition={getRelativePosition}
               updateToken={updateToken}
@@ -1430,6 +1441,15 @@ export const DmMap = ({
           </Toolbar.Group>
         </Toolbar>
       </div>
+      {activeTokenId ? (
+        <AreaTokenDescription
+          close={() => setActiveTokenId(null)}
+          token={map.tokens.find(token => token.id === activeTokenId)}
+          updateToken={updates =>
+            updateToken({ id: activeTokenId, ...updates })
+          }
+        />
+      ) : null}
     </>
   );
 };

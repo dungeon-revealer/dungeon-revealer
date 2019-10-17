@@ -458,3 +458,35 @@ export const TargetIcon = ({ fill = "currentColor", ...props }) => (
     <circle cx={12} cy={12} r={2} />
   </svg>
 );
+
+export const LockIcon = ({ fill = "currentColor", ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <rect x={3} y={11} width={18} height={11} rx={2} ry={2} />
+    <path d="M7 11V7a5 5 0 0110 0v4" />
+  </svg>
+);
+
+export const UnlockIcon = ({ fill = "currentColor", ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <rect x={3} y={11} width={18} height={11} rx={2} ry={2} />
+    <path d="M7 11V7a5 5 0 019.9-1" />
+  </svg>
+);
