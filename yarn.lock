@@ -1204,10 +1204,10 @@
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
 
-"@n1ru4l/use-async-effect@1.1.5":
-  version "1.1.5"
-  resolved "https://registry.yarnpkg.com/@n1ru4l/use-async-effect/-/use-async-effect-1.1.5.tgz#8ab092a35a322f14ad1378f59341605888099dde"
-  integrity sha512-IhjOJlB6JMXoi6s4NeNrsoPfU9GkmyAfAN7CAI3isD3q+cs+Cy0VrX6LW5o61o5AoaWHj+/c1D1BbBvlb5hqxw==
+"@n1ru4l/use-async-effect@1.1.6":
+  version "1.1.6"
+  resolved "https://registry.yarnpkg.com/@n1ru4l/use-async-effect/-/use-async-effect-1.1.6.tgz#7670f7acfb01b44c19c45343cd0746d2f0a72e43"
+  integrity sha512-ymt50ScbyBoN+ZEg27Z5Ay+oEXIXDow394OAqerUNhoPDrlGfKHnFoQMi1ub5D1580AxLouICuAta1duiWYgLw==
 
 "@nodelib/fs.scandir@2.1.2":
   version "2.1.2"
