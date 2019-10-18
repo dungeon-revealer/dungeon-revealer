@@ -9082,10 +9082,10 @@ react-dom@16.10.1:
     prop-types "^15.6.2"
     scheduler "^0.16.1"
 
-react-easy-panzoom@0.4.3:
-  version "0.4.3"
-  resolved "https://registry.yarnpkg.com/react-easy-panzoom/-/react-easy-panzoom-0.4.3.tgz#df52a18f237fcf3a8064d1a8d8f69f5b8012260c"
-  integrity sha512-qOIL6bacmNJ0RL1aeClW2+8FR5DwDQYBJnDWbkZ3gYB5X8DThe7Ct6hn0neYt8pgxGcKPkfWSjiwdGbRrl0etA==
+react-easy-panzoom@0.4.4:
+  version "0.4.4"
+  resolved "https://registry.yarnpkg.com/react-easy-panzoom/-/react-easy-panzoom-0.4.4.tgz#b153951e270f579449af837aac5d215244b21e4a"
+  integrity sha512-1zgT6boDVPcrR3Egcz8KEVpM3fs50o22iIWPRlAqvev0/4nw5RnUNFsvmOJ/b5M2nd8MDGknLmyfBdhjoLB6+g==
   dependencies:
     warning "4.0.3"
 
