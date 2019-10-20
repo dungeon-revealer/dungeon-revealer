@@ -44,7 +44,7 @@ export const AuthenticationScreen = ({
               Authorization: `Bearer ${password}`
             }
           }).then(res => res.json());
-          if (result.data.role === requiredRole) {
+          if (result.data.role === requiredRole || result.data.role === "DM") {
             onAuthenticate(password);
           } else {
             setError("Invalid Password!");

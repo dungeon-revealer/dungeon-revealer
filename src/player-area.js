@@ -509,7 +509,7 @@ export const PlayerArea = () => {
   useAsyncEffect(
     function*() {
       const result = yield localFetch("/auth").then(res => res.json());
-      if (result.data.role !== "PC") {
+      if (!result.data.role) {
         setMode("AUTHENTICATE");
         return;
       }
