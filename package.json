@@ -34,7 +34,7 @@
     "react-color": "2.17.3",
     "react-dom": "16.10.1",
     "react-easy-panzoom": "0.4.4",
-    "react-spring": "8.0.27",
+    "react-spring": "9.0.0-canary.808.8.4a87fcb",
     "referentiel": "0.0.8",
     "serve-favicon": "2.5.0",
     "socket.io": "2.2.0",
