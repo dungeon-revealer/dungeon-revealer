@@ -1,4 +1,4 @@
-# dungeon-revealer [![Build Status](https://travis-ci.org/dungeon-revealer/dungeon-revealer.svg?branch=master)](https://travis-ci.org/apclary/dungeon-revealer)
+# dungeon-revealer [![Build Status](https://travis-ci.org/dungeon-revealer/dungeon-revealer.svg?branch=master)](https://travis-ci.org/dungeon-revealer/dungeon-revealer)
 
 A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
 
