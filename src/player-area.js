@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import produce from "immer";
 import createPersistedState from "use-persisted-state";
-import { PanZoom } from "react-easy-panzoom";
+import { PanZoom } from "./pan-zoom";
 import Referentiel from "referentiel";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import { loadImage, getOptimalDimensions } from "./util";
@@ -226,8 +226,8 @@ const PlayerMap = ({ fetch, pcPassword }) => {
             const canvasDimensions = getOptimalDimensions(
               map.width,
               map.height,
-              Math.max(window.innerWidth, 3000),
-              Math.max(window.innerHeight, 9000)
+              Math.min(window.innerWidth * 3, 3000),
+              Math.min(window.innerHeight * 3, 9000)
             );
 
             mapCanvas.width = canvasDimensions.width;
@@ -425,6 +425,10 @@ const PlayerMap = ({ fetch, pcPassword }) => {
               <Toolbar.Item isActive>
                 <Toolbar.Button
                   onClick={() => {
+                    centerMap();
+                  }}
+                  onTouchStart={ev => {
+                    ev.preventDefault();
                     centerMap();
                   }}
                 >
