@@ -16,6 +16,15 @@ const ButtonColumn = styled.div`
   margin-right: 0;
 `;
 
+const Link = styled.a`
+  display: block;
+  text-align: right;
+  margin-top: 64px;
+  color: white;
+  font-family: folkard, cardinal, palitino, serif;
+  font-size: 150%;
+`;
+
 export const AuthenticationScreen = ({
   onAuthenticate,
   requiredRole = "DM",
@@ -25,6 +34,7 @@ export const AuthenticationScreen = ({
   const [error, setError] = useState(null);
   return (
     <BackgroundImageContainer>
+      <BrandLogoText />
       <form
         onSubmit={async ev => {
           ev.preventDefault();
@@ -41,9 +51,8 @@ export const AuthenticationScreen = ({
           }
         }}
       >
-        <BrandLogoText />
         <Input
-          placeholder="Password"
+          placeholder={`${requiredRole === "DM" ? "DM" : "Player"} Password`}
           value={password}
           onChange={ev => setPassword(ev.target.value)}
         />
@@ -52,7 +61,15 @@ export const AuthenticationScreen = ({
             <Button.Primary type="submit">Log In</Button.Primary>
           </ButtonColumn>
         </ButtonContainer>
+        <div>
+          {requiredRole === "DM" ? (
+            <Link href="/">Visit Player Section ></Link>
+          ) : (
+            <Link href="/dm">Visit DM Section ></Link>
+          )}
+        </div>
       </form>
+
       {error ? (
         <Modal>
           <Modal.Dialog size={ModalDialogSize.SMALL}>

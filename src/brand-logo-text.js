@@ -4,7 +4,7 @@ import styled from "@emotion/styled/macro";
 const Heading = styled.div`
   font-family: folkard, palitino, serif;
   font-size: 600%;
-  margin-bottom: 32px;
+  margin-bottom: 42px;
   text-align: center;
 `;
 
