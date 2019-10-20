@@ -18,6 +18,9 @@ export const Container = styled.div`
 
 const Inner = styled.div`
   min-height: 40vh;
+  padding-left: 32px;
+  padding-right: 32px;
+  max-width: 500px;
 `;
 
 export const BackgroundImageContainer = ({ children }) => {
