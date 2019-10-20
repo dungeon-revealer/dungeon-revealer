@@ -336,6 +336,7 @@ export const DmArea = () => {
         />
       ) : loadedMap ? (
         <DmMap
+          dmPassword={dmPassword}
           setAppData={setData}
           socket={socket}
           map={loadedMap}

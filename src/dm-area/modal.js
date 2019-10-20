@@ -140,6 +140,9 @@ const ModalPortal = ({
 
     return () => {
       modalRoot.removeChild(modalElement);
+      if (!modalRegistration.current) {
+        return;
+      }
       modalRegistration.current.destroy();
     };
     // modalElement will never change

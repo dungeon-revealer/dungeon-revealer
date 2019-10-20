@@ -391,7 +391,8 @@ export const DmMap = ({
   enterGridMode,
   updateMap,
   deleteToken,
-  updateToken
+  updateToken,
+  dmPassword
 }) => {
   const mapContainerRef = useRef(null);
   const mapCanvasRef = useRef(null);
@@ -787,8 +788,8 @@ export const DmMap = ({
     };
 
     let tasks = [
-      loadImage(`/map/${loadedMapId}/map`),
-      loadImage(`/map/${loadedMapId}/fog`)
+      loadImage(`/map/${loadedMapId}/map?authorization=${dmPassword}`),
+      loadImage(`/map/${loadedMapId}/fog?authorization=${dmPassword}`)
     ];
 
     Promise.all([
@@ -887,7 +888,7 @@ export const DmMap = ({
       hasPreviousMap.current = true;
       saveFogCanvasRef.current.cancel();
     };
-  }, [fillFog, loadedMapId]);
+  }, [dmPassword, fillFog, loadedMapId]);
 
   const isCurrentMapLive = liveMapId && loadedMapId === liveMapId;
   const isOtherMapLive = liveMapId && loadedMapId !== liveMapId;

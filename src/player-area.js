@@ -1,5 +1,6 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import produce from "immer";
+import createPersistedState from "use-persisted-state";
 import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
@@ -12,6 +13,8 @@ import * as Icons from "./feather-icons";
 import { useSocket } from "./socket";
 import { AreaMarkerRenderer } from "./object-layer/area-marker-renderer";
 import { TokenRenderer } from "./object-layer/token-renderer";
+import { LoadingScreen } from "./loading-screen";
+import { AuthenticationScreen } from "./authentication-screen";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -53,7 +56,7 @@ const drawGridToContext = (grid, dimensions, canvas, gridColor) => {
   }
 };
 
-export const PlayerArea = () => {
+const PlayerMap = ({ fetch, pcPassword }) => {
   const panZoomRef = useRef(null);
   const currentMapRef = useRef(null);
   const [currentMap, setCurrentMap] = useState(null);
@@ -89,6 +92,7 @@ export const PlayerArea = () => {
 
   useAsyncEffect(
     function*() {
+      let fogCacheBusterCounter = 0;
       socket.on("connect", function() {
         console.log("connected to server");
       });
@@ -146,9 +150,9 @@ export const PlayerArea = () => {
          */
         if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
           const task = loadImage(
-            `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}`
+            `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
           );
-          fogCacheBusterCounter++;
+          fogCacheBusterCounter = fogCacheBusterCounter + 1;
           pendingImageLoads.current = [task];
 
           task.promise
@@ -200,10 +204,10 @@ export const PlayerArea = () => {
 
         const tasks = [
           loadImage(
-            `/map/${data.map.id}/map?cache_buster=${fogCacheBusterCounter}`
+            `/map/${data.map.id}/map?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
           ),
           loadImage(
-            `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}`
+            `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
           )
         ];
         pendingImageLoads.current = tasks;
@@ -289,7 +293,6 @@ export const PlayerArea = () => {
           }
         ]);
       });
-      let fogCacheBusterCounter = 0;
 
       socket.on("map update", onReceiveMap);
 
@@ -316,7 +319,7 @@ export const PlayerArea = () => {
         }
       };
     },
-    [socket]
+    [socket, fetch, pcPassword]
   );
 
   useEffect(() => {
@@ -378,14 +381,6 @@ export const PlayerArea = () => {
 
   return (
     <>
-      {showSplashScreen ? (
-        <div id="splash" className="splash splash-js">
-          <a id="dm-link" href="/dm">
-            Dungeon Master ↝
-          </a>
-          <h1 className="title-text">Dungeon Revealer</h1>
-        </div>
-      ) : null}
       <PanZoom
         style={{
           cursor: "grab",
@@ -483,4 +478,63 @@ export const PlayerArea = () => {
       ) : null}
     </>
   );
+};
+
+const usePcPassword = createPersistedState("pcPassword");
+
+export const PlayerArea = () => {
+  const [pcPassword, setPcPassword] = usePcPassword("");
+
+  const [mode, setMode] = useState("LOADING");
+
+  const localFetch = useCallback(
+    (input, init = {}) => {
+      return fetch(input, {
+        ...init,
+        headers: {
+          Authorization: pcPassword ? `Bearer ${pcPassword}` : undefined,
+          ...init.headers
+        }
+      }).then(res => {
+        if (res.status === 401) {
+          console.error("Unauthenticated access.");
+          throw new Error("Unauthenticated access.");
+        }
+        return res;
+      });
+    },
+    [pcPassword]
+  );
+
+  useAsyncEffect(
+    function*() {
+      const result = yield localFetch("/auth").then(res => res.json());
+      if (result.data.role !== "PC") {
+        setMode("AUTHENTICATE");
+        return;
+      }
+      setMode("READY");
+    },
+    [localFetch]
+  );
+
+  if (mode === "LOADING") {
+    return <LoadingScreen />;
+  }
+  if (mode === "AUTHENTICATE") {
+    return (
+      <AuthenticationScreen
+        requiredRole="PC"
+        fetch={localFetch}
+        onAuthenticate={password => {
+          setPcPassword(password);
+        }}
+      />
+    );
+  }
+  if (mode === "READY") {
+    return <PlayerMap fetch={localFetch} pcPassword={pcPassword} />;
+  }
+
+  throw new Error("Invalid mode.");
 };

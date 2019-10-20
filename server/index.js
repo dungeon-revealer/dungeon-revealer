@@ -37,7 +37,17 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 const authorizationMiddleware = (req, res, next) => {
   req.role = null;
 
-  if (!req.headers.authorization) {
+  const authHeader = req.headers.authorization;
+  const authParam = req.query.authorization;
+  let token = null;
+
+  if (authHeader) {
+    token = req.headers.authorization.split(" ")[1];
+  } else if (authParam) {
+    token = authParam;
+  }
+
+  if (!token) {
     if (!process.env.PC_PASSWORD) {
       req.role = "PC";
     }
@@ -47,8 +57,6 @@ const authorizationMiddleware = (req, res, next) => {
     next();
     return;
   }
-
-  const token = req.headers.authorization.split(" ")[1];
 
   if (process.env.PC_PASSWORD) {
     if (token === process.env.PC_PASSWORD) {
