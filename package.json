@@ -24,7 +24,7 @@
     "express-basic-auth": "1.2.0",
     "focus-trap-react": "6.0.0",
     "fs-extra": "8.1.0",
-    "immer": "4.0.1",
+    "immer": "4.0.2",
     "junk": "3.1.0",
     "lodash": "4.17.15",
     "morgan": "1.9.1",
