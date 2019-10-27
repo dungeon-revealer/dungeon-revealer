@@ -334,6 +334,7 @@ export const DmArea = () => {
           onAbort={() => {
             setMode({ title: "SHOW_MAP_LIBRARY" });
           }}
+          dmPassword={dmPassword}
         />
       ) : loadedMap ? (
         <DmMap
