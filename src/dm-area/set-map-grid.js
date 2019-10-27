@@ -234,7 +234,7 @@ const OffsetControls = ({ offset, setOffset }) => {
             </div>
             <div style={{ display: "flex" }}>
               <div style={{ flexGrow: 1 }}>
-                <Input value={offset.x} disabled />
+                <Input value={offset.x} />
               </div>
               <div>
                 <Button.Tertiary
@@ -335,7 +335,7 @@ const PartialCursor = ({ isSelecting, start, end }) => {
 
 const sizeFactor = 5;
 
-export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
+export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
   const [image, setImage] = useState(null);
   const [sideLength, setSideLength] = useState(
     map.grid ? map.grid.sideLength : 40
@@ -361,7 +361,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
 
   useAsyncEffect(
     function*(onCancel) {
-      const task = loadImage(`/map/${map.id}/map`);
+      const task = loadImage(`/map/${map.id}/map?authorization=${dmPassword}`);
       onCancel(() => task.cancel());
       const image = yield task.promise;
       setImage(image);
@@ -378,7 +378,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort }) => {
           initialPartialSideLength / 2
       });
     },
-    [map, initialPartialSideLength]
+    [map, initialPartialSideLength, dmPassword]
   );
 
   useEffect(() => {
