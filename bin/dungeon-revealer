@@ -2,7 +2,7 @@
 "use strict";
 
 require("debug")("dungeon-revealer");
-const app = require("../app");
+const app = require("../server");
 const http = app.http;
 const os = require("os");
 const ifaces = os.networkInterfaces();

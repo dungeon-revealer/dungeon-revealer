@@ -11,7 +11,7 @@ const getDataDirectory = () => {
     return path.resolve(path.dirname(process.execPath), "data");
   } else {
     // eslint-disable-next-line id-blacklist
-    return path.resolve(__dirname, "data");
+    return path.resolve(__dirname, "..", "data");
   }
 };
 

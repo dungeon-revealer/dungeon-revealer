@@ -5,72 +5,117 @@ const app = express();
 const path = require("path");
 const favicon = require("serve-favicon");
 const logger = require("morgan");
-const cookieParser = require("cookie-parser");
-const session = require("cookie-session");
 const bodyParser = require("body-parser");
-const crypto = require("crypto");
 const createUniqueId = require("uuid/v4");
 const fs = require("fs-extra");
 const os = require("os");
 const server = (app.http = require("http").createServer(app));
 const io = require("socket.io")(server);
 const busboy = require("connect-busboy");
-const basicAuth = require("express-basic-auth");
 const { Maps } = require("./maps");
 const { Settings } = require("./settings");
 const { getDataDirectory } = require("./util");
+
+const PUBLIC_PATH = path.resolve(__dirname, "..", "build");
 
 fs.mkdirpSync(getDataDirectory());
 
 const maps = new Maps();
 const settings = new Settings();
 
-const authMiddlewareDM = basicAuth({
-  challenge: process.env.DM_PASSWORD,
-  authorizer: function(user, password) {
-    if (process.env.DM_PASSWORD) {
-      return password === process.env.DM_PASSWORD;
-    }
-    return true;
-  }
-});
-
-const authMiddlewarePC = basicAuth({
-  challenge: process.env.PC_PASSWORD,
-  authorizer: function(user, password) {
-    if (process.env.PC_PASSWORD) {
-      return password === process.env.PC_PASSWORD || password === process.env.DM_PASSWORD;
-    }
-    return true;
-  }
-});
-
-// Used to generate session keys
-const generateKey = () => {
-  const sha = crypto.createHash("sha256");
-  sha.update(Math.random().toString());
-  return sha.digest("hex");
-};
-
 app.use(busboy());
 
 // Not sure if this is needed, Chrome seems to grab the favicon just fine anyway
 // Maybe for cross-browser support
 app.use(logger("dev"));
-app.use(favicon(path.resolve(__dirname, "build", "favicon.ico")));
+app.use(favicon(path.resolve(PUBLIC_PATH, "favicon.ico")));
 
 // Needed to handle JSON posts, size limit of 50mb
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-// Cookie parsing needed for sessions
-app.use(cookieParser());
+const authorizationMiddleware = (req, res, next) => {
+  req.role = null;
 
-// Session framework
-// not implemented
-app.use(session({ secret: generateKey() }));
+  const authHeader = req.headers.authorization;
+  const authParam = req.query.authorization;
+  let token = null;
 
-app.get("/map/:id/map", (req, res) => {
+  if (authHeader) {
+    token = req.headers.authorization.split(" ")[1];
+  } else if (authParam) {
+    token = authParam;
+  }
+
+  if (!token) {
+    if (!process.env.PC_PASSWORD) {
+      req.role = "PC";
+    }
+    if (!process.env.DM_PASSWORD) {
+      req.role = "DM";
+    }
+    next();
+    return;
+  }
+
+  if (process.env.PC_PASSWORD) {
+    if (token === process.env.PC_PASSWORD) {
+      req.role = "PC";
+    }
+  } else {
+    req.role = "PC";
+  }
+
+  if (process.env.DM_PASSWORD) {
+    if (token === process.env.DM_PASSWORD) {
+      req.role = "DM";
+    }
+  } else {
+    req.role = "DM";
+  }
+
+  next();
+};
+
+const requiresPcRole = (req, res, next) => {
+  if (req.role === "DM" || req.role === "PC") {
+    next();
+    return;
+  }
+  res.status(401).json({
+    data: null,
+    error: {
+      message: "Unauthenticated Access",
+      code: "ERR_UNAUTHENTICATED_ACCESS"
+    }
+  });
+};
+
+const requiresDmRole = (req, res, next) => {
+  if (res.role === "DM") {
+    next();
+    return;
+  }
+  res.status(401).json({
+    data: null,
+    error: {
+      message: "Unauthenticated Access",
+      code: "ERR_UNAUTHENTICATED_ACCESS"
+    }
+  });
+};
+
+app.use(authorizationMiddleware);
+
+app.get("/auth", (req, res) => {
+  return res.status(200).json({
+    data: {
+      role: req.role
+    }
+  });
+});
+
+app.get("/map/:id/map", requiresPcRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -95,7 +140,7 @@ app.get("/map/:id/map", (req, res) => {
   return res.sendFile(path.join(basePath, map.mapPath));
 });
 
-app.get("/map/:id/fog", (req, res) => {
+app.get("/map/:id/fog", requiresPcRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -117,7 +162,7 @@ app.get("/map/:id/fog", (req, res) => {
   return res.sendFile(path.join(maps.getBasePath(map), map.fogProgressPath));
 });
 
-app.get("/map/:id/fog-live", (req, res) => {
+app.get("/map/:id/fog-live", requiresPcRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -139,7 +184,7 @@ app.get("/map/:id/fog-live", (req, res) => {
   return res.sendFile(path.join(maps.getBasePath(map), map.fogLivePath));
 });
 
-app.post("/map/:id/map", authMiddlewarePC, (req, res) => {
+app.post("/map/:id/map", requiresPcRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -158,7 +203,7 @@ app.post("/map/:id/map", authMiddlewarePC, (req, res) => {
   });
 });
 
-app.post("/map/:id/fog", authMiddlewarePC, (req, res) => {
+app.post("/map/:id/fog", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -172,7 +217,7 @@ app.post("/map/:id/fog", authMiddlewarePC, (req, res) => {
   });
 });
 
-app.post("/map/:id/send", authMiddlewarePC, (req, res) => {
+app.post("/map/:id/send", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -190,7 +235,7 @@ app.post("/map/:id/send", authMiddlewarePC, (req, res) => {
   });
 });
 
-app.delete("/map/:id", authMiddlewarePC, (req, res) => {
+app.delete("/map/:id", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -203,7 +248,7 @@ app.delete("/map/:id", authMiddlewarePC, (req, res) => {
   });
 });
 
-app.get("/active-map", authMiddlewarePC, (req, res) => {
+app.get("/active-map", requiresPcRole, (req, res) => {
   let activeMap = null;
   const activeMapId = settings.get("currentMapId");
   if (activeMapId) {
@@ -218,7 +263,7 @@ app.get("/active-map", authMiddlewarePC, (req, res) => {
   });
 });
 
-app.post("/active-map", authMiddlewarePC, (req, res) => {
+app.post("/active-map", requiresDmRole, (req, res) => {
   const mapId = req.body.mapId;
   if (mapId === undefined) {
     res.status(404).json({
@@ -238,7 +283,7 @@ app.post("/active-map", authMiddlewarePC, (req, res) => {
   });
 });
 
-app.get("/map", authMiddlewarePC, (req, res) => {
+app.get("/map", requiresPcRole, (req, res) => {
   res.json({
     success: true,
     data: {
@@ -248,7 +293,7 @@ app.get("/map", authMiddlewarePC, (req, res) => {
   });
 });
 
-app.post("/map", (req, res) => {
+app.post("/map", requiresDmRole, (req, res) => {
   req.pipe(req.busboy);
 
   const data = {};
@@ -274,7 +319,7 @@ app.post("/map", (req, res) => {
   });
 });
 
-app.patch("/map/:id", authMiddlewarePC, (req, res) => {
+app.patch("/map/:id", requiresDmRole, (req, res) => {
   let map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -317,7 +362,7 @@ app.patch("/map/:id", authMiddlewarePC, (req, res) => {
   });
 });
 
-app.post("/map/:id/token", authMiddlewarePC, (req, res) => {
+app.post("/map/:id/token", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -351,7 +396,7 @@ app.post("/map/:id/token", authMiddlewarePC, (req, res) => {
   });
 });
 
-app.delete("/map/:id/token/:tokenId", authMiddlewarePC, (req, res) => {
+app.delete("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -378,7 +423,7 @@ app.delete("/map/:id/token/:tokenId", authMiddlewarePC, (req, res) => {
   });
 });
 
-app.patch("/map/:id/token/:tokenId", authMiddlewarePC, (req, res) => {
+app.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -414,15 +459,15 @@ app.patch("/map/:id/token/:tokenId", authMiddlewarePC, (req, res) => {
 });
 
 app.get("/", function(req, res) {
-  res.sendfile("/build/index.html", { root: __dirname });
+  res.sendfile("index.html", { root: PUBLIC_PATH });
 });
 
-app.get("/dm", authMiddlewareDM, function(req, res) {
-  res.sendfile("/build/index.html", { root: __dirname });
+app.get("/dm", function(req, res) {
+  res.sendfile("index.html", { root: PUBLIC_PATH });
 });
 
 // Consider all URLs under /public/ as static files, and return them raw.
-app.use(express.static(path.join(__dirname, "build")));
+app.use(express.static(path.join(PUBLIC_PATH)));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

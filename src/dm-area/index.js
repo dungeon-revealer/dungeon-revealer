@@ -16,11 +16,14 @@ import { SelectMapModal } from "./select-map-modal";
 import { SetMapGrid } from "./set-map-grid";
 import { useSocket } from "../socket";
 import { useStaticRef } from "../hooks/use-static-ref";
+import { AuthenticationScreen } from "../authentication-screen";
+import { LoadingScreen } from "../loading-screen";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
+const useDmPassword = createPersistedState("dmPassword");
 
 const INITIAL_MODE = {
-  title: "EDIT_MAP",
+  title: "LOADING",
   data: null
 };
 
@@ -30,8 +33,10 @@ export const DmArea = () => {
   const [loadedMapId, setLoadedMapId] = useLoadedMapId(null);
   const loadedMapIdRef = useRef(loadedMapId);
   const [liveMapId, setLiveMapId] = useState(null);
-  // EDIT_MAP, SET_MAP_GRID, SHOW_MAP_LIBRARY
+  // LOADING, AUTHENTICATE, EDIT_MAP, SET_MAP_GRID, SHOW_MAP_LIBRARY
   const [mode, setMode] = useState(INITIAL_MODE);
+
+  const [dmPassword, setDmPassword] = useDmPassword("");
 
   const setMapGridTargetMap = useMemo(
     () =>
@@ -46,10 +51,35 @@ export const DmArea = () => {
     [data, loadedMapId]
   );
 
+  const localFetch = useCallback(
+    (input, init = {}) => {
+      return fetch(input, {
+        ...init,
+        headers: {
+          Authorization: dmPassword ? `Bearer ${dmPassword}` : undefined,
+          ...init.headers
+        }
+      }).then(res => {
+        if (res.status === 401) {
+          console.error("Unauthenticated access.");
+          throw new Error("Unauthenticated access.");
+        }
+        return res;
+      });
+    },
+    [dmPassword]
+  );
+
   // load initial state
   useAsyncEffect(
     function*() {
-      const { data } = yield fetch("/map").then(res => res.json());
+      const result = yield localFetch("/auth").then(res => res.json());
+      if (result.data.role !== "DM") {
+        setMode({ title: "AUTHENTICATE" });
+        return;
+      }
+
+      const { data } = yield localFetch("/map").then(res => res.json());
       setData(data);
       const isLoadedMapAvailable = Boolean(
         data.maps.find(map => map.id === loadedMapIdRef.current)
@@ -69,8 +99,9 @@ export const DmArea = () => {
       setLoadedMapId(
         isLoadedMapAvailable ? loadedMapIdRef.current : data.currentMapId
       );
+      setMode({ title: "EDIT_MAP" });
     },
-    [setLoadedMapId]
+    [setLoadedMapId, localFetch]
   );
 
   // token add/remove/update event handlers
@@ -111,73 +142,82 @@ export const DmArea = () => {
     return () => socket.off(eventName);
   }, [socket, loadedMapId, setData]);
 
-  const createMap = useCallback(async ({ file, title }) => {
-    const formData = new FormData();
+  const createMap = useCallback(
+    async ({ file, title }) => {
+      const formData = new FormData();
 
-    formData.append("file", file);
-    formData.append("title", title);
+      formData.append("file", file);
+      formData.append("title", title);
 
-    const res = await fetch(`/map`, {
-      method: "POST",
-      body: formData
-    }).then(res => res.json());
-    setData(data => ({
-      ...data,
-      maps: [...data.maps, res.data.map]
-    }));
-  }, []);
+      const res = await localFetch(`/map`, {
+        method: "POST",
+        body: formData
+      }).then(res => res.json());
+      setData(data => ({
+        ...data,
+        maps: [...data.maps, res.data.map]
+      }));
+    },
+    [localFetch]
+  );
 
-  const updateMap = useCallback(async (mapId, data) => {
-    const res = await fetch(`/map/${mapId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data)
-    }).then(res => res.json());
+  const updateMap = useCallback(
+    async (mapId, data) => {
+      const res = await localFetch(`/map/${mapId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      }).then(res => res.json());
 
-    if (!res.data.map) {
-      return;
-    }
+      if (!res.data.map) {
+        return;
+      }
 
-    setData(
-      produce(data => {
-        data.maps = data.maps.map(map => {
-          if (map.id !== res.data.map.id) {
-            return map;
-          } else {
-            return { ...map, ...res.data.map };
-          }
-        });
-      })
-    );
-  }, []);
+      setData(
+        produce(data => {
+          data.maps = data.maps.map(map => {
+            if (map.id !== res.data.map.id) {
+              return map;
+            } else {
+              return { ...map, ...res.data.map };
+            }
+          });
+        })
+      );
+    },
+    [localFetch]
+  );
 
-  const deleteMap = useCallback(async mapId => {
-    await fetch(`/map/${mapId}`, {
-      method: "DELETE"
-    });
-    setData(data => ({
-      ...data,
-      maps: data.maps.filter(map => map.id !== mapId)
-    }));
-  }, []);
+  const deleteMap = useCallback(
+    async mapId => {
+      await localFetch(`/map/${mapId}`, {
+        method: "DELETE"
+      });
+      setData(data => ({
+        ...data,
+        maps: data.maps.filter(map => map.id !== mapId)
+      }));
+    },
+    [localFetch]
+  );
 
   const deleteToken = useCallback(
     tokenId => {
-      fetch(`/map/${loadedMapId}/token/${tokenId}`, {
+      localFetch(`/map/${loadedMapId}/token/${tokenId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json"
         }
       });
     },
-    [loadedMapId]
+    [loadedMapId, localFetch]
   );
 
   const persistTokenChanges = useStaticRef(() =>
-    debounce((loadedMapId, id, updates) => {
-      fetch(`/map/${loadedMapId}/token/${id}`, {
+    debounce((loadedMapId, id, updates, localFetch) => {
+      localFetch(`/map/${loadedMapId}/token/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json"
@@ -201,9 +241,9 @@ export const DmArea = () => {
         })
       );
 
-      persistTokenChanges(loadedMapId, id, updates);
+      persistTokenChanges(loadedMapId, id, updates, localFetch);
     },
-    [loadedMapId, persistTokenChanges]
+    [loadedMapId, persistTokenChanges, localFetch]
   );
 
   const sendLiveMap = useCallback(
@@ -211,17 +251,17 @@ export const DmArea = () => {
       const formData = new FormData();
       formData.append("image", image);
 
-      await fetch(`/map/${loadedMapId}/send`, {
+      await localFetch(`/map/${loadedMapId}/send`, {
         method: "POST",
         body: formData
       });
       setLiveMapId(loadedMapId);
     },
-    [loadedMapId]
+    [loadedMapId, localFetch]
   );
 
   const hideMap = useCallback(async () => {
-    await fetch("/active-map", {
+    await localFetch("/active-map", {
       method: "POST",
       body: JSON.stringify({
         mapId: null
@@ -231,7 +271,7 @@ export const DmArea = () => {
       }
     });
     setLiveMapId(null);
-  }, []);
+  }, [localFetch]);
 
   const showMapModal = useCallback(() => {
     setMode({ title: "SHOW_MAP_LIBRARY" });
@@ -240,6 +280,23 @@ export const DmArea = () => {
   const enterGridMode = useCallback(() => {
     setMode({ title: "SET_MAP_GRID", data: { mapId: loadedMapId } });
   }, [loadedMapId]);
+
+  if (mode.title === "LOADING") {
+    return <LoadingScreen />;
+  }
+
+  if (mode.title === "AUTHENTICATE") {
+    return (
+      <Modal.Provider>
+        <AuthenticationScreen
+          onAuthenticate={password => {
+            setDmPassword(password);
+          }}
+          fetch={localFetch}
+        />
+      </Modal.Provider>
+    );
+  }
 
   return (
     <Modal.Provider>
@@ -279,6 +336,7 @@ export const DmArea = () => {
         />
       ) : loadedMap ? (
         <DmMap
+          dmPassword={dmPassword}
           setAppData={setData}
           socket={socket}
           map={loadedMap}
