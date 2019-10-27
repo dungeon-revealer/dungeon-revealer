@@ -253,7 +253,18 @@ const getSnappedSelectionMask = (grid, ratio, selection) => {
     y: y2 + grid.sideLength * ratio
   };
 
-  return calculateRectProps(p1, p2);
+  const rect = calculateRectProps(p1, p2);
+
+  // round values because we want the whole area to be affected
+  if (rect.x % 1 !== 0) {
+    rect.x = Math.floor(rect.x);
+    rect.width = Math.ceil(rect.width);
+  }
+  if (rect.y % 1 !== 0) {
+    rect.y = Math.floor(rect.y);
+    rect.height = Math.ceil(rect.height);
+  }
+  return rect;
 };
 
 const Cursor = React.memo(
@@ -849,9 +860,8 @@ export const DmMap = ({
           return;
         }
 
-        fogCanvasRef.current
-          .getContext("2d")
-          .drawImage(fog, 0, 0, dimensions.width, dimensions.height);
+        const fogContext = fogCanvasRef.current.getContext("2d");
+        fogContext.drawImage(fog, 0, 0, dimensions.width, dimensions.height);
 
         redrawCanvas();
       })
