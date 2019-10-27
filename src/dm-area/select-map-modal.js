@@ -87,7 +87,8 @@ export const SelectMapModal = ({
   updateMap,
   createMap,
   canClose,
-  enterGridMode
+  enterGridMode,
+  dmPassword
 }) => {
   const [activeMapId, setActiveMapId] = useState(loadedMapId);
   const [modalType, setModalType] = useState(null);
@@ -276,7 +277,7 @@ export const SelectMapModal = ({
                 >
                   {/* eslint-disable-next-line jsx-a11y/alt-text */}
                   <img
-                    src={`/map/${activeMap.id}/map`}
+                    src={`/map/${activeMap.id}/map?authorization=${dmPassword}`}
                     style={{ width: "100%" }}
                   />
                 </div>

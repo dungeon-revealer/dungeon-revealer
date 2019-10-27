@@ -526,6 +526,7 @@ export const DmMap = ({
   const getMouseCoordinates = useCallback(
     ev => {
       const ratio = getMapDisplayRatio();
+      if (!panZoomReferentialRef.current) return { x: 0, y: 0 };
       const [x, y] = panZoomReferentialRef.current.global_to_local([
         ev.pageX,
         ev.pageY
@@ -875,7 +876,10 @@ export const DmMap = ({
 
       await fetch(`/map/${loadedMapId}/fog`, {
         method: "POST",
-        body: formData
+        body: formData,
+        headers: {
+          Authorization: dmPassword ? `Bearer ${dmPassword}` : undefined
+        }
       });
     }, 500);
 
@@ -939,7 +943,8 @@ export const DmMap = ({
               fetch(`/map/${loadedMapId}/token`, {
                 method: "POST",
                 headers: {
-                  "Content-Type": "application/json"
+                  "Content-Type": "application/json",
+                  Authorization: dmPassword ? `Bearer ${dmPassword}` : undefined
                 },
                 body: JSON.stringify({
                   x: x / ratio,
