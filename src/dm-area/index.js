@@ -319,6 +319,7 @@ export const DmArea = () => {
           enterGridMode={mapId =>
             setMode({ title: "SET_MAP_GRID", data: { mapId } })
           }
+          dmPassword={dmPassword}
         />
       ) : null}
       {setMapGridTargetMap ? (

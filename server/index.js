@@ -47,17 +47,6 @@ const authorizationMiddleware = (req, res, next) => {
     token = authParam;
   }
 
-  if (!token) {
-    if (!process.env.PC_PASSWORD) {
-      req.role = "PC";
-    }
-    if (!process.env.DM_PASSWORD) {
-      req.role = "DM";
-    }
-    next();
-    return;
-  }
-
   if (process.env.PC_PASSWORD) {
     if (token === process.env.PC_PASSWORD) {
       req.role = "PC";
@@ -92,7 +81,7 @@ const requiresPcRole = (req, res, next) => {
 };
 
 const requiresDmRole = (req, res, next) => {
-  if (res.role === "DM") {
+  if (req.role === "DM") {
     next();
     return;
   }
