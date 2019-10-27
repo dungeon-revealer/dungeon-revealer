@@ -5,7 +5,7 @@
     <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
     />
     <meta name="theme-color" content="#000000" />
     <!--
@@ -26,7 +26,7 @@
   </head>
   <body id="body">
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div id="root" style="touch-action: manipulation;"></div>
     <div id="modal"></div>
     <!--
       This HTML file is a template.
