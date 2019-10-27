@@ -14,7 +14,7 @@ export const DmTokenRenderer = React.memo(
       <g pointerEvents={isDisabled ? "none" : undefined}>
         {tokens.map(token => (
           <DmTokenMarker
-            {...token}
+            token={token}
             key={token.id}
             getRelativePosition={getRelativePosition}
             updateToken={props => updateToken({ ...props, id: token.id })}

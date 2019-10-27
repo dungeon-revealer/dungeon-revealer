@@ -6,33 +6,78 @@ import * as Button from "../button";
 import * as Icon from "../feather-icons";
 import { Modal } from "../dm-area/modal";
 import { ToggleSwitch } from "../toggle-switch";
+import { useSpring, animated, to } from "react-spring";
 
 const TokenContextMenu = ({
   tokenRef,
+  position,
   token: { label, color, radius, isVisibleForPlayers },
   updateToken,
   deleteToken,
-  styles,
   close
 }) => {
+  const containerRef = useRef(null);
   const rangeSlideRef = useRef();
 
+  const initialCoords = useRef({
+    x: window.innerWidth,
+    y: window.innerHeight
+  });
+
+  // Position 1: we use spring values as a two way data bindings of the position.
+  const [{ x, y }, set] = useSpring(() => ({
+    // Position 2: we want to position the context menu offscreen first.
+    to: initialCoords.current,
+    immediate: true
+  }));
+
+  // Position 3: we want to adjust the position once we know the rendered size of our context menu.
   useEffect(() => {
+    // in case we do not set the timeout the bound properties will all be zero.
+    const timeout = setTimeout(() => {
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      const { clientHeight, clientWidth } = document.documentElement;
+
+      let { x, y } = position;
+      if (x + width > clientWidth) {
+        x = x - width;
+      }
+      if (y + height > clientHeight) {
+        y = y - height;
+      }
+
+      if (y < 0) {
+        y = 5;
+      }
+      initialCoords.current.x = x;
+      initialCoords.current.y = y;
+      set({ to: { x, y }, immediate: true });
+    });
+
+    return () => clearTimeout(timeout);
+  }, [position, set]);
+
+  useEffect(() => {
+    if (!rangeSlideRef.current) return;
     rangeSlideRef.current.value = radius;
   }, [radius]);
 
   return (
-    <div
+    <animated.div
+      ref={containerRef}
       onClick={ev => {
         ev.stopPropagation();
       }}
       style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
         backgroundColor: "white",
         padding: 10,
         borderRadius: 5,
         width: "260px",
         boxShadow: "0 0 15px rgba(0,0,0,0.1)",
-        ...styles
+        transform: to([x, y], (x, y) => `translate(${x}px, ${y}px)`)
       }}
     >
       <div style={{ display: "flex", width: "100%" }}>
@@ -93,57 +138,21 @@ const TokenContextMenu = ({
           updateToken({ color: color.hex });
         }}
       />
-    </div>
+    </animated.div>
   );
 };
 
-const calculatePerfectContextMenuPositionStyles = event => {
-  const clickX = event.clientX;
-  const clickY = event.clientY;
-  const screenW = window.innerWidth;
-  const screenH = window.innerHeight;
-  const rootW = 0;
-  const rootH = 0;
-
-  const right = screenW - clickX > rootW;
-  const left = !right;
-  const top = screenH - clickY > rootH;
-  const bottom = !top;
-
-  const result = {
-    position: "absolute"
-  };
-
-  if (right) {
-    result.left = `${clickX + 5}px`;
-  }
-
-  if (left) {
-    result.left = `${clickX - rootW - 5}px`;
-  }
-
-  if (top) {
-    result.top = `${clickY + 5}px`;
-  }
-
-  if (bottom) {
-    result.top = `${clickY - rootH - 5}px`;
-  }
-
-  return result;
-};
-
 export const DmTokenMarker = React.memo(
-  ({ getRelativePosition, updateToken, deleteToken, ratio, ...props }) => {
+  ({ getRelativePosition, updateToken, deleteToken, ratio, token }) => {
     const tokenRef = useRef();
-    const [contextMenuEvent, setContextMenuEvent] = useState(null);
+    const [contextMenuCoordinates, setContextMenuCoordinates] = useState(null);
 
     return (
       <>
         <TokenMarker
           ref={tokenRef}
           ratio={ratio}
-          {...props}
+          {...token}
           isAnimated={false}
           onClick={ev => {
             ev.preventDefault();
@@ -158,8 +167,8 @@ export const DmTokenMarker = React.memo(
               y: ev.touches[0].pageY
             });
 
-            const diffX = x - props.x;
-            const diffY = y - props.y;
+            const diffX = x - token.x;
+            const diffY = y - token.y;
             let currentX = x;
             let currentY = y;
 
@@ -199,8 +208,8 @@ export const DmTokenMarker = React.memo(
               y: ev.pageY
             });
 
-            const diffX = x - props.x;
-            const diffY = y - props.y;
+            const diffX = x - token.x;
+            const diffY = y - token.y;
 
             const onMouseMove = ev => {
               ev.preventDefault();
@@ -230,13 +239,12 @@ export const DmTokenMarker = React.memo(
             window.addEventListener("mouseup", onMouseUp);
           }}
           onContextMenu={ev => {
-            ev.persist();
             ev.preventDefault();
             ev.stopPropagation();
-            setContextMenuEvent(ev);
+            setContextMenuCoordinates({ x: ev.clientX, y: ev.clientY });
           }}
         />
-        {contextMenuEvent ? (
+        {contextMenuCoordinates ? (
           <Modal
             backgroundStyles={{
               backgroundColor: "transparent"
@@ -245,19 +253,17 @@ export const DmTokenMarker = React.memo(
               ev.preventDefault();
               ev.stopPropagation();
 
-              setContextMenuEvent(null);
+              setContextMenuCoordinates(null);
             }}
-            onPressEscape={() => setContextMenuEvent(null)}
+            onPressEscape={() => setContextMenuCoordinates(null)}
           >
             <TokenContextMenu
               tokenRef={tokenRef}
-              token={props}
+              token={token}
               updateToken={updateToken}
               deleteToken={deleteToken}
-              styles={calculatePerfectContextMenuPositionStyles(
-                contextMenuEvent
-              )}
-              close={() => setContextMenuEvent(null)}
+              position={contextMenuCoordinates}
+              close={() => setContextMenuCoordinates(null)}
             />
           </Modal>
         ) : null}
