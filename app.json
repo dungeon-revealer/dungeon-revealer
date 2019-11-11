@@ -1,0 +1,27 @@
+{
+  "name": "Dungeon Revealer",
+  "description": "A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.",
+  "keywords": [
+    "rpg",
+    "VTT"
+  ],
+  "success_url": "/dm",
+  "repository": "https://github.com/dungeon-revealer/dungeon-revealer",
+  "env": {
+    "DM_PASSWORD": {
+      "description": "Password for Restricted DM Areas",
+      "required": true,
+      "value": "defaultPass"
+    },
+    "PC_PASSWORD": {
+      "description": "Password for Restricted PC Areas. Leave blank for public access.",
+      "required": false,
+      "value": ""
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}

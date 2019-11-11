@@ -69,6 +69,12 @@ docker run -e DM_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/d
 
 In your browser, go to `<YOUR_IPADDRESS>:<PORT>`.
 
+##### Heroku
+
+Heroku is a platform supporting one-click deployments and includes a free usage tier. Sign up for a free account then click the button below. Give your app a unique name, set any required passwords, and click `Deploy App` to start the build process.
+
+[![button](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/dungeon-revealer/dungeon-revealer)
+
 ### Using the app
 
 The app is separated into two sections. One for the dungeon master and one for the players.
