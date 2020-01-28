@@ -9,6 +9,6 @@ COPY . .
 # Docker runs the app as root inside the container, 
 # so it needs elevated permissions.
 # Remove binaries after install since we don't need them.
-RUN yarn install && rm bin/dungeon-revealer-*
+RUN yarn install 
 
 CMD [ "yarn", "start" ]
