@@ -43,7 +43,7 @@
   "main": "app.js",
   "devDependencies": {
     "babel-eslint": "10.0.3",
-    "cross-env": "6.0.3",
+    "cross-env": "7.0.0",
     "eslint": "6.8.0",
     "eslint-config-prettier": "6.5.0",
     "eslint-plugin-react-app": "6.0.3",
