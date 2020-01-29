@@ -1,4 +1,3 @@
-sudo: false
 language: node_js
 node_js:
   - "10"
@@ -27,7 +26,7 @@ jobs:
     - stage: build docker image
       install: true
       script:
-        - docker build -t dungeon-revealer .
+        - docker build -t dungeon-revealer -f Dockerfile .
         - docker run --rm dungeon-revealer echo "hello"
 
     - stage: dockerhub dev deploy
@@ -40,10 +39,22 @@ jobs:
         - docker push $DOCKER_USERNAME/dungeon-revealer
 
     - stage: github deploy
+      install:
+        - yarn install
+        - sudo docker run --rm --privileged multiarch/qemu-user-static:register
+        - wget https://github.com/multiarch/qemu-user-static/releases/download/v4.1.1-1/qemu-arm-static.tar.gz -O /tmp/qemu-arm-static.tar.gz
+        - tar zxvf /tmp/qemu-arm-static.tar.gz -C /tmp
+        - docker build -t dr-armbuild -f Dockerfile-armbuild .
       script:
         - echo "Deploying $TRAVIS_TAG to GitHub releases ..."
-        - chmod +x bin/dungeon-revealer-linux bin/dungeon-revealer-macos
+        - echo "Building x64 binaries..."
+        - yarn compilex64
+        - echo "Building armv7 binaries..."
+        - sudo docker run --rm -v /tmp/qemu-arm-static:/usr/bin/qemu-arm-static -v $(pwd)/bin/:/usr/src/app/bin/ dr-armbuild /bin/sh -c 'yarn install; yarn compilearm'
+        - cp bin/arm/dungeon-revealer bin/dungeon-revealer-linux-armv7
+        - chmod +x bin/dungeon-revealer-linux bin/dungeon-revealer-macos bin/dungeon-revealer-linux-armv7
         - zip "dungeon-revealer-linux-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-linux README.md
+        - zip "dungeon-revealer-linux-armv7-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-linux-armv7 README.md
         - zip "dungeon-revealer-macos-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-macos README.md
         - zip "dungeon-revealer-win-$TRAVIS_TAG.zip" -j bin/dungeon-revealer-win.exe README.md
       deploy:
@@ -51,6 +62,7 @@ jobs:
         api_key: $GITHUB_OAUTH_TOKEN
         file:
           - "dungeon-revealer-linux-$TRAVIS_TAG.zip"
+          - "dungeon-revealer-linux-armv7-$TRAVIS_TAG.zip"
           - "dungeon-revealer-macos-$TRAVIS_TAG.zip"
           - "dungeon-revealer-win-$TRAVIS_TAG.zip"
         skip_cleanup: true
