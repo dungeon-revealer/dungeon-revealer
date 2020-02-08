@@ -13,6 +13,7 @@ import createPersistedState from "use-persisted-state";
 import { Modal } from "./modal";
 import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
+import { NoteEditor } from "./note-editor";
 import { SetMapGrid } from "./set-map-grid";
 import { useSocket } from "../socket";
 import { useStaticRef } from "../hooks/use-static-ref";
@@ -322,6 +323,14 @@ export const DmArea = () => {
           dmPassword={dmPassword}
         />
       ) : null}
+      {mode.title === "SHOW_NOTES" ? (
+        <NoteEditor
+          onClose={() => {
+            setMode({ title: "EDIT_MAP" });
+          }}
+          localFetch={localFetch}
+        />
+      ) : null}
       {setMapGridTargetMap ? (
         <SetMapGrid
           map={setMapGridTargetMap}
@@ -347,6 +356,9 @@ export const DmArea = () => {
           sendLiveMap={sendLiveMap}
           hideMap={hideMap}
           showMapModal={showMapModal}
+          openNotes={() => {
+            setMode({ title: "SHOW_NOTES" });
+          }}
           enterGridMode={enterGridMode}
           updateMap={updateMap}
           deleteToken={deleteToken}

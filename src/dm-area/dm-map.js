@@ -400,6 +400,7 @@ export const DmMap = ({
   sendLiveMap,
   hideMap,
   showMapModal,
+  openNotes,
   enterGridMode,
   updateMap,
   deleteToken,
@@ -1220,6 +1221,16 @@ export const DmMap = ({
               >
                 <Icons.MapIcon />
                 <Icons.Label>Map Library</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
+            <Toolbar.Item isEnabled>
+              <Toolbar.Button
+                onClick={() => {
+                  openNotes();
+                }}
+              >
+                <Icons.BookOpen />
+                <Icons.Label>Notes</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item>
