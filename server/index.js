@@ -13,6 +13,7 @@ const server = (app.http = require("http").createServer(app));
 const io = require("socket.io")(server);
 const busboy = require("connect-busboy");
 const { Maps } = require("./maps");
+const { Notes } = require("./notes");
 const { Settings } = require("./settings");
 const { getDataDirectory } = require("./util");
 
@@ -21,6 +22,7 @@ const PUBLIC_PATH = path.resolve(__dirname, "..", "build");
 fs.mkdirpSync(getDataDirectory());
 
 const maps = new Maps();
+const notes = new Notes();
 const settings = new Settings();
 
 app.use(busboy());
@@ -448,6 +450,86 @@ app.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
   io.emit(`token:mapId:${map.id}`, {
     type: "update",
     data: { token: result.token }
+  });
+});
+
+app.get("/notes", requiresDmRole, ({ req, res }) => {
+  const allNotes = notes.getAll();
+
+  return res.json({
+    success: true,
+    data: {
+      notes: allNotes
+    }
+  });
+});
+
+app.post("/notes", requiresDmRole, (req, res) => {
+  const title = req.body.title || "New note";
+  const note = notes.createNote({ title, content: "" });
+
+  return res.json({
+    success: true,
+    data: {
+      note
+    }
+  });
+});
+
+app.patch("/notes/:id", requiresDmRole, (req, res) => {
+  let note = notes.getById(req.params.id);
+  if (!note) {
+    return res.status(404).json({
+      success: false,
+      data: null,
+      error: {
+        message: `Note with id '${req.params.id}' does not exist.`,
+        code: "ERR_NOTE_DOES_NOT_EXIST"
+      }
+    });
+  }
+
+  const title = req.body.title;
+  const content = req.body.content;
+  const changes = {};
+
+  if (title) {
+    changes.title = title;
+  }
+  if (content) {
+    changes.content = content;
+  }
+
+  note = notes.updateNote(note.id, changes);
+
+  res.json({
+    success: true,
+    data: {
+      note
+    }
+  });
+});
+
+app.delete("/notes/:id", requiresDmRole, (req, res) => {
+  const note = notes.getById(req.params.id);
+  if (!note) {
+    return res.status(404).json({
+      success: false,
+      data: null,
+      error: {
+        message: `Note with id '${req.params.id}' does not exist.`,
+        code: "ERR_NOTE_DOES_NOT_EXIST"
+      }
+    });
+  }
+
+  notes.deleteNote(note.id);
+
+  res.json({
+    success: true,
+    data: {
+      deletedNoteId: note.id
+    }
   });
 });
 
