@@ -1,41 +1,10 @@
 import React, { useState, useCallback, useRef } from "react";
 
-import styled from "@emotion/styled/macro";
 import { Modal, ModalDialogSize } from "./modal";
 import * as Icons from "../feather-icons";
 import { Input, InputGroup } from "../input";
 import * as Button from "../button";
-
-const MapListItemButton = styled.button`
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  font-weight: bold;
-  display: block;
-  width: 100%;
-  border: none;
-  text-align: left;
-  padding: 20px;
-  cursor: pointer;
-  text-decoration: none;
-  padding-left: 13px;
-  padding-right: 20px;
-  background-color: ${p =>
-    p.isActive ? "rgba(0, 0, 0, 0.04)" : "rgba(255, 255, 255, 1)"};
-  color: ${p => (p.isActive ? "#044e54" : "rgba(148, 160, 175, 1)")};
-
-  &:focus,
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-    color: #044e54;
-  }
-
-  border-left: ${p =>
-    p.isActive ? "7px solid #BCCCDC" : "7px solid transparent"};
-
-  outline: none;
-`;
+import * as ScrollableList from "./components/scrollable-list";
 
 const CreateNewMapButton = ({ onSelectFile, children, ...props }) => {
   const fileInputRef = useRef();
@@ -123,15 +92,15 @@ export const SelectMapModal = ({
     <>
       <Modal onClickOutside={closeIfPossible} onPressEscape={closeIfPossible}>
         <Modal.Dialog>
-          <Modal.Header style={{ display: "flex", alignItems: "center" }}>
-            <h2 style={{ margin: 0 }}>
+          <Modal.Header>
+            <Modal.Heading2>
               <Icons.MapIcon
                 width={28}
                 height={28}
                 style={{ marginBottom: -2, marginRight: 16 }}
               />{" "}
               Map Library
-            </h2>
+            </Modal.Heading2>
             <div style={{ flex: 1, textAlign: "right" }}>
               {canClose ? (
                 <Button.Tertiary
@@ -146,16 +115,7 @@ export const SelectMapModal = ({
           </Modal.Header>
           <Modal.Body style={{ display: "flex", height: "80vh" }} noPadding>
             {maps.length ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "scroll",
-                  maxWidth: "30%",
-                  width: "100%",
-                  borderRight: "1px solid rgba(0,0,0,.1)"
-                }}
-              >
+              <Modal.Aside>
                 <div
                   style={{
                     paddingLeft: 12,
@@ -177,15 +137,7 @@ export const SelectMapModal = ({
                     }}
                   />
                 </div>
-                <ul
-                  style={{
-                    padding: 0,
-                    listStyle: "none",
-                    flex: 1,
-                    overflowY: "scroll",
-                    marginBottom: 0
-                  }}
-                >
+                <ScrollableList.List>
                   {maps
                     .filter(
                       item =>
@@ -193,8 +145,8 @@ export const SelectMapModal = ({
                         item.title.toLowerCase().includes(filter)
                     )
                     .map(item => (
-                      <li key={item.id}>
-                        <MapListItemButton
+                      <ScrollableList.ListItem key={item.id}>
+                        <ScrollableList.ListItemButton
                           tabIndex="1"
                           isActive={item.id === activeMapId}
                           onClick={() => {
@@ -202,10 +154,10 @@ export const SelectMapModal = ({
                           }}
                         >
                           {item.title} {item.id === liveMapId ? "(live)" : null}
-                        </MapListItemButton>
-                      </li>
+                        </ScrollableList.ListItemButton>
+                      </ScrollableList.ListItem>
                     ))}
-                </ul>
+                </ScrollableList.List>
                 <div
                   style={{
                     paddingLeft: 20,
@@ -228,18 +180,10 @@ export const SelectMapModal = ({
                     <span>Create New Map</span>
                   </CreateNewMapButton>
                 </div>
-              </div>
+              </Modal.Aside>
             ) : null}
             {activeMap ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  height: "100%",
-                  width: "100%",
-                  minWidth: 0
-                }}
-              >
+              <Modal.Content>
                 <div
                   style={{
                     display: "flex",
@@ -325,7 +269,7 @@ export const SelectMapModal = ({
                     </Button.Primary>
                   </div>
                 </div>
-              </div>
+              </Modal.Content>
             ) : (
               <div
                 style={{
@@ -408,7 +352,7 @@ const CreateNewMapModal = ({ closeModal, createMap }) => {
     <Modal onClickOutside={closeModal} onPressEscape={closeModal}>
       <Modal.Dialog size={ModalDialogSize.SMALL}>
         <Modal.Header>
-          <h3 style={{ margin: 0 }}>Create new Map</h3>
+          <Modal.Heading3>Create new Map</Modal.Heading3>
         </Modal.Header>
         <Modal.Body>
           <InputGroup
@@ -466,7 +410,7 @@ const ChangeMapTitleModal = ({ closeModal, updateMap }) => {
     <Modal onClickOutside={closeModal} onPressEscape={closeModal}>
       <Modal.Dialog size={ModalDialogSize.SMALL} onSubmit={submit}>
         <Modal.Header>
-          <h3>Change Title</h3>
+          <Modal.Heading3>Change Title</Modal.Heading3>
         </Modal.Header>
 
         <Modal.Body>
@@ -496,9 +440,8 @@ const DeleteMapModal = ({ closeModal, deleteMap }) => {
     <Modal onClickOutside={closeModal} onPressEscape={closeModal}>
       <Modal.Dialog size={ModalDialogSize.SMALL}>
         <Modal.Header>
-          <h3 style={{ margin: 0 }}>Delete Map</h3>
+          <Modal.Heading3>Delete Map</Modal.Heading3>
         </Modal.Header>
-
         <Modal.Body>Do you really want to delete this map?</Modal.Body>
         <Modal.Actions>
           <Modal.ActionGroup>

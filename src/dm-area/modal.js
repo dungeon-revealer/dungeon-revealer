@@ -222,6 +222,8 @@ const Header = ({ children, style, ...props }) => {
         paddingTop: 16,
         paddingBottom: 8,
         borderBottom: "1px solid rgba(0,0,0,.1)",
+        display: "flex",
+        alignItems: "center",
         ...style
       }}
     >
@@ -230,9 +232,34 @@ const Header = ({ children, style, ...props }) => {
   );
 };
 
+const Heading2 = styled.h2`
+  margin: 0;
+`;
+
+const Heading3 = styled.h3`
+  margin: 0;
+`;
+
 const Body = styled.div`
   width: 100%;
   padding: ${p => (p.noPadding ? null : `20px 20px 20px 20px`)};
+`;
+
+const Aside = styled.div`
+  display: flex;
+  flex-direction: column;
+  overflow: scroll;
+  max-width: 30%;
+  width: 100%;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+`;
+
+const Content = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-width: 0;
 `;
 
 const Actions = styled.div`
@@ -254,7 +281,11 @@ const ActionGroup = styled.div`
 export const Modal = Object.assign(ModalPortal, {
   Dialog,
   Header,
+  Heading2,
+  Heading3,
   Body,
+  Aside,
+  Content,
   Actions,
   ActionGroup,
   Provider
