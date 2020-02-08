@@ -179,7 +179,8 @@ const DialogSizeMappings = {
 const Dialog = ({
   children,
   size = ModalDialogSize.DEFAULT,
-  onSubmit: onSubmitOuter
+  onSubmit: onSubmitOuter,
+  ...props
 }) => {
   const onSubmit = useCallback(
     ev => {
@@ -205,6 +206,7 @@ const Dialog = ({
       onClick={ev => {
         ev.stopPropagation();
       }}
+      {...props}
     >
       {children}
     </form>
@@ -254,6 +256,16 @@ const Aside = styled.div`
   border-right: 1px solid rgba(0, 0, 0, 0.1);
 `;
 
+const Footer = styled.div`
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 20px;
+  padding-bottom: 16px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+`;
+
 const Content = styled.div`
   display: flex;
   flex-direction: column;
@@ -285,6 +297,7 @@ export const Modal = Object.assign(ModalPortal, {
   Heading3,
   Body,
   Aside,
+  Footer,
   Content,
   Actions,
   ActionGroup,

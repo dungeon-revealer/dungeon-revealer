@@ -158,17 +158,7 @@ export const SelectMapModal = ({
                       </ScrollableList.ListItem>
                     ))}
                 </ScrollableList.List>
-                <div
-                  style={{
-                    paddingLeft: 20,
-                    paddingRight: 20,
-                    paddingBottom: 16,
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    paddingTop: 20,
-                    borderTop: "1px solid rgba(0,0,0,.1)"
-                  }}
-                >
+                <Modal.Footer>
                   <CreateNewMapButton
                     tabIndex="1"
                     fullWidth
@@ -179,7 +169,7 @@ export const SelectMapModal = ({
                     <Icons.PlusIcon height={20} width={20} />{" "}
                     <span>Create New Map</span>
                   </CreateNewMapButton>
-                </div>
+                </Modal.Footer>
               </Modal.Aside>
             ) : null}
             {activeMap ? (
