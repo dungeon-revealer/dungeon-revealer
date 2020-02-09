@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo
+} from "react";
 
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
@@ -19,7 +25,7 @@ import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useOnKeyDown } from "../hooks/use-on-key-down";
-import { AreaTokenDescription } from "./area-token-description";
+import { TokenReferenceAside } from "./token-reference-aside";
 
 const ShapeButton = styled.button`
   border: none;
@@ -444,7 +450,12 @@ export const DmMap = ({
   const [activeTokenId, setActiveTokenId] = useState(null);
 
   const tokenColor = DEFAULT_TOKEN_COLOR;
-  const tokens = map.tokens || [];
+  const tokens = useMemo(() => map.tokens || [], [map]);
+
+  const activeToken = useMemo(
+    () => tokens.find(token => token.id === activeTokenId) || null,
+    [activeTokenId, tokens]
+  );
 
   // marker related stuff
   const [mapCanvasDimensions, setMapCanvasDimensions] = useState({
@@ -938,11 +949,9 @@ export const DmMap = ({
   );
 
   const onClickToken = useCallback(token => {
-    if (token.type === "area") {
-      setActiveTokenId(activeTokenId =>
-        activeTokenId === token.id ? null : token.id
-      );
-    }
+    setActiveTokenId(activeTokenId =>
+      activeTokenId === token.id ? null : token.id
+    );
   }, []);
 
   return (
@@ -1452,13 +1461,10 @@ export const DmMap = ({
           </Toolbar.Group>
         </Toolbar>
       </div>
-      {activeTokenId ? (
-        <AreaTokenDescription
+      {activeToken && activeToken.reference ? (
+        <TokenReferenceAside
           close={() => setActiveTokenId(null)}
-          token={map.tokens.find(token => token.id === activeTokenId)}
-          updateToken={updates =>
-            updateToken({ id: activeTokenId, ...updates })
-          }
+          token={activeToken}
         />
       ) : null}
     </>

@@ -7,7 +7,8 @@ import * as Button from "../button";
 import * as Icon from "../feather-icons";
 import { Modal } from "../dm-area/modal";
 import { ToggleSwitch } from "../toggle-switch";
-import { Dropdown } from "../dropdown";
+import { SelectTokenMarkerReferenceModal } from "../dm-area/select-token-marker-reference-modal";
+import { useFetch } from "../dm-area/fetch-context";
 
 const ColorPicker = React.memo(({ color, onChange, styles }) => {
   return (
@@ -22,10 +23,11 @@ const ColorPicker = React.memo(({ color, onChange, styles }) => {
 const TokenContextMenu = ({
   tokenRef,
   position,
-  token: { label, color, radius, isVisibleForPlayers, isLocked, type },
+  token: { label, color, radius, isVisibleForPlayers, isLocked, reference },
   updateToken,
   deleteToken,
-  close
+  close,
+  showChooseReferencedNoteModalDialog
 }) => {
   const containerRef = useRef(null);
   const rangeSlideRef = useRef(null);
@@ -189,23 +191,13 @@ const TokenContextMenu = ({
         }}
       >
         <div style={{ flex: 1 }}>
-          <Dropdown
-            isDisabled={isLocked}
-            value={type}
-            items={[
-              {
-                label: "Entity",
-                value: "entity"
-              },
-              {
-                label: "Area",
-                value: "area"
-              }
-            ]}
-            onChange={value => {
-              updateToken({ type: value });
-            }}
-          />
+          {reference ? (
+            <Button.Tertiary>Edit Note</Button.Tertiary>
+          ) : (
+            <Button.Tertiary onClick={showChooseReferencedNoteModalDialog}>
+              Link Note
+            </Button.Tertiary>
+          )}
         </div>
         <div>
           <Button.Tertiary
@@ -234,8 +226,13 @@ export const DmTokenMarker = React.memo(
     onClick,
     token
   }) => {
+    const localFetch = useFetch();
     const tokenRef = useRef();
     const [contextMenuCoordinates, setContextMenuCoordinates] = useState(null);
+    const [
+      showChooseReferencedNoteModalDialog,
+      setShowChooseReferencedNoteModalDialog
+    ] = useState(false);
 
     const isDraggingRef = useRef(false);
 
@@ -365,8 +362,42 @@ export const DmTokenMarker = React.memo(
               deleteToken={deleteToken}
               position={contextMenuCoordinates}
               close={() => setContextMenuCoordinates(null)}
+              showChooseReferencedNoteModalDialog={() =>
+                setShowChooseReferencedNoteModalDialog(true)
+              }
             />
           </Modal>
+        ) : null}
+        {showChooseReferencedNoteModalDialog ? (
+          <SelectTokenMarkerReferenceModal
+            close={() => setShowChooseReferencedNoteModalDialog(false)}
+            onConfirm={async type => {
+              let noteId = null;
+              // eslint-disable-next-line default-case
+              switch (type) {
+                case "NEW_NOTE": {
+                  const response = await localFetch(`/notes`, {
+                    method: "POST",
+                    body: JSON.stringify({}),
+                    headers: {
+                      "Content-Type": "application/json"
+                    }
+                  });
+                  const body = await response.json();
+                  noteId = body.data.note.id;
+                  break;
+                }
+              }
+              if (!noteId) return;
+              updateToken({
+                reference: {
+                  type: "note",
+                  id: noteId
+                }
+              });
+              setShowChooseReferencedNoteModalDialog(false);
+            }}
+          />
         ) : null}
       </>
     );

@@ -11,9 +11,10 @@ import * as Icons from "../../feather-icons";
 import * as ScrollableList from "../components/scrollable-list";
 import { CreateNewNoteDialogModal } from "./create-new-note-dialog-modal";
 import { DeleteNoteConfirmationDialogModal } from "./delete-note-confirmation-dialog-modal";
-import ReactMde from "react-mde";
+import ReactMde, { commands as ReactMdeCommands } from "react-mde";
 import styled from "@emotion/styled/macro";
 import { useResetState } from "../../hooks/use-reset-state";
+import { useFetch } from "../fetch-context";
 
 const INITIAL_STATE = {
   loading: true,
@@ -67,16 +68,36 @@ const ReactMdeStyled = styled(ReactMde)`
   height: 100%;
   border: none;
 
-  > .grip {
+  .mde-textarea-wrapper {
+    height: 100%;
+  }
+  .mde-header + div {
+    height: 100%;
+  }
+
+  .grip {
     display: none;
   }
 
-  > textarea {
+  textarea {
     outline: none;
   }
 `;
 
-const MarkdownEditor = ({ id, content, save }) => {
+const MARKDOWN_EDITOR_COMMANDS = [
+  {
+    commands: [
+      ReactMdeCommands.boldCommand,
+      ReactMdeCommands.italicCommand,
+      ReactMdeCommands.strikeThroughCommand,
+      ReactMdeCommands.orderedListCommand,
+      ReactMdeCommands.unorderedListCommand,
+      ReactMdeCommands.quoteCommand
+    ]
+  }
+];
+
+export const MarkdownEditor = ({ id, content, save }) => {
   const [currentContent, setCurrentContent] = useResetState(content, [content]);
   const [selectedTab, setSelectedTab] = React.useState("write");
   const prevPropsRef = React.useRef({ id, content });
@@ -105,6 +126,7 @@ const MarkdownEditor = ({ id, content, save }) => {
 
   return (
     <ReactMdeStyled
+      commands={MARKDOWN_EDITOR_COMMANDS}
       value={currentContent}
       onChange={setCurrentContent}
       selectedTab={selectedTab}
@@ -115,11 +137,13 @@ const MarkdownEditor = ({ id, content, save }) => {
         const html = converter.makeHtml(content);
         return Promise.resolve(html);
       }}
+      disablePreview
     />
   );
 };
 
-export const NoteEditor = ({ onClose, localFetch }) => {
+export const NoteEditor = ({ onClose }) => {
+  const localFetch = useFetch();
   const [{ loading, notes, activeModal }, dispatch] = React.useReducer(
     stateReducer,
     INITIAL_STATE
