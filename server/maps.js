@@ -22,6 +22,9 @@ const prepareToken = token => {
   if (token.isLocked === undefined) {
     token.isLocked = false;
   }
+  if (token.reference === undefined) {
+    token.reference = null;
+  }
 
   return token;
 };
@@ -263,7 +266,8 @@ class Maps {
       isVisibleForPlayers,
       isLocked,
       title,
-      description
+      description,
+      reference
     }
   ) {
     const map = this.get(mapId);
@@ -307,6 +311,9 @@ class Maps {
     }
     if (isVisibleForPlayers !== undefined) {
       token.isVisibleForPlayers = isVisibleForPlayers;
+    }
+    if (reference !== undefined) {
+      token.reference = reference;
     }
 
     const updatedMap = this.updateMapSettings(mapId, {

@@ -437,7 +437,8 @@ app.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
     isVisibleForPlayers: req.body.isVisibleForPlayers,
     isLocked: req.body.isLocked,
     title: req.body.title,
-    description: req.body.description
+    description: req.body.description,
+    reference: req.body.reference
   });
 
   res.json({
@@ -529,6 +530,28 @@ app.delete("/notes/:id", requiresDmRole, (req, res) => {
     success: true,
     data: {
       deletedNoteId: note.id
+    }
+  });
+});
+
+app.get("/notes/:id", requiresDmRole, (req, res) => {
+  const note = notes.getById(req.params.id);
+
+  if (!note) {
+    return res.status(404).json({
+      success: false,
+      data: null,
+      error: {
+        message: `Note with id '${req.params.id}' does not exist.`,
+        code: "ERR_NOTE_DOES_NOT_EXIST"
+      }
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      note
     }
   });
 });
