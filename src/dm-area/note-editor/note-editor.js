@@ -125,7 +125,6 @@ export const NoteEditor = ({ onClose }) => {
                 {state.noteEditor.notes.map(note => (
                   <ScrollableList.ListItem key={note.id}>
                     <ScrollableList.ListItemButton
-                      tabIndex="1"
                       isActive={note.id === state.noteEditor.activeNoteId}
                       onClick={() => {
                         actions.noteEditor.setActiveNoteId(note.id);

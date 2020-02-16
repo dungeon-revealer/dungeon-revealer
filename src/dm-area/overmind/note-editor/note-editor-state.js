@@ -1,5 +1,20 @@
+const tryParseJson = input => {
+  try {
+    return JSON.parse(input);
+  } catch {
+    return null;
+  }
+};
+const getInitialActiveNoteId = () => {
+  const maybeId = tryParseJson(
+    localStorage.getItem("settings.noteEditor.activeNoteId")
+  );
+  if (typeof maybeId === "string") return maybeId;
+  return null;
+};
+
 const createState = () => ({
-  activeNoteId: null,
+  activeNoteId: getInitialActiveNoteId(),
   activeModal: null,
   filter: "",
   notes: (state, root) => {

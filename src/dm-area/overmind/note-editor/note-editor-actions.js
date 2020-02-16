@@ -1,5 +1,10 @@
 export const setActiveNoteId = async ({ state }, noteId) => {
   state.noteEditor.activeNoteId = noteId;
+
+  localStorage.setItem(
+    "settings.noteEditor.activeNoteId",
+    JSON.stringify(noteId)
+  );
 };
 
 export const setActiveModal = async ({ state }, activeModal) => {
