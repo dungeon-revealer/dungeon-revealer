@@ -47,10 +47,10 @@ export const updateNote = async (
   { noteId, title, content }
 ) => {
   const note = state.noteStore.notes[noteId];
-  if (title) {
+  if (typeof title === "string") {
     note.title = title;
   }
-  if (content) {
+  if (typeof content === "string") {
     note.content = content;
   }
 

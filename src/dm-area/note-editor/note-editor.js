@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Converter as HtmlConverter } from "showdown";
 import ReactMde, { commands as ReactMdeCommands } from "react-mde";
 import { useOvermind } from "../../hooks/use-overmind";
 import styled from "@emotion/styled/macro";
@@ -9,6 +10,21 @@ import * as Icons from "../../feather-icons";
 import * as ScrollableList from "../components/scrollable-list";
 import { CreateNewNoteDialogModal } from "./create-new-note-dialog-modal";
 import { DeleteNoteConfirmationDialogModal } from "./delete-note-confirmation-dialog-modal";
+import { HtmlContainer } from "../token-info-aside/token-info-aside";
+import { Input } from "../../input";
+
+const Header = styled.div`
+  white-space: nowrap;
+  width: 100%;
+  display: flex;
+  align-items: center;
+`;
+
+const Heading = styled.h3`
+  text-overflow: ellipsis;
+  overflow: hidden;
+  margin-right: 16px;
+`;
 
 const ReactMdeStyled = styled(ReactMde)`
   display: flex;
@@ -130,7 +146,7 @@ export const NoteEditor = ({ onClose }) => {
                         actions.noteEditor.setActiveNoteId(note.id);
                       }}
                     >
-                      {note.title}
+                      {note.title || "<Untitled Note>"}
                     </ScrollableList.ListItemButton>
                   </ScrollableList.ListItem>
                 ))}
@@ -148,29 +164,105 @@ export const NoteEditor = ({ onClose }) => {
               </Modal.Footer>
             </Modal.Aside>
             <Modal.Content>
+              <ContentRendered
+                state={state.noteEditor}
+                actions={actions.noteEditor}
+              />
               {state.noteEditor.activeNote ? (
-                <>
-                  <MarkdownEditor
-                    value={state.noteEditor.activeNote.content}
-                    onChange={actions.noteEditor.updateActiveNoteContent}
-                  />
-                  <Modal.Footer>
-                    <Button.Tertiary
-                      onClick={() => {
-                        actions.noteEditor.setActiveModal("DELETE_NOTE");
-                      }}
-                    >
-                      <Icons.TrashIcon height={20} width={20} />
-                      <span>Delete Note</span>
-                    </Button.Tertiary>
-                  </Modal.Footer>
-                </>
+                <Modal.Footer>
+                  <Button.Tertiary
+                    onClick={() => {
+                      actions.noteEditor.setActiveModal("DELETE_NOTE");
+                    }}
+                  >
+                    <Icons.TrashIcon height={20} width={20} />
+                    <span>Delete Note</span>
+                  </Button.Tertiary>
+                </Modal.Footer>
               ) : null}
             </Modal.Content>
           </Modal.Body>
         </Modal.Dialog>
       </Modal>
       {activeModalComponent}
+    </>
+  );
+};
+
+const ContentRendered = ({ state, actions }) => {
+  useOvermind();
+  if (!state.activeNote) {
+    return null;
+  }
+
+  return (
+    <>
+      <div
+        style={{
+          display: "flex",
+          paddingLeft: 16,
+          paddingRight: 16,
+          paddingTop: 8,
+          paddingBottom: 16
+        }}
+      >
+        {state.isEditMode ? (
+          <>
+            <Input
+              autoFocus
+              placeholder="Note title"
+              value={state.activeNote.title}
+              onChange={ev => actions.updateActiveNoteTitle(ev.target.value)}
+            />
+            <Button.Tertiary
+              iconOnly
+              onClick={() => {
+                actions.toggleIsEditMode();
+              }}
+              style={{ marginLeft: 16 }}
+            >
+              <Icons.EditIcon height={16} />
+            </Button.Tertiary>
+          </>
+        ) : (
+          <Header>
+            <Heading>{state.activeNote.title || "<Untitled Note>"}</Heading>
+            <div>
+              <Button.Tertiary
+                iconOnly
+                onClick={() => {
+                  actions.toggleIsEditMode();
+                }}
+              >
+                <Icons.EditIcon height={16} />
+              </Button.Tertiary>
+            </div>
+          </Header>
+        )}
+      </div>
+      {state.isEditMode ? (
+        <>
+          <MarkdownEditor
+            value={state.activeNote.content}
+            onChange={actions.updateActiveNoteContent}
+          />
+        </>
+      ) : (
+        <div
+          style={{
+            paddingLeft: 16,
+            paddingRight: 16,
+            flexGrow: 1,
+            overflow: "scroll"
+          }}
+        >
+          <HtmlContainer
+            dangerouslySetInnerHTML={{
+              __html: new HtmlConverter().makeHtml(state.activeNote.content)
+            }}
+          />
+        </div>
+      )}
     </>
   );
 };

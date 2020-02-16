@@ -1,5 +1,7 @@
 export const setActiveNoteId = async ({ state }, noteId) => {
+  if (state.noteEditor.activeNoteId === noteId) return;
   state.noteEditor.activeNoteId = noteId;
+  state.noteEditor.isEditMode = false;
 
   localStorage.setItem(
     "settings.noteEditor.activeNoteId",
@@ -35,6 +37,7 @@ export const createNewNote = async (
 ) => {
   const note = await actions.noteStore.createNote({ title, content });
   state.noteEditor.activeNoteId = note.id;
+  state.noteEditor.isEditMode = true;
 };
 
 export const deleteActiveNote = async ({ state, actions }) => {
@@ -46,4 +49,8 @@ export const deleteActiveNote = async ({ state, actions }) => {
 
   await actions.noteStore.deleteNote(noteEditor.activeNoteId);
   noteEditor.activeNoteId = null;
+};
+
+export const toggleIsEditMode = ({ state }) => {
+  state.noteEditor.isEditMode = !state.noteEditor.isEditMode;
 };

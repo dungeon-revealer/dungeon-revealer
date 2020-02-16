@@ -494,10 +494,10 @@ app.patch("/notes/:id", requiresDmRole, (req, res) => {
   const content = req.body.content;
   const changes = {};
 
-  if (title) {
+  if (typeof title === "string") {
     changes.title = title;
   }
-  if (content) {
+  if (typeof content === "string") {
     changes.content = content;
   }
 

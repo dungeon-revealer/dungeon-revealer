@@ -18,6 +18,10 @@ const ButtonBase = styled.button`
   > span + svg {
     margin-left: ${p => (p.iconOnly ? null : `1rem`)};
   }
+
+  &:focus {
+    outline: none;
+  }
 `;
 
 export const Primary = styled(ButtonBase)`

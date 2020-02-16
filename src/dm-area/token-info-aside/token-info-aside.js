@@ -1,7 +1,8 @@
 import React from "react";
-import { MarkdownEditor } from "./../note-editor/note-editor";
-import "react-mde/lib/styles/css/react-mde-all.css";
+import { Converter as HtmlConverter } from "showdown";
 import styled from "@emotion/styled/macro";
+import "react-mde/lib/styles/css/react-mde-all.css";
+import { MarkdownEditor } from "./../note-editor/note-editor";
 import * as Button from "../../button";
 import * as Icon from "../../feather-icons";
 import { Input } from "../../input";
@@ -34,7 +35,7 @@ const Window = styled.div`
   pointer-events: all;
 `;
 
-const HtmlContainer = styled.div`
+export const HtmlContainer = styled.div`
   flex-grow: 1;
   overflow-wrap: break-word;
 
@@ -151,7 +152,11 @@ const NoteReference = ({
           </div>
         ) : (
           <div style={{ overflowY: "scroll", overflowX: "hidden" }}>
-            <HtmlContainer dangerouslySetInnerHTML={{ __html: note.content }} />
+            <HtmlContainer
+              dangerouslySetInnerHTML={{
+                __html: new HtmlConverter().makeHtml(note.content)
+              }}
+            />
           </div>
         )}
       </Window>

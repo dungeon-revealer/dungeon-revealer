@@ -28,7 +28,8 @@ const createState = () => ({
   activeNote: (state, root) => {
     if (!state.activeNoteId) return null;
     return root.noteStore.notes[state.activeNoteId] || null;
-  }
+  },
+  isEditMode: false
 });
 
 export const state = createState();
