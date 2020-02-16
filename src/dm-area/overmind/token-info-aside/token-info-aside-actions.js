@@ -12,6 +12,7 @@ export const toggleActiveToken = async ({ actions, state }, token) => {
   if (token.reference) {
     referenceId = token.reference.id;
   }
+  if (!referenceId) return;
 
   state.tokenInfoAside.activeToken = createTokenAsideActiveToken({
     tokenId: token.id,
