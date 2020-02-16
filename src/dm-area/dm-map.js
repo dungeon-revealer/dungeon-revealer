@@ -25,7 +25,8 @@ import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useOnKeyDown } from "../hooks/use-on-key-down";
-import { TokenReferenceAside } from "./token-reference-aside";
+import { TokenInfoAside } from "./token-info-aside";
+import { useOvermind } from "../hooks/use-overmind";
 
 const ShapeButton = styled.button`
   border: none;
@@ -413,6 +414,7 @@ export const DmMap = ({
   updateToken,
   dmPassword
 }) => {
+  const { actions } = useOvermind();
   const mapContainerRef = useRef(null);
   const mapCanvasRef = useRef(null);
   const mapImageCanvasRef = useRef(null);
@@ -447,15 +449,9 @@ export const DmMap = ({
   const [brushShape, setBrushShape] = useBrushShapeState("square");
   const [tool, setTool] = useToolState("brush"); // "brush" or "area"
   const [lineWidth, setLineWidth] = useLineWidthState(15);
-  const [activeTokenId, setActiveTokenId] = useState(null);
 
   const tokenColor = DEFAULT_TOKEN_COLOR;
   const tokens = useMemo(() => map.tokens || [], [map]);
-
-  const activeToken = useMemo(
-    () => tokens.find(token => token.id === activeTokenId) || null,
-    [activeTokenId, tokens]
-  );
 
   // marker related stuff
   const [mapCanvasDimensions, setMapCanvasDimensions] = useState({
@@ -948,11 +944,12 @@ export const DmMap = ({
     [mapCanvasDimensions]
   );
 
-  const onClickToken = useCallback(token => {
-    setActiveTokenId(activeTokenId =>
-      activeTokenId === token.id ? null : token.id
-    );
-  }, []);
+  const onClickToken = useCallback(
+    token => {
+      actions.tokenInfoAside.toggleActiveToken(token);
+    },
+    [actions]
+  );
 
   return (
     <>
@@ -1461,12 +1458,7 @@ export const DmMap = ({
           </Toolbar.Group>
         </Toolbar>
       </div>
-      {activeToken && activeToken.reference ? (
-        <TokenReferenceAside
-          close={() => setActiveTokenId(null)}
-          token={activeToken}
-        />
-      ) : null}
+      <TokenInfoAside />
     </>
   );
 };

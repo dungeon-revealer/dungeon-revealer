@@ -2375,6 +2375,11 @@ bcrypt-pbkdf@^1.0.0:
   dependencies:
     tweetnacl "^0.14.3"
 
+betsy@1.0.2-1581786766054:
+  version "1.0.2-1581786766054"
+  resolved "https://registry.yarnpkg.com/betsy/-/betsy-1.0.2-1581786766054.tgz#b6d4dc60075903db9cd1667bca5c408bd3743101"
+  integrity sha512-vYUlAdeOKft+4lBECJwg1SxNjJjzFik1nyaY7cdjFrk9j1dLmtURRo7nXGwxL2DQkX9h7697He9gheyfbuk8Vg==
+
 better-assert@~1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/better-assert/-/better-assert-1.0.2.tgz#40866b9e1b9e0b55b481894311e68faffaebc522"
@@ -6068,7 +6073,7 @@ is-path-inside@^3.0.1:
   resolved "https://registry.yarnpkg.com/is-path-inside/-/is-path-inside-3.0.2.tgz#f5220fc82a3e233757291dddc9c5877f2a1f3017"
   integrity sha512-/2UGPSgmtqwo1ktx8NDHjuPwZWmHhO+gj0f93EkhLB5RgW9RZevWYYlIkS6zePc6U2WpOdQYIwHe9YC4DWEBVg==
 
-is-plain-obj@^1.0.0:
+is-plain-obj@^1.0.0, is-plain-obj@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/is-plain-obj/-/is-plain-obj-1.1.0.tgz#71a50c8429dfca773c92a390a4a03b39fcd51d3e"
   integrity sha1-caUMhCnfync8kqOQpKA7OfzVHT4=
@@ -7980,6 +7985,23 @@ osenv@^0.1.4:
     os-homedir "^1.0.0"
     os-tmpdir "^1.0.0"
 
+overmind-react@24.0.0-1581786766054:
+  version "24.0.0-1581786766054"
+  resolved "https://registry.yarnpkg.com/overmind-react/-/overmind-react-24.0.0-1581786766054.tgz#57e7b5c15cbdf22715ab45fa750f6359a915934c"
+  integrity sha512-UjJVkCjhj7GBncYyXu6EqDtzjI5ndjIPl18KeY+CA/fuLGkm/drM/hY4SIFniBnnMdL9tn9VciL35t2aKFOJyQ==
+  dependencies:
+    overmind "23.0.0-1581786766054"
+
+overmind@23.0.0-1581786766054:
+  version "23.0.0-1581786766054"
+  resolved "https://registry.yarnpkg.com/overmind/-/overmind-23.0.0-1581786766054.tgz#6801d7bd89d6582ce9e14dbf5e8033f702f422ce"
+  integrity sha512-PTcaqGE1qu1SannAZocHcTf8OBZwgmWZrTq42wZzWsHrH7R7YIUypsEgcZs8X5k6EhBNIvLgACAwhaGUI3SryQ==
+  dependencies:
+    betsy "1.0.2-1581786766054"
+    is-plain-obj "^1.1.0"
+    proxy-state-tree "5.0.0-1581786766054"
+    tslib "^1.10.0"
+
 p-defer@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/p-defer/-/p-defer-1.0.0.tgz#9f6eb182f6c9aa8cd743004a7d4f96b196b0fb0c"
@@ -9177,6 +9199,13 @@ proxy-addr@~2.0.5:
   dependencies:
     forwarded "~0.1.2"
     ipaddr.js "1.9.0"
+
+proxy-state-tree@5.0.0-1581786766054:
+  version "5.0.0-1581786766054"
+  resolved "https://registry.yarnpkg.com/proxy-state-tree/-/proxy-state-tree-5.0.0-1581786766054.tgz#c3e2f68c770a93c47143994cbd401f0cb92e9fa7"
+  integrity sha512-7xnMcPh3z8Qxzl+LiwD0h25WC7ZTs38j2OlqjrthsrXxsvJHMrysBbtdg2zeBTVs5Qq7+Zs8De/QoLEr3jZ03Q==
+  dependencies:
+    is-plain-obj "^1.1.0"
 
 prr@~1.0.1:
   version "1.0.1"
@@ -11011,7 +11040,7 @@ ts-pnp@1.1.4, ts-pnp@^1.1.2:
   resolved "https://registry.yarnpkg.com/ts-pnp/-/ts-pnp-1.1.4.tgz#ae27126960ebaefb874c6d7fa4729729ab200d90"
   integrity sha512-1J/vefLC+BWSo+qe8OnJQfWTYRS6ingxjwqmHMqaMxXMj7kFtKLgAaYW3JeX3mktjgUL+etlU8/B4VUAUI9QGw==
 
-tslib@^1.8.1, tslib@^1.9.0:
+tslib@^1.10.0, tslib@^1.8.1, tslib@^1.9.0:
   version "1.10.0"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.10.0.tgz#c3c19f95973fb0a62973fb09d90d961ee43e5c8a"
   integrity sha512-qOebF53frne81cf0S9B41ByenJ3/IuH8yJKngAX35CmiZySA0khhkovshKK+jGCaMnVomla7gVlIcc3EvKPbTQ==

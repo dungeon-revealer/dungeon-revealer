@@ -1,9 +1,7 @@
-import React, { useMemo, useEffect } from "react";
-import useAsyncEffect from "@n1ru4l/use-async-effect";
-import produce from "immer";
-import createPersistedState from "use-persisted-state";
-
-import { Converter } from "showdown";
+import React, { useEffect } from "react";
+import ReactMde, { commands as ReactMdeCommands } from "react-mde";
+import { useOvermind } from "../../hooks/use-overmind";
+import styled from "@emotion/styled/macro";
 
 import { Modal } from "../modal";
 import * as Button from "../../button";
@@ -11,56 +9,6 @@ import * as Icons from "../../feather-icons";
 import * as ScrollableList from "../components/scrollable-list";
 import { CreateNewNoteDialogModal } from "./create-new-note-dialog-modal";
 import { DeleteNoteConfirmationDialogModal } from "./delete-note-confirmation-dialog-modal";
-import ReactMde, { commands as ReactMdeCommands } from "react-mde";
-import styled from "@emotion/styled/macro";
-import { useResetState } from "../../hooks/use-reset-state";
-import { useFetch } from "../fetch-context";
-
-const INITIAL_STATE = {
-  loading: true,
-  error: null,
-  notes: null,
-  activeModal: null
-};
-
-const useActiveNoteId = createPersistedState("dm.settings.notes.activeNoteId");
-
-const stateReducer = (state, action) =>
-  produce(state, state => {
-    // eslint-disable-next-line default-case
-    switch (action.type) {
-      case "RECEIVE_RESPONSE": {
-        state.loading = false;
-        state.notes = action.body.data.notes;
-        break;
-      }
-      case "SET_ACTIVE_MODAL": {
-        state.activeModal = action.modal;
-        break;
-      }
-      case "CREATE_NOTE_RESPONSE": {
-        state.notes.push(action.body.data.note);
-        break;
-      }
-      case "UPDATE_NOTE_RESPONSE": {
-        const note = state.notes.find(
-          note => note.id === action.body.data.note.id
-        );
-        if (!note) break;
-        note.title = action.body.data.note.title;
-        note.content = action.body.data.note.content;
-        break;
-      }
-      case "DELETE_NOTE_RESPONSE": {
-        const noteIndex = state.notes.findIndex(
-          node => node.id === action.body.data.deletedNoteId
-        );
-        if (noteIndex === -1) break;
-        state.notes.splice(noteIndex, 1);
-        break;
-      }
-    }
-  });
 
 const ReactMdeStyled = styled(ReactMde)`
   display: flex;
@@ -97,95 +45,36 @@ const MARKDOWN_EDITOR_COMMANDS = [
   }
 ];
 
-export const MarkdownEditor = ({ id, content, save }) => {
-  const [currentContent, setCurrentContent] = useResetState(content, [content]);
-  const [selectedTab, setSelectedTab] = React.useState("write");
-  const prevPropsRef = React.useRef({ id, content });
-
-  useEffect(() => {
-    let timeout = null;
-
-    if (id !== prevPropsRef.current.id) {
-      // instantly safe previous item in case item changes
-      save(prevPropsRef.current.id, prevPropsRef.current.content);
-    } else if (currentContent !== prevPropsRef.current.content) {
-      // queue save in case the content changes
-      timeout = setTimeout(() => {
-        save(prevPropsRef.current.id, prevPropsRef.current.content);
-      }, 500);
-    }
-
-    // store previous props for comparison purposes
-    prevPropsRef.current = {
-      id,
-      content: currentContent
-    };
-
-    return () => timeout && clearTimeout(timeout);
-  }, [id, currentContent, save]);
-
+export const MarkdownEditor = ({ value, onChange }) => {
   return (
     <ReactMdeStyled
       commands={MARKDOWN_EDITOR_COMMANDS}
-      value={currentContent}
-      onChange={setCurrentContent}
-      selectedTab={selectedTab}
-      onTabChange={setSelectedTab}
+      value={value}
+      onChange={onChange}
       minEditorHeight="100%"
-      generateMarkdownPreview={() => {
-        const converter = new Converter();
-        const html = converter.makeHtml(content);
-        return Promise.resolve(html);
-      }}
       disablePreview
     />
   );
 };
 
 export const NoteEditor = ({ onClose }) => {
-  const localFetch = useFetch();
-  const [{ loading, notes, activeModal }, dispatch] = React.useReducer(
-    stateReducer,
-    INITIAL_STATE
-  );
-  const [activeNoteId, setActiveNoteId] = useActiveNoteId();
-
-  const activeNote = useMemo(
-    () => (notes && notes.find(note => note.id === activeNoteId)) || null,
-    [notes, activeNoteId]
-  );
-
-  useAsyncEffect(
-    function*() {
-      const response = yield localFetch("/notes");
-      const body = yield response.json();
-      dispatch({ type: "RECEIVE_RESPONSE", body });
-    },
-    [localFetch]
-  );
+  const { state, actions } = useOvermind();
+  useEffect(() => {
+    actions.noteEditor.loadNotes();
+  }, [actions]);
 
   // @TODO add a fance loading indicator
-  if (loading) return null;
+  if (!state.noteEditor.notes.length) return null;
 
   let activeModalComponent = null;
   // eslint-disable-next-line default-case
-  switch (activeModal) {
+  switch (state.noteEditor.activeModal) {
     case "CREATE_NEW_NOTE":
       activeModalComponent = (
         <CreateNewNoteDialogModal
-          close={() => dispatch({ action: "SET_ACTIVE_MODAL", modal: null })}
+          close={() => actions.noteEditor.setActiveModal(null)}
           createNote={async ({ title }) => {
-            const response = await localFetch("/notes", {
-              method: "POST",
-              body: JSON.stringify({ title }),
-              headers: {
-                "Content-Type": "application/json"
-              }
-            });
-            const body = await response.json();
-            dispatch({ type: "CREATE_NOTE_RESPONSE", body });
-            dispatch({ type: "SET_ACTIVE_MODAL", modal: null });
-            setActiveNoteId(body.data.note.id);
+            actions.noteEditor.createNewNote({ title });
           }}
         />
       );
@@ -193,19 +82,13 @@ export const NoteEditor = ({ onClose }) => {
     case "DELETE_NOTE":
       activeModalComponent = (
         <DeleteNoteConfirmationDialogModal
-          close={() => dispatch({ type: "SET_ACTIVE_MODAL", modal: null })}
+          close={() => actions.noteEditor.setActiveModal(null)}
           confirm={async () => {
-            const response = await localFetch(`/notes/${activeNoteId}`, {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json"
-              }
-            });
-            const body = await response.json();
-            dispatch({ type: "DELETE_NOTE_RESPONSE", body });
+            actions.noteEditor.deleteActiveNote();
           }}
         />
       );
+      break;
   }
 
   return (
@@ -239,13 +122,13 @@ export const NoteEditor = ({ onClose }) => {
           <Modal.Body style={{ display: "flex", height: "80vh" }} noPadding>
             <Modal.Aside>
               <ScrollableList.List style={{ marginTop: 0 }}>
-                {notes.map(note => (
+                {state.noteEditor.notes.map(note => (
                   <ScrollableList.ListItem key={note.id}>
                     <ScrollableList.ListItemButton
                       tabIndex="1"
-                      isActive={note.id === activeNoteId}
+                      isActive={note.id === state.noteEditor.activeNoteId}
                       onClick={() => {
-                        setActiveNoteId(note.id);
+                        actions.noteEditor.setActiveNoteId(note.id);
                       }}
                     >
                       {note.title}
@@ -256,10 +139,7 @@ export const NoteEditor = ({ onClose }) => {
               <Modal.Footer>
                 <Button.Primary
                   onClick={() =>
-                    dispatch({
-                      type: "SET_ACTIVE_MODAL",
-                      modal: "CREATE_NEW_NOTE"
-                    })
+                    actions.noteEditor.setActiveModal("CREATE_NEW_NOTE")
                   }
                   fullWidth
                 >
@@ -269,30 +149,16 @@ export const NoteEditor = ({ onClose }) => {
               </Modal.Footer>
             </Modal.Aside>
             <Modal.Content>
-              {activeNote ? (
+              {state.noteEditor.activeNote ? (
                 <>
                   <MarkdownEditor
-                    id={activeNote.id}
-                    content={activeNote.content}
-                    save={async (id, content) => {
-                      const response = await localFetch(`/notes/${id}`, {
-                        method: "PATCH",
-                        headers: {
-                          "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({ content })
-                      });
-                      const body = await response.json();
-                      dispatch({ type: "UPDATE_NOTE_RESPONSE", body });
-                    }}
+                    value={state.noteEditor.activeNote.content}
+                    onChange={actions.noteEditor.updateActiveNoteContent}
                   />
                   <Modal.Footer>
                     <Button.Tertiary
                       onClick={() => {
-                        dispatch({
-                          type: "SET_ACTIVE_MODAL",
-                          modal: "DELETE_NOTE"
-                        });
+                        actions.noteEditor.setActiveModal("DELETE_NOTE");
                       }}
                     >
                       <Icons.TrashIcon height={20} width={20} />

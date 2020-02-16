@@ -9,6 +9,7 @@ import { Modal } from "../dm-area/modal";
 import { ToggleSwitch } from "../toggle-switch";
 import { SelectTokenMarkerReferenceModal } from "../dm-area/select-token-marker-reference-modal";
 import { useFetch } from "../dm-area/fetch-context";
+import { useOvermind } from "../hooks/use-overmind";
 
 const ColorPicker = React.memo(({ color, onChange, styles }) => {
   return (
@@ -23,12 +24,22 @@ const ColorPicker = React.memo(({ color, onChange, styles }) => {
 const TokenContextMenu = ({
   tokenRef,
   position,
-  token: { label, color, radius, isVisibleForPlayers, isLocked, reference },
+  token: {
+    id: tokenId,
+    label,
+    color,
+    radius,
+    isVisibleForPlayers,
+    isLocked,
+    reference
+  },
   updateToken,
   deleteToken,
   close,
   showChooseReferencedNoteModalDialog
 }) => {
+  const { actions } = useOvermind();
+
   const containerRef = useRef(null);
   const rangeSlideRef = useRef(null);
   const initialCoords = useRef({
@@ -103,7 +114,6 @@ const TokenContextMenu = ({
       set({ to: { x, y }, immediate: true });
     }, 0);
   }, [set, position]);
-
   return (
     <animated.div
       ref={containerRef}
@@ -192,7 +202,17 @@ const TokenContextMenu = ({
       >
         <div style={{ flex: 1 }}>
           {reference ? (
-            <Button.Tertiary>Edit Note</Button.Tertiary>
+            <Button.Tertiary
+              onClick={() => {
+                actions.tokenInfoAside.toggleActiveToken({
+                  id: tokenId,
+                  reference
+                });
+                close();
+              }}
+            >
+              Edit Note
+            </Button.Tertiary>
           ) : (
             <Button.Tertiary onClick={showChooseReferencedNoteModalDialog}>
               Link Note
