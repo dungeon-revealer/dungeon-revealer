@@ -8,52 +8,69 @@ const { getDataDirectory } = require("./util");
 
 const notesDirectory = path.join(getDataDirectory(), "notes");
 
+const createNote = ({
+  id,
+  title,
+  content,
+  createdAt = new Date(),
+  updatedAt = new Date()
+}) => ({
+  id,
+  title,
+  content,
+  createdAt,
+  updatedAt
+});
+
 class Notes {
+  notes = {};
   constructor() {
     fs.mkdirpSync(notesDirectory);
-    this.notes = this._loadNotes();
+    this._loadNotes();
   }
 
   _loadNotes() {
-    const notes = fs
-      .readdirSync(notesDirectory)
+    fs.readdirSync(notesDirectory)
       .filter(junk.not)
       .filter(item => item.endsWith(".json"))
-      .map(fileName => path.join(notesDirectory, fileName));
-
-    return notes.map(notePath => {
-      const rawConfig = fs.readFileSync(notePath, "utf-8");
-      return JSON.parse(rawConfig);
-    });
+      .map(fileName => path.join(notesDirectory, fileName))
+      .map(notePath => {
+        const rawConfig = fs.readFileSync(notePath, "utf-8");
+        return JSON.parse(rawConfig);
+      })
+      .forEach(note => {
+        this.notes[note.id] = createNote(note);
+      });
   }
 
   getAll() {
-    return this.notes;
+    return Object.values(this.notes);
   }
 
   getById(id) {
-    return this.notes.find(note => note.id === id) || null;
+    return this.notes[id] || null;
   }
 
   createNote({ title, content }) {
     const id = uuid();
     const fileName = `${id}.json`;
-    const note = {
+    const note = createNote({
       id,
       title,
       content
-    };
+    });
     fs.writeFileSync(path.join(notesDirectory, fileName), JSON.stringify(note));
-    this.notes.push(note);
+    this.notes[id] = note;
     return note;
   }
 
   updateNote(id, changes) {
-    const note = this.notes.find(map => map.id === id);
+    const note = this.notes[id];
     if (!note) {
       throw new Error(`Note with id "${id}" not found.`);
     }
-    Object.assign(note, changes);
+
+    Object.assign(note, changes, { updatedAt: new Date() });
 
     fs.writeFileSync(
       path.join(notesDirectory, `${id}.json`),
@@ -64,11 +81,11 @@ class Notes {
   }
 
   deleteNote(id) {
-    const noteIndex = this.notes.findIndex(note => note.id === id);
-    if (noteIndex === -1) {
+    const note = this.getById(id);
+    if (!note) {
       throw new Error(`Note with id "${id}" not found.`);
     }
-    this.notes.splice(noteIndex, 1);
+    delete this.notes[id];
     fs.removeSync(path.join(notesDirectory, `${id}.json`));
   }
 }
