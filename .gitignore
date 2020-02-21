@@ -17,6 +17,7 @@ src/dm-area/overmind/**/*
 src/**/*.d.ts
 src/**/*.map
 src/hooks/use-overmind.js
+src/hooks/use-static-ref.js
 src/button.js
 src/input.js
 
