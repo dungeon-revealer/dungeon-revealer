@@ -28,7 +28,10 @@ const InputInner = styled.input`
   }
 `;
 
-export const Input = ({ onKeyDown, ...props }) => {
+export const Input: React.FC<React.ComponentProps<typeof InputInner>> = ({
+  onKeyDown,
+  ...props
+}) => {
   return (
     <InputInner
       onKeyDown={ev => {
@@ -49,7 +52,9 @@ const InputError = styled.div`
   height: 12px;
 `;
 
-export const InputGroup = ({ error, ...props }) => {
+export const InputGroup: React.FC<
+  React.ComponentProps<typeof Input> & { error: string | null }
+> = ({ error, ...props }) => {
   return (
     <InputGroupContainer>
       <Input {...props} />

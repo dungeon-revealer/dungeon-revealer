@@ -18,6 +18,7 @@ src/**/*.d.ts
 src/**/*.map
 src/hooks/use-overmind.js
 src/button.js
+src/input.js
 
 # Runtime Data/ Persisted Data #
 ################################
