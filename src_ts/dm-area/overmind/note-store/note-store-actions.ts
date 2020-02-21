@@ -1,11 +1,8 @@
+import { AsyncAction } from "overmind";
+import { createNoteTreeNode, NoteType } from "./note-store-state";
 import debounce from "lodash/debounce";
 
-const createNoteTreeNode = note => ({
-  ...note,
-  isDirty: false
-});
-
-export const loadAll = async ({ state, effects }) => {
+export const loadAll: AsyncAction = async ({ state, effects }) => {
   const { noteStore } = state;
   noteStore.isLoadingAll = true;
   const notes = await effects.noteStore.loadAll({
@@ -17,20 +14,29 @@ export const loadAll = async ({ state, effects }) => {
   noteStore.isLoadingAll = false;
 };
 
-export const loadById = async ({ state, effects }, noteId) => {
+export const loadById: AsyncAction<string> = async (
+  { state, effects },
+  noteId
+) => {
   const { noteStore, sessionStore } = state;
   if (noteStore.loadingIds.includes(noteId)) return;
   noteStore.loadingIds.push(noteId);
   const note = await effects.noteStore.loadById(noteId, {
     accessToken: sessionStore.accessToken
   });
-  noteStore.notes[note.id] = note;
+  noteStore.notes[note.id] = createNoteTreeNode(note);
   const index = noteStore.loadingIds.findIndex(id => id === noteId);
   if (index < 0) return;
   noteStore.loadingIds.splice(index, 1);
 };
 
-export const createNote = async ({ state, effects }, { title, content }) => {
+export const createNote: AsyncAction<
+  {
+    title: string;
+    content: string;
+  },
+  NoteType
+> = async ({ state, effects }, { title, content }) => {
   const { noteStore, sessionStore } = state;
   const note = await effects.noteStore.create(
     { title, content },
@@ -39,13 +45,14 @@ export const createNote = async ({ state, effects }, { title, content }) => {
     }
   );
   noteStore.notes[note.id] = createNoteTreeNode(note);
-  return note;
+  return noteStore.notes[note.id];
 };
 
-export const updateNote = async (
-  { state, actions },
-  { noteId, title, content }
-) => {
+export const updateNote: AsyncAction<{
+  noteId: string;
+  title?: string;
+  content?: string;
+}> = async ({ state, actions }, { noteId, title, content }) => {
   const note = state.noteStore.notes[noteId];
   if (typeof title === "string") {
     note.title = title;
@@ -58,14 +65,17 @@ export const updateNote = async (
   actions.noteStore.saveNote(noteId);
 };
 
-export const deleteNote = async ({ state, effects }, noteId) => {
+export const deleteNote: AsyncAction<string> = async (
+  { state, effects },
+  noteId
+) => {
   delete state.noteStore.notes[noteId];
   await effects.noteStore.deleteById(noteId, {
     accessToken: state.sessionStore.accessToken
   });
 };
 
-export const saveNote = debounce(async ({ state, effects }, noteId) => {
+export const saveNote = debounce(async ({ state, effects }, noteId: string) => {
   let note = state.noteStore.notes[noteId];
   note.isDirty = false;
   const updatedNote = await effects.noteStore.update(

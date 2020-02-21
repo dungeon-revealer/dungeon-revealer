@@ -1,3 +1,4 @@
 node_modules/**/*
 public/javascripts/dropzone.js
 public/javascripts/require.js
+src_ts

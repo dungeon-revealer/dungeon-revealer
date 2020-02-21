@@ -12,6 +12,12 @@ dungeon-revealer-linux
 dungeon-revealer-macos
 build
 
+# temporary during to ts migration
+src/dm-area/overmind/**/*
+src/**/*.d.ts
+src/**/*.map
+src/hooks/use-overmind.js
+
 # Runtime Data/ Persisted Data #
 ################################
 data

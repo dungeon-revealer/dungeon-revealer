@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "esnext",
+    "noImplicitAny": false,
+    "outDir": "./../src",
+    "rootDir": "./",
+    "sourceMap": true,
+    "declaration": true,
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "strictNullChecks": true,
+    "jsx": "react",
+    "skipLibCheck": true,
+    "moduleResolution": "node"
+  }
+}

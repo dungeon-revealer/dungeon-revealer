@@ -1,3 +1,4 @@
+import { IConfig } from "overmind";
 import { merge, namespaced } from "overmind/config";
 import * as sessionStore from "./session-store";
 import * as noteStore from "./note-store";
@@ -17,3 +18,7 @@ export const config = merge(
     tokenInfoAside
   })
 );
+
+declare module "overmind" {
+  interface Config extends IConfig<typeof config> {}
+}

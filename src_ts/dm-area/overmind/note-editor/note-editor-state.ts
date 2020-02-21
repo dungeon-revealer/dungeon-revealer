@@ -1,3 +1,6 @@
+import { Derive } from "overmind";
+import { NoteType } from "../note-store/note-store-state";
+
 const tryParseJson = input => {
   try {
     return JSON.parse(input);
@@ -13,7 +16,16 @@ const getInitialActiveNoteId = () => {
   return null;
 };
 
-const createState = () => ({
+export type NoteEditorStateType = {
+  activeNoteId: string | null;
+  activeModal: null | string;
+  filter: string;
+  notes: Derive<NoteEditorStateType, NoteType[]>;
+  activeNote: Derive<NoteEditorStateType, NoteType | null>;
+  isEditMode: boolean;
+};
+
+const createState = (): NoteEditorStateType => ({
   activeNoteId: getInitialActiveNoteId(),
   activeModal: null,
   filter: "",

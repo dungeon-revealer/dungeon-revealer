@@ -1,11 +1,27 @@
+import { RawNoteType } from "./note-store-state";
+
 const buildHeaders = ({ accessToken }) => {
   return {
     "Content-Type": "application/json",
-    Authorization: accessToken ? `Bearer ${accessToken}` : undefined
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
   };
 };
 
-const createNote = ({ id, title, content, createdAt, updatedAt }) => ({
+type HTTPNoteType = {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const createNote = ({
+  id,
+  title,
+  content,
+  createdAt,
+  updatedAt
+}: HTTPNoteType): RawNoteType => ({
   id,
   title,
   content,
