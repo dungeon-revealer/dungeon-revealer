@@ -1,6 +1,11 @@
 import styled from "@emotion/styled/macro";
 
-const ButtonBase = styled.button`
+const ButtonBase = styled.button<{
+  big?: boolean;
+  small?: boolean;
+  iconOnly?: boolean;
+  fullWidth?: boolean;
+}>`
   cursor: pointer;
   border: none;
   align-items: center;
