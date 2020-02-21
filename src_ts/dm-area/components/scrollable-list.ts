@@ -10,7 +10,7 @@ export const List = styled.ul`
 
 export const ListItem = styled.li``;
 
-export const ListItemButton = styled.button`
+export const ListItemButton = styled.button<{ isActive?: boolean }>`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
