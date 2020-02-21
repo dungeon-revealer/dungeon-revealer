@@ -10,7 +10,7 @@ import * as Icons from "../../feather-icons";
 import * as ScrollableList from "../components/scrollable-list";
 import { CreateNewNoteDialogModal } from "./create-new-note-dialog-modal";
 import { DeleteNoteConfirmationDialogModal } from "./delete-note-confirmation-dialog-modal";
-import { HtmlContainer } from "../token-info-aside/token-info-aside";
+import { HtmlContainer } from "../components/html-container";
 import { Input } from "../../input";
 
 const Header = styled.div`
@@ -67,7 +67,6 @@ export const MarkdownEditor = ({ value, onChange }) => {
       commands={MARKDOWN_EDITOR_COMMANDS}
       value={value}
       onChange={onChange}
-      minEditorHeight="100%"
       disablePreview
     />
   );
@@ -82,7 +81,7 @@ export const NoteEditor = ({ onClose }) => {
   // @TODO add a fance loading indicator
   if (!state.noteEditor.notes.length) return null;
 
-  let activeModalComponent = null;
+  let activeModalComponent: null | React.ReactElement = null;
   // eslint-disable-next-line default-case
   switch (state.noteEditor.activeModal) {
     case "CREATE_NEW_NOTE":
@@ -127,7 +126,7 @@ export const NoteEditor = ({ onClose }) => {
             </Modal.Heading2>
             <div style={{ flex: 1, textAlign: "right" }}>
               <Button.Tertiary
-                tabIndex="3"
+                tabIndex={3}
                 style={{ marginLeft: 8 }}
                 onClick={onClose}
               >

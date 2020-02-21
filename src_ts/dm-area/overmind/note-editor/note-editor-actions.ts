@@ -14,7 +14,10 @@ export const setActiveNoteId: AsyncAction<string> = async (
   );
 };
 
-export const setActiveModal: Action<string> = ({ state }, activeModal) => {
+export const setActiveModal: Action<string | null> = (
+  { state },
+  activeModal
+) => {
   state.noteEditor.activeModal = activeModal;
 };
 

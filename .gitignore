@@ -14,8 +14,10 @@ build
 
 # temporary during to ts migration
 src/dm-area/modal.js
+src/dm-area/components/html-container.js
 src/dm-area/overmind/**/*
 src/dm-area/components/scrollable-list.js
+src/dm-area/note-editor/**/*
 src/**/*.d.ts
 src/**/*.map
 src/hooks/use-overmind.js

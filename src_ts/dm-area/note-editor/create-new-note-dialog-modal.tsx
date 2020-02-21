@@ -3,9 +3,12 @@ import { Modal, ModalDialogSize } from "../modal";
 import * as Button from "../../button";
 import { InputGroup } from "../../input";
 
-export const CreateNewNoteDialogModal = ({ close, createNote }) => {
+export const CreateNewNoteDialogModal: React.FC<{
+  close: () => void;
+  createNote: any;
+}> = ({ close, createNote }) => {
   const [inputValue, setInputValue] = useState("");
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const onChangeInputValue = useCallback(
     ev => {
       setInputValue(ev.target.value);

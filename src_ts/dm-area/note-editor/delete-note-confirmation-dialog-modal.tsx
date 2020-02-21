@@ -2,7 +2,10 @@ import React from "react";
 import { Modal, ModalDialogSize } from "../modal";
 import * as Button from "../../button";
 
-export const DeleteNoteConfirmationDialogModal = ({ close, confirm }) => {
+export const DeleteNoteConfirmationDialogModal: React.FC<{
+  close: () => void;
+  confirm: () => void;
+}> = ({ close, confirm }) => {
   return (
     <Modal onClickOutside={close} onPressEscape={close}>
       <Modal.Dialog size={ModalDialogSize.SMALL}>
