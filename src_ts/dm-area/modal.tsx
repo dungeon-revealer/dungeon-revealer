@@ -13,17 +13,33 @@ const bodyElement = document.getElementById("body");
 if (!bodyElement) {
   throw new TypeError("Body Element was not found.");
 }
+type EscapeHandlerType = (ev: KeyboardEvent) => void;
 
-const Context = React.createContext(() => {});
+type ModalRegistration = {
+  escapeHandler: EscapeHandlerType;
+};
+
+type CreateModalRegistrationResult = {
+  setEscapeHandler: (escapeHandler: EscapeHandlerType) => void;
+  destroy: () => void;
+};
+
+type CreateModalRegistrationFunction = (
+  escapeHandler: EscapeHandlerType
+) => CreateModalRegistrationResult;
+
+const Context = React.createContext<CreateModalRegistrationFunction>(
+  null as any
+);
 
 /**
  * Provider should be mounted once on top of the application
  * The main task of the provider is to orcastrate escape key events.
  */
 const Provider = ({ children }) => {
-  const registeredModals = useStaticRef(() => []);
+  const registeredModals = useStaticRef<ModalRegistration[]>(() => []);
 
-  const createModalRegistration = useCallback(
+  const createModalRegistration: CreateModalRegistrationFunction = useCallback(
     escapeHandler => {
       const modalRegistration = {
         escapeHandler
@@ -47,7 +63,7 @@ const Provider = ({ children }) => {
           const index = registeredModals.findIndex(
             registration => registration === modalRegistration
           );
-          if (!index === -1) {
+          if (index === -1) {
             throw new Error("Inconsistent state.");
           }
           registeredModals.splice(index, 1);
@@ -62,7 +78,7 @@ const Provider = ({ children }) => {
 
   // register escape event listener
   useEffect(() => {
-    const keydownListener = ev => {
+    const keydownListener = (ev: KeyboardEvent) => {
       if (ev.keyCode === 27) {
         for (const registeredModal of registeredModals) {
           // only handle the first escapeHandler that occures.
@@ -88,7 +104,9 @@ const Provider = ({ children }) => {
   );
 };
 
-const ModalBackground = ({ children, styles, ...props }) => (
+const ModalBackground: React.FC<
+  React.HTMLAttributes<HTMLDivElement> & { styles?: React.CSSProperties }
+> = ({ children, styles, ...props }) => (
   <FocusTrap>
     <div
       onClick={ev => {
@@ -124,15 +142,16 @@ const ModalBackground = ({ children, styles, ...props }) => (
   </FocusTrap>
 );
 
-const ModalPortal = ({
-  children,
-  onClickOutside,
-  onPressEscape,
-  backgroundStyles
-}) => {
+const ModalPortal: React.FC<{
+  onClickOutside?: () => void;
+  onPressEscape: () => void;
+  backgroundStyles?: any;
+}> = ({ children, onClickOutside, onPressEscape, backgroundStyles }) => {
   const createModalRegistration = React.useContext(Context);
   const modalElement = useStaticRef(() => document.createElement("div"));
-  const modalRegistration = React.useRef(null);
+  const modalRegistration = React.useRef<CreateModalRegistrationResult | null>(
+    null
+  );
 
   useEffect(() => {
     modalRoot.append(modalElement);
@@ -166,23 +185,31 @@ const ModalPortal = ({
   );
 };
 
-export const ModalDialogSize = {
-  DEFAULT: "DEFAULT",
-  SMALL: "SMALL"
-};
+// TODO: convert to const enum once all consumers use ts
+export enum ModalDialogSize {
+  "DEFAULT" = "DEFAULT",
+  "SMALL" = "SMALL"
+}
 
-const DialogSizeMappings = {
-  DEFAULT: 1024,
-  SMALL: 512
-};
+// TODO: convert to const enum once all consumers use ts
+export enum DialogSizeMappings {
+  "DEFAULT" = 1024,
+  "SMALL" = 512
+}
 
-const Dialog = ({
+const Dialog: React.FC<
+  React.FormHTMLAttributes<HTMLFormElement> & {
+    size?: ModalDialogSize.SMALL;
+  }
+> = ({
   children,
   size = ModalDialogSize.DEFAULT,
   onSubmit: onSubmitOuter,
   ...props
 }) => {
-  const onSubmit = useCallback(
+  const onSubmit: (
+    event: React.FormEvent<HTMLFormElement>
+  ) => void = useCallback(
     ev => {
       ev.preventDefault();
       if (onSubmitOuter) {
@@ -197,6 +224,7 @@ const Dialog = ({
       role="dialog"
       style={{
         width: "100%",
+        //@ts-ignore
         maxWidth: DialogSizeMappings[size],
         backgroundColor: "white",
         borderRadius: 5,
@@ -213,7 +241,11 @@ const Dialog = ({
   );
 };
 
-const Header = ({ children, style, ...props }) => {
+const Header: React.FC<{ style?: React.CSSProperties }> = ({
+  children,
+  style,
+  ...props
+}) => {
   return (
     <div
       {...props}
@@ -242,7 +274,7 @@ const Heading3 = styled.h3`
   margin: 0;
 `;
 
-const Body = styled.div`
+const Body = styled.div<{ noPadding?: boolean }>`
   width: 100%;
   padding: ${p => (p.noPadding ? null : `20px 20px 20px 20px`)};
 `;

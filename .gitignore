@@ -13,6 +13,7 @@ dungeon-revealer-macos
 build
 
 # temporary during to ts migration
+src/dm-area/modal.js
 src/dm-area/overmind/**/*
 src/dm-area/components/scrollable-list.js
 src/**/*.d.ts
