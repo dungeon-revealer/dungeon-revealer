@@ -1,8 +1,17 @@
 import React from "react";
-import { Modal } from "../dm-area/modal";
+import { Modal } from "./modal";
 import * as Button from "../button";
+import styled from "@emotion/styled/macro";
 
-export const SelectTokenMarkerReferenceModal = ({ close, onConfirm }) => {
+const OrSeperator = styled.span`
+  padding-left: 18px;
+  font-weight: bold;
+`;
+
+export const SelectTokenMarkerReferenceModal: React.FC<{
+  close: () => void;
+  onConfirm: (type: "NEW_NOTE" | "EXISTING_NOTE") => void;
+}> = ({ close, onConfirm }) => {
   return (
     <Modal onPressEscape={close} onClickOutside={close}>
       <Modal.Dialog>
@@ -17,8 +26,15 @@ export const SelectTokenMarkerReferenceModal = ({ close, onConfirm }) => {
         <Modal.Actions>
           <Modal.ActionGroup>
             <Button.Tertiary onClick={close}>Abort</Button.Tertiary>
-            <Button.Primary tabIndex="1" onClick={() => onConfirm("NEW_NOTE")}>
+            <Button.Primary tabIndex={1} onClick={() => onConfirm("NEW_NOTE")}>
               Create new Note
+            </Button.Primary>
+            <OrSeperator>or</OrSeperator>
+            <Button.Primary
+              tabIndex={1}
+              onClick={() => onConfirm("EXISTING_NOTE")}
+            >
+              Link existing Note
             </Button.Primary>
           </Modal.ActionGroup>
         </Modal.Actions>
