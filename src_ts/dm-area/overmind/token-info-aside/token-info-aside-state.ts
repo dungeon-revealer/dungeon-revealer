@@ -1,4 +1,4 @@
-import { Derive } from "overmind";
+import { Derive, ResolveState } from "overmind";
 import { NoteType } from "../note-store/note-store-state";
 
 export type ActiveTokenState = {
@@ -23,30 +23,56 @@ export type ActiveTokenState = {
       reference: null;
     });
 
+export type LoadingActiveTokenState = Extract<
+  ActiveTokenState,
+  { mode: "loading" }
+>;
+
+export type NotFoundActiveTokenState = Extract<
+  ActiveTokenState,
+  { mode: "notFound" }
+>;
+
 export type LoadedActiveTokenState = Extract<
   ActiveTokenState,
   { mode: "loaded" }
 >;
 
-interface createLoadedActiveTokenStateInput {
+export const createLoadingActiveTokenState = ({
+  referenceId,
+  id
+}: {
   referenceId: string;
   id: string;
-  [key: string]: any;
-}
+}): LoadingActiveTokenState => ({
+  mode: "loading",
+  id,
+  reference: null,
+  referenceId
+});
 
 export const createLoadedActiveTokenState = ({
   referenceId,
   id
-}: createLoadedActiveTokenStateInput): Extract<
-  ActiveTokenState,
-  { mode: "loaded" }
-> => ({
+}: LoadingActiveTokenState): LoadedActiveTokenState => ({
   id,
   mode: "loaded",
   referenceId,
   reference: (state, root) => {
-    return root.noteStore.notes[state.referenceId];
+    return root.noteStore.notes[state.referenceId] || null;
   }
+});
+
+export const createNotFoundActiveTokenState = ({
+  referenceId,
+  id
+}:
+  | LoadingActiveTokenState
+  | { referenceId: null; id: string }): NotFoundActiveTokenState => ({
+  id,
+  mode: "notFound",
+  referenceId,
+  reference: null
 });
 
 export type TokenInfoAsideStateType = {
