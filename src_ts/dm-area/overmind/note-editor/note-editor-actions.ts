@@ -65,6 +65,6 @@ export const deleteActiveNote: AsyncAction = async ({ state, actions }) => {
   noteEditor.activeNoteId = null;
 };
 
-export const toggleIsEditMode = ({ state }) => {
+export const toggleIsEditMode: Action = ({ state }) => {
   state.noteEditor.isEditMode = !state.noteEditor.isEditMode;
 };
