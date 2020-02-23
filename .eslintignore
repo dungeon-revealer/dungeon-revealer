@@ -1,4 +1,19 @@
 node_modules/**/*
-public/javascripts/dropzone.js
-public/javascripts/require.js
 src_ts
+
+# temporary during ts migration
+src/dm-area/modal.js
+src/dm-area/token-info-aside/**/*
+src/dm-area/components/html-container.js
+src/dm-area/overmind/**/*
+src/dm-area/components/scrollable-list.js
+src/dm-area/select-token-marker-reference-modal.js
+src/dm-area/note-editor/**/*
+src/**/*.d.ts
+src/**/*.map
+src/hooks/use-overmind.js
+src/hooks/use-static-ref.js
+src/feather-icons.js
+src/button.js
+src/input.js
+

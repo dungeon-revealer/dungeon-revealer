@@ -12,7 +12,7 @@ dungeon-revealer-linux
 dungeon-revealer-macos
 build
 
-# temporary during to ts migration
+# temporary during ts migration
 src/dm-area/modal.js
 src/dm-area/token-info-aside/**/*
 src/dm-area/components/html-container.js
