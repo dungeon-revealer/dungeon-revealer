@@ -80,9 +80,6 @@ export const NoteEditor = ({ onClose }) => {
     actions.noteEditor.loadNotes();
   }, [actions]);
 
-  // @TODO add a fance loading indicator
-  if (!state.noteEditor.notes.length) return null;
-
   let activeModalComponent: null | React.ReactElement = null;
   // eslint-disable-next-line default-case
   switch (state.noteEditor.activeModal) {
@@ -190,10 +187,41 @@ export const NoteEditor = ({ onClose }) => {
   );
 };
 
-const ContentRendered = ({ state, actions }) => {
+const EmptyContainer = styled.div`
+  display: flex;
+  height: 100%;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+`;
+
+const ContentRendered: React.FC<{
+  state: ReturnType<typeof useOvermind>["state"]["noteEditor"];
+  actions: ReturnType<typeof useOvermind>["actions"]["noteEditor"];
+}> = ({ state, actions }) => {
   useOvermind();
-  if (!state.activeNote) {
-    return null;
+
+  if (state.notes.length === 0) {
+    return (
+      <EmptyContainer>
+        <Icons.Inbox height={75} width={75} fill="#D9E2EC" />
+        <h3 style={{ marginBottom: 20 }}>Your library seems empty</h3>
+        <Button.Primary
+          big
+          onClick={() => actions.setActiveModal("CREATE_NEW_NOTE")}
+        >
+          <Icons.PlusIcon height={24} width={24} />
+          <span>Create your first note</span>
+        </Button.Primary>
+      </EmptyContainer>
+    );
+  } else if (!state.activeNote) {
+    return (
+      <EmptyContainer>
+        <Icons.Inbox height={75} width={75} fill="#D9E2EC" />
+        <h3>Please select a Note from the list on the left.</h3>
+      </EmptyContainer>
+    );
   }
 
   return (
