@@ -2,11 +2,12 @@ import React from "react";
 import { Converter as HtmlConverter } from "showdown";
 import styled from "@emotion/styled/macro";
 import "react-mde/lib/styles/css/react-mde-all.css";
-import { MarkdownEditor } from "./../note-editor/note-editor";
+import { MarkdownEditor } from "../note-editor/note-editor";
 import * as Button from "../../button";
 import * as Icon from "../../feather-icons";
 import { Input } from "../../input";
 import { useOvermind } from "../../hooks/use-overmind";
+import { HtmlContainer } from "../components/html-container";
 
 const Container = styled.div`
   display: flex;
@@ -35,39 +36,41 @@ const Window = styled.div`
   pointer-events: all;
 `;
 
-export const HtmlContainer = styled.div`
-  flex-grow: 1;
-  overflow-wrap: break-word;
-
-  blockquote {
-    margin-left: 0;
-    border-left: gray 12px solid;
-    padding-left: 24px;
-  }
-`;
-
-export const TokenInfoAside = () => {
+export const TokenInfoAside: React.FC<{}> = () => {
   const { actions, state } = useOvermind();
   if (!state.tokenInfoAside.isVisible) return null;
 
-  return (
-    <NoteReference
-      activeToken={state.tokenInfoAside.activeToken}
-      isEditMode={state.tokenInfoAside.isEditMode}
-      enterEditMode={() => actions.tokenInfoAside.setEditMode(true)}
-      exitEditMode={() => actions.tokenInfoAside.setEditMode(false)}
-      close={() =>
-        actions.tokenInfoAside.toggleActiveToken(
-          state.tokenInfoAside.activeToken
-        )
-      }
-      updateNoteTitle={actions.tokenInfoAside.updateActiveNoteTitle}
-      updateNoteContent={actions.tokenInfoAside.updateActiveNoteContent}
-    />
-  );
+  switch (state.tokenInfoAside.activeToken.mode) {
+    case "loading":
+    case "notFound":
+      return null;
+    case "loaded":
+      return (
+        <NoteReference
+          activeToken={state.tokenInfoAside.activeToken}
+          isEditMode={state.tokenInfoAside.isEditMode}
+          enterEditMode={() => actions.tokenInfoAside.setEditMode(true)}
+          exitEditMode={() => actions.tokenInfoAside.setEditMode(false)}
+          close={actions.tokenInfoAside.close}
+          updateNoteTitle={actions.tokenInfoAside.updateActiveNoteTitle}
+          updateNoteContent={actions.tokenInfoAside.updateActiveNoteContent}
+        />
+      );
+  }
 };
 
-const NoteReference = ({
+const NoteReference: React.FC<{
+  close: () => void;
+  isEditMode: boolean;
+  enterEditMode: () => void;
+  exitEditMode: () => void;
+  activeToken: Extract<
+    ReturnType<typeof useOvermind>["state"]["tokenInfoAside"]["activeToken"],
+    { mode: "loaded" }
+  >;
+  updateNoteTitle: (value: string) => void;
+  updateNoteContent: (value: string) => void;
+}> = ({
   close,
   isEditMode,
   enterEditMode,
@@ -95,41 +98,43 @@ const NoteReference = ({
             width: "100%"
           }}
         >
-          <h3 style={{ display: "flex", flexGrow: 1 }}>
-            {activeToken.label ? <div>{activeToken.label}</div> : null}
-            <div
-              style={{
-                paddingLeft: activeToken.label ? 16 : undefined,
-                flexGrow: 1
-              }}
-            >
-              {isEditMode ? (
-                <Input
-                  value={note.title}
-                  onChange={ev => updateNoteTitle(ev.target.value)}
-                  placeholder="Title"
-                />
-              ) : (
-                note.title
-              )}
-            </div>
-          </h3>
-          {isEditMode ? null : (
+          {isEditMode ? (
+            <Input
+              value={note.title}
+              onChange={ev => updateNoteTitle(ev.target.value)}
+              placeholder="Title"
+            />
+          ) : (
             <>
-              <div style={{ paddingLeft: 8, marginLeft: "auto" }}>
-                <Button.Tertiary iconOnly small onClick={() => enterEditMode()}>
-                  <Icon.EditIcon height={16} />
-                </Button.Tertiary>
-              </div>
-              <div style={{ paddingLeft: 8 }}>
-                <Button.Tertiary iconOnly small onClick={close}>
-                  <Icon.XIcon height={16} />
-                </Button.Tertiary>
+              <h3
+                style={{
+                  flexGrow: 1,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis"
+                }}
+              >
+                {note.title}
+              </h3>
+              <div style={{ flexShrink: 0, display: "flex" }}>
+                <div style={{ paddingLeft: 8, marginLeft: "auto" }}>
+                  <Button.Tertiary
+                    iconOnly
+                    small
+                    onClick={() => enterEditMode()}
+                  >
+                    <Icon.EditIcon height={16} />
+                  </Button.Tertiary>
+                </div>
+                <div style={{ paddingLeft: 8 }}>
+                  <Button.Tertiary iconOnly small onClick={close}>
+                    <Icon.XIcon height={16} />
+                  </Button.Tertiary>
+                </div>
               </div>
             </>
           )}
         </div>
-
         {isEditMode ? (
           <div
             style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}

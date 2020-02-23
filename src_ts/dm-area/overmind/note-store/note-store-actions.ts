@@ -14,20 +14,24 @@ export const loadAll: AsyncAction = async ({ state, effects }) => {
   noteStore.isLoadingAll = false;
 };
 
-export const loadById: AsyncAction<string> = async (
+export const loadById: AsyncAction<string, string | null> = async (
   { state, effects },
   noteId
 ) => {
   const { noteStore, sessionStore } = state;
-  if (noteStore.loadingIds.includes(noteId)) return;
-  noteStore.loadingIds.push(noteId);
+  if (!noteStore.loadingIds.includes(noteId)) {
+    noteStore.loadingIds.push(noteId);
+  }
   const note = await effects.noteStore.loadById(noteId, {
     accessToken: sessionStore.accessToken
   });
+
+  if (note === null) return null;
   noteStore.notes[note.id] = createNoteTreeNode(note);
   const index = noteStore.loadingIds.findIndex(id => id === noteId);
-  if (index < 0) return;
+  if (index < 0) return note.id;
   noteStore.loadingIds.splice(index, 1);
+  return note.id;
 };
 
 export const createNote: AsyncAction<

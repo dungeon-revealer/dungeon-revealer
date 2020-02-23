@@ -3,46 +3,72 @@ import { NoteType } from "../note-store/note-store-state";
 
 export type ActiveTokenState = {
   id: string;
-  referenceId: string | null;
-  isLoading: Derive<ActiveTokenState, boolean>;
-  reference: Derive<ActiveTokenState, NoteType | null>;
-};
+} & (
+  | {
+      mode: "loading";
+      referenceId: string;
+      reference: null;
+    }
+  | {
+      mode: "loaded";
+      referenceId: string;
+      reference: Derive<
+        Extract<ActiveTokenState, { mode: "loaded" }>,
+        NoteType
+      >;
+    }
+  | {
+      mode: "notFound";
+      referenceId: string | null;
+      reference: null;
+    });
 
-export type TokenInfoAsideStateType = {
-  isVisible: Derive<TokenInfoAsideStateType, boolean>;
-  isEditMode: boolean;
-  activeToken: null | ActiveTokenState;
-};
+export type LoadedActiveTokenState = Extract<
+  ActiveTokenState,
+  { mode: "loaded" }
+>;
 
-const createState = (): TokenInfoAsideStateType => ({
-  isVisible(state) {
-    return (
-      state.activeToken !== null &&
-      state.activeToken.isLoading === false &&
-      state.activeToken.reference !== null
-    );
-  },
-  isEditMode: false,
-  activeToken: null
-});
+interface createLoadedActiveTokenStateInput {
+  referenceId: string;
+  id: string;
+  [key: string]: any;
+}
 
-export const state = createState();
-
-export const createTokenAsideActiveToken = ({
-  tokenId,
-  referenceId
-}: {
-  tokenId: string;
-  referenceId: string | null;
-}): ActiveTokenState => ({
-  id: tokenId,
+export const createLoadedActiveTokenState = ({
   referenceId,
-  isLoading: (state, root) => {
-    if (!state.referenceId) return false;
-    return root.noteStore.loadingIds.includes(state.referenceId);
-  },
+  id
+}: createLoadedActiveTokenStateInput): Extract<
+  ActiveTokenState,
+  { mode: "loaded" }
+> => ({
+  id,
+  mode: "loaded",
+  referenceId,
   reference: (state, root) => {
-    if (!state.referenceId) return null;
-    return root.noteStore.notes[state.referenceId] || null;
+    return root.noteStore.notes[state.referenceId];
   }
 });
+
+export type TokenInfoAsideStateType = {
+  isEditMode: boolean;
+} & (
+  | {
+      isVisible: Derive<TokenInfoAsideStateType, true>;
+      activeToken: ActiveTokenState;
+    }
+  | {
+      isVisible: Derive<TokenInfoAsideStateType, false>;
+      activeToken: null;
+    });
+
+const createState = (): TokenInfoAsideStateType => ({
+  activeToken: null,
+  isEditMode: false,
+  isVisible(state) {
+    return (state.activeToken !== null) as any;
+  }
+});
+
+export const createNoSelectionTokenInfoAsideState = createState;
+
+export const state = createState();

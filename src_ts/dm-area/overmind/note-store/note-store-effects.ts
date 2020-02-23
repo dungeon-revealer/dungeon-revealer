@@ -42,6 +42,7 @@ export const loadById = async (noteId, { accessToken }) => {
     headers: buildHeaders({ accessToken })
   });
   const body = await response.json();
+  if (body.error) return null;
   return createNote(body.data.note);
 };
 

@@ -67,6 +67,8 @@ export const MarkdownEditor = ({ value, onChange }) => {
       commands={MARKDOWN_EDITOR_COMMANDS}
       value={value}
       onChange={onChange}
+      // @ts-ignore
+      minEditorHeight="100%"
       disablePreview
     />
   );
@@ -220,7 +222,7 @@ const ContentRendered = ({ state, actions }) => {
               }}
               style={{ marginLeft: 16 }}
             >
-              <Icons.EditIcon height={16} />
+              <Icons.SaveIcon height={16} />
             </Button.Tertiary>
           </>
         ) : (

@@ -14,6 +14,7 @@ build
 
 # temporary during to ts migration
 src/dm-area/modal.js
+src/dm-area/token-info-aside/**/*
 src/dm-area/components/html-container.js
 src/dm-area/overmind/**/*
 src/dm-area/components/scrollable-list.js
