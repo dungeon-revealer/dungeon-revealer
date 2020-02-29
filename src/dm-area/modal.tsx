@@ -36,7 +36,7 @@ const Context = React.createContext<CreateModalRegistrationFunction>(
  * Provider should be mounted once on top of the application
  * The main task of the provider is to orcastrate escape key events.
  */
-const Provider = ({ children }) => {
+const Provider: React.FC<{}> = ({ children }) => {
   const registeredModals = useStaticRef<ModalRegistration[]>(() => []);
 
   const createModalRegistration: CreateModalRegistrationFunction = useCallback(
@@ -104,9 +104,9 @@ const Provider = ({ children }) => {
   );
 };
 
-const ModalBackground: React.FC<
-  React.HTMLAttributes<HTMLDivElement> & { styles?: React.CSSProperties }
-> = ({ children, styles, ...props }) => (
+const ModalBackground: React.FC<React.HTMLAttributes<HTMLDivElement> & {
+  styles?: React.CSSProperties;
+}> = ({ children, styles, ...props }) => (
   <FocusTrap>
     <div
       onClick={ev => {
@@ -197,11 +197,9 @@ export enum DialogSizeMappings {
   "SMALL" = 512
 }
 
-const Dialog: React.FC<
-  React.FormHTMLAttributes<HTMLFormElement> & {
-    size?: ModalDialogSize.SMALL;
-  }
-> = ({
+const Dialog: React.FC<React.FormHTMLAttributes<HTMLFormElement> & {
+  size?: ModalDialogSize.SMALL;
+}> = ({
   children,
   size = ModalDialogSize.DEFAULT,
   onSubmit: onSubmitOuter,

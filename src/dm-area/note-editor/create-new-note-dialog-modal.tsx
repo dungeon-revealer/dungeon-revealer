@@ -5,7 +5,7 @@ import { InputGroup } from "../../input";
 
 export const CreateNewNoteDialogModal: React.FC<{
   close: () => void;
-  createNote: any;
+  createNote: (input: { title: string }) => void;
 }> = ({ close, createNote }) => {
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);

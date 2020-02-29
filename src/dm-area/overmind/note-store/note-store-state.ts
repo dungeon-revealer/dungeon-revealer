@@ -1,11 +1,13 @@
 import { Derive } from "overmind";
 
+type Maybe<T = unknown> = T | null | undefined;
+
 export type NoteStoreStateType = {
   loadingIds: string[];
   isLoading: Derive<NoteStoreStateType, boolean>;
   isLoadingAll: boolean;
   notes: {
-    [id: string]: NoteType;
+    [id: string]: Maybe<NoteType>;
   };
 };
 

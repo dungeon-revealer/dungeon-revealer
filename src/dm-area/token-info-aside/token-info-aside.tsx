@@ -8,6 +8,8 @@ import * as Icon from "../../feather-icons";
 import { Input } from "../../input";
 import { useOvermind } from "../../hooks/use-overmind";
 import { HtmlContainer } from "../components/html-container";
+import { LoadedActiveTokenState } from "../overmind/token-info-aside/token-info-aside-state";
+import { ResolveState } from "overmind";
 
 const Container = styled.div`
   display: flex;
@@ -45,6 +47,7 @@ export const TokenInfoAside: React.FC<{}> = () => {
     case "notFound":
       return null;
     case "loaded":
+      if (!state.tokenInfoAside.activeToken) return null;
       return (
         <NoteReference
           activeToken={state.tokenInfoAside.activeToken}
@@ -64,10 +67,7 @@ const NoteReference: React.FC<{
   isEditMode: boolean;
   enterEditMode: () => void;
   exitEditMode: () => void;
-  activeToken: Extract<
-    ReturnType<typeof useOvermind>["state"]["tokenInfoAside"]["activeToken"],
-    { mode: "loaded" }
-  >;
+  activeToken: ResolveState<LoadedActiveTokenState>;
   updateNoteTitle: (value: string) => void;
   updateNoteContent: (value: string) => void;
 }> = ({

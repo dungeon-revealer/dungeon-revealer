@@ -61,7 +61,10 @@ const MARKDOWN_EDITOR_COMMANDS = [
   }
 ];
 
-export const MarkdownEditor = ({ value, onChange }) => {
+export const MarkdownEditor: React.FC<{
+  value: string;
+  onChange: (input: string) => void;
+}> = ({ value, onChange }) => {
   return (
     <ReactMdeStyled
       commands={MARKDOWN_EDITOR_COMMANDS}
@@ -74,7 +77,7 @@ export const MarkdownEditor = ({ value, onChange }) => {
   );
 };
 
-export const NoteEditor = ({ onClose }) => {
+export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { state, actions } = useOvermind();
   useEffect(() => {
     actions.noteEditor.loadNotes();

@@ -51,8 +51,8 @@ export const createNewNote: AsyncAction<{
   title?: string;
   content?: string;
 }> = async ({ state, actions }, { title = "New note", content = "" }) => {
-  const note = await actions.noteStore.createNote({ title, content });
-  state.noteEditor.activeNoteId = note.id;
+  const noteId = await actions.noteStore.createNote({ title, content });
+  state.noteEditor.activeNoteId = noteId;
   state.noteEditor.isEditMode = true;
 };
 

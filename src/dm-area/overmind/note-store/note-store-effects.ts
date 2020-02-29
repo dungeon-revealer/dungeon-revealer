@@ -1,6 +1,7 @@
 import { RawNoteType } from "./note-store-state";
+import { Maybe } from "../util";
 
-const buildHeaders = ({ accessToken }) => {
+const buildHeaders = ({ accessToken }: { accessToken: Maybe<string> }) => {
   return {
     "Content-Type": "application/json",
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
@@ -29,7 +30,11 @@ const createNote = ({
   updatedAt: new Date(updatedAt).getTime()
 });
 
-export const loadAll = async ({ accessToken }) => {
+export const loadAll = async ({
+  accessToken
+}: {
+  accessToken: string | null;
+}) => {
   const response = await fetch(`/notes`, {
     headers: buildHeaders({ accessToken })
   });
@@ -37,7 +42,10 @@ export const loadAll = async ({ accessToken }) => {
   return body.data.notes.map(createNote);
 };
 
-export const loadById = async (noteId, { accessToken }) => {
+export const loadById = async (
+  noteId: string,
+  { accessToken }: { accessToken: string | null }
+) => {
   const response = await fetch(`/notes/${noteId}`, {
     headers: buildHeaders({ accessToken })
   });
@@ -46,7 +54,10 @@ export const loadById = async (noteId, { accessToken }) => {
   return createNote(body.data.note);
 };
 
-export const create = async ({ title, content }, { accessToken }) => {
+export const create = async (
+  { title, content }: { title: string; content: string },
+  { accessToken }: { accessToken: string | null }
+) => {
   const response = await fetch("/notes", {
     method: "POST",
     body: JSON.stringify({ title, content }),
@@ -56,14 +67,21 @@ export const create = async ({ title, content }, { accessToken }) => {
   return createNote(body.data.note);
 };
 
-export const deleteById = async (noteId, { accessToken }) => {
+export const deleteById = async (
+  noteId: string,
+  { accessToken }: { accessToken: string | null }
+) => {
   await fetch(`/notes/${noteId}`, {
     method: "DELETE",
     headers: buildHeaders({ accessToken })
   });
 };
 
-export const update = async (noteId, { title, content }, { accessToken }) => {
+export const update = async (
+  noteId: string,
+  { title, content }: { title: string; content: string },
+  { accessToken }: { accessToken: string | null }
+) => {
   const response = await fetch(`/notes/${noteId}`, {
     method: "PATCH",
     headers: buildHeaders({ accessToken }),

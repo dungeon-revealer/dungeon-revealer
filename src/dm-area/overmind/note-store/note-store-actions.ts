@@ -39,7 +39,7 @@ export const createNote: AsyncAction<
     title: string;
     content: string;
   },
-  NoteType
+  string
 > = async ({ state, effects }, { title, content }) => {
   const { noteStore, sessionStore } = state;
   const note = await effects.noteStore.create(
@@ -49,7 +49,7 @@ export const createNote: AsyncAction<
     }
   );
   noteStore.notes[note.id] = createNoteTreeNode(note);
-  return noteStore.notes[note.id];
+  return note.id;
 };
 
 export const updateNote: AsyncAction<{
@@ -58,6 +58,7 @@ export const updateNote: AsyncAction<{
   content?: string;
 }> = async ({ state, actions }, { noteId, title, content }) => {
   const note = state.noteStore.notes[noteId];
+  if (!note) return;
   if (typeof title === "string") {
     note.title = title;
   }
@@ -73,7 +74,7 @@ export const deleteNote: AsyncAction<string> = async (
   { state, effects },
   noteId
 ) => {
-  delete state.noteStore.notes[noteId];
+  state.noteStore.notes[noteId] = null;
   await effects.noteStore.deleteById(noteId, {
     accessToken: state.sessionStore.accessToken
   });

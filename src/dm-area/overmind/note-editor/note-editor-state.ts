@@ -1,7 +1,8 @@
 import { Derive } from "overmind";
 import { NoteType } from "../note-store/note-store-state";
+import { isSome } from "../util";
 
-const tryParseJson = input => {
+const tryParseJson = (input: any) => {
   try {
     return JSON.parse(input);
   } catch {
@@ -31,6 +32,7 @@ const createState = (): NoteEditorStateType => ({
   filter: "",
   notes: (state, root) => {
     return Object.values(root.noteStore.notes)
+      .filter(isSome)
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .filter(
         note =>

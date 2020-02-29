@@ -21,7 +21,8 @@ export type ActiveTokenState = {
       mode: "notFound";
       referenceId: string | null;
       reference: null;
-    });
+    }
+);
 
 export type LoadingActiveTokenState = Extract<
   ActiveTokenState,
@@ -54,21 +55,29 @@ export const createLoadingActiveTokenState = ({
 export const createLoadedActiveTokenState = ({
   referenceId,
   id
-}: LoadingActiveTokenState): LoadedActiveTokenState => ({
+}: {
+  referenceId: string;
+  id: string;
+}): LoadedActiveTokenState => ({
   id,
   mode: "loaded",
   referenceId,
   reference: (state, root) => {
-    return root.noteStore.notes[state.referenceId] || null;
+    const note = root.noteStore.notes[state.referenceId];
+    if (!note) {
+      throw new Error("Invalid state. This should be handled different.");
+    }
+    return note;
   }
 });
 
 export const createNotFoundActiveTokenState = ({
   referenceId,
   id
-}:
-  | LoadingActiveTokenState
-  | { referenceId: null; id: string }): NotFoundActiveTokenState => ({
+}: {
+  referenceId: null | string;
+  id: string;
+}): NotFoundActiveTokenState => ({
   id,
   mode: "notFound",
   referenceId,
@@ -85,7 +94,8 @@ export type TokenInfoAsideStateType = {
   | {
       isVisible: Derive<TokenInfoAsideStateType, false>;
       activeToken: null;
-    });
+    }
+);
 
 const createState = (): TokenInfoAsideStateType => ({
   activeToken: null,
