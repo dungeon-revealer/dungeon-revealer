@@ -1,38 +1,33 @@
-import { AsyncAction } from "overmind";
+import { AsyncAction, pipe, map, noop } from "overmind";
 import { createNoteTreeNode, NoteType } from "./note-store-state";
 import debounce from "lodash/debounce";
+import * as o from "./note-store-operators";
+import { matchMode } from "../operators";
+import { isSome } from "../util";
 
-export const loadAll: AsyncAction = async ({ state, effects }) => {
-  const { noteStore } = state;
-  noteStore.isLoadingAll = true;
-  const notes = await effects.noteStore.loadAll({
-    accessToken: state.sessionStore.accessToken
-  });
-  for (const note of notes.map(createNoteTreeNode)) {
-    noteStore.notes[note.id] = note;
-  }
-  noteStore.isLoadingAll = false;
-};
+export const loadAll: AsyncAction = pipe(
+  o.enterLoadingAllState(),
+  o.loadAllNotes(),
+  o.leaveLoadingAllState()
+);
 
-export const loadById: AsyncAction<string, string | null> = async (
-  { state, effects },
-  noteId
-) => {
-  const { noteStore, sessionStore } = state;
-  if (!noteStore.loadingIds.includes(noteId)) {
-    noteStore.loadingIds.push(noteId);
-  }
-  const note = await effects.noteStore.loadById(noteId, {
-    accessToken: sessionStore.accessToken
-  });
+const _loadById = pipe(
+  o.loadNoteById(),
+  matchMode({
+    NOT_FOUND: o.enterNoteNotFoundState(),
+    FOUND: o.enterNoteLoadedState()
+  })
+);
 
-  if (note === null) return null;
-  noteStore.notes[note.id] = createNoteTreeNode(note);
-  const index = noteStore.loadingIds.findIndex(id => id === noteId);
-  if (index < 0) return note.id;
-  noteStore.loadingIds.splice(index, 1);
-  return note.id;
-};
+export const loadById = pipe(
+  o.selectCacheRecord(),
+  matchMode({
+    NOT_FOUND: pipe(o.enterNoteLoadingState(), _loadById),
+    LOADED: pipe(o.enterNoteCacheAndLoadingState(), _loadById),
+    CACHE_AND_LOADING: _loadById,
+    LOADING: _loadById
+  })
+);
 
 export const createNote: AsyncAction<
   {
@@ -48,7 +43,11 @@ export const createNote: AsyncAction<
       accessToken: sessionStore.accessToken
     }
   );
-  noteStore.notes[note.id] = createNoteTreeNode(note);
+  noteStore.notes[note.id] = {
+    mode: "LOADED",
+    id: note.id,
+    node: createNoteTreeNode(note)
+  };
   return note.id;
 };
 
@@ -58,15 +57,15 @@ export const updateNote: AsyncAction<{
   content?: string;
 }> = async ({ state, actions }, { noteId, title, content }) => {
   const note = state.noteStore.notes[noteId];
-  if (!note) return;
+  if (!isSome(note) || note.mode !== "LOADED") return;
   if (typeof title === "string") {
-    note.title = title;
+    note.node.title = title;
   }
   if (typeof content === "string") {
-    note.content = content;
+    note.node.content = content;
   }
 
-  note.isDirty = true;
+  note.node.isDirty = true;
   actions.noteStore.saveNote(noteId);
 };
 
@@ -80,22 +79,23 @@ export const deleteNote: AsyncAction<string> = async (
   });
 };
 
-export const saveNote = debounce(async ({ state, effects }, noteId: string) => {
-  let note = state.noteStore.notes[noteId];
-  note.isDirty = false;
-  const updatedNote = await effects.noteStore.update(
-    noteId,
-    state.noteStore.notes[noteId],
-    {
+export const saveNote: AsyncAction<string> = debounce(
+  async ({ state, effects }, noteId) => {
+    let note = state.noteStore.notes[noteId];
+    if (!isSome(note) || note.mode !== "LOADED") return;
+    note.node.isDirty = false;
+    const updatedNote = await effects.noteStore.update(noteId, note.node, {
       accessToken: state.sessionStore.accessToken
-    }
-  );
+    });
 
-  note = state.noteStore.notes[noteId];
-  // apply changes if it did not change in the meantime
-  if (note.isDirty === false) {
-    note.title = updatedNote.title;
-    note.content = updatedNote.content;
-    note.updatedAt = updatedNote.updatedAt;
-  }
-}, 500);
+    note = state.noteStore.notes[noteId];
+    if (!isSome(note) || note.mode !== "LOADED") return;
+    // apply changes if it did not change in the meantime
+    if (note.node.isDirty === false) {
+      note.node.title = updatedNote.title;
+      note.node.content = updatedNote.content;
+      note.node.updatedAt = updatedNote.updatedAt;
+    }
+  },
+  500
+);

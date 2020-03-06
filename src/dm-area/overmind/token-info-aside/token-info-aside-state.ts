@@ -1,42 +1,30 @@
 import { Derive, ResolveState } from "overmind";
-import { NoteType } from "../note-store/note-store-state";
+import { NoteRecord } from "../note-store/note-store-state";
 
-export type ActiveTokenState = {
-  id: string;
-} & (
+export type ActiveTokenState =
   | {
-      mode: "loading";
-      referenceId: string;
-      reference: null;
+      mode: "noReference";
+      id: string;
+      referenceId: null;
     }
   | {
-      mode: "loaded";
+      mode: "hasReference";
+      id: string;
       referenceId: string;
       reference: Derive<
-        Extract<ActiveTokenState, { mode: "loaded" }>,
-        NoteType
+        Extract<ActiveTokenState, { mode: "hasReference" }>,
+        NoteRecord
       >;
-    }
-  | {
-      mode: "notFound";
-      referenceId: string | null;
-      reference: null;
-    }
-);
+    };
 
-export type LoadingActiveTokenState = Extract<
+export type ActiveTokenHasReferenceState = Extract<
   ActiveTokenState,
-  { mode: "loading" }
+  { mode: "hasReference" }
 >;
 
-export type NotFoundActiveTokenState = Extract<
+export type ActiveTokenNoReferenceState = Extract<
   ActiveTokenState,
-  { mode: "notFound" }
->;
-
-export type LoadedActiveTokenState = Extract<
-  ActiveTokenState,
-  { mode: "loaded" }
+  { mode: "noReference" }
 >;
 
 export const createLoadingActiveTokenState = ({
@@ -45,22 +33,9 @@ export const createLoadingActiveTokenState = ({
 }: {
   referenceId: string;
   id: string;
-}): LoadingActiveTokenState => ({
-  mode: "loading",
+}): ActiveTokenHasReferenceState => ({
+  mode: "hasReference",
   id,
-  reference: null,
-  referenceId
-});
-
-export const createLoadedActiveTokenState = ({
-  referenceId,
-  id
-}: {
-  referenceId: string;
-  id: string;
-}): LoadedActiveTokenState => ({
-  id,
-  mode: "loaded",
   referenceId,
   reference: (state, root) => {
     const note = root.noteStore.notes[state.referenceId];
@@ -71,17 +46,14 @@ export const createLoadedActiveTokenState = ({
   }
 });
 
-export const createNotFoundActiveTokenState = ({
-  referenceId,
+export const createLoadedActiveTokenState = ({
   id
 }: {
-  referenceId: null | string;
   id: string;
-}): NotFoundActiveTokenState => ({
+}): ActiveTokenNoReferenceState => ({
   id,
-  mode: "notFound",
-  referenceId,
-  reference: null
+  mode: "noReference",
+  referenceId: null
 });
 
 export type TokenInfoAsideStateType = {

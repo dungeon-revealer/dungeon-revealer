@@ -34,7 +34,7 @@ export const loadAll = async ({
   accessToken
 }: {
   accessToken: string | null;
-}) => {
+}): Promise<RawNoteType[]> => {
   const response = await fetch(`/notes`, {
     headers: buildHeaders({ accessToken })
   });
@@ -50,8 +50,12 @@ export const loadById = async (
     headers: buildHeaders({ accessToken })
   });
   const body = await response.json();
-  if (body.error) return null;
-  return createNote(body.data.note);
+  if (body.error)
+    return { mode: "NOT_FOUND" as "NOT_FOUND", error: body.error, noteId };
+  return {
+    mode: "FOUND" as "FOUND",
+    note: createNote(body.data.note)
+  };
 };
 
 export const create = async (

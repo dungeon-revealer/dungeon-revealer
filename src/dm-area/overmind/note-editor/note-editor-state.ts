@@ -1,6 +1,6 @@
 import { Derive } from "overmind";
-import { NoteType } from "../note-store/note-store-state";
-import { isSome } from "../util";
+import { NoteType, NoteRecord } from "../note-store/note-store-state";
+import { isSome, Maybe } from "../util";
 
 const tryParseJson = (input: any) => {
   try {
@@ -9,6 +9,7 @@ const tryParseJson = (input: any) => {
     return null;
   }
 };
+
 const getInitialActiveNoteId = () => {
   const maybeId = tryParseJson(
     localStorage.getItem("settings.noteEditor.activeNoteId")
@@ -24,7 +25,12 @@ export type NoteEditorStateType = {
   notes: Derive<NoteEditorStateType, NoteType[]>;
   activeNote: Derive<NoteEditorStateType, NoteType | null>;
   isEditMode: boolean;
+  isLoading: Derive<NoteEditorStateType, boolean>;
 };
+
+const isLoaded = <T extends Maybe<NoteRecord>>(
+  r: T
+): r is Extract<T, { mode: "LOADED" }> => isSome(r) && r.mode === "LOADED";
 
 const createState = (): NoteEditorStateType => ({
   activeNoteId: getInitialActiveNoteId(),
@@ -32,7 +38,8 @@ const createState = (): NoteEditorStateType => ({
   filter: "",
   notes: (state, root) => {
     return Object.values(root.noteStore.notes)
-      .filter(isSome)
+      .filter(isLoaded)
+      .map(note => note.node)
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .filter(
         note =>
@@ -41,9 +48,14 @@ const createState = (): NoteEditorStateType => ({
   },
   activeNote: (state, root) => {
     if (!state.activeNoteId) return null;
-    return root.noteStore.notes[state.activeNoteId] || null;
+    const note = root.noteStore.notes[state.activeNoteId];
+    if (!note) return null;
+    return note.node;
   },
-  isEditMode: false
+  isEditMode: false,
+  isLoading: (state, root) => {
+    return root.noteStore.isLoadingAll;
+  }
 });
 
 export const state = createState();

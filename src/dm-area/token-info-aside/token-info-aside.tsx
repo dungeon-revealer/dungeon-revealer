@@ -8,8 +8,8 @@ import * as Icon from "../../feather-icons";
 import { Input } from "../../input";
 import { useOvermind } from "../../hooks/use-overmind";
 import { HtmlContainer } from "../components/html-container";
-import { LoadedActiveTokenState } from "../overmind/token-info-aside/token-info-aside-state";
 import { ResolveState } from "overmind";
+import { NoteType } from "../overmind/note-store/note-store-state";
 
 const Container = styled.div`
   display: flex;
@@ -43,23 +43,24 @@ export const TokenInfoAside: React.FC<{}> = () => {
   if (!state.tokenInfoAside.isVisible) return null;
 
   switch (state.tokenInfoAside.activeToken.mode) {
-    case "loading":
-    case "notFound":
-      return null;
-    case "loaded":
-      if (!state.tokenInfoAside.activeToken) return null;
-      return (
-        <NoteReference
-          activeToken={state.tokenInfoAside.activeToken}
-          isEditMode={state.tokenInfoAside.isEditMode}
-          enterEditMode={() => actions.tokenInfoAside.setEditMode(true)}
-          exitEditMode={() => actions.tokenInfoAside.setEditMode(false)}
-          close={actions.tokenInfoAside.close}
-          updateNoteTitle={actions.tokenInfoAside.updateActiveNoteTitle}
-          updateNoteContent={actions.tokenInfoAside.updateActiveNoteContent}
-        />
-      );
+    case "hasReference":
+      switch (state.tokenInfoAside.activeToken.reference.mode) {
+        case "CACHE_AND_LOADING":
+        case "LOADED":
+          return (
+            <NoteReference
+              note={state.tokenInfoAside.activeToken.reference.node}
+              isEditMode={state.tokenInfoAside.isEditMode}
+              enterEditMode={() => actions.tokenInfoAside.setEditMode(true)}
+              exitEditMode={() => actions.tokenInfoAside.setEditMode(false)}
+              close={actions.tokenInfoAside.close}
+              updateNoteTitle={actions.tokenInfoAside.updateActiveNoteTitle}
+              updateNoteContent={actions.tokenInfoAside.updateActiveNoteContent}
+            />
+          );
+      }
   }
+  return null;
 };
 
 const NoteReference: React.FC<{
@@ -67,7 +68,7 @@ const NoteReference: React.FC<{
   isEditMode: boolean;
   enterEditMode: () => void;
   exitEditMode: () => void;
-  activeToken: ResolveState<LoadedActiveTokenState>;
+  note: ResolveState<NoteType>;
   updateNoteTitle: (value: string) => void;
   updateNoteContent: (value: string) => void;
 }> = ({
@@ -75,13 +76,12 @@ const NoteReference: React.FC<{
   isEditMode,
   enterEditMode,
   exitEditMode,
-  activeToken,
+  note,
   updateNoteTitle,
   updateNoteContent
 }) => {
   useOvermind();
 
-  const note = activeToken.reference;
   return (
     <Container>
       <Window

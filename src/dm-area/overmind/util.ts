@@ -1,7 +1,8 @@
 import { ResolveState } from "overmind";
 
-export type Maybe<T = unknown> = T | null | undefined;
-export type Some<T = unknown> = Exclude<T, null | undefined>;
+export type Maybe<T = any> = T | null | undefined;
+export type Some<T = any> = Exclude<T, null | undefined>;
+export type None = null | undefined;
 
 export const isSome = <T = unknown>(input: T): input is Some<T> =>
   input !== null && input !== undefined;

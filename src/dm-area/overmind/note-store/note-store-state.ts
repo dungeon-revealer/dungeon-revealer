@@ -1,18 +1,38 @@
 import { Derive } from "overmind";
+import { Maybe } from "../util";
 
-type Maybe<T = unknown> = T | null | undefined;
+export type NoteRecord = {
+  id: string;
+} & (
+  | {
+      mode: "NOT_FOUND";
+      node: null;
+    }
+  | {
+      mode: "LOADING";
+      node: null;
+    }
+  | {
+      mode: "LOADED";
+      node: NoteType;
+    }
+  | {
+      mode: "CACHE_AND_LOADING";
+      node: NoteType;
+    }
+);
 
 export type NoteStoreStateType = {
-  loadingIds: string[];
+  loadingIds: NoteRecord["id"][];
   isLoading: Derive<NoteStoreStateType, boolean>;
   isLoadingAll: boolean;
   notes: {
-    [id: string]: Maybe<NoteType>;
+    [id: string]: Maybe<NoteRecord>;
   };
 };
 
 export type RawNoteType = {
-  id: string;
+  id: NoteRecord["id"];
   title: string;
   content: string;
   createdAt: number;
@@ -20,7 +40,7 @@ export type RawNoteType = {
 };
 
 export type NoteType = {
-  id: string;
+  id: NoteRecord["id"];
   title: string;
   content: string;
   createdAt: number;

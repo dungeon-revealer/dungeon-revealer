@@ -83,6 +83,8 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     actions.noteEditor.loadNotes();
   }, [actions]);
 
+  if (state.noteEditor.isLoading) return null;
+
   let activeModalComponent: null | React.ReactElement = null;
   // eslint-disable-next-line default-case
   switch (state.noteEditor.activeModal) {

@@ -1,57 +1,51 @@
-import { Operator, mutate, map, action } from "overmind";
-import { switchMap, match } from "../operators";
+import { Operator, map, action, mutate, when } from "overmind";
+import { switchMap } from "../operators";
 import * as util from "../util";
+import { ActiveTokenHasReferenceState } from "./token-info-aside-state";
 
-import {
-  createLoadedActiveTokenState,
-  createNoSelectionTokenInfoAsideState,
-  createNotFoundActiveTokenState,
-  createLoadingActiveTokenState
-} from "./token-info-aside-state";
+export const loadReference: () => Operator<{
+  value: { id: string };
+  selection: { id: string };
+}> = () =>
+  switchMap(async ({ actions }, input) =>
+    actions.noteStore.loadById(input.selection.id).then(() => input)
+  );
 
-import { OperatorMatcher } from "../dynamic-match";
+type Token = { id: string; reference: util.Maybe<{ id: string }> };
 
-type BaseModeType = { mode: "noReference" } | { mode: "hasReference" };
+export const whenIsCurrentToken = <
+  TInputToken extends Token,
+  TTrueOperatorOutput,
+  TFalseOperatorOutput
+>(paths: {
+  true: Operator<TInputToken, TTrueOperatorOutput>;
+  false: Operator<TInputToken, TFalseOperatorOutput>;
+}): Operator<TInputToken, TTrueOperatorOutput | TFalseOperatorOutput> =>
+  when(
+    (context, input: TInputToken) =>
+      !!context.state.tokenInfoAside.activeToken &&
+      input.id === context.state.tokenInfoAside.activeToken.id,
+    paths
+  );
 
-export const matchReference = <TType extends BaseModeType = BaseModeType>(
-  matcher: OperatorMatcher<"mode", TType["mode"], TType>
-): Operator<TType> => match("mode", matcher);
-
-export const enterNotFoundState: () => Operator<
-  | {
-      id: string;
-      referenceId: null;
-    }
-  | {
-      id: string;
-      referenceId: string;
-    },
-  void
-> = () =>
-  mutate(({ state }, { id, referenceId }) => {
-    state.tokenInfoAside.activeToken = util.castTreeNode(
-      createNotFoundActiveTokenState({ id, referenceId })
-    );
+export const enterNoActiveTokenState = () =>
+  mutate(({ state }) => {
+    state.tokenInfoAside.activeToken = null;
   });
 
-export const enterLoadingState: () => Operator<{
-  id: string;
-  referenceId: string;
+export const enterActiveTokenWithReferenceState: () => Operator<{
+  value: { id: string };
+  selection: { id: string };
 }> = () =>
-  mutate(({ state }, { id, referenceId }) => {
-    state.tokenInfoAside.activeToken = util.castTreeNode(
-      createLoadingActiveTokenState({ id, referenceId })
-    );
-  });
-
-export const enterLoadedState: () => Operator<{
-  id: string;
-  referenceId: string;
-}> = () =>
-  mutate(({ state }, { id, referenceId }) => {
-    state.tokenInfoAside.activeToken = util.castTreeNode(
-      createLoadedActiveTokenState({ id, referenceId })
-    );
+  mutate(({ state }, { value: { id }, selection: { id: referenceId } }) => {
+    state.tokenInfoAside.activeToken = util.castTreeNode({
+      mode: "hasReference",
+      id,
+      referenceId,
+      reference: (state, root) => {
+        return root.noteStore.notes[state.referenceId];
+      }
+    } as ActiveTokenHasReferenceState);
   });
 
 type HasRemoteReferenceType =
@@ -73,27 +67,21 @@ export const loadNoteById: () => Operator<
   },
   HasRemoteReferenceType
 > = () =>
-  switchMap(({ actions }, { id, referenceId }) =>
-    actions.noteStore.loadById(referenceId).then(reference => ({
+  switchMap(async ({ actions, state }, { id, referenceId }) => {
+    await actions.noteStore.loadById(referenceId);
+
+    return {
       id,
       referenceId,
-      mode: reference ? "found" : "notFound"
-    }))
-  );
-
-export const matchHasRemoteReference = (
-  matcher: OperatorMatcher<
-    "mode",
-    HasRemoteReferenceType["mode"],
-    HasRemoteReferenceType
-  >
-) => match("mode", matcher);
+      mode: state.noteStore.notes[referenceId] ? "found" : "notFound"
+    };
+  });
 
 export const selectActiveTokenContentMode = () =>
   map(({ state }, newContent: string) => {
     if (
       !state.tokenInfoAside.activeToken ||
-      !state.tokenInfoAside.activeToken.reference
+      !state.tokenInfoAside.activeToken.referenceId
     )
       return { mode: "noReference" as "noReference", newContent };
     return {
@@ -120,7 +108,7 @@ export const selectActiveTokenTitleMode = () =>
   map(({ state }, newTitle: string) => {
     if (
       !state.tokenInfoAside.activeToken ||
-      !state.tokenInfoAside.activeToken.reference
+      !state.tokenInfoAside.activeToken.referenceId
     )
       return { mode: "noReference" as "noReference", newTitle };
     return {
