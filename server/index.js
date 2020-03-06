@@ -526,6 +526,29 @@ app.delete("/notes/:id", requiresDmRole, (req, res) => {
 
   notes.deleteNote(note.id);
 
+  // update tokens that link a certain note
+  maps
+    .getAll()
+    .map(map => ({
+      mapId: map.id,
+      affectedTokens: map.tokens.filter(
+        token =>
+          token.reference &&
+          token.reference.type === "note" &&
+          token.reference.id === note.id
+      )
+    }))
+    .forEach(({ mapId, affectedTokens }) => {
+      affectedTokens.forEach(({ id }) => {
+        const result = maps.updateToken(mapId, id, { reference: null });
+
+        io.emit(`token:mapId:${mapId}`, {
+          type: "update",
+          data: { token: result.token }
+        });
+      });
+    });
+
   res.json({
     success: true,
     data: {
