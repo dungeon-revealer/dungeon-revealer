@@ -47,9 +47,9 @@ const createState = (): NoteEditorStateType => ({
       );
   },
   activeNote: (state, root) => {
-    if (!state.activeNoteId) return null;
+    if (!state.activeNoteId) return state.notes[0] ? state.notes[0] : null;
     const note = root.noteStore.notes[state.activeNoteId];
-    if (!note) return null;
+    if (!note) return state.notes[0] ? state.notes[0] : null;
     return note.node;
   },
   isEditMode: false,
