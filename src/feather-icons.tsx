@@ -10,9 +10,9 @@ export const Label = styled.div`
   color: ${p => p.color || "inherit"};
 `;
 
-export const DropletIcon: React.FC<
-  React.SVGProps<SVGSVGElement> & { filled?: boolean }
-> = ({ fill = "currentColor", filled, ...props }) => (
+export const DropletIcon: React.FC<React.SVGProps<SVGSVGElement> & {
+  filled?: boolean;
+}> = ({ fill = "currentColor", filled, ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill={filled ? fill : "none"}
@@ -618,5 +618,23 @@ export const SaveIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
   >
     <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
     <path d="M17 21v-8H7v8M7 3v5h8" />
+  </svg>
+);
+
+export const Link: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M15 7h3a5 5 0 015 5 5 5 0 01-5 5h-3m-6 0H6a5 5 0 01-5-5 5 5 0 015-5h3M8 12h8" />
   </svg>
 );
