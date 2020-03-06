@@ -99,11 +99,23 @@ const NoteReference: React.FC<{
           }}
         >
           {isEditMode ? (
-            <Input
-              value={note.title}
-              onChange={ev => updateNoteTitle(ev.target.value)}
-              placeholder="Title"
-            />
+            <>
+              <Input
+                value={note.title}
+                onChange={ev => updateNoteTitle(ev.target.value)}
+                placeholder="Title"
+              />
+              <div style={{ paddingLeft: 8 }}>
+                <Button.Tertiary iconOnly small onClick={exitEditMode}>
+                  <Icon.SaveIcon height={16} />
+                </Button.Tertiary>
+              </div>
+              <div style={{ paddingLeft: 8 }}>
+                <Button.Tertiary iconOnly small onClick={close}>
+                  <Icon.XIcon height={16} />
+                </Button.Tertiary>
+              </div>
+            </>
           ) : (
             <>
               <h3
@@ -140,20 +152,6 @@ const NoteReference: React.FC<{
             style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}
           >
             <MarkdownEditor value={note.content} onChange={updateNoteContent} />
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                marginTop: 16
-              }}
-            >
-              <div>
-                <Button.Tertiary small onClick={exitEditMode}>
-                  <Icon.XIcon />
-                  <span>Close Editor</span>
-                </Button.Tertiary>
-              </div>
-            </div>
           </div>
         ) : (
           <div style={{ overflowY: "scroll", overflowX: "hidden" }}>
