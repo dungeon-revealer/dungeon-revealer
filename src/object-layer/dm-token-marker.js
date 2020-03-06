@@ -263,6 +263,7 @@ export const DmTokenMarker = React.memo(
           ref={tokenRef}
           ratio={ratio}
           {...token}
+          cursor={token.reference ? "pointer" : undefined}
           isAnimated={false}
           onDoubleClick={ev => ev.stopPropagation()}
           onClick={ev => {
