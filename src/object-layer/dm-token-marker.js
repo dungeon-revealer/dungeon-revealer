@@ -246,6 +246,7 @@ export const DmTokenMarker = React.memo(
     onClick,
     token
   }) => {
+    const { actions } = useOvermind();
     const localFetch = useFetch();
     const tokenRef = useRef();
     const [contextMenuCoordinates, setContextMenuCoordinates] = useState(null);
@@ -409,12 +410,19 @@ export const DmTokenMarker = React.memo(
                 }
               }
               if (!noteId) return;
-              updateToken({
-                reference: {
-                  type: "note",
-                  id: noteId
-                }
+              const reference = {
+                type: "note",
+                id: noteId
+              };
+              await updateToken({
+                reference
               });
+              setContextMenuCoordinates(null);
+              await actions.tokenInfoAside.toggleActiveToken({
+                id: token.id,
+                reference
+              });
+
               setShowChooseReferencedNoteModalDialog(false);
             }}
           />
