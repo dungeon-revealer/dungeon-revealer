@@ -13,7 +13,7 @@ import * as Icons from "./feather-icons";
 import { useSocket } from "./socket";
 import { AreaMarkerRenderer } from "./object-layer/area-marker-renderer";
 import { TokenRenderer } from "./object-layer/token-renderer";
-import { LoadingScreen } from "./loading-screen";
+import { SplashScreen } from "./splash-screen";
 import { AuthenticationScreen } from "./authentication-screen";
 
 const ToolbarContainer = styled.div`
@@ -24,6 +24,14 @@ const ToolbarContainer = styled.div`
   bottom: 0;
   bottom: 12px;
   pointer-events: none;
+`;
+
+const AbsoluteFullscreenContainer = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 `;
 
 const reduceOffsetToMinimum = (offset, sideLength) => {
@@ -479,7 +487,11 @@ const PlayerMap = ({ fetch, pcPassword }) => {
             </Toolbar.Group>
           </Toolbar>
         </ToolbarContainer>
-      ) : null}
+      ) : (
+        <AbsoluteFullscreenContainer>
+          <SplashScreen text="Ready." />
+        </AbsoluteFullscreenContainer>
+      )}
     </>
   );
 };
@@ -523,7 +535,7 @@ export const PlayerArea = () => {
   );
 
   if (mode === "LOADING") {
-    return <LoadingScreen />;
+    return <SplashScreen text="Loading..." />;
   }
   if (mode === "AUTHENTICATE") {
     return (

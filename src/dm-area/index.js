@@ -17,7 +17,7 @@ import { SetMapGrid } from "./set-map-grid";
 import { useSocket } from "../socket";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { AuthenticationScreen } from "../authentication-screen";
-import { LoadingScreen } from "../loading-screen";
+import { SplashScreen } from "../splash-screen";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 const useDmPassword = createPersistedState("dmPassword");
@@ -282,7 +282,7 @@ export const DmArea = () => {
   }, [loadedMapId]);
 
   if (mode.title === "LOADING") {
-    return <LoadingScreen />;
+    return <SplashScreen text="Loading...." />;
   }
 
   if (mode.title === "AUTHENTICATE") {
