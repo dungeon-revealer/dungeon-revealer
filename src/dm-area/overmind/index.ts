@@ -4,6 +4,7 @@ import * as sessionStore from "./session-store";
 import * as noteStore from "./note-store";
 import * as noteEditor from "./note-editor";
 import * as tokenInfoAside from "./token-info-aside";
+import * as selectTokenMarkerReferenceModal from "./select-token-marker-reference-modal";
 
 export const state = {};
 
@@ -15,7 +16,8 @@ export const config = merge(
     sessionStore,
     noteStore,
     noteEditor,
-    tokenInfoAside
+    tokenInfoAside,
+    selectTokenMarkerReferenceModal
   })
 );
 

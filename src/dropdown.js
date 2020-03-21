@@ -5,7 +5,7 @@ import * as Icon from "./feather-icons";
 
 const Container = styled.label`
   display: block;
-  user-select: none;
+  /* user-select: none; */
   position: relative;
   width: 100%;
 `;

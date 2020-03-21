@@ -7,8 +7,6 @@ import * as Button from "../button";
 import * as Icon from "../feather-icons";
 import { Modal } from "../dm-area/modal";
 import { ToggleSwitch } from "../toggle-switch";
-import { SelectTokenMarkerReferenceModal } from "../dm-area/select-token-marker-reference-modal";
-import { useFetch } from "../dm-area/fetch-context";
 import { useOvermind } from "../hooks/use-overmind";
 
 const ColorPicker = React.memo(({ color, onChange, styles }) => {
@@ -35,8 +33,7 @@ const TokenContextMenu = ({
   },
   updateToken,
   deleteToken,
-  close,
-  showChooseReferencedNoteModalDialog
+  close
 }) => {
   const { actions } = useOvermind();
 
@@ -239,7 +236,9 @@ const TokenContextMenu = ({
               <div>
                 <Button.Tertiary
                   small
-                  onClick={showChooseReferencedNoteModalDialog}
+                  onClick={() =>
+                    actions.selectTokenMarkerReferenceModal.open({ tokenId })
+                  }
                 >
                   <Icon.Link height={16} />
                   <span>Link</span>
@@ -295,14 +294,8 @@ export const DmTokenMarker = React.memo(
     onClick,
     token
   }) => {
-    const { actions } = useOvermind();
-    const localFetch = useFetch();
     const tokenRef = useRef();
     const [contextMenuCoordinates, setContextMenuCoordinates] = useState(null);
-    const [
-      showChooseReferencedNoteModalDialog,
-      setShowChooseReferencedNoteModalDialog
-    ] = useState(false);
 
     const isDraggingRef = useRef(false);
 
@@ -433,49 +426,8 @@ export const DmTokenMarker = React.memo(
               deleteToken={deleteToken}
               position={contextMenuCoordinates}
               close={() => setContextMenuCoordinates(null)}
-              showChooseReferencedNoteModalDialog={() =>
-                setShowChooseReferencedNoteModalDialog(true)
-              }
             />
           </Modal>
-        ) : null}
-        {showChooseReferencedNoteModalDialog ? (
-          <SelectTokenMarkerReferenceModal
-            close={() => setShowChooseReferencedNoteModalDialog(false)}
-            onConfirm={async type => {
-              let noteId = null;
-              // eslint-disable-next-line default-case
-              switch (type) {
-                case "NEW_NOTE": {
-                  const response = await localFetch(`/notes`, {
-                    method: "POST",
-                    body: JSON.stringify({}),
-                    headers: {
-                      "Content-Type": "application/json"
-                    }
-                  });
-                  const body = await response.json();
-                  noteId = body.data.note.id;
-                  break;
-                }
-              }
-              if (!noteId) return;
-              const reference = {
-                type: "note",
-                id: noteId
-              };
-              await updateToken({
-                reference
-              });
-              setContextMenuCoordinates(null);
-              await actions.tokenInfoAside.toggleActiveToken({
-                id: token.id,
-                reference
-              });
-
-              setShowChooseReferencedNoteModalDialog(false);
-            }}
-          />
         ) : null}
       </>
     );

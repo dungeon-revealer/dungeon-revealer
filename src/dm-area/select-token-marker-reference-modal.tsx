@@ -2,18 +2,20 @@ import React from "react";
 import { Modal } from "./modal";
 import * as Button from "../button";
 import styled from "@emotion/styled/macro";
+import { useOvermind } from "../hooks/use-overmind";
 
 const OrSeperator = styled.span`
   padding-left: 18px;
   font-weight: bold;
 `;
 
-export const SelectTokenMarkerReferenceModal: React.FC<{
-  close: () => void;
-  onConfirm: (type: "NEW_NOTE" | "EXISTING_NOTE") => void;
-}> = ({ close, onConfirm }) => {
+export const SelectTokenMarkerReferenceModal: React.FC<{}> = () => {
+  const { actions } = useOvermind();
   return (
-    <Modal onPressEscape={close} onClickOutside={close}>
+    <Modal
+      onPressEscape={actions.selectTokenMarkerReferenceModal.close}
+      onClickOutside={actions.selectTokenMarkerReferenceModal.close}
+    >
       <Modal.Dialog>
         <Modal.Header>
           <Modal.Heading3>Attach Note</Modal.Heading3>
@@ -25,14 +27,22 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
         </Modal.Body>
         <Modal.Actions>
           <Modal.ActionGroup>
-            <Button.Tertiary onClick={close}>Abort</Button.Tertiary>
-            <Button.Primary tabIndex={1} onClick={() => onConfirm("NEW_NOTE")}>
+            <Button.Tertiary
+              onClick={actions.selectTokenMarkerReferenceModal.close}
+            >
+              Abort
+            </Button.Tertiary>
+            <Button.Primary
+              tabIndex={1}
+
+              // onClick={() => onConfirm("NEW_NOTE")}
+            >
               Create new Note
             </Button.Primary>
             <OrSeperator>or</OrSeperator>
             <Button.Primary
               tabIndex={1}
-              onClick={() => onConfirm("EXISTING_NOTE")}
+              // onClick={() => onConfirm("EXISTING_NOTE")}
             >
               Link existing Note
             </Button.Primary>

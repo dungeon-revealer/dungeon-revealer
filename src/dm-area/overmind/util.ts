@@ -7,6 +7,9 @@ export type None = null | undefined;
 export const isSome = <T = unknown>(input: T): input is Some<T> =>
   input !== null && input !== undefined;
 
+export const isNone = (input: any): input is None =>
+  input === undefined || input === null;
+
 // fixes typings for assignment to the state tree.
 // Only call this function on a node when assigning it to the state tree.
 export const castTreeNode = <TType extends any>(
