@@ -2,6 +2,14 @@ import { Derive } from "overmind";
 import { NoteType, NoteRecord } from "../note-store/note-store-state";
 import * as u from "../util";
 
+export type ModalState =
+  | {
+      mode: "OVERVIEW";
+    }
+  | {
+      mode: "ATTACH_EXISTING_NOTE";
+    };
+
 export type State =
   | {
       mode: "ACTIVE";
@@ -28,7 +36,12 @@ export const createActiveState = ({ tokenId }: { tokenId: string }): State => ({
   tokenId,
   activeNoteId: null,
   activeNote: (state, root) => {
-    if (state.activeNoteId === null) return null;
+    if (state.activeNoteId === null) {
+      if (state.notes.length) {
+        return state.notes[0];
+      }
+      return null;
+    }
     const note = root.noteStore.notes[state.activeNoteId];
     if (u.isNone(note)) return null;
     return note.node;
@@ -37,8 +50,7 @@ export const createActiveState = ({ tokenId }: { tokenId: string }): State => ({
     return Object.values(root.noteStore.notes)
       .filter(isLoaded)
       .map(note => note.node)
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-      .filter(note => note.id === state.activeNoteId);
+      .sort((a, b) => b.updatedAt - a.updatedAt);
   }
 });
 

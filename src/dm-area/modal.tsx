@@ -104,9 +104,11 @@ const Provider: React.FC<{}> = ({ children }) => {
   );
 };
 
-const ModalBackground: React.FC<React.HTMLAttributes<HTMLDivElement> & {
-  styles?: React.CSSProperties;
-}> = ({ children, styles, ...props }) => (
+const ModalBackground: React.FC<
+  React.HTMLAttributes<HTMLDivElement> & {
+    styles?: React.CSSProperties;
+  }
+> = ({ children, styles, ...props }) => (
   <FocusTrap>
     <div
       onClick={ev => {
@@ -197,9 +199,11 @@ export enum DialogSizeMappings {
   "SMALL" = 512
 }
 
-const Dialog: React.FC<React.FormHTMLAttributes<HTMLFormElement> & {
-  size?: ModalDialogSize.SMALL;
-}> = ({
+const Dialog: React.FC<
+  React.FormHTMLAttributes<HTMLFormElement> & {
+    size?: ModalDialogSize.SMALL;
+  }
+> = ({
   children,
   size = ModalDialogSize.DEFAULT,
   onSubmit: onSubmitOuter,
@@ -305,12 +309,9 @@ const Content = styled.div`
 `;
 
 const Actions = styled.div`
-  padding-left: 20px;
-  padding-right: 20px;
   padding-top: 20px;
   display: flex;
   justify-content: flex-end;
-  padding-bottom: 16px;
 `;
 
 const ActionGroup = styled.div`

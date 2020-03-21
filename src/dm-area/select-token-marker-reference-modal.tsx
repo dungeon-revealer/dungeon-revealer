@@ -1,9 +1,12 @@
 import React, { useCallback } from "react";
+import { Converter as HtmlConverter } from "showdown";
 import { Modal } from "./modal";
 import * as Button from "../button";
+import * as ScrollableList from "./components/scrollable-list";
 import styled from "@emotion/styled/macro";
 import { useOvermind } from "../hooks/use-overmind";
 import { useFetch } from "./fetch-context";
+import { HtmlContainer } from "./components/html-container";
 
 const OrSeperator = styled.span`
   padding-left: 18px;
@@ -46,7 +49,35 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
     });
     actions.tokenInfoAside.setEditMode(true);
     actions.selectTokenMarkerReferenceModal.close();
-  }, [localFetch]);
+  }, [localFetch, updateToken]);
+
+  const attachExistingNote = useCallback(async () => {
+    if (
+      state.selectTokenMarkerReferenceModal.mode !== "ACTIVE" ||
+      state.selectTokenMarkerReferenceModal.activeNoteId === null
+    )
+      return;
+    const tokenId = state.selectTokenMarkerReferenceModal.tokenId;
+
+    const reference = {
+      type: "note" as "note",
+      id: state.selectTokenMarkerReferenceModal.activeNoteId
+    };
+
+    await updateToken({ id: tokenId, reference });
+    await actions.tokenInfoAside.toggleActiveToken({
+      id: tokenId,
+      reference
+    });
+    actions.selectTokenMarkerReferenceModal.close();
+  }, [updateToken]);
+
+  const isActiveNote = useCallback(note => {
+    if (state.selectTokenMarkerReferenceModal.mode !== "ACTIVE") return false;
+    return note === state.selectTokenMarkerReferenceModal.activeNote;
+  }, []);
+
+  if (state.selectTokenMarkerReferenceModal.mode === "NONE") return null;
 
   return (
     <Modal
@@ -57,25 +88,59 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
         <Modal.Header>
           <Modal.Heading3>Attach Note</Modal.Heading3>
         </Modal.Header>
-        <Modal.Body>
-          A attached note can help you quickly accessing information. You could
-          add a description for a location or any other entity that is
-          represented by a token.
+        <Modal.Body style={{ display: "flex" }} noPadding>
+          <Modal.Aside>
+            <ScrollableList.List style={{ marginTop: 0 }}>
+              {state.selectTokenMarkerReferenceModal.notes.map(note => (
+                <ScrollableList.ListItem key={note.id}>
+                  <ScrollableList.ListItemButton
+                    isActive={isActiveNote(note)}
+                    onClick={() => {
+                      actions.selectTokenMarkerReferenceModal.setActiveNote(
+                        note
+                      );
+                    }}
+                  >
+                    {note.title || "<Untitled Note>"}
+                  </ScrollableList.ListItemButton>
+                </ScrollableList.ListItem>
+              ))}
+            </ScrollableList.List>
+          </Modal.Aside>
+          <Modal.Content>
+            {state.selectTokenMarkerReferenceModal.activeNote ? (
+              <div style={{ paddingLeft: 16, paddingRight: 16 }}>
+                <HtmlContainer
+                  dangerouslySetInnerHTML={{
+                    __html: new HtmlConverter().makeHtml(
+                      state.selectTokenMarkerReferenceModal.activeNote.content
+                    )
+                  }}
+                />
+              </div>
+            ) : (
+              "NOPE"
+            )}
+          </Modal.Content>
         </Modal.Body>
-        <Modal.Actions>
-          <Modal.ActionGroup>
-            <Button.Tertiary
-              onClick={actions.selectTokenMarkerReferenceModal.close}
-            >
-              Abort
-            </Button.Tertiary>
-            <Button.Primary tabIndex={1} onClick={attachNewNote}>
-              Create new Note
-            </Button.Primary>
-            <OrSeperator>or</OrSeperator>
-            <Button.Primary tabIndex={1}>Link existing Note</Button.Primary>
-          </Modal.ActionGroup>
-        </Modal.Actions>
+        <Modal.Footer>
+          <Modal.Actions>
+            <Modal.ActionGroup>
+              <Button.Tertiary
+                onClick={actions.selectTokenMarkerReferenceModal.close}
+              >
+                Abort
+              </Button.Tertiary>
+              <Button.Primary tabIndex={1} onClick={attachNewNote}>
+                Create new Note
+              </Button.Primary>
+              <OrSeperator>or</OrSeperator>
+              <Button.Primary tabIndex={1} onClick={attachExistingNote}>
+                Link Note
+              </Button.Primary>
+            </Modal.ActionGroup>
+          </Modal.Actions>
+        </Modal.Footer>
       </Modal.Dialog>
     </Modal>
   );

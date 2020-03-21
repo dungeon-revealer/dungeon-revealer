@@ -1,5 +1,5 @@
-import { mutate, Operator, filter } from "overmind";
-import { NoteType } from "../note-store/note-store-state";
+import { mutate, Operator, filter, action } from "overmind";
+import { NoteType, state } from "../note-store/note-store-state";
 import {
   createActiveState,
   createNoneState
@@ -18,6 +18,9 @@ export const closeModal = (): Operator =>
   mutate(({ state }) => {
     state.selectTokenMarkerReferenceModal = u.castTreeNode(createNoneState());
   });
+
+export const loadAllNotes = (): Operator =>
+  switchMap(({ actions }) => actions.noteStore.loadAll());
 
 export const setActiveNote = () =>
   mutate(({ state }, note: NoteType) => {
