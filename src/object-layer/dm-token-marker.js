@@ -236,9 +236,10 @@ const TokenContextMenu = ({
               <div>
                 <Button.Tertiary
                   small
-                  onClick={() =>
-                    actions.selectTokenMarkerReferenceModal.open({ tokenId })
-                  }
+                  onClick={() => {
+                    actions.selectTokenMarkerReferenceModal.open({ tokenId });
+                    close();
+                  }}
                 >
                   <Icon.Link height={16} />
                   <span>Link</span>
