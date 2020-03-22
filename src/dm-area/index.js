@@ -13,11 +13,17 @@ import createPersistedState from "use-persisted-state";
 import { Modal } from "./modal";
 import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
+import { NoteEditor } from "./note-editor";
 import { SetMapGrid } from "./set-map-grid";
 import { useSocket } from "../socket";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { AuthenticationScreen } from "../authentication-screen";
 import { SplashScreen } from "../splash-screen";
+import { FetchContext } from "./fetch-context";
+import { Provider as OvermindProvider } from "overmind-react";
+import { createOvermind } from "overmind";
+
+import { config } from "./overmind";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 const useDmPassword = createPersistedState("dmPassword");
@@ -69,6 +75,12 @@ export const DmArea = () => {
     },
     [dmPassword]
   );
+
+  const rootState = useStaticRef(() => createOvermind(config));
+
+  useEffect(() => {
+    rootState.actions.sessionStore.setAccessToken(dmPassword);
+  }, [dmPassword, rootState]);
 
   // load initial state
   useAsyncEffect(
@@ -299,60 +311,76 @@ export const DmArea = () => {
   }
 
   return (
-    <Modal.Provider>
-      {mode.title === "SHOW_MAP_LIBRARY" ? (
-        <SelectMapModal
-          canClose={loadedMap !== null}
-          maps={data.maps}
-          loadedMapId={loadedMapId}
-          liveMapId={liveMapId}
-          closeModal={() => {
-            setMode({ title: "EDIT_MAP" });
-          }}
-          setLoadedMapId={loadedMapId => {
-            setMode({ title: "EDIT_MAP" });
-            setLoadedMapId(loadedMapId);
-          }}
-          updateMap={updateMap}
-          deleteMap={deleteMap}
-          createMap={createMap}
-          enterGridMode={mapId =>
-            setMode({ title: "SET_MAP_GRID", data: { mapId } })
-          }
-          dmPassword={dmPassword}
-        />
-      ) : null}
-      {setMapGridTargetMap ? (
-        <SetMapGrid
-          map={setMapGridTargetMap}
-          onSuccess={(mapId, grid) => {
-            updateMap(mapId, {
-              grid
-            });
-            setMode({ title: "SHOW_MAP_LIBRARY" });
-          }}
-          onAbort={() => {
-            setMode({ title: "SHOW_MAP_LIBRARY" });
-          }}
-          dmPassword={dmPassword}
-        />
-      ) : loadedMap ? (
-        <DmMap
-          dmPassword={dmPassword}
-          setAppData={setData}
-          socket={socket}
-          map={loadedMap}
-          loadedMapId={loadedMap.id}
-          liveMapId={liveMapId}
-          sendLiveMap={sendLiveMap}
-          hideMap={hideMap}
-          showMapModal={showMapModal}
-          enterGridMode={enterGridMode}
-          updateMap={updateMap}
-          deleteToken={deleteToken}
-          updateToken={updateToken}
-        />
-      ) : null}
-    </Modal.Provider>
+    <OvermindProvider value={rootState}>
+      <Modal.Provider>
+        <FetchContext.Provider value={localFetch}>
+          {mode.title === "SHOW_MAP_LIBRARY" ? (
+            <SelectMapModal
+              canClose={loadedMap !== null}
+              maps={data.maps}
+              loadedMapId={loadedMapId}
+              liveMapId={liveMapId}
+              closeModal={() => {
+                setMode({ title: "EDIT_MAP" });
+              }}
+              setLoadedMapId={loadedMapId => {
+                setMode({ title: "EDIT_MAP" });
+                setLoadedMapId(loadedMapId);
+              }}
+              updateMap={updateMap}
+              deleteMap={deleteMap}
+              createMap={createMap}
+              enterGridMode={mapId =>
+                setMode({ title: "SET_MAP_GRID", data: { mapId } })
+              }
+              dmPassword={dmPassword}
+            />
+          ) : null}
+          {mode.title === "SHOW_NOTES" ? (
+            <NoteEditor
+              onClose={() => {
+                setMode({ title: "EDIT_MAP" });
+              }}
+              state={rootState.noteEditor}
+            />
+          ) : null}
+          {setMapGridTargetMap ? (
+            <SetMapGrid
+              map={setMapGridTargetMap}
+              onSuccess={(mapId, grid) => {
+                updateMap(mapId, {
+                  grid
+                });
+                setMode({ title: "SHOW_MAP_LIBRARY" });
+              }}
+              onAbort={() => {
+                setMode({ title: "SHOW_MAP_LIBRARY" });
+              }}
+              dmPassword={dmPassword}
+            />
+          ) : loadedMap ? (
+            <DmMap
+              dmPassword={dmPassword}
+              setAppData={setData}
+              socket={socket}
+              map={loadedMap}
+              loadedMapId={loadedMap.id}
+              liveMapId={liveMapId}
+              sendLiveMap={sendLiveMap}
+              hideMap={hideMap}
+              showMapModal={showMapModal}
+              openNotes={() => {
+                setMode({ title: "SHOW_NOTES" });
+              }}
+              enterGridMode={enterGridMode}
+              updateMap={updateMap}
+              deleteToken={deleteToken}
+              updateToken={updateToken}
+              tokenInfoAsidetokenInfoAsideState={rootState.tokenInfoAside}
+            />
+          ) : null}
+        </FetchContext.Provider>
+      </Modal.Provider>
+    </OvermindProvider>
   );
 };

@@ -1,4 +1,5 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import { useSpring, animated, to } from "react-spring";
 import { CirclePicker } from "react-color";
 import { TokenMarker } from "./token-marker";
 import { Input } from "../input";
@@ -6,19 +7,38 @@ import * as Button from "../button";
 import * as Icon from "../feather-icons";
 import { Modal } from "../dm-area/modal";
 import { ToggleSwitch } from "../toggle-switch";
-import { useSpring, animated, to } from "react-spring";
+import { useOvermind } from "../hooks/use-overmind";
+
+const ColorPicker = React.memo(({ color, onChange, styles }) => {
+  return (
+    <CirclePicker
+      color={color}
+      onChangeComplete={color => onChange(color.hex)}
+      styles={styles}
+    />
+  );
+});
 
 const TokenContextMenu = ({
   tokenRef,
   position,
-  token: { label, color, radius, isVisibleForPlayers },
+  token: {
+    id: tokenId,
+    label,
+    color,
+    radius,
+    isVisibleForPlayers,
+    isLocked,
+    reference
+  },
   updateToken,
   deleteToken,
   close
 }) => {
-  const containerRef = useRef(null);
-  const rangeSlideRef = useRef();
+  const { actions } = useOvermind();
 
+  const containerRef = useRef(null);
+  const rangeSlideRef = useRef(null);
   const initialCoords = useRef({
     x: window.innerWidth,
     y: window.innerHeight
@@ -62,6 +82,35 @@ const TokenContextMenu = ({
     rangeSlideRef.current.value = radius;
   }, [radius]);
 
+  const onChangeComplete = useCallback(
+    color => {
+      updateToken({ color: color });
+    },
+    [updateToken]
+  );
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    setTimeout(() => {
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      const { clientHeight, clientWidth } = document.documentElement;
+      let { x, y } = position;
+      if (x + width > clientWidth) {
+        x = x - width;
+      }
+      if (y + height > clientHeight) {
+        y = y - height;
+      }
+
+      if (y < 0) {
+        y = 5;
+      }
+      initialCoords.current.x = x;
+      initialCoords.current.y = y;
+      set({ to: { x, y }, immediate: true });
+    }, 0);
+  }, [set, position]);
   return (
     <animated.div
       ref={containerRef}
@@ -69,83 +118,187 @@ const TokenContextMenu = ({
         ev.stopPropagation();
       }}
       style={{
-        position: "absolute",
-        left: 0,
-        top: 0,
         backgroundColor: "white",
         padding: 10,
         borderRadius: 5,
         width: "260px",
         boxShadow: "0 0 15px rgba(0,0,0,0.1)",
-        transform: to([x, y], (x, y) => `translate(${x}px, ${y}px)`)
+        transform: to([x, y], (x, y) => `translate(${x}px, ${y}px)`),
+        top: 0,
+        left: 0,
+        position: "absolute"
       }}
     >
       <div style={{ display: "flex", width: "100%" }}>
         <div style={{ flexGrow: 1 }}>
-          <Input
-            placeholder="Label"
-            value={label}
-            onChange={ev => updateToken({ label: ev.target.value })}
-            style={{ marginBottom: 24 }}
-          />
+          <label>
+            <h6 style={{ marginBottom: 8, marginTop: 0 }}>Label</h6>
+            <Input
+              placeholder="Label"
+              value={label}
+              onChange={ev => updateToken({ label: ev.target.value })}
+              style={{ marginBottom: 24 }}
+              maxLength={5}
+            />
+          </label>
         </div>
-        <div style={{ paddingLeft: 8 }}>
+      </div>
+      <label>
+        <h6 style={{ marginBottom: 8, marginTop: 0 }}>Size</h6>
+        <input
+          ref={rangeSlideRef}
+          type="range"
+          min="1"
+          max="200"
+          step="1"
+          onChange={ev => {
+            const radiusValue = Math.min(200, Math.max(0, ev.target.value));
+            tokenRef.current.setRadius(radiusValue);
+          }}
+          onMouseUp={ev => {
+            updateToken({
+              radius: Math.min(200, Math.max(0, ev.target.value))
+            });
+          }}
+          style={{ width: "100%", display: "block", marginTop: 0 }}
+        />
+      </label>
+      <div>
+        <h6 style={{ marginBottom: 16, marginTop: 0 }}>Color</h6>
+        <ColorPicker color={color} onChange={onChangeComplete} />
+      </div>
+      <label>
+        <h6 style={{ marginBottom: 8 }}>Player Visibility</h6>
+        <div
+          style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+        >
+          <div style={{ flexGrow: 1 }}>
+            {isVisibleForPlayers ? "Visible to Players" : "Hidden to Players"}
+          </div>
+          <div style={{ marginLeft: 8 }}>
+            <ToggleSwitch
+              checked={isVisibleForPlayers}
+              onChange={ev => {
+                updateToken({ isVisibleForPlayers: ev.target.checked });
+              }}
+            />
+          </div>
+        </div>
+      </label>
+      <div>
+        <h6 style={{ marginBottom: 8 }}>Reference</h6>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center"
+          }}
+        >
+          <div>{reference ? "Note" : "None"}</div>
+          <div
+            style={{
+              flexGrow: 1,
+              paddingLeft: 8,
+              display: "flex",
+              justifyContent: "flex-end"
+            }}
+          >
+            {reference ? (
+              <>
+                <div>
+                  <Button.Tertiary
+                    small
+                    onClick={() => {
+                      updateToken({ reference: null });
+                    }}
+                  >
+                    <Icon.TrashIcon height={16} />
+                    <span>Remove</span>
+                  </Button.Tertiary>
+                </div>
+                <div style={{ paddingLeft: 8 }}>
+                  <Button.Tertiary
+                    small
+                    onClick={() => {
+                      actions.tokenInfoAside.toggleActiveToken({
+                        id: tokenId,
+                        reference
+                      });
+                      close();
+                    }}
+                  >
+                    <Icon.EditIcon height={16} />
+                    <span>Edit</span>
+                  </Button.Tertiary>
+                </div>
+              </>
+            ) : (
+              <div>
+                <Button.Tertiary
+                  small
+                  onClick={() => {
+                    actions.selectTokenMarkerReferenceModal.open({ tokenId });
+                    close();
+                  }}
+                >
+                  <Icon.Link height={16} />
+                  <span>Link</span>
+                </Button.Tertiary>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <hr style={{ borderWidth: 0.3, marginTop: 12, marginBottom: 12 }} />
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div>
           <Button.Tertiary
-            iconOnly
+            small
+            onClick={() => {
+              updateToken({ isLocked: !isLocked });
+            }}
+            title={isLocked ? "Unlock" : "Lock"}
+          >
+            {isLocked ? (
+              <Icon.LockIcon height={16} />
+            ) : (
+              <Icon.UnlockIcon height={16} />
+            )}
+            <span>{isLocked ? "Unlock" : "Lock"}</span>
+          </Button.Tertiary>
+        </div>
+        <div style={{ marginLeft: 8 }}>
+          <Button.Tertiary
+            small
             onClick={() => {
               deleteToken();
               close();
             }}
+            disabled={isLocked}
+            title="Delete Token"
           >
             <Icon.TrashIcon height={16} />
+            <span>Delete</span>
           </Button.Tertiary>
         </div>
       </div>
-      <label
-        style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
-      >
-        <div style={{ flexGrow: 1 }}>Visible to Players</div>
-        <div style={{ marginLeft: 8 }}>
-          <ToggleSwitch
-            checked={isVisibleForPlayers}
-            onChange={ev => {
-              updateToken({ isVisibleForPlayers: ev.target.checked });
-            }}
-          />
-        </div>
-      </label>
-
-      <h6 style={{ marginBottom: 16 }}>Radius</h6>
-      <input
-        ref={rangeSlideRef}
-        type="range"
-        min="1"
-        max="200"
-        step="1"
-        onChange={ev => {
-          const radiusValue = Math.min(200, Math.max(0, ev.target.value));
-          tokenRef.current.setRadius(radiusValue);
-        }}
-        onMouseUp={ev => {
-          updateToken({ radius: Math.min(200, Math.max(0, ev.target.value)) });
-        }}
-        style={{ width: "100%", display: "block", marginTop: 0 }}
-      />
-      <h6 style={{ marginBottom: 16 }}>Color</h6>
-      <CirclePicker
-        color={color}
-        onChangeComplete={color => {
-          updateToken({ color: color.hex });
-        }}
-      />
     </animated.div>
   );
 };
 
 export const DmTokenMarker = React.memo(
-  ({ getRelativePosition, updateToken, deleteToken, ratio, token }) => {
+  ({
+    getRelativePosition,
+    updateToken,
+    deleteToken,
+    ratio,
+    onClick,
+    token
+  }) => {
     const tokenRef = useRef();
     const [contextMenuCoordinates, setContextMenuCoordinates] = useState(null);
+
+    const isDraggingRef = useRef(false);
 
     return (
       <>
@@ -153,12 +306,19 @@ export const DmTokenMarker = React.memo(
           ref={tokenRef}
           ratio={ratio}
           {...token}
+          cursor={token.reference ? "pointer" : undefined}
           isAnimated={false}
+          onDoubleClick={ev => ev.stopPropagation()}
           onClick={ev => {
             ev.preventDefault();
             ev.stopPropagation();
+            if (isDraggingRef.current === false) {
+              onClick();
+            }
+            isDraggingRef.current = false;
           }}
           onTouchStart={ev => {
+            if (token.isLocked) return;
             ev.preventDefault();
             ev.stopPropagation();
 
@@ -173,6 +333,7 @@ export const DmTokenMarker = React.memo(
             let currentY = y;
 
             const onTouchMove = ev => {
+              isDraggingRef.current = true;
               ev.preventDefault();
               ev.stopPropagation();
 
@@ -199,6 +360,7 @@ export const DmTokenMarker = React.memo(
             window.addEventListener("touchend", onTouchEnd);
           }}
           onMouseDown={ev => {
+            if (token.isLocked) return;
             ev.preventDefault();
             ev.stopPropagation();
             if (ev.button !== 0) return;
@@ -212,6 +374,7 @@ export const DmTokenMarker = React.memo(
             const diffY = y - token.y;
 
             const onMouseMove = ev => {
+              isDraggingRef.current = true;
               ev.preventDefault();
               ev.stopPropagation();
 

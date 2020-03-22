@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo
+} from "react";
 
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
@@ -19,6 +25,8 @@ import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useOnKeyDown } from "../hooks/use-on-key-down";
+import { TokenInfoAside } from "./token-info-aside";
+import { useOvermind } from "../hooks/use-overmind";
 
 const ShapeButton = styled.button`
   border: none;
@@ -399,12 +407,14 @@ export const DmMap = ({
   sendLiveMap,
   hideMap,
   showMapModal,
+  openNotes,
   enterGridMode,
   updateMap,
   deleteToken,
   updateToken,
   dmPassword
 }) => {
+  const { actions } = useOvermind();
   const mapContainerRef = useRef(null);
   const mapCanvasRef = useRef(null);
   const mapImageCanvasRef = useRef(null);
@@ -441,7 +451,7 @@ export const DmMap = ({
   const [lineWidth, setLineWidth] = useLineWidthState(15);
 
   const tokenColor = DEFAULT_TOKEN_COLOR;
-  const tokens = map.tokens || [];
+  const tokens = useMemo(() => map.tokens || [], [map]);
 
   // marker related stuff
   const [mapCanvasDimensions, setMapCanvasDimensions] = useState({
@@ -934,6 +944,13 @@ export const DmMap = ({
     [mapCanvasDimensions]
   );
 
+  const onClickToken = useCallback(
+    token => {
+      actions.tokenInfoAside.toggleActiveToken(token);
+    },
+    [actions]
+  );
+
   return (
     <>
       <PanZoom
@@ -1124,6 +1141,7 @@ export const DmMap = ({
           >
             {gridRectangleElement}
             <DmTokenRenderer
+              onClickToken={onClickToken}
               tokens={tokens}
               getRelativePosition={getRelativePosition}
               updateToken={updateToken}
@@ -1209,6 +1227,16 @@ export const DmMap = ({
               >
                 <Icons.MapIcon />
                 <Icons.Label>Map Library</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
+            <Toolbar.Item isEnabled>
+              <Toolbar.Button
+                onClick={() => {
+                  openNotes();
+                }}
+              >
+                <Icons.BookOpen />
+                <Icons.Label>Notes</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item>
@@ -1430,6 +1458,7 @@ export const DmMap = ({
           </Toolbar.Group>
         </Toolbar>
       </div>
+      <TokenInfoAside />
     </>
   );
 };

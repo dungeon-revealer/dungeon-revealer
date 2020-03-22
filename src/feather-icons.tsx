@@ -10,7 +10,9 @@ export const Label = styled.div`
   color: ${p => p.color || "inherit"};
 `;
 
-export const DropletIcon = ({ fill = "currentColor", filled, ...props }) => (
+export const DropletIcon: React.FC<React.SVGProps<SVGSVGElement> & {
+  filled?: boolean;
+}> = ({ fill = "currentColor", filled, ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill={filled ? fill : "none"}
@@ -25,7 +27,10 @@ export const DropletIcon = ({ fill = "currentColor", filled, ...props }) => (
   </svg>
 );
 
-export const MoveIcon = ({ fill = "currentColor", ...props }) => (
+export const MoveIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -40,7 +45,10 @@ export const MoveIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const CropIcon = ({ fill = "currentColor", ...props }) => (
+export const CropIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -56,7 +64,10 @@ export const CropIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const PenIcon = ({ fill = "currentColor", ...props }) => (
+export const PenIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -73,7 +84,10 @@ export const PenIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const EyeIcon = ({ fill = "currentColor", ...props }) => (
+export const EyeIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -89,7 +103,10 @@ export const EyeIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const EyeOffIcon = ({ fill = "currentColor", ...props }) => (
+export const EyeOffIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -104,7 +121,10 @@ export const EyeOffIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const MapIcon = ({ fill = "currentColor", ...props }) => (
+export const MapIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -119,7 +139,10 @@ export const MapIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const SendIcon = ({ fill = "currentColor", ...props }) => (
+export const SendIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -134,7 +157,10 @@ export const SendIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const RadioIcon = ({ fill = "currentColor", ...props }) => (
+export const RadioIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -150,7 +176,10 @@ export const RadioIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const PauseIcon = ({ fill = "currentColor", ...props }) => (
+export const PauseIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -166,7 +195,10 @@ export const PauseIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const CrosshairIcon = ({ fill = "currentColor", ...props }) => (
+export const CrosshairIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -182,7 +214,10 @@ export const CrosshairIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const CircleIcon = ({ fill = "currentColor", ...props }) => (
+export const CircleIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -197,7 +232,10 @@ export const CircleIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const SquareIcon = ({ fill = "currentColor", ...props }) => (
+export const SquareIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -212,7 +250,10 @@ export const SquareIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const Compass = ({ fill = "currentColor", ...props }) => (
+export const Compass: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -228,7 +269,10 @@ export const Compass = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const ZoomOut = ({ fill = "currentColor", ...props }) => (
+export const ZoomOut: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -244,7 +288,10 @@ export const ZoomOut = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const ZoomIn = ({ fill = "currentColor", ...props }) => (
+export const ZoomIn: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -260,7 +307,10 @@ export const ZoomIn = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const EditIcon = ({ fill = "currentColor", ...props }) => (
+export const EditIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -276,7 +326,10 @@ export const EditIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const Inbox = ({ fill = "currentColor", ...props }) => (
+export const Inbox: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -292,7 +345,10 @@ export const Inbox = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const PlusIcon = ({ fill = "currentColor", ...props }) => (
+export const PlusIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -307,7 +363,10 @@ export const PlusIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const CheckIcon = ({ fill = "currentColor", ...props }) => (
+export const CheckIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -322,7 +381,10 @@ export const CheckIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const TrashIcon = ({ fill = "currentColor", ...props }) => (
+export const TrashIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -337,7 +399,10 @@ export const TrashIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const GridIcon = ({ fill = "currentColor", ...props }) => (
+export const GridIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -352,7 +417,10 @@ export const GridIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const MinusIcon = ({ fill = "currentColor", ...props }) => (
+export const MinusIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -367,7 +435,10 @@ export const MinusIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const ChevronDownIcon = ({ fill = "currentColor", ...props }) => (
+export const ChevronDownIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -382,7 +453,10 @@ export const ChevronDownIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const ChevronUpIcon = ({ fill = "currentColor", ...props }) => (
+export const ChevronUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -397,7 +471,10 @@ export const ChevronUpIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const ChevronRightIcon = ({ fill = "currentColor", ...props }) => (
+export const ChevronRightIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -412,7 +489,10 @@ export const ChevronRightIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const ChevronLeftIcon = ({ fill = "currentColor", ...props }) => (
+export const ChevronLeftIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -427,7 +507,10 @@ export const ChevronLeftIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const XIcon = ({ fill = "currentColor", ...props }) => (
+export const XIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -442,7 +525,10 @@ export const XIcon = ({ fill = "currentColor", ...props }) => (
   </svg>
 );
 
-export const TargetIcon = ({ fill = "currentColor", ...props }) => (
+export const TargetIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -456,5 +542,99 @@ export const TargetIcon = ({ fill = "currentColor", ...props }) => (
     <circle cx={12} cy={12} r={10} />
     <circle cx={12} cy={12} r={6} />
     <circle cx={12} cy={12} r={2} />
+  </svg>
+);
+
+export const LockIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <rect x={3} y={11} width={18} height={11} rx={2} ry={2} />
+    <path d="M7 11V7a5 5 0 0110 0v4" />
+  </svg>
+);
+
+export const UnlockIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <rect x={3} y={11} width={18} height={11} rx={2} ry={2} />
+    <path d="M7 11V7a5 5 0 019.9-1" />
+  </svg>
+);
+
+export const BookOpen: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+  </svg>
+);
+
+export const SaveIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+    <path d="M17 21v-8H7v8M7 3v5h8" />
+  </svg>
+);
+
+export const Link: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M15 7h3a5 5 0 015 5 5 5 0 01-5 5h-3m-6 0H6a5 5 0 01-5-5 5 5 0 015-5h3M8 12h8" />
   </svg>
 );

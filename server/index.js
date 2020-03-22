@@ -13,6 +13,7 @@ const server = (app.http = require("http").createServer(app));
 const io = require("socket.io")(server);
 const busboy = require("connect-busboy");
 const { Maps } = require("./maps");
+const { Notes } = require("./notes");
 const { Settings } = require("./settings");
 const { getDataDirectory } = require("./util");
 
@@ -21,6 +22,7 @@ const PUBLIC_PATH = path.resolve(__dirname, "..", "build");
 fs.mkdirpSync(getDataDirectory());
 
 const maps = new Maps();
+const notes = new Notes();
 const settings = new Settings();
 
 app.use(busboy());
@@ -426,12 +428,17 @@ app.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
   }
 
   const result = maps.updateToken(map.id, req.params.tokenId, {
+    type: req.body.type,
+    label: req.body.label,
     x: req.body.x,
     y: req.body.y,
     color: req.body.color,
-    label: req.body.label,
     radius: req.body.radius,
-    isVisibleForPlayers: req.body.isVisibleForPlayers
+    isVisibleForPlayers: req.body.isVisibleForPlayers,
+    isLocked: req.body.isLocked,
+    title: req.body.title,
+    description: req.body.description,
+    reference: req.body.reference
   });
 
   res.json({
@@ -444,6 +451,131 @@ app.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
   io.emit(`token:mapId:${map.id}`, {
     type: "update",
     data: { token: result.token }
+  });
+});
+
+app.get("/notes", requiresDmRole, ({ req, res }) => {
+  const allNotes = notes.getAll();
+
+  return res.json({
+    success: true,
+    data: {
+      notes: allNotes
+    }
+  });
+});
+
+app.post("/notes", requiresDmRole, (req, res) => {
+  const title = req.body.title || "New note";
+  const note = notes.createNote({ title, content: "" });
+
+  return res.json({
+    success: true,
+    data: {
+      note
+    }
+  });
+});
+
+app.patch("/notes/:id", requiresDmRole, (req, res) => {
+  let note = notes.getById(req.params.id);
+  if (!note) {
+    return res.status(404).json({
+      success: false,
+      data: null,
+      error: {
+        message: `Note with id '${req.params.id}' does not exist.`,
+        code: "ERR_NOTE_DOES_NOT_EXIST"
+      }
+    });
+  }
+
+  const title = req.body.title;
+  const content = req.body.content;
+  const changes = {};
+
+  if (typeof title === "string") {
+    changes.title = title;
+  }
+  if (typeof content === "string") {
+    changes.content = content;
+  }
+
+  note = notes.updateNote(note.id, changes);
+
+  res.json({
+    success: true,
+    data: {
+      note
+    }
+  });
+});
+
+app.delete("/notes/:id", requiresDmRole, (req, res) => {
+  const note = notes.getById(req.params.id);
+  if (!note) {
+    return res.status(404).json({
+      success: false,
+      data: null,
+      error: {
+        message: `Note with id '${req.params.id}' does not exist.`,
+        code: "ERR_NOTE_DOES_NOT_EXIST"
+      }
+    });
+  }
+
+  notes.deleteNote(note.id);
+
+  // update tokens that link a certain note
+  maps
+    .getAll()
+    .map(map => ({
+      mapId: map.id,
+      affectedTokens: map.tokens.filter(
+        token =>
+          token.reference &&
+          token.reference.type === "note" &&
+          token.reference.id === note.id
+      )
+    }))
+    .forEach(({ mapId, affectedTokens }) => {
+      affectedTokens.forEach(({ id }) => {
+        const result = maps.updateToken(mapId, id, { reference: null });
+
+        io.emit(`token:mapId:${mapId}`, {
+          type: "update",
+          data: { token: result.token }
+        });
+      });
+    });
+
+  res.json({
+    success: true,
+    data: {
+      deletedNoteId: note.id
+    }
+  });
+});
+
+app.get("/notes/:id", requiresDmRole, (req, res) => {
+  const note = notes.getById(req.params.id);
+
+  if (!note) {
+    return res.status(404).json({
+      success: false,
+      data: null,
+      error: {
+        message: `Note with id '${req.params.id}' does not exist.`,
+        code: "ERR_NOTE_DOES_NOT_EXIST"
+      }
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      note
+    }
   });
 });
 

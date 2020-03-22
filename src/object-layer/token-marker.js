@@ -18,6 +18,7 @@ export const TokenMarker = React.memo(
         onContextMenu,
         ratio = 1,
         isAnimated = true,
+        isLocked,
         ...props
       },
       ref
