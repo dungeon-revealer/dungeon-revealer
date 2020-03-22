@@ -15,7 +15,7 @@
   "dependencies": {
     "@emotion/core": "10.0.27",
     "@emotion/styled": "10.0.27",
-    "@n1ru4l/use-async-effect": "1.1.9",
+    "@n1ru4l/use-async-effect": "1.2.0",
     "body-parser": "1.19.0",
     "body-scroll-lock": "2.6.4",
     "connect-busboy": "0.0.2",
