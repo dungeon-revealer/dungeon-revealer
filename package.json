@@ -59,7 +59,7 @@
     "eslint": "6.8.0",
     "eslint-config-prettier": "6.5.0",
     "eslint-plugin-react-app": "6.0.3",
-    "husky": "4.2.1",
+    "husky": "4.2.3",
     "lint-staged": "9.5.0",
     "overmind": "23.0.0-1581786766054",
     "overmind-react": "24.0.0-1581786766054",
