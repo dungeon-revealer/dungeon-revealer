@@ -64,7 +64,7 @@
     "overmind": "23.0.0-1581786766054",
     "overmind-react": "24.0.0-1581786766054",
     "pkg": "4.3.8",
-    "prettier": "1.19.1",
+    "prettier": "2.0.2",
     "react-scripts": "3.4.0",
     "ts-jest": "25.2.1",
     "typescript": "3.8.3"
