@@ -38,7 +38,7 @@
     "react-spring": "9.0.0-canary.808.8.4a87fcb",
     "referentiel": "0.0.8",
     "serve-favicon": "2.5.0",
-    "showdown": "1.9.0",
+    "showdown": "1.9.1",
     "socket.io": "2.2.0",
     "socket.io-client": "2.2.0",
     "use-persisted-state": "0.3.0",
