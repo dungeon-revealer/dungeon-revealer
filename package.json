@@ -20,7 +20,7 @@
     "body-scroll-lock": "3.0.1",
     "connect-busboy": "0.0.2",
     "debug": "4.1.1",
-    "downshift": "3.3.4",
+    "downshift": "3.4.8",
     "express": "4.17.1",
     "focus-trap-react": "6.0.0",
     "fs-extra": "9.0.0",
