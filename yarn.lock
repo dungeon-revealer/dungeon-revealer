@@ -10732,10 +10732,10 @@ react-is@^16.8.1, react-is@^16.8.4, react-is@^16.9.0:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.10.2.tgz#984120fd4d16800e9a738208ab1fba422d23b5ab"
   integrity sha512-INBT1QEgtcCCgvccr5/86CfD71fw9EPmDxgiJX4I2Ddr6ZsV6iFXsuby+qWJPtmNuMY0zByTsG4468P7nHuNWA==
 
-react-mde@8.0.2:
-  version "8.0.2"
-  resolved "https://registry.yarnpkg.com/react-mde/-/react-mde-8.0.2.tgz#900dca65f0dc0d45e75dce8a08ac6f648a09dc31"
-  integrity sha512-Uu1nq3L7kS//Ylp33g97WEeYMCT9CmR5OMIrd0HeeJU06geT2dWW/LN+EfEI0rf2B3Swj1iixZqzqMBNxKuqdw==
+react-mde@8.2.0:
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/react-mde/-/react-mde-8.2.0.tgz#4e5bc2f8365efd471b5bf69f544bd62860902cc1"
+  integrity sha512-itcbS94iN+4R7uxHTyfB4sSXivDxKo+WocqoJ5RZ5qqLfMI93Dj9XzmL3yh4nIcUyH2lWhfQ7c4HpKoT9WDFHw==
 
 react-scripts@3.4.1:
   version "3.4.1"
