@@ -8,8 +8,9 @@ const os = require("os");
 const ifaces = os.networkInterfaces();
 
 app.set("port", process.env.PORT || 3000);
+app.set("host", process.env.HOST || "0.0.0.0");
 
-const server = http.listen(app.get("port"), () => {
+const server = http.listen(app.get("port"), app.get("host"), () => {
   const port = server.address().port;
   const baseAddress = `http://localhost:${port}`;
 
