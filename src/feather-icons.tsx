@@ -7,12 +7,14 @@ import styled from "@emotion/styled/macro";
 export const Label = styled.div`
   font-size: 10px;
   font-weight: bold;
-  color: ${p => p.color || "inherit"};
+  color: ${(p) => p.color || "inherit"};
 `;
 
-export const DropletIcon: React.FC<React.SVGProps<SVGSVGElement> & {
-  filled?: boolean;
-}> = ({ fill = "currentColor", filled, ...props }) => (
+export const DropletIcon: React.FC<
+  React.SVGProps<SVGSVGElement> & {
+    filled?: boolean;
+  }
+> = ({ fill = "currentColor", filled, ...props }) => (
   <svg
     viewBox="0 0 24 24"
     fill={filled ? fill : "none"}

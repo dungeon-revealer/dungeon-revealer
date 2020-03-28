@@ -3,7 +3,7 @@ import { mutate, map, Operator, fork } from "overmind";
 import {
   createNoteTreeNode,
   RawNoteType,
-  NoteRecord
+  NoteRecord,
 } from "./note-store-state";
 import { isSome } from "../util";
 
@@ -23,7 +23,7 @@ export const selectCacheRecord = () =>
       return {
         mode: "NOT_FOUND" as "NOT_FOUND",
         id: noteId,
-        node: null
+        node: null,
       };
     }
   );
@@ -34,7 +34,7 @@ export const leaveLoadingAllState = () =>
       state.noteStore.notes[note.id] = {
         mode: "LOADED",
         id: note.id,
-        node: note
+        node: note,
       };
     }
     state.noteStore.isLoadingAll = false;
@@ -51,8 +51,8 @@ export const loadNoteById = () =>
       {
         effects,
         state: {
-          sessionStore: { accessToken }
-        }
+          sessionStore: { accessToken },
+        },
       },
       record: NoteRecord
     ) => effects.noteStore.loadById(record.id, { accessToken })
@@ -63,7 +63,7 @@ export const enterNoteLoadingState = () =>
     state.noteStore.notes[record.id] = {
       mode: "LOADING",
       id: record.id,
-      node: null
+      node: null,
     };
   });
 
@@ -76,7 +76,7 @@ export const enterNoteCacheAndLoadingState = () =>
       state.noteStore.notes[record.id] = {
         mode: "CACHE_AND_LOADING",
         id: record.id,
-        node: record.node
+        node: record.node,
       };
     }
   );
@@ -86,7 +86,7 @@ export const enterNoteLoadedState = () =>
     state.noteStore.notes[note.id] = {
       mode: "LOADED",
       id: note.id,
-      node: createNoteTreeNode(note)
+      node: createNoteTreeNode(note),
     };
   });
 
@@ -95,6 +95,6 @@ export const enterNoteNotFoundState = () =>
     state.noteStore.notes[noteId] = {
       mode: "NOT_FOUND",
       id: noteId,
-      node: null
+      node: null,
     };
   });

@@ -9,7 +9,7 @@ const innerStyles = {
   willChange: "transform",
   backfaceVisibility: "hidden",
   WebkitBackfaceVisibility: "hidden",
-  display: "inline-block"
+  display: "inline-block",
 };
 
 const ZOOM_SPEED_MULTIPLIER = 0.065;
@@ -55,7 +55,7 @@ export const PanZoom = React.forwardRef(
       (scale, [x, y]) => `translate(${x}px, ${y}px) scale(${scale})`
     );
 
-    const getOffset = React.useCallback(ev => {
+    const getOffset = React.useCallback((ev) => {
       const containerRect = containerRef.current.getBoundingClientRect();
       const offsetX = ev.clientX - containerRect.left;
       const offsetY = ev.clientY - containerRect.top;
@@ -95,14 +95,14 @@ export const PanZoom = React.forwardRef(
         zoomTo({
           x: containerRect.width / 2,
           y: containerRect.height / 2,
-          ratio
+          ratio,
         });
       },
       [zoomSpeed, zoomTo]
     );
 
     React.useEffect(() => {
-      const onWheel = ev => {
+      const onWheel = (ev) => {
         const ratio = getScaleMultiplier(ev.deltaY, zoomSpeed);
         const { x, y } = getOffset(ev);
         zoomTo({ x, y, ratio });
@@ -112,22 +112,22 @@ export const PanZoom = React.forwardRef(
 
       const node = containerRef.current;
       node.addEventListener("wheel", onWheel, {
-        passive: false
+        passive: false,
       });
 
       return () => {
         node.removeEventListener("wheel", onWheel, {
-          passive: false
+          passive: false,
         });
       };
     }, [scale, zoomSpeed, zoomTo, getOffset]);
 
     React.useEffect(() => {
       ref.current = {
-        zoomIn: speed => {
+        zoomIn: (speed) => {
           centeredZoom({ delta: -1, speed });
         },
-        zoomOut: speed => {
+        zoomOut: (speed) => {
           centeredZoom({ delta: 1, speed });
         },
         autoCenter: (zoomLevel = 1) => {
@@ -144,7 +144,7 @@ export const PanZoom = React.forwardRef(
           translate.set([x, y]);
           scale.set(newScale);
         },
-        getDragContainer: () => dragContainerRef.current
+        getDragContainer: () => dragContainerRef.current,
       };
     });
 
@@ -154,18 +154,18 @@ export const PanZoom = React.forwardRef(
         style={{
           ...style,
           transformStyle: "preserve-3d",
-          WebkitTransformStyle: "preserve-3d"
+          WebkitTransformStyle: "preserve-3d",
         }}
-        onDoubleClick={ev => {
+        onDoubleClick={(ev) => {
           zoomTo({ x: ev.clientX, y: ev.clientY, ratio: 2 });
         }}
-        onMouseDown={ev => {
+        onMouseDown={(ev) => {
           if (props.onMouseDown) props.onMouseDown(ev);
           const bounds = dragContainerRef.current.getBoundingClientRect();
           const offsetX = ev.clientX - bounds.x;
           const offsetY = ev.clientY - bounds.y;
 
-          const onMouseMove = ev => {
+          const onMouseMove = (ev) => {
             translate.set([ev.clientX - offsetX, ev.clientY - offsetY]);
           };
 
@@ -176,19 +176,19 @@ export const PanZoom = React.forwardRef(
           window.addEventListener("mousemove", onMouseMove);
           window.addEventListener("mouseup", onMouseUp);
         }}
-        onTouchStart={ev => {
+        onTouchStart={(ev) => {
           if (props.onTouchStart) props.onTouchStart(ev);
           const bounds = dragContainerRef.current.getBoundingClientRect();
           const offsetX = ev.touches[0].clientX - bounds.x;
           const offsetY = ev.touches[0].clientY - bounds.y;
 
-          let onTouchMove = ev => {
+          let onTouchMove = (ev) => {
             if (ev.touches.length === 2) {
               return;
             } else {
               translate.set([
                 ev.touches[0].clientX - offsetX,
-                ev.touches[0].clientY - offsetY
+                ev.touches[0].clientY - offsetY,
               ]);
             }
           };
@@ -202,7 +202,7 @@ export const PanZoom = React.forwardRef(
               ev.touches[0].clientY - ev.touches[1].clientY
             );
 
-            onTouchMove = ev => {
+            onTouchMove = (ev) => {
               if (ev.touches.length === 2) {
                 const newDiff = Math.hypot(
                   ev.touches[0].clientX - ev.touches[1].clientX,
@@ -212,7 +212,7 @@ export const PanZoom = React.forwardRef(
                 zoomTo({
                   x: xCenter,
                   y: yCenter,
-                  ratio: newDiff > previousDiff ? 1.03 : 0.97
+                  ratio: newDiff > previousDiff ? 1.03 : 0.97,
                 });
                 previousDiff = newDiff;
               }
@@ -233,7 +233,7 @@ export const PanZoom = React.forwardRef(
           style={{
             ...innerStyles,
             transform,
-            WebkitTransform: transform
+            WebkitTransform: transform,
           }}
         >
           {children}

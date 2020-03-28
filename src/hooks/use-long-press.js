@@ -10,7 +10,7 @@ export const useLongPress = (callback = () => {}, ms = 300) => {
   const callbackRef = useRef(callback);
   const timeoutRef = useRef(null);
 
-  const onMouseDown = useCallback(ev => {
+  const onMouseDown = useCallback((ev) => {
     if (ev.touches && ev.touches.length === 2) return;
     ev.persist();
     timeoutRef.current = setTimeout(() => {
@@ -53,6 +53,6 @@ export const useLongPress = (callback = () => {}, ms = 300) => {
 
   return {
     onMouseDown,
-    onTouchStart: onMouseDown
+    onTouchStart: onMouseDown,
   };
 };

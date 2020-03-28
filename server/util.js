@@ -16,5 +16,5 @@ const getDataDirectory = () => {
 };
 
 module.exports = {
-  getDataDirectory
+  getDataDirectory,
 };

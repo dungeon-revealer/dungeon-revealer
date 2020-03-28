@@ -4,7 +4,7 @@ import { Maybe } from "../util";
 const buildHeaders = ({ accessToken }: { accessToken: Maybe<string> }) => {
   return {
     "Content-Type": "application/json",
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
   };
 };
 
@@ -21,22 +21,22 @@ const createNote = ({
   title,
   content,
   createdAt,
-  updatedAt
+  updatedAt,
 }: HTTPNoteType): RawNoteType => ({
   id,
   title,
   content,
   createdAt: new Date(createdAt).getTime(),
-  updatedAt: new Date(updatedAt).getTime()
+  updatedAt: new Date(updatedAt).getTime(),
 });
 
 export const loadAll = async ({
-  accessToken
+  accessToken,
 }: {
   accessToken: string | null;
 }): Promise<RawNoteType[]> => {
   const response = await fetch(`/notes`, {
-    headers: buildHeaders({ accessToken })
+    headers: buildHeaders({ accessToken }),
   });
   const body = await response.json();
   return body.data.notes.map(createNote);
@@ -47,14 +47,14 @@ export const loadById = async (
   { accessToken }: { accessToken: string | null }
 ) => {
   const response = await fetch(`/notes/${noteId}`, {
-    headers: buildHeaders({ accessToken })
+    headers: buildHeaders({ accessToken }),
   });
   const body = await response.json();
   if (body.error)
     return { mode: "NOT_FOUND" as "NOT_FOUND", error: body.error, noteId };
   return {
     mode: "FOUND" as "FOUND",
-    note: createNote(body.data.note)
+    note: createNote(body.data.note),
   };
 };
 
@@ -65,7 +65,7 @@ export const create = async (
   const response = await fetch("/notes", {
     method: "POST",
     body: JSON.stringify({ title, content }),
-    headers: buildHeaders({ accessToken })
+    headers: buildHeaders({ accessToken }),
   });
   const body = await response.json();
   return createNote(body.data.note);
@@ -77,7 +77,7 @@ export const deleteById = async (
 ) => {
   await fetch(`/notes/${noteId}`, {
     method: "DELETE",
-    headers: buildHeaders({ accessToken })
+    headers: buildHeaders({ accessToken }),
   });
 };
 
@@ -89,7 +89,7 @@ export const update = async (
   const response = await fetch(`/notes/${noteId}`, {
     method: "PATCH",
     headers: buildHeaders({ accessToken }),
-    body: JSON.stringify({ title, content })
+    body: JSON.stringify({ title, content }),
   });
   const body = await response.json();
   return createNote(body.data.note);

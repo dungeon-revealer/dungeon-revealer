@@ -6,10 +6,10 @@ import * as o from "./token-info-aside-operators";
 
 export const toggleActiveToken = o.whenIsCurrentToken({
   true: o.enterNoActiveTokenState(),
-  false: matchSome(input => input.reference, {
+  false: matchSome((input) => input.reference, {
     none: noop(),
-    some: pipe(o.loadReference(), o.enterActiveTokenWithReferenceState())
-  })
+    some: pipe(o.loadReference(), o.enterActiveTokenWithReferenceState()),
+  }),
 });
 
 export const close: AsyncAction = async ({ state }) => {
@@ -26,7 +26,7 @@ export const updateActiveNoteTitle: Action<string> = pipe(
   o.selectActiveTokenTitleMode(),
   matchMode({
     noReference: noop(),
-    hasReference: o.updateActiveTokenTitle()
+    hasReference: o.updateActiveTokenTitle(),
   })
 );
 
@@ -34,6 +34,6 @@ export const updateActiveNoteContent: Action<string> = pipe(
   o.selectActiveTokenContentMode(),
   matchMode({
     noReference: noop(),
-    hasReference: o.updateActiveNoteContent()
+    hasReference: o.updateActiveNoteContent(),
   })
 );

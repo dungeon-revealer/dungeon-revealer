@@ -28,7 +28,7 @@ const Link = styled.a`
 export const AuthenticationScreen = ({
   onAuthenticate,
   requiredRole = "DM",
-  fetch
+  fetch,
 }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -36,14 +36,14 @@ export const AuthenticationScreen = ({
     <BackgroundImageContainer>
       <BrandLogoText />
       <form
-        onSubmit={async ev => {
+        onSubmit={async (ev) => {
           ev.preventDefault();
           setError(null);
           const result = await fetch("/auth", {
             headers: {
-              Authorization: `Bearer ${password}`
-            }
-          }).then(res => res.json());
+              Authorization: `Bearer ${password}`,
+            },
+          }).then((res) => res.json());
           if (result.data.role === requiredRole || result.data.role === "DM") {
             onAuthenticate(password);
           } else {
@@ -54,7 +54,7 @@ export const AuthenticationScreen = ({
         <Input
           placeholder={`${requiredRole === "DM" ? "DM" : "Player"} Password`}
           value={password}
-          onChange={ev => setPassword(ev.target.value)}
+          onChange={(ev) => setPassword(ev.target.value)}
         />
         <ButtonContainer>
           <ButtonColumn>

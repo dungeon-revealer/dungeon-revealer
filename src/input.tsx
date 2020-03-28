@@ -34,7 +34,7 @@ export const Input: React.FC<React.ComponentProps<typeof InputInner>> = ({
 }) => {
   return (
     <InputInner
-      onKeyDown={ev => {
+      onKeyDown={(ev) => {
         if (ev.key !== "Escape") ev.stopPropagation();
         if (onKeyDown) onKeyDown(ev);
       }}

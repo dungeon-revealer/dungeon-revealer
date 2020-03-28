@@ -6,7 +6,7 @@ import {
   Overmind,
   IConfig,
   IOperator,
-  mutate
+  mutate,
 } from "overmind";
 
 type TestType = {
@@ -17,7 +17,7 @@ it("can use switchMap", () => {
   expect.assertions(2);
 
   const getUser = (id: number): Promise<TestType> => {
-    return new Promise(resolve => setTimeout(() => resolve({ id }), id));
+    return new Promise((resolve) => setTimeout(() => resolve({ id }), id));
   };
 
   const loadUser: Operator<number> = pipe(
@@ -28,14 +28,14 @@ it("can use switchMap", () => {
   );
 
   const state = {
-    user: null as TestType | null
+    user: null as TestType | null,
   };
 
   const config = {
     state,
     actions: {
-      loadUser
-    }
+      loadUser,
+    },
   };
   const overmind = new Overmind(config);
 

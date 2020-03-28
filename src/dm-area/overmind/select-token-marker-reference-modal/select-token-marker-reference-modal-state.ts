@@ -49,9 +49,9 @@ export const createActiveState = ({ tokenId }: { tokenId: string }): State => ({
   notes: (state, root) => {
     return Object.values(root.noteStore.notes)
       .filter(isLoaded)
-      .map(note => note.node)
+      .map((note) => note.node)
       .sort((a, b) => b.updatedAt - a.updatedAt);
-  }
+  },
 });
 
 export const state = createNoneState();

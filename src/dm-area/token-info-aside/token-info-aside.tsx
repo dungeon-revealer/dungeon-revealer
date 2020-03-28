@@ -78,14 +78,14 @@ const NoteReference: React.FC<{
   exitEditMode,
   note,
   updateNoteTitle,
-  updateNoteContent
+  updateNoteContent,
 }) => {
   useOvermind();
 
   return (
     <Container>
       <Window
-        onKeyDown={ev => {
+        onKeyDown={(ev) => {
           ev.stopPropagation();
           if (ev.key !== "Escape") return;
           if (!isEditMode) close();
@@ -95,14 +95,14 @@ const NoteReference: React.FC<{
           style={{
             display: "flex",
             marginBottom: 16,
-            width: "100%"
+            width: "100%",
           }}
         >
           {isEditMode ? (
             <>
               <Input
                 value={note.title}
-                onChange={ev => updateNoteTitle(ev.target.value)}
+                onChange={(ev) => updateNoteTitle(ev.target.value)}
                 placeholder="Title"
               />
               <div style={{ paddingLeft: 8 }}>
@@ -123,7 +123,7 @@ const NoteReference: React.FC<{
                   flexGrow: 1,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
-                  textOverflow: "ellipsis"
+                  textOverflow: "ellipsis",
                 }}
               >
                 {note.title}
@@ -157,7 +157,7 @@ const NoteReference: React.FC<{
           <div style={{ overflowY: "scroll", overflowX: "hidden" }}>
             <HtmlContainer
               dangerouslySetInnerHTML={{
-                __html: new HtmlConverter().makeHtml(note.content)
+                __html: new HtmlConverter().makeHtml(note.content),
               }}
             />
           </div>

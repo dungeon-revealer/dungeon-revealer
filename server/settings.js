@@ -7,7 +7,7 @@ const { getDataDirectory } = require("./util");
 const settingsPath = path.join(getDataDirectory(), "settings.json");
 
 const defaultSettings = {
-  currentMapId: null
+  currentMapId: null,
 };
 
 class Settings {

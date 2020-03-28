@@ -32,7 +32,7 @@ export const updateActiveNoteTitle: AsyncAction<string> = async (
   if (!state.noteEditor.activeNoteId) return;
   await actions.noteStore.updateNote({
     noteId: state.noteEditor.activeNoteId,
-    title
+    title,
   });
 };
 
@@ -43,7 +43,7 @@ export const updateActiveNoteContent: AsyncAction<string> = async (
   if (!state.noteEditor.activeNoteId) return;
   await actions.noteStore.updateNote({
     noteId: state.noteEditor.activeNoteId,
-    content
+    content,
   });
 };
 

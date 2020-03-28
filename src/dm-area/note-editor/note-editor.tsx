@@ -56,9 +56,9 @@ const MARKDOWN_EDITOR_COMMANDS = [
       ReactMdeCommands.strikeThroughCommand,
       ReactMdeCommands.orderedListCommand,
       ReactMdeCommands.unorderedListCommand,
-      ReactMdeCommands.quoteCommand
-    ]
-  }
+      ReactMdeCommands.quoteCommand,
+    ],
+  },
 ];
 
 export const MarkdownEditor: React.FC<{
@@ -114,7 +114,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     <>
       <Modal onClickOutside={onClose} onPressEscape={onClose}>
         <Modal.Dialog
-          onKeyDown={ev => {
+          onKeyDown={(ev) => {
             ev.stopPropagation();
             if (ev.key !== "Escape") return;
           }}
@@ -159,7 +159,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <>
                 <Modal.Aside>
                   <ScrollableList.List style={{ marginTop: 0 }}>
-                    {state.noteEditor.notes.map(note => (
+                    {state.noteEditor.notes.map((note) => (
                       <ScrollableList.ListItem key={note.id}>
                         <ScrollableList.ListItemButton
                           isActive={note === state.noteEditor.activeNote}
@@ -244,7 +244,7 @@ const ContentRendered: React.FC<{
           paddingLeft: 16,
           paddingRight: 16,
           paddingTop: 8,
-          paddingBottom: 16
+          paddingBottom: 16,
         }}
       >
         {state.isEditMode ? (
@@ -253,7 +253,7 @@ const ContentRendered: React.FC<{
               autoFocus
               placeholder="Note title"
               value={state.activeNote.title}
-              onChange={ev => actions.updateActiveNoteTitle(ev.target.value)}
+              onChange={(ev) => actions.updateActiveNoteTitle(ev.target.value)}
             />
             <Button.Tertiary
               iconOnly
@@ -294,12 +294,12 @@ const ContentRendered: React.FC<{
             paddingLeft: 16,
             paddingRight: 16,
             flexGrow: 1,
-            overflow: "scroll"
+            overflow: "scroll",
           }}
         >
           <HtmlContainer
             dangerouslySetInnerHTML={{
-              __html: new HtmlConverter().makeHtml(state.activeNote.content)
+              __html: new HtmlConverter().makeHtml(state.activeNote.content),
             }}
           />
         </div>

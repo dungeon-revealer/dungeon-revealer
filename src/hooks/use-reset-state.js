@@ -25,7 +25,7 @@ export const useResetState = (
         typeof initialValueOrCreateValue === "function"
           ? initialValueOrCreateValue()
           : initialValueOrCreateValue,
-      deps: dependencyList
+      deps: dependencyList,
     };
   }
 
@@ -41,7 +41,7 @@ export const useResetState = (
 
   // setState re-implementation that changes the ref and forces a rerender
   const setState = useCallback(
-    newState => {
+    (newState) => {
       const oldState = stateRef.current.state;
       if (typeof newState === "function") {
         stateRef.current.state = newState(stateRef.current.state);
@@ -50,7 +50,7 @@ export const useResetState = (
       }
       // do not trigger render in case the state has not changed
       if (oldState === stateRef.current.state) return;
-      triggerRerender(i => i + 1);
+      triggerRerender((i) => i + 1);
     },
     [triggerRerender]
   );

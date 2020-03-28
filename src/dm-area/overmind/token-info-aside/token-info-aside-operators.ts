@@ -44,7 +44,7 @@ export const enterActiveTokenWithReferenceState: () => Operator<{
       referenceId,
       reference: (state, root) => {
         return root.noteStore.notes[state.referenceId];
-      }
+      },
     } as ActiveTokenHasReferenceState);
   });
 
@@ -73,7 +73,7 @@ export const loadNoteById: () => Operator<
     return {
       id,
       referenceId,
-      mode: state.noteStore.notes[referenceId] ? "found" : "notFound"
+      mode: state.noteStore.notes[referenceId] ? "found" : "notFound",
     };
   });
 
@@ -87,7 +87,7 @@ export const selectActiveTokenContentMode = () =>
     return {
       mode: "hasReference" as "hasReference",
       newContent,
-      referenceId: state.tokenInfoAside.activeToken.reference.id
+      referenceId: state.tokenInfoAside.activeToken.reference.id,
     };
   });
 
@@ -99,7 +99,7 @@ export const updateActiveNoteContent = () =>
     ) => {
       actions.noteStore.updateNote({
         noteId: referenceId,
-        content: newContent
+        content: newContent,
       });
     }
   );
@@ -114,7 +114,7 @@ export const selectActiveTokenTitleMode = () =>
     return {
       mode: "hasReference" as "hasReference",
       newTitle,
-      referenceId: state.tokenInfoAside.activeToken.reference.id
+      referenceId: state.tokenInfoAside.activeToken.reference.id,
     };
   });
 
@@ -126,7 +126,7 @@ export const updateActiveTokenTitle = () =>
     ) => {
       actions.noteStore.updateNote({
         noteId: referenceId,
-        title: newTitle
+        title: newTitle,
       });
     }
   );

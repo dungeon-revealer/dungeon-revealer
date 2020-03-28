@@ -31,21 +31,21 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
       method: "POST",
       body: JSON.stringify({}),
       headers: {
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     });
     const body = await response.json();
 
     const reference = {
       type: "note" as "note",
-      id: body.data.note.id as string
+      id: body.data.note.id as string,
     };
 
     await updateToken({ id: tokenId, reference });
 
     await actions.tokenInfoAside.toggleActiveToken({
       id: tokenId,
-      reference
+      reference,
     });
     actions.tokenInfoAside.setEditMode(true);
     actions.selectTokenMarkerReferenceModal.close();
@@ -61,18 +61,18 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
 
     const reference = {
       type: "note" as "note",
-      id: state.selectTokenMarkerReferenceModal.activeNoteId
+      id: state.selectTokenMarkerReferenceModal.activeNoteId,
     };
 
     await updateToken({ id: tokenId, reference });
     await actions.tokenInfoAside.toggleActiveToken({
       id: tokenId,
-      reference
+      reference,
     });
     actions.selectTokenMarkerReferenceModal.close();
   }, [updateToken]);
 
-  const isActiveNote = useCallback(note => {
+  const isActiveNote = useCallback((note) => {
     if (state.selectTokenMarkerReferenceModal.mode !== "ACTIVE") return false;
     return note === state.selectTokenMarkerReferenceModal.activeNote;
   }, []);
@@ -91,7 +91,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
         <Modal.Body style={{ display: "flex" }} noPadding>
           <Modal.Aside>
             <ScrollableList.List style={{ marginTop: 0 }}>
-              {state.selectTokenMarkerReferenceModal.notes.map(note => (
+              {state.selectTokenMarkerReferenceModal.notes.map((note) => (
                 <ScrollableList.ListItem key={note.id}>
                   <ScrollableList.ListItemButton
                     isActive={isActiveNote(note)}
@@ -114,7 +114,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
                   dangerouslySetInnerHTML={{
                     __html: new HtmlConverter().makeHtml(
                       state.selectTokenMarkerReferenceModal.activeNote.content
-                    )
+                    ),
                   }}
                 />
               </div>

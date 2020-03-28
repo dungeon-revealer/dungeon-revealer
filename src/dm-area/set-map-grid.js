@@ -57,8 +57,8 @@ const InstructionBubble = styled.div`
   background-color: rgba(255, 255, 255, 1);
   text-align: center;
   width: max-content;
-  display: ${p => (p.horizontal ? "flex" : null)};
-  align-items: ${p => (p.horizontal ? "center" : null)};
+  display: ${(p) => (p.horizontal ? "flex" : null)};
+  align-items: ${(p) => (p.horizontal ? "center" : null)};
   padding: 16px;
   min-width: 300px;
 `;
@@ -81,7 +81,7 @@ const PartialContainer = styled.div`
   background-color: rgba(0, 0, 0, 0.5);
 `;
 
-const getEventPoint = ev => {
+const getEventPoint = (ev) => {
   const rect = ev.target.getBoundingClientRect();
   const target = ev.touches ? ev.touches[0] : ev;
   const x = target.clientX - rect.left;
@@ -96,7 +96,7 @@ function getSvgMousePosition(svg, evt) {
   }
   return {
     x: (evt.clientX - CTM.e) / CTM.a,
-    y: (evt.clientY - CTM.f) / CTM.d
+    y: (evt.clientY - CTM.f) / CTM.d,
   };
 }
 
@@ -122,12 +122,12 @@ const roundPrecise = (num, decimals) => {
 
 const SideLengthControls = ({ sideLength, setSideLength }) => {
   const plusHandler = useCallback(() => {
-    setSideLength(sideLength =>
+    setSideLength((sideLength) =>
       String(roundPrecise(parseFloat(sideLength, 10) + 0.1, 2))
     );
   }, [setSideLength]);
   const minusHandler = useCallback(() => {
-    setSideLength(sideLength =>
+    setSideLength((sideLength) =>
       String(roundPrecise(parseFloat(sideLength, 10) - 0.1, 2))
     );
   }, [setSideLength]);
@@ -160,7 +160,7 @@ const SideLengthControls = ({ sideLength, setSideLength }) => {
               <Button.Tertiary
                 {...plusLongPressProps}
                 onClick={() => {
-                  setSideLength(sideLength =>
+                  setSideLength((sideLength) =>
                     String(roundPrecise(parseFloat(sideLength, 10) + 0.1, 2))
                   );
                 }}
@@ -173,7 +173,7 @@ const SideLengthControls = ({ sideLength, setSideLength }) => {
               <Button.Tertiary
                 {...minusLongPressProps}
                 onClick={() => {
-                  setSideLength(sideLength =>
+                  setSideLength((sideLength) =>
                     String(roundPrecise(parseFloat(sideLength, 10) - 0.1, 2))
                   );
                 }}
@@ -194,17 +194,17 @@ const incrementStep = (value, step = 0.1) =>
 
 const OffsetControls = ({ offset, setOffset }) => {
   const upHandler = useCallback(() => {
-    setOffset(offset => ({ ...offset, y: incrementStep(offset.y, -1) }));
+    setOffset((offset) => ({ ...offset, y: incrementStep(offset.y, -1) }));
   }, [setOffset]);
   const downHandler = useCallback(() => {
-    setOffset(offset => ({ ...offset, y: incrementStep(offset.y, 1) }));
+    setOffset((offset) => ({ ...offset, y: incrementStep(offset.y, 1) }));
   }, [setOffset]);
   const rightHandler = useCallback(() => {
-    setOffset(offset => ({ ...offset, x: incrementStep(offset.x, 1) }));
+    setOffset((offset) => ({ ...offset, x: incrementStep(offset.x, 1) }));
   }, [setOffset]);
 
   const leftHandler = useCallback(() => {
-    setOffset(offset => ({ ...offset, x: incrementStep(offset.x, -1) }));
+    setOffset((offset) => ({ ...offset, x: incrementStep(offset.x, -1) }));
   }, [setOffset]);
 
   const upLongPressProps = useLongPress(() => {
@@ -342,7 +342,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
   );
   const [offset, setOffset] = useState({
     x: map.grid ? map.grid.x : 0,
-    y: map.grid ? map.grid.y : 0
+    y: map.grid ? map.grid.y : 0,
   });
 
   const gridId = useUniqueId();
@@ -360,7 +360,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
   const blueBoxRef = useRef(null);
 
   useAsyncEffect(
-    function*(onCancel) {
+    function* (onCancel) {
       const task = loadImage(`/map/${map.id}/map?authorization=${dmPassword}`);
       onCancel(() => task.cancel());
       const image = yield task.promise;
@@ -375,7 +375,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
           initialPartialSideLength / 2,
         y:
           Math.min(Math.ceil(window.innerHeight / 2), image.height / 2) -
-          initialPartialSideLength / 2
+          initialPartialSideLength / 2,
       });
     },
     [map, initialPartialSideLength, dmPassword]
@@ -402,24 +402,24 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
   const [partialCursorState, setPartialCursorState] = useState({
     isSelecting: false,
     start: null,
-    end: null
+    end: null,
   });
   const partialCursorStateRef = useRef(partialCursorState);
   partialCursorStateRef.current = partialCursorState;
 
   const onBlueBoxDown = useCallback(
-    ev => {
+    (ev) => {
       if (step !== "SELECT_PARTIAL") return;
       const offset = getSvgMousePosition(gridRef.current, ev);
       offset.x -= parseFloat(ev.target.getAttributeNS(null, "x"));
       offset.y -= parseFloat(ev.target.getAttributeNS(null, "y"));
-      const listener = ev => {
+      const listener = (ev) => {
         ev.preventDefault();
         const coords = getSvgMousePosition(gridRef.current, ev);
 
         setPartialCoordinates({
           x: coords.x - offset.x,
-          y: coords.y - offset.y
+          y: coords.y - offset.y,
         });
       };
       window.addEventListener("mousemove", listener);
@@ -439,23 +439,23 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
   );
 
   const onPartialDown = useCallback(
-    ev => {
+    (ev) => {
       const p1 = getEventPoint(ev);
-      setPartialCursorState(state => ({
+      setPartialCursorState((state) => ({
         ...state,
         start: p1,
-        isSelecting: true
+        isSelecting: true,
       }));
-      const moveListener = ev => {
+      const moveListener = (ev) => {
         const p = getEventPoint(ev);
         if (!partialCursorStateRef.current.isSelecting) {
-          setPartialCursorState(state => ({ ...state, start: p }));
+          setPartialCursorState((state) => ({ ...state, start: p }));
           return;
         }
-        setPartialCursorState(state => ({ ...state, end: p }));
+        setPartialCursorState((state) => ({ ...state, end: p }));
       };
 
-      const endListener = ev => {
+      const endListener = (ev) => {
         ev.stopPropagation();
         window.removeEventListener("mouseup", endListener);
         window.removeEventListener("touchend", endListener);
@@ -471,10 +471,10 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
         const realWidth = partialCoords.width / sizeFactor;
         setSideLength(realWidth);
         setOffset({ y: realY, x: realX });
-        setPartialCursorState(state => ({
+        setPartialCursorState((state) => ({
           ...state,
           isSelecting: false,
-          end: null
+          end: null,
         }));
       };
 
@@ -556,7 +556,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
         >
           <div
             style={{
-              position: "relative"
+              position: "relative",
             }}
           >
             <canvas
@@ -566,17 +566,18 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
               onMouseDown={onPartialDown}
               onTouchStart={onPartialDown}
               onMouseLeave={() => {
-                setPartialCursorState(state => ({
+                setPartialCursorState((state) => ({
                   ...state,
                   isSelecting: false,
                   start: null,
-                  end: null
+                  end: null,
                 }));
               }}
             />
             <SvgGridOverlay
-              viewBox={`0 0 ${partialSideLength *
-                sizeFactor} ${partialSideLength * sizeFactor}`}
+              viewBox={`0 0 ${partialSideLength * sizeFactor} ${
+                partialSideLength * sizeFactor
+              }`}
               height={partialSideLength * sizeFactor}
               width={partialSideLength * sizeFactor}
               style={{ pointerEvents: "none" }}
@@ -591,8 +592,9 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
                   y={(offset.y - partialCoordinates.y) * sizeFactor}
                 >
                   <path
-                    d={`M ${sideLength * sizeFactor} 0 L 0 0 0 ${sideLength *
-                      sizeFactor}`}
+                    d={`M ${sideLength * sizeFactor} 0 L 0 0 0 ${
+                      sideLength * sizeFactor
+                    }`}
                     fill="none"
                     stroke="red"
                     strokeWidth="2"
@@ -716,7 +718,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
                       onSuccess(map.id, {
                         x: parseFloat(String(offset.x)),
                         y: parseFloat(String(offset.y)),
-                        sideLength: parseFloat(String(sideLength))
+                        sideLength: parseFloat(String(sideLength)),
                       });
                     }}
                   >
@@ -738,7 +740,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
                 backgroundColor: "white",
                 padding: 20,
                 borderRadius: 16,
-                marginRight: 16
+                marginRight: 16,
               }}
             >
               <SideLengthControls
@@ -757,7 +759,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
                 padding: 20,
                 borderRadius: 16,
                 marginRight: 24,
-                marginLeft: 24
+                marginLeft: 24,
               }}
             >
               <label style={{ display: "flex", alignItems: "center" }}>
@@ -770,7 +772,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
                   <input
                     type="range"
                     value={partialSideLength}
-                    onChange={ev =>
+                    onChange={(ev) =>
                       setPartialSideLength(Math.ceil(ev.target.value))
                     }
                     min="100"

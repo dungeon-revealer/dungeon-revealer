@@ -10,7 +10,7 @@ export const CreateNewNoteDialogModal: React.FC<{
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const onChangeInputValue = useCallback(
-    ev => {
+    (ev) => {
       setInputValue(ev.target.value);
     },
     [setInputValue]

@@ -13,7 +13,7 @@ const ColorPicker = React.memo(({ color, onChange, styles }) => {
   return (
     <CirclePicker
       color={color}
-      onChangeComplete={color => onChange(color.hex)}
+      onChangeComplete={(color) => onChange(color.hex)}
       styles={styles}
     />
   );
@@ -29,11 +29,11 @@ const TokenContextMenu = ({
     radius,
     isVisibleForPlayers,
     isLocked,
-    reference
+    reference,
   },
   updateToken,
   deleteToken,
-  close
+  close,
 }) => {
   const { actions } = useOvermind();
 
@@ -41,14 +41,14 @@ const TokenContextMenu = ({
   const rangeSlideRef = useRef(null);
   const initialCoords = useRef({
     x: window.innerWidth,
-    y: window.innerHeight
+    y: window.innerHeight,
   });
 
   // Position 1: we use spring values as a two way data bindings of the position.
   const [{ x, y }, set] = useSpring(() => ({
     // Position 2: we want to position the context menu offscreen first.
     to: initialCoords.current,
-    immediate: true
+    immediate: true,
   }));
 
   // Position 3: we want to adjust the position once we know the rendered size of our context menu.
@@ -83,7 +83,7 @@ const TokenContextMenu = ({
   }, [radius]);
 
   const onChangeComplete = useCallback(
-    color => {
+    (color) => {
       updateToken({ color: color });
     },
     [updateToken]
@@ -114,7 +114,7 @@ const TokenContextMenu = ({
   return (
     <animated.div
       ref={containerRef}
-      onClick={ev => {
+      onClick={(ev) => {
         ev.stopPropagation();
       }}
       style={{
@@ -126,7 +126,7 @@ const TokenContextMenu = ({
         transform: to([x, y], (x, y) => `translate(${x}px, ${y}px)`),
         top: 0,
         left: 0,
-        position: "absolute"
+        position: "absolute",
       }}
     >
       <div style={{ display: "flex", width: "100%" }}>
@@ -136,7 +136,7 @@ const TokenContextMenu = ({
             <Input
               placeholder="Label"
               value={label}
-              onChange={ev => updateToken({ label: ev.target.value })}
+              onChange={(ev) => updateToken({ label: ev.target.value })}
               style={{ marginBottom: 24 }}
               maxLength={5}
             />
@@ -151,13 +151,13 @@ const TokenContextMenu = ({
           min="1"
           max="200"
           step="1"
-          onChange={ev => {
+          onChange={(ev) => {
             const radiusValue = Math.min(200, Math.max(0, ev.target.value));
             tokenRef.current.setRadius(radiusValue);
           }}
-          onMouseUp={ev => {
+          onMouseUp={(ev) => {
             updateToken({
-              radius: Math.min(200, Math.max(0, ev.target.value))
+              radius: Math.min(200, Math.max(0, ev.target.value)),
             });
           }}
           style={{ width: "100%", display: "block", marginTop: 0 }}
@@ -178,7 +178,7 @@ const TokenContextMenu = ({
           <div style={{ marginLeft: 8 }}>
             <ToggleSwitch
               checked={isVisibleForPlayers}
-              onChange={ev => {
+              onChange={(ev) => {
                 updateToken({ isVisibleForPlayers: ev.target.checked });
               }}
             />
@@ -191,7 +191,7 @@ const TokenContextMenu = ({
           style={{
             display: "flex",
             justifyContent: "flex-end",
-            alignItems: "center"
+            alignItems: "center",
           }}
         >
           <div>{reference ? "Note" : "None"}</div>
@@ -200,7 +200,7 @@ const TokenContextMenu = ({
               flexGrow: 1,
               paddingLeft: 8,
               display: "flex",
-              justifyContent: "flex-end"
+              justifyContent: "flex-end",
             }}
           >
             {reference ? (
@@ -222,7 +222,7 @@ const TokenContextMenu = ({
                     onClick={() => {
                       actions.tokenInfoAside.toggleActiveToken({
                         id: tokenId,
-                        reference
+                        reference,
                       });
                       close();
                     }}
@@ -293,7 +293,7 @@ export const DmTokenMarker = React.memo(
     deleteToken,
     ratio,
     onClick,
-    token
+    token,
   }) => {
     const tokenRef = useRef();
     const [contextMenuCoordinates, setContextMenuCoordinates] = useState(null);
@@ -308,8 +308,8 @@ export const DmTokenMarker = React.memo(
           {...token}
           cursor={token.reference ? "pointer" : undefined}
           isAnimated={false}
-          onDoubleClick={ev => ev.stopPropagation()}
-          onClick={ev => {
+          onDoubleClick={(ev) => ev.stopPropagation()}
+          onClick={(ev) => {
             ev.preventDefault();
             ev.stopPropagation();
             if (isDraggingRef.current === false) {
@@ -317,14 +317,14 @@ export const DmTokenMarker = React.memo(
             }
             isDraggingRef.current = false;
           }}
-          onTouchStart={ev => {
+          onTouchStart={(ev) => {
             if (token.isLocked) return;
             ev.preventDefault();
             ev.stopPropagation();
 
             const { x, y } = getRelativePosition({
               x: ev.touches[0].pageX,
-              y: ev.touches[0].pageY
+              y: ev.touches[0].pageY,
             });
 
             const diffX = x - token.x;
@@ -332,14 +332,14 @@ export const DmTokenMarker = React.memo(
             let currentX = x;
             let currentY = y;
 
-            const onTouchMove = ev => {
+            const onTouchMove = (ev) => {
               isDraggingRef.current = true;
               ev.preventDefault();
               ev.stopPropagation();
 
               const { x, y } = getRelativePosition({
                 x: ev.touches[0].pageX,
-                y: ev.touches[0].pageY
+                y: ev.touches[0].pageY,
               });
 
               currentX = x - diffX;
@@ -347,7 +347,7 @@ export const DmTokenMarker = React.memo(
 
               tokenRef.current.setTransform(currentX, currentY);
             };
-            const onTouchEnd = ev => {
+            const onTouchEnd = (ev) => {
               ev.preventDefault();
               ev.stopPropagation();
 
@@ -359,7 +359,7 @@ export const DmTokenMarker = React.memo(
             window.addEventListener("touchmove", onTouchMove);
             window.addEventListener("touchend", onTouchEnd);
           }}
-          onMouseDown={ev => {
+          onMouseDown={(ev) => {
             if (token.isLocked) return;
             ev.preventDefault();
             ev.stopPropagation();
@@ -367,25 +367,25 @@ export const DmTokenMarker = React.memo(
 
             const { x, y } = getRelativePosition({
               x: ev.pageX,
-              y: ev.pageY
+              y: ev.pageY,
             });
 
             const diffX = x - token.x;
             const diffY = y - token.y;
 
-            const onMouseMove = ev => {
+            const onMouseMove = (ev) => {
               isDraggingRef.current = true;
               ev.preventDefault();
               ev.stopPropagation();
 
               const { x, y } = getRelativePosition({
                 x: ev.pageX,
-                y: ev.pageY
+                y: ev.pageY,
               });
 
               tokenRef.current.setTransform(x - diffX, y - diffY);
             };
-            const onMouseUp = ev => {
+            const onMouseUp = (ev) => {
               ev.preventDefault();
               ev.stopPropagation();
 
@@ -393,7 +393,7 @@ export const DmTokenMarker = React.memo(
               window.removeEventListener("mousemove", onMouseMove);
               const { x, y } = getRelativePosition({
                 x: ev.pageX,
-                y: ev.pageY
+                y: ev.pageY,
               });
 
               updateToken({ x: x - diffX, y: y - diffY });
@@ -401,7 +401,7 @@ export const DmTokenMarker = React.memo(
             window.addEventListener("mousemove", onMouseMove);
             window.addEventListener("mouseup", onMouseUp);
           }}
-          onContextMenu={ev => {
+          onContextMenu={(ev) => {
             ev.preventDefault();
             ev.stopPropagation();
             setContextMenuCoordinates({ x: ev.clientX, y: ev.clientY });
@@ -410,9 +410,9 @@ export const DmTokenMarker = React.memo(
         {contextMenuCoordinates ? (
           <Modal
             backgroundStyles={{
-              backgroundColor: "transparent"
+              backgroundColor: "transparent",
             }}
-            onClickOutside={ev => {
+            onClickOutside={(ev) => {
               ev.preventDefault();
               ev.stopPropagation();
 
