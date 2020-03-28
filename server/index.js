@@ -18,6 +18,7 @@ const { Settings } = require("./settings");
 const { getDataDirectory } = require("./util");
 
 const PUBLIC_PATH = path.resolve(__dirname, "..", "build");
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 
 fs.mkdirpSync(getDataDirectory());
 
@@ -579,12 +580,18 @@ app.get("/notes/:id", requiresDmRole, (req, res) => {
   });
 });
 
-app.get("/", function (req, res) {
-  res.sendfile("index.html", { root: PUBLIC_PATH });
+const indexHtml = path.join(PUBLIC_PATH, "index.html");
+const indexHtmlContent = fs
+  .readFileSync(indexHtml, "utf-8")
+  .replace(/__BASE_URL_PLACEHOLDER__/g, BASE_URL)
+  .replace(/window\.__BASE_URL__=""/, `window.__BASE_URL__="${BASE_URL}"`);
+
+app.get("/", (req, res) => {
+  res.send(indexHtmlContent);
 });
 
 app.get("/dm", function (req, res) {
-  res.sendfile("index.html", { root: PUBLIC_PATH });
+  res.send(indexHtmlContent);
 });
 
 // Consider all URLs under /public/ as static files, and return them raw.

@@ -15,6 +15,7 @@ import { AreaMarkerRenderer } from "./object-layer/area-marker-renderer";
 import { TokenRenderer } from "./object-layer/token-renderer";
 import { SplashScreen } from "./splash-screen";
 import { AuthenticationScreen } from "./authentication-screen";
+import { getBaseUrl } from "./base-url";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -158,7 +159,8 @@ const PlayerMap = ({ fetch, pcPassword }) => {
          */
         if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
           const task = loadImage(
-            `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+            getBaseUrl() +
+              `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
           );
           fogCacheBusterCounter = fogCacheBusterCounter + 1;
           pendingImageLoads.current = [task];
@@ -212,10 +214,12 @@ const PlayerMap = ({ fetch, pcPassword }) => {
 
         const tasks = [
           loadImage(
-            `/map/${data.map.id}/map?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+            getBaseUrl() +
+              `/map/${data.map.id}/map?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
           ),
           loadImage(
-            `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+            getBaseUrl() +
+              `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
           ),
         ];
         pendingImageLoads.current = tasks;
@@ -505,7 +509,7 @@ export const PlayerArea = () => {
 
   const localFetch = useCallback(
     (input, init = {}) => {
-      return fetch(input, {
+      return fetch(getBaseUrl() + input, {
         ...init,
         headers: {
           Authorization: pcPassword ? `Bearer ${pcPassword}` : undefined,

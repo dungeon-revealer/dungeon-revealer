@@ -1,5 +1,6 @@
 import { RawNoteType } from "./note-store-state";
 import { Maybe } from "../util";
+import { getBaseUrl } from "../../../base-url";
 
 const buildHeaders = ({ accessToken }: { accessToken: Maybe<string> }) => {
   return {
@@ -35,7 +36,7 @@ export const loadAll = async ({
 }: {
   accessToken: string | null;
 }): Promise<RawNoteType[]> => {
-  const response = await fetch(`/notes`, {
+  const response = await fetch(getBaseUrl() + `/notes`, {
     headers: buildHeaders({ accessToken }),
   });
   const body = await response.json();
@@ -46,7 +47,7 @@ export const loadById = async (
   noteId: string,
   { accessToken }: { accessToken: string | null }
 ) => {
-  const response = await fetch(`/notes/${noteId}`, {
+  const response = await fetch(getBaseUrl() + `/notes/${noteId}`, {
     headers: buildHeaders({ accessToken }),
   });
   const body = await response.json();
@@ -62,7 +63,7 @@ export const create = async (
   { title, content }: { title: string; content: string },
   { accessToken }: { accessToken: string | null }
 ) => {
-  const response = await fetch("/notes", {
+  const response = await fetch(getBaseUrl() + "/notes", {
     method: "POST",
     body: JSON.stringify({ title, content }),
     headers: buildHeaders({ accessToken }),
@@ -75,7 +76,7 @@ export const deleteById = async (
   noteId: string,
   { accessToken }: { accessToken: string | null }
 ) => {
-  await fetch(`/notes/${noteId}`, {
+  await fetch(getBaseUrl() + `/notes/${noteId}`, {
     method: "DELETE",
     headers: buildHeaders({ accessToken }),
   });
@@ -86,7 +87,7 @@ export const update = async (
   { title, content }: { title: string; content: string },
   { accessToken }: { accessToken: string | null }
 ) => {
-  const response = await fetch(`/notes/${noteId}`, {
+  const response = await fetch(getBaseUrl() + `/notes/${noteId}`, {
     method: "PATCH",
     headers: buildHeaders({ accessToken }),
     body: JSON.stringify({ title, content }),

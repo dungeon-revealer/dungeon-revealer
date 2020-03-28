@@ -1,6 +1,8 @@
 import React from "react";
+import { Global } from "@emotion/core";
 import { render } from "react-dom";
-import "./style.css";
+import { getBaseUrl } from "./base-url";
+import { globalStyles } from "./global-styles";
 
 const element = document.querySelector("#root");
 
@@ -18,9 +20,14 @@ if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
   );
 }
 
+const pathname =
+  getBaseUrl() === ""
+    ? window.location.pathname
+    : window.location.href.replace(getBaseUrl(), "");
+
 const main = async () => {
   let component = null;
-  switch (window.location.pathname) {
+  switch (pathname) {
     case "/dm": {
       const { DmArea } = await import("./dm-area");
       component = <DmArea />;
@@ -32,7 +39,13 @@ const main = async () => {
     }
   }
   if (element) {
-    render(component, element);
+    render(
+      <>
+        <Global styles={globalStyles}></Global>
+        {component}
+      </>,
+      element
+    );
   }
 };
 
