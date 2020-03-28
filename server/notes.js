@@ -23,9 +23,9 @@ const createNote = ({
 });
 
 class Notes {
-  notes = {};
   constructor() {
     fs.mkdirpSync(notesDirectory);
+    this.notes = {}
     this._loadNotes();
   }
 
