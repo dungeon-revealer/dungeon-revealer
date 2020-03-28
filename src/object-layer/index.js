@@ -9,7 +9,7 @@ export const ObjectLayer = React.forwardRef(
         style={{
           backfaceVisibility: "hidden",
           position: "absolute",
-          overflow: "visible"
+          overflow: "visible",
         }}
       >
         {defs ? <defs>{defs}</defs> : null}

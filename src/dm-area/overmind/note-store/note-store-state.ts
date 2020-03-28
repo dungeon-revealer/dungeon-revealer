@@ -50,16 +50,16 @@ export type NoteType = {
 
 const createState = (): NoteStoreStateType => ({
   loadingIds: [],
-  isLoading: state => {
+  isLoading: (state) => {
     return Boolean(state.loadingIds.length) || state.isLoadingAll;
   },
   isLoadingAll: false,
-  notes: {}
+  notes: {},
 });
 
 export const createNoteTreeNode = (note: RawNoteType): NoteType => ({
   ...note,
-  isDirty: false
+  isDirty: false,
 });
 
 export const state = createState();

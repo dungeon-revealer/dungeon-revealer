@@ -55,7 +55,7 @@ const ListItem = styled.li`
 export const Dropdown = ({ value, items, onChange, isDisabled }) => {
   const _selectedItem = useMemo(() => {
     if (!items) return null;
-    return items.find(item => item.value === value) || null;
+    return items.find((item) => item.value === value) || null;
   }, [value, items]);
 
   const {
@@ -65,15 +65,15 @@ export const Dropdown = ({ value, items, onChange, isDisabled }) => {
     getToggleButtonProps,
     getMenuProps,
     getItemProps,
-    highlightedIndex
+    highlightedIndex,
   } = useSelect({
     items,
     selectedItem: _selectedItem,
-    itemToString: item => item.value,
-    onStateChange: state => {
+    itemToString: (item) => item.value,
+    onStateChange: (state) => {
       if (isDisabled) return;
       onChange(state.selectedItem.value);
-    }
+    },
   });
 
   return (
@@ -85,9 +85,9 @@ export const Dropdown = ({ value, items, onChange, isDisabled }) => {
       {isOpen ? (
         <ListContainer
           {...getMenuProps({
-            onKeyDown: ev => {
+            onKeyDown: (ev) => {
               ev.stopPropagation();
-            }
+            },
           })}
         >
           {items.map((item, index) => (
@@ -100,8 +100,8 @@ export const Dropdown = ({ value, items, onChange, isDisabled }) => {
                 style: {
                   backgroundColor:
                     highlightedIndex === index ? "lightgray" : "white",
-                  fontWeight: selectedItem === item ? "bold" : "normal"
-                }
+                  fontWeight: selectedItem === item ? "bold" : "normal",
+                },
               })}
             >
               {item.label}

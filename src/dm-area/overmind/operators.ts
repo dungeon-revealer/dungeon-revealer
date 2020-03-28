@@ -12,11 +12,11 @@ export const switchMap = <Input, Output>(
       if (err) return next(err, value);
       const localId = (currentId = currentId + 1);
       operation(context as any, value)
-        .then(nextValue => {
+        .then((nextValue) => {
           if (currentId !== localId) return final(null, value);
           next(null, nextValue);
         })
-        .catch(err => {
+        .catch((err) => {
           if (currentId !== localId) return final(null, value);
           next(err, null);
         });
@@ -45,7 +45,7 @@ export const operatorMatch = <
 ] => {
   return [
     input as Extract<TInput, { [key in TProperty]: TInput[TProperty] }>,
-    matcher[input[property]]
+    matcher[input[property]],
   ];
 };
 
@@ -69,8 +69,8 @@ export const match = <
     next(null, newValue, {
       path: {
         name: newValue[property],
-        operator
-      }
+        operator,
+      },
     });
   });
 };
@@ -114,8 +114,8 @@ export const matchSome = <
         {
           path: {
             name: "some",
-            operator: matcher.some
-          }
+            operator: matcher.some,
+          },
         }
       );
     } else {
@@ -125,8 +125,8 @@ export const matchSome = <
         {
           path: {
             name: "none",
-            operator: matcher.none
-          }
+            operator: matcher.none,
+          },
         }
       );
     }

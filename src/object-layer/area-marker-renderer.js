@@ -5,12 +5,12 @@ export const AreaMarkerRenderer = React.memo(
   ({ markedAreas, setMarkedAreas }) => {
     return (
       <>
-        {markedAreas.map(markedArea => (
+        {markedAreas.map((markedArea) => (
           <AreaMarker
             {...markedArea}
             onFinishAnimation={() => {
-              setMarkedAreas(markedAreas =>
-                markedAreas.filter(area => area.id !== markedArea.id)
+              setMarkedAreas((markedAreas) =>
+                markedAreas.filter((area) => area.id !== markedArea.id)
               );
             }}
             key={markedArea.id}

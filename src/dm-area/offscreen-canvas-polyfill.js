@@ -7,7 +7,7 @@ if (!window.OffscreenCanvas) {
       this.canvas.height = height;
 
       this.canvas.convertToBlob = () => {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           this.canvas.toBlob(resolve);
         });
       };

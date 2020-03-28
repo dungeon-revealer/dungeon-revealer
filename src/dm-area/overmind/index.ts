@@ -10,14 +10,14 @@ export const state = {};
 
 export const config = merge(
   {
-    state
+    state,
   },
   namespaced({
     sessionStore,
     noteStore,
     noteEditor,
     tokenInfoAside,
-    selectTokenMarkerReferenceModal
+    selectTokenMarkerReferenceModal,
   })
 );
 

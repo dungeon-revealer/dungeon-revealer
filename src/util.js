@@ -1,7 +1,7 @@
 /**
  * Utility for preloading an image as a promise
  */
-export const loadImage = src => {
+export const loadImage = (src) => {
   const image = new Image();
 
   const cancel = () => {
@@ -18,7 +18,7 @@ export const loadImage = src => {
       removeEventListeners();
       resolve(image);
     };
-    const errorListener = err => {
+    const errorListener = (err) => {
       removeEventListeners();
       reject(err);
     };
@@ -47,7 +47,7 @@ export const getOptimalDimensions = (
   return {
     ratio: ratio,
     width: idealWidth * ratio,
-    height: idealHeight * ratio
+    height: idealHeight * ratio,
   };
 };
 

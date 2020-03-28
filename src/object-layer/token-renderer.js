@@ -5,8 +5,8 @@ export const TokenRenderer = React.memo(({ tokens, ratio }) => {
   return (
     <>
       {tokens
-        .filter(token => token.isVisibleForPlayers === true)
-        .map(token => (
+        .filter((token) => token.isVisibleForPlayers === true)
+        .map((token) => (
           <TokenMarker {...token} key={token.id} ratio={ratio} />
         ))}
     </>

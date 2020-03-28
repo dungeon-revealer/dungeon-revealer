@@ -77,8 +77,8 @@ const requiresPcRole = (req, res, next) => {
     data: null,
     error: {
       message: "Unauthenticated Access",
-      code: "ERR_UNAUTHENTICATED_ACCESS"
-    }
+      code: "ERR_UNAUTHENTICATED_ACCESS",
+    },
   });
 };
 
@@ -91,8 +91,8 @@ const requiresDmRole = (req, res, next) => {
     data: null,
     error: {
       message: "Unauthenticated Access",
-      code: "ERR_UNAUTHENTICATED_ACCESS"
-    }
+      code: "ERR_UNAUTHENTICATED_ACCESS",
+    },
   });
 };
 
@@ -101,8 +101,8 @@ app.use(authorizationMiddleware);
 app.get("/auth", (req, res) => {
   return res.status(200).json({
     data: {
-      role: req.role
-    }
+      role: req.role,
+    },
   });
 });
 
@@ -113,16 +113,16 @@ app.get("/map/:id/map", requiresPcRole, (req, res) => {
       data: null,
       error: {
         message: `Map with id '${req.params.id}' does not exist.`,
-        code: "ERR_MAP_DOES_NOT_EXIST"
-      }
+        code: "ERR_MAP_DOES_NOT_EXIST",
+      },
     });
   } else if (!map.mapPath) {
     return res.status(404).json({
       data: null,
       error: {
         message: `Map with id '${req.params.id}' does not have a map image yet.`,
-        code: "ERR_MAP_NO_IMAGE"
-      }
+        code: "ERR_MAP_NO_IMAGE",
+      },
     });
   }
 
@@ -138,16 +138,16 @@ app.get("/map/:id/fog", requiresPcRole, (req, res) => {
       data: null,
       error: {
         message: `Map with id '${req.params.id}' does not exist.`,
-        code: "ERR_MAP_DOES_NOT_EXIST"
-      }
+        code: "ERR_MAP_DOES_NOT_EXIST",
+      },
     });
   } else if (!map.fogProgressPath) {
     return res.status(404).json({
       data: null,
       error: {
         message: `Map with id '${req.params.id}' does not have a fog image yet.`,
-        code: "ERR_MAP_NO_FOG"
-      }
+        code: "ERR_MAP_NO_FOG",
+      },
     });
   }
   return res.sendFile(path.join(maps.getBasePath(map), map.fogProgressPath));
@@ -160,16 +160,16 @@ app.get("/map/:id/fog-live", requiresPcRole, (req, res) => {
       data: null,
       error: {
         message: `Map with id '${req.params.id}' does not exist.`,
-        code: "ERR_MAP_DOES_NOT_EXIST"
-      }
+        code: "ERR_MAP_DOES_NOT_EXIST",
+      },
     });
   } else if (!map.fogLivePath) {
     return res.status(404).json({
       data: null,
       error: {
         message: `Map with id '${req.params.id}' does not have a fog image yet.`,
-        code: "ERR_MAP_NO_FOG"
-      }
+        code: "ERR_MAP_NO_FOG",
+      },
     });
   }
   return res.sendFile(path.join(maps.getBasePath(map), map.fogLivePath));
@@ -185,10 +185,10 @@ app.post("/map/:id/map", requiresPcRole, (req, res) => {
     const extension = filename.split(".").pop();
     maps
       .updateMapImage(req.params.id, { fileStream: file, extension })
-      .then(map => {
+      .then((map) => {
         res.json({ success: true, data: map });
       })
-      .catch(err => {
+      .catch((err) => {
         res.status(404).json({ data: null, error: err });
       });
   });
@@ -202,7 +202,7 @@ app.post("/map/:id/fog", requiresDmRole, (req, res) => {
 
   req.pipe(req.busboy);
   req.busboy.once("file", (fieldname, file, filename) => {
-    maps.updateFogProgressImage(req.params.id, file).then(map => {
+    maps.updateFogProgressImage(req.params.id, file).then((map) => {
       res.json({ success: true, data: map });
     });
   });
@@ -215,12 +215,12 @@ app.post("/map/:id/send", requiresDmRole, (req, res) => {
   }
   req.pipe(req.busboy);
   req.busboy.once("file", (fieldname, file, filename) => {
-    maps.updateFogLiveImage(req.params.id, file).then(map => {
+    maps.updateFogLiveImage(req.params.id, file).then((map) => {
       settings.set("currentMapId", map.id);
       res.json({ success: true, data: map });
       io.emit("map update", {
         map,
-        image: req.body.image
+        image: req.body.image,
       });
     });
   });
@@ -235,7 +235,7 @@ app.delete("/map/:id", requiresDmRole, (req, res) => {
   maps.deleteMap(map.id);
 
   res.status(200).json({
-    success: true
+    success: true,
   });
 });
 
@@ -249,8 +249,8 @@ app.get("/active-map", requiresPcRole, (req, res) => {
   return res.status(200).json({
     success: true,
     data: {
-      activeMap
-    }
+      activeMap,
+    },
   });
 });
 
@@ -260,17 +260,17 @@ app.post("/active-map", requiresDmRole, (req, res) => {
     res.status(404).json({
       error: {
         message: "Missing param 'mapId' in body.",
-        code: "ERR_MISSING_MAP_ID"
-      }
+        code: "ERR_MISSING_MAP_ID",
+      },
     });
   }
   settings.set("currentMapId", mapId);
   io.emit("map update", {
     map: null,
-    image: null
+    image: null,
   });
   res.json({
-    success: true
+    success: true,
   });
 });
 
@@ -279,8 +279,8 @@ app.get("/map", requiresPcRole, (req, res) => {
     success: true,
     data: {
       currentMapId: settings.get("currentMapId"),
-      maps: maps.getAll()
-    }
+      maps: maps.getAll(),
+    },
   });
 });
 
@@ -294,7 +294,7 @@ app.post("/map", requiresDmRole, (req, res) => {
     const saveTo = path.join(os.tmpDir(), path.basename(fieldname));
     data.file = {
       path: saveTo,
-      extension
+      extension,
     };
     stream.pipe(fs.createWriteStream(saveTo));
   });
@@ -318,8 +318,8 @@ app.patch("/map/:id", requiresDmRole, (req, res) => {
       data: null,
       error: {
         message: `Map with id '${req.params.id}' does not exist.`,
-        code: "ERR_MAP_DOES_NOT_EXIST"
-      }
+        code: "ERR_MAP_DOES_NOT_EXIST",
+      },
     });
   }
   const updates = {};
@@ -348,8 +348,8 @@ app.patch("/map/:id", requiresDmRole, (req, res) => {
   res.json({
     success: true,
     data: {
-      map
-    }
+      map,
+    },
   });
 });
 
@@ -361,8 +361,8 @@ app.post("/map/:id/token", requiresDmRole, (req, res) => {
       data: null,
       error: {
         message: `Map with id '${req.params.id}' does not exist.`,
-        code: "ERR_MAP_DOES_NOT_EXIST"
-      }
+        code: "ERR_MAP_DOES_NOT_EXIST",
+      },
     });
   }
 
@@ -371,19 +371,19 @@ app.post("/map/:id/token", requiresDmRole, (req, res) => {
     y: req.body.y,
     color: req.body.color,
     label: req.body.label,
-    radius: req.body.radius
+    radius: req.body.radius,
   });
 
   res.json({
     success: true,
     data: {
-      token
-    }
+      token,
+    },
   });
 
   io.emit(`token:mapId:${map.id}`, {
     type: "add",
-    data: { token }
+    data: { token },
   });
 });
 
@@ -395,8 +395,8 @@ app.delete("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
       data: null,
       error: {
         message: `Map with id '${req.params.id}' does not exist.`,
-        code: "ERR_MAP_DOES_NOT_EXIST"
-      }
+        code: "ERR_MAP_DOES_NOT_EXIST",
+      },
     });
   }
 
@@ -404,13 +404,13 @@ app.delete("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
   res.json({
     success: true,
     data: {
-      map: updatedMap
-    }
+      map: updatedMap,
+    },
   });
 
   io.emit(`token:mapId:${map.id}`, {
     type: "remove",
-    data: { tokenId: req.params.tokenId }
+    data: { tokenId: req.params.tokenId },
   });
 });
 
@@ -422,8 +422,8 @@ app.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
       data: null,
       error: {
         message: `Map with id '${req.params.id}' does not exist.`,
-        code: "ERR_MAP_DOES_NOT_EXIST"
-      }
+        code: "ERR_MAP_DOES_NOT_EXIST",
+      },
     });
   }
 
@@ -438,19 +438,19 @@ app.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
     isLocked: req.body.isLocked,
     title: req.body.title,
     description: req.body.description,
-    reference: req.body.reference
+    reference: req.body.reference,
   });
 
   res.json({
     success: true,
     data: {
-      map: result.map
-    }
+      map: result.map,
+    },
   });
 
   io.emit(`token:mapId:${map.id}`, {
     type: "update",
-    data: { token: result.token }
+    data: { token: result.token },
   });
 });
 
@@ -460,8 +460,8 @@ app.get("/notes", requiresDmRole, ({ req, res }) => {
   return res.json({
     success: true,
     data: {
-      notes: allNotes
-    }
+      notes: allNotes,
+    },
   });
 });
 
@@ -472,8 +472,8 @@ app.post("/notes", requiresDmRole, (req, res) => {
   return res.json({
     success: true,
     data: {
-      note
-    }
+      note,
+    },
   });
 });
 
@@ -485,8 +485,8 @@ app.patch("/notes/:id", requiresDmRole, (req, res) => {
       data: null,
       error: {
         message: `Note with id '${req.params.id}' does not exist.`,
-        code: "ERR_NOTE_DOES_NOT_EXIST"
-      }
+        code: "ERR_NOTE_DOES_NOT_EXIST",
+      },
     });
   }
 
@@ -506,8 +506,8 @@ app.patch("/notes/:id", requiresDmRole, (req, res) => {
   res.json({
     success: true,
     data: {
-      note
-    }
+      note,
+    },
   });
 });
 
@@ -519,8 +519,8 @@ app.delete("/notes/:id", requiresDmRole, (req, res) => {
       data: null,
       error: {
         message: `Note with id '${req.params.id}' does not exist.`,
-        code: "ERR_NOTE_DOES_NOT_EXIST"
-      }
+        code: "ERR_NOTE_DOES_NOT_EXIST",
+      },
     });
   }
 
@@ -529,14 +529,14 @@ app.delete("/notes/:id", requiresDmRole, (req, res) => {
   // update tokens that link a certain note
   maps
     .getAll()
-    .map(map => ({
+    .map((map) => ({
       mapId: map.id,
       affectedTokens: map.tokens.filter(
-        token =>
+        (token) =>
           token.reference &&
           token.reference.type === "note" &&
           token.reference.id === note.id
-      )
+      ),
     }))
     .forEach(({ mapId, affectedTokens }) => {
       affectedTokens.forEach(({ id }) => {
@@ -544,7 +544,7 @@ app.delete("/notes/:id", requiresDmRole, (req, res) => {
 
         io.emit(`token:mapId:${mapId}`, {
           type: "update",
-          data: { token: result.token }
+          data: { token: result.token },
         });
       });
     });
@@ -552,8 +552,8 @@ app.delete("/notes/:id", requiresDmRole, (req, res) => {
   res.json({
     success: true,
     data: {
-      deletedNoteId: note.id
-    }
+      deletedNoteId: note.id,
+    },
   });
 });
 
@@ -566,24 +566,24 @@ app.get("/notes/:id", requiresDmRole, (req, res) => {
       data: null,
       error: {
         message: `Note with id '${req.params.id}' does not exist.`,
-        code: "ERR_NOTE_DOES_NOT_EXIST"
-      }
+        code: "ERR_NOTE_DOES_NOT_EXIST",
+      },
     });
   }
 
   res.json({
     success: true,
     data: {
-      note
-    }
+      note,
+    },
   });
 });
 
-app.get("/", function(req, res) {
+app.get("/", function (req, res) {
   res.sendfile("index.html", { root: PUBLIC_PATH });
 });
 
-app.get("/dm", function(req, res) {
+app.get("/dm", function (req, res) {
   res.sendfile("index.html", { root: PUBLIC_PATH });
 });
 
@@ -591,7 +591,7 @@ app.get("/dm", function(req, res) {
 app.use(express.static(path.join(PUBLIC_PATH)));
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   const err = new Error("Not Found");
   err.status = 404;
   next(err);
@@ -602,41 +602,41 @@ app.use(function(req, res, next) {
 // development error handler
 // will print stacktrace
 if (app.get("env") === "development") {
-  app.use(function(err, req, res) {
+  app.use(function (err, req, res) {
     res.status(err.status || 500);
     res.render("error", {
       message: err.message,
-      error: err
+      error: err,
     });
   });
 }
 
 // production error handler
 // no stacktraces leaked to user
-app.use(function(err, req, res) {
+app.use(function (err, req, res) {
   console.log(err);
   res.status(err.status || 500);
   res.render("error", {
     message: err.message,
-    error: {}
+    error: {},
   });
 });
 
-io.on("connection", function(socket) {
-  socket.once("disconnect", function() {
+io.on("connection", function (socket) {
+  socket.once("disconnect", function () {
     console.log("a user disconnected");
   });
 
-  socket.on("mark area", msg => {
+  socket.on("mark area", (msg) => {
     io.emit("mark area", {
       id: createUniqueId(),
-      ...msg
+      ...msg,
     });
   });
 
-  socket.on("remove token", msg => {
+  socket.on("remove token", (msg) => {
     io.emit("remove token", {
-      ...msg
+      ...msg,
     });
   });
 });

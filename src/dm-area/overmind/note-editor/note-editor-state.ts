@@ -39,10 +39,10 @@ const createState = (): NoteEditorStateType => ({
   notes: (state, root) => {
     return Object.values(root.noteStore.notes)
       .filter(isLoaded)
-      .map(note => note.node)
+      .map((note) => note.node)
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .filter(
-        note =>
+        (note) =>
           note.id === state.activeNoteId || note.title.includes(state.filter)
       );
   },
@@ -55,7 +55,7 @@ const createState = (): NoteEditorStateType => ({
   isEditMode: false,
   isLoading: (state, root) => {
     return root.noteStore.isLoadingAll;
-  }
+  },
 });
 
 export const state = createState();

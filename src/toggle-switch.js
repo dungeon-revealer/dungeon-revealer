@@ -52,7 +52,7 @@ const Slider = styled.div`
   }
 `;
 
-export const ToggleSwitch = props => {
+export const ToggleSwitch = (props) => {
   return (
     <Switch>
       <input type="checkbox" {...props} />

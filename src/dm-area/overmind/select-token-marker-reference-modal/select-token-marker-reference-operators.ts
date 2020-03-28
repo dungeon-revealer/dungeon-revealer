@@ -2,7 +2,7 @@ import { mutate, Operator, filter, action } from "overmind";
 import { NoteType, state } from "../note-store/note-store-state";
 import {
   createActiveState,
-  createNoneState
+  createNoneState,
 } from "./select-token-marker-reference-modal-state";
 import * as u from "../util";
 import { switchMap } from "../operators";

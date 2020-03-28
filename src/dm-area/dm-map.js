@@ -3,7 +3,7 @@ import React, {
   useRef,
   useState,
   useCallback,
-  useMemo
+  useMemo,
 } from "react";
 
 import debounce from "lodash/debounce";
@@ -31,22 +31,22 @@ import { useOvermind } from "../hooks/use-overmind";
 const ShapeButton = styled.button`
   border: none;
   background-color: transparent;
-  color: ${p => (p.isActive ? "rgba(0, 0, 0, 1)" : "hsl(211, 27%, 70%)")};
+  color: ${(p) => (p.isActive ? "rgba(0, 0, 0, 1)" : "hsl(211, 27%, 70%)")};
   &:hover {
     filter: drop-shadow(
       0 0 4px
-        ${p => (p.isActive ? "rgba(0, 0, 0, .3)" : "rgba(200, 200, 200, .6)")}
+        ${(p) => (p.isActive ? "rgba(0, 0, 0, .3)" : "rgba(200, 200, 200, .6)")}
     );
   }
   > svg {
-    stroke: ${p => (p.isActive ? "rgba(0, 0, 0, 1)" : "hsl(211, 27%, 70%)")};
+    stroke: ${(p) => (p.isActive ? "rgba(0, 0, 0, 1)" : "hsl(211, 27%, 70%)")};
   }
 `;
 
 const midPointBtw = (p1, p2) => {
   return {
     x: p1.x + (p2.x - p1.x) / 2,
-    y: p1.y + (p2.y - p1.y) / 2
+    y: p1.y + (p2.y - p1.y) / 2,
   };
 };
 
@@ -60,7 +60,7 @@ const distanceBetweenCords = (cords1, cords2) => {
 };
 
 const orderByProperty = (prop, ...args) => {
-  return function(a, b) {
+  return function (a, b) {
     const equality = a[prop] - b[prop];
     if (equality === 0 && arguments.length > 1) {
       return orderByProperty.apply(null, args)(a, b);
@@ -83,20 +83,20 @@ const constructCoordinates = (coords, lineWidth) => {
   return {
     1: {
       x: coords.x - r,
-      y: coords.y + r
+      y: coords.y + r,
     },
     2: {
       x: coords.x - r,
-      y: coords.y - r
+      y: coords.y - r,
     },
     3: {
       x: coords.x + r,
-      y: coords.y - r
+      y: coords.y - r,
     },
     4: {
       x: coords.x + r,
-      y: coords.y + r
-    }
+      y: coords.y + r,
+    },
   };
 };
 
@@ -141,13 +141,13 @@ const findOptimalRhombus = (pointCurrent, pointPrevious, lineWidth) => {
   }
 
   // count distinct distances into counts object
-  allPoints.forEach(function(x) {
+  allPoints.forEach(function (x) {
     const distance = x.distance;
     counts[distance] = (counts[distance] || 0) + 1;
   });
 
   // Sort allPoints by distance
-  allPoints.sort(function(a, b) {
+  allPoints.sort(function (a, b) {
     return a.distance - b.distance;
   });
 
@@ -192,7 +192,7 @@ const findOptimalRhombus = (pointCurrent, pointPrevious, lineWidth) => {
 const panZoomContainerStyles = {
   outline: "none",
   height: "100vh",
-  width: "100vw"
+  width: "100vw",
 };
 
 const useModeState = createPersistedState("dm.settings.mode");
@@ -258,7 +258,7 @@ const getSnappedSelectionMask = (grid, ratio, selection) => {
   const p1 = { x: x1, y: y1 };
   const p2 = {
     x: x2 + grid.sideLength * ratio,
-    y: y2 + grid.sideLength * ratio
+    y: y2 + grid.sideLength * ratio,
   };
 
   const rect = calculateRectProps(p1, p2);
@@ -285,7 +285,7 @@ const Cursor = React.memo(
     showGrid,
     grid,
     ratio,
-    tokenSize
+    tokenSize,
   }) => {
     if (!coordinates) return null;
     if (tool === "area") {
@@ -385,10 +385,10 @@ const Cursor = React.memo(
 const fallbackGridColor = { r: 0, g: 0, b: 0, a: 0.5 };
 
 const buildRGBAColorString = ({ r, g, b, a }) => `rgba(${r}, ${g}, ${b}, ${a})`;
-const parseMapColor = input => {
+const parseMapColor = (input) => {
   if (!input) return fallbackGridColor;
   const {
-    rgba: [r, g, b, a]
+    rgba: [r, g, b, a],
   } = parseColor(input);
   return { r, g, b, a };
 };
@@ -412,7 +412,7 @@ export const DmMap = ({
   updateMap,
   deleteToken,
   updateToken,
-  dmPassword
+  dmPassword,
 }) => {
   const { actions } = useOvermind();
   const mapContainerRef = useRef(null);
@@ -425,7 +425,7 @@ export const DmMap = ({
   const [cursorCoordinates, setCursorCoodinates] = useState(null);
   const [
     areaSelectionStartCoordinates,
-    setAreaSelectionStartCoordinates
+    setAreaSelectionStartCoordinates,
   ] = useState(null);
   const [showGridSettings, setShowGridSettings] = useState(false);
 
@@ -457,7 +457,7 @@ export const DmMap = ({
   const [mapCanvasDimensions, setMapCanvasDimensions] = useState({
     width: 0,
     height: 0,
-    ratio: 1
+    ratio: 1,
   });
   const latestMapCanvasDimensions = useRef(null);
   latestMapCanvasDimensions.current = mapCanvasDimensions;
@@ -492,13 +492,13 @@ export const DmMap = ({
   }, []);
 
   const constructMask = useCallback(
-    coords => {
+    (coords) => {
       const maskDimensions = {
         x: coords.x,
         y: coords.y,
         lineWidth: 2,
         line: "aqua",
-        fill: "transparent"
+        fill: "transparent",
       };
 
       if (brushShape === "round") {
@@ -545,31 +545,31 @@ export const DmMap = ({
   }, []);
 
   const getMouseCoordinates = useCallback(
-    ev => {
+    (ev) => {
       const ratio = getMapDisplayRatio();
       if (!panZoomReferentialRef.current) return { x: 0, y: 0 };
       const [x, y] = panZoomReferentialRef.current.global_to_local([
         ev.pageX,
-        ev.pageY
+        ev.pageY,
       ]);
 
       return {
         x: x / ratio,
-        y: y / ratio
+        y: y / ratio,
       };
     },
     [getMapDisplayRatio]
   );
 
   const getTouchCoordinates = useCallback(
-    touch => {
+    (touch) => {
       if (!panZoomReferentialRef.current) {
         throw new TypeError("Invalid state");
       }
       const ratio = getMapDisplayRatio();
       const [x, y] = panZoomReferentialRef.current.global_to_local([
         touch.pageX,
-        touch.pageY
+        touch.pageY,
       ]);
       return { x: x / ratio, y: y / ratio };
     },
@@ -577,7 +577,7 @@ export const DmMap = ({
   );
 
   const drawInitial = useCallback(
-    coords => {
+    (coords) => {
       const fogMask = constructMask(coords);
       const fogContext = fogCanvasRef.current.getContext("2d");
       fogContext.lineWidth = fogMask.lineWidth;
@@ -730,12 +730,12 @@ export const DmMap = ({
     const blob = await fogCanvasRef.current.convertToBlob();
     sendLiveMap({
       image: new File([blob], "fog.live.png", {
-        type: "image/png"
-      })
+        type: "image/png",
+      }),
     });
   }, [sendLiveMap]);
 
-  useOnKeyDown(ev => {
+  useOnKeyDown((ev) => {
     /**
      * overwrite CMD + S
      * @source: https://michilehr.de/overwrite-cmds-and-ctrls-in-javascript/
@@ -756,7 +756,7 @@ export const DmMap = ({
     // eslint-disable-next-line default-case
     switch (ev.key) {
       case "Shift":
-        setMode(mode => (mode === "shroud" ? "clear" : "shroud"));
+        setMode((mode) => (mode === "shroud" ? "clear" : "shroud"));
         break;
       case "1":
         setTool("move");
@@ -777,15 +777,15 @@ export const DmMap = ({
   });
 
   useEffect(() => {
-    socket.on("mark area", async data => {
+    socket.on("mark area", async (data) => {
       const { ratio } = latestMapCanvasDimensions.current;
-      setMarkedAreas(markedAreas => [
+      setMarkedAreas((markedAreas) => [
         ...markedAreas,
         {
           id: data.id,
           x: data.x * ratio,
-          y: data.y * ratio
-        }
+          y: data.y * ratio,
+        },
       ]);
     });
 
@@ -811,14 +811,14 @@ export const DmMap = ({
 
     let tasks = [
       loadImage(`/map/${loadedMapId}/map?authorization=${dmPassword}`),
-      loadImage(`/map/${loadedMapId}/fog?authorization=${dmPassword}`)
+      loadImage(`/map/${loadedMapId}/fog?authorization=${dmPassword}`),
     ];
 
     Promise.all([
       tasks[0].promise,
       tasks[1].promise.catch(() => {
         return null;
-      })
+      }),
     ])
       .then(([map, fog]) => {
         tasks = null;
@@ -875,7 +875,7 @@ export const DmMap = ({
 
         redrawCanvas();
       })
-      .catch(err => {
+      .catch((err) => {
         // @TODO: distinguish between network error (rertry?) and cancel error
         console.error(err);
       });
@@ -890,7 +890,7 @@ export const DmMap = ({
       formData.append(
         "image",
         new File([blob], "fog.png", {
-          type: "image/png"
+          type: "image/png",
         })
       );
 
@@ -898,14 +898,14 @@ export const DmMap = ({
         method: "POST",
         body: formData,
         headers: {
-          Authorization: dmPassword ? `Bearer ${dmPassword}` : undefined
-        }
+          Authorization: dmPassword ? `Bearer ${dmPassword}` : undefined,
+        },
       });
     }, 500);
 
     return () => {
       if (tasks) {
-        tasks.forEach(task => {
+        tasks.forEach((task) => {
           task.cancel();
         });
       }
@@ -932,11 +932,11 @@ export const DmMap = ({
   }
 
   const getRelativePosition = useCallback(
-    pageCoordinates => {
+    (pageCoordinates) => {
       const ref = new Referentiel(panZoomRef.current.dragContainer.current);
       const [x, y] = ref.global_to_local([
         pageCoordinates.x,
-        pageCoordinates.y
+        pageCoordinates.y,
       ]);
       const { ratio } = mapCanvasDimensions;
       return { x: x / ratio, y: y / ratio };
@@ -945,7 +945,7 @@ export const DmMap = ({
   );
 
   const onClickToken = useCallback(
-    token => {
+    (token) => {
       actions.tokenInfoAside.toggleActiveToken(token);
     },
     [actions]
@@ -958,9 +958,9 @@ export const DmMap = ({
         preventPan={() => tool !== "move" && !isAltPressed}
         style={{
           ...panZoomContainerStyles,
-          cursor
+          cursor,
         }}
-        onClick={ev => {
+        onClick={(ev) => {
           if (isAltPressed) return;
           const ref = new Referentiel(panZoomRef.current.dragContainer.current);
           const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
@@ -971,15 +971,17 @@ export const DmMap = ({
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  Authorization: dmPassword ? `Bearer ${dmPassword}` : undefined
+                  Authorization: dmPassword
+                    ? `Bearer ${dmPassword}`
+                    : undefined,
                 },
                 body: JSON.stringify({
                   x: x / ratio,
                   y: y / ratio,
                   radius: tokenSize,
                   color: tokenColor,
-                  label: "1"
-                })
+                  label: "1",
+                }),
               });
               break;
             }
@@ -987,7 +989,7 @@ export const DmMap = ({
             case "mark": {
               socket.emit("mark area", {
                 x: x / ratio,
-                y: y / ratio
+                y: y / ratio,
               });
               break;
             }
@@ -1011,7 +1013,7 @@ export const DmMap = ({
           <ObjectLayer
             defs={<>{gridPatternDefinition}</>}
             ref={objectSvgRef}
-            onMouseMove={ev => {
+            onMouseMove={(ev) => {
               if (tool === "move" || tool === "mark" || isAltPressed) {
                 return;
               }
@@ -1019,7 +1021,7 @@ export const DmMap = ({
               const coords = getMouseCoordinates(ev);
               setCursorCoodinates(coords);
             }}
-            onMouseDown={ev => {
+            onMouseDown={(ev) => {
               if (isAltPressed) return;
               const coords = getMouseCoordinates(ev);
 
@@ -1027,7 +1029,7 @@ export const DmMap = ({
                 let lastCoords = coords;
                 drawInitial(lastCoords);
 
-                const onMouseMove = ev => {
+                const onMouseMove = (ev) => {
                   const currentCoords = getMouseCoordinates(ev);
 
                   drawFog(lastCoords, currentCoords);
@@ -1049,7 +1051,7 @@ export const DmMap = ({
                 const startCoords = coords;
                 setAreaSelectionStartCoordinates(coords);
 
-                const onMouseUp = ev => {
+                const onMouseUp = (ev) => {
                   window.removeEventListener("mouseup", onMouseUp);
                   window.removeEventListener("keydown", onKeyDown);
                   const endCoords = getMouseCoordinates(ev);
@@ -1062,7 +1064,7 @@ export const DmMap = ({
                   }
                 };
 
-                const onKeyDown = ev => {
+                const onKeyDown = (ev) => {
                   if (ev.key === "Escape" && tool === "area") {
                     setAreaSelectionStartCoordinates(null);
                     window.removeEventListener("mouseup", onMouseUp);
@@ -1074,7 +1076,7 @@ export const DmMap = ({
                 window.addEventListener("keydown", onKeyDown);
               }
             }}
-            onTouchStart={ev => {
+            onTouchStart={(ev) => {
               if (tool === "move") {
                 return;
               }
@@ -1086,7 +1088,7 @@ export const DmMap = ({
                 let lastCoords = coords;
                 drawInitial(lastCoords);
 
-                const onTouchMove = ev => {
+                const onTouchMove = (ev) => {
                   ev.preventDefault();
                   const currentCoords = getTouchCoordinates(ev.touches[0]);
                   setCursorCoodinates(currentCoords);
@@ -1111,7 +1113,7 @@ export const DmMap = ({
                 let lastTouchCoordinates = coords;
                 setAreaSelectionStartCoordinates(coords);
 
-                const onTouchMove = ev => {
+                const onTouchMove = (ev) => {
                   lastTouchCoordinates = getTouchCoordinates(ev.touches[0]);
                   setCursorCoodinates(lastTouchCoordinates);
                 };
@@ -1132,10 +1134,10 @@ export const DmMap = ({
                 window.addEventListener("touchend", onTouchEnd);
               }
             }}
-            onTouchMove={ev => {
+            onTouchMove={(ev) => {
               ev.preventDefault();
             }}
-            onContextMenu={ev => {
+            onContextMenu={(ev) => {
               ev.preventDefault();
             }}
           >
@@ -1180,7 +1182,7 @@ export const DmMap = ({
           width: "100%",
           left: 0,
           bottom: 12,
-          pointerEvents: "none"
+          pointerEvents: "none",
         }}
       >
         <Toolbar horizontal>
@@ -1191,7 +1193,9 @@ export const DmMap = ({
                   if (!map.grid) {
                     enterGridMode();
                   } else {
-                    setShowGridSettings(showGridSettings => !showGridSettings);
+                    setShowGridSettings(
+                      (showGridSettings) => !showGridSettings
+                    );
                   }
                 }}
               >
@@ -1205,11 +1209,11 @@ export const DmMap = ({
                   gridColor={gridColor}
                   setGridColor={setGridColor}
                   showGrid={map.showGrid}
-                  setShowGrid={showGrid => {
+                  setShowGrid={(showGrid) => {
                     updateMap(map.id, { showGrid });
                   }}
                   showGridToPlayers={map.showGridToPlayers}
-                  setShowGridToPlayers={showGridToPlayers => {
+                  setShowGridToPlayers={(showGridToPlayers) => {
                     updateMap(map.id, { showGridToPlayers });
                   }}
                   onGridColorChangeComplete={onGridColorChangeComplete}
@@ -1242,7 +1246,7 @@ export const DmMap = ({
             <Toolbar.Item>
               <ConditionalWrap
                 condition={liveMapId}
-                wrap={children => (
+                wrap={(children) => (
                   <Toolbar.Button onClick={hideMap}>{children}</Toolbar.Button>
                 )}
               >
@@ -1251,7 +1255,7 @@ export const DmMap = ({
                     stroke:
                       liveMapId !== null
                         ? "hsl(360, 83%, 62%)"
-                        : "hsl(211, 27%, 70%)"
+                        : "hsl(211, 27%, 70%)",
                   }}
                 />
                 <Icons.Label
@@ -1299,7 +1303,7 @@ export const DmMap = ({
           height: "100%",
           top: 0,
           left: 12,
-          pointerEvents: "none"
+          pointerEvents: "none",
         }}
       >
         <Toolbar>
@@ -1369,7 +1373,7 @@ export const DmMap = ({
                     max="200"
                     step="1"
                     value={lineWidth}
-                    onChange={ev => {
+                    onChange={(ev) => {
                       setLineWidth(Math.min(200, Math.max(0, ev.target.value)));
                     }}
                   />
@@ -1379,7 +1383,7 @@ export const DmMap = ({
                         flex: 1,
                         textAlign: "left",
                         fontWeight: "bold",
-                        fontSize: 10
+                        fontSize: 10,
                       }}
                     >
                       1
@@ -1389,7 +1393,7 @@ export const DmMap = ({
                         flex: 1,
                         textAlign: "right",
                         fontWeight: "bold",
-                        fontSize: 10
+                        fontSize: 10,
                       }}
                     >
                       200
@@ -1473,7 +1477,7 @@ const ShowGridSettingsPopup = React.memo(
     setShowGridToPlayers,
     showGridToPlayers,
     onGridColorChangeComplete,
-    onClickOutside
+    onClickOutside,
   }) => {
     const popupRef = useOnClickOutside(onClickOutside);
     const onGridColorChange = useCallback(
@@ -1498,14 +1502,14 @@ const ShowGridSettingsPopup = React.memo(
                 display: "flex",
                 alignItems: "center",
                 textAlign: "left",
-                cursor: "pointer"
+                cursor: "pointer",
               }}
             >
               <div style={{ flexGrow: 1 }}>Show Grid</div>
               <div style={{ marginLeft: 8 }}>
                 <ToggleSwitch
                   checked={showGrid}
-                  onChange={ev => {
+                  onChange={(ev) => {
                     setShowGrid(ev.target.checked);
                   }}
                 />
@@ -1517,14 +1521,14 @@ const ShowGridSettingsPopup = React.memo(
                 alignItems: "center",
                 textAlign: "left",
                 marginTop: 8,
-                cursor: "pointer"
+                cursor: "pointer",
               }}
             >
               <div style={{ flexGrow: 1 }}>Show Grid to Players</div>
               <div style={{ marginLeft: 8 }}>
                 <ToggleSwitch
                   checked={showGridToPlayers}
-                  onChange={ev => {
+                  onChange={(ev) => {
                     setShowGridToPlayers(ev.target.checked);
                   }}
                 />

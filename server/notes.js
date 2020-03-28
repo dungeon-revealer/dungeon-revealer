@@ -13,13 +13,13 @@ const createNote = ({
   title,
   content,
   createdAt = new Date(),
-  updatedAt = new Date()
+  updatedAt = new Date(),
 }) => ({
   id,
   title,
   content,
   createdAt,
-  updatedAt
+  updatedAt,
 });
 
 class Notes {
@@ -32,13 +32,13 @@ class Notes {
   _loadNotes() {
     fs.readdirSync(notesDirectory)
       .filter(junk.not)
-      .filter(item => item.endsWith(".json"))
-      .map(fileName => path.join(notesDirectory, fileName))
-      .map(notePath => {
+      .filter((item) => item.endsWith(".json"))
+      .map((fileName) => path.join(notesDirectory, fileName))
+      .map((notePath) => {
         const rawConfig = fs.readFileSync(notePath, "utf-8");
         return JSON.parse(rawConfig);
       })
-      .forEach(note => {
+      .forEach((note) => {
         this.notes[note.id] = createNote(note);
       });
   }
@@ -57,7 +57,7 @@ class Notes {
     const note = createNote({
       id,
       title,
-      content
+      content,
     });
     fs.writeFileSync(path.join(notesDirectory, fileName), JSON.stringify(note));
     this.notes[id] = note;

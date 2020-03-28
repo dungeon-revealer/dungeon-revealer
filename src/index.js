@@ -11,7 +11,7 @@ const element = document.querySelector("#root");
 if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
   window.addEventListener(
     "touchstart",
-    ev => {
+    (ev) => {
       ev.preventDefault();
     },
     { passive: false }

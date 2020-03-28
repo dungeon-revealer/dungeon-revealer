@@ -29,7 +29,7 @@ export type ActiveTokenNoReferenceState = Extract<
 
 export const createLoadingActiveTokenState = ({
   referenceId,
-  id
+  id,
 }: {
   referenceId: string;
   id: string;
@@ -43,17 +43,17 @@ export const createLoadingActiveTokenState = ({
       throw new Error("Invalid state. This should be handled different.");
     }
     return note;
-  }
+  },
 });
 
 export const createLoadedActiveTokenState = ({
-  id
+  id,
 }: {
   id: string;
 }): ActiveTokenNoReferenceState => ({
   id,
   mode: "noReference",
-  referenceId: null
+  referenceId: null,
 });
 
 export type TokenInfoAsideStateType = {
@@ -74,7 +74,7 @@ const createState = (): TokenInfoAsideStateType => ({
   isEditMode: false,
   isVisible(state) {
     return (state.activeToken !== null) as any;
-  }
+  },
 });
 
 export const createNoSelectionTokenInfoAsideState = createState;

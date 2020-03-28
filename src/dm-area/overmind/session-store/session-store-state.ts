@@ -3,7 +3,7 @@ export type SessionStoreStateType = {
 };
 
 const createStore = (): SessionStoreStateType => ({
-  accessToken: null
+  accessToken: null,
 });
 
 export const state = createStore();

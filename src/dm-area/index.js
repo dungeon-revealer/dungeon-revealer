@@ -4,7 +4,7 @@ import React, {
   useEffect,
   useMemo,
   useRef,
-  useCallback
+  useCallback,
 } from "react";
 import produce from "immer";
 import debounce from "lodash/debounce";
@@ -30,7 +30,7 @@ const useDmPassword = createPersistedState("dmPassword");
 
 const INITIAL_MODE = {
   title: "LOADING",
-  data: null
+  data: null,
 };
 
 export const DmArea = () => {
@@ -48,12 +48,13 @@ export const DmArea = () => {
     () =>
       (data &&
         mode.title === "SET_MAP_GRID" &&
-        data.maps.find(map => map.id === mode.data.mapId)) ||
+        data.maps.find((map) => map.id === mode.data.mapId)) ||
       null,
     [data, mode]
   );
   const loadedMap = useMemo(
-    () => (data ? data.maps.find(map => map.id === loadedMapId) || null : null),
+    () =>
+      data ? data.maps.find((map) => map.id === loadedMapId) || null : null,
     [data, loadedMapId]
   );
 
@@ -63,9 +64,9 @@ export const DmArea = () => {
         ...init,
         headers: {
           Authorization: dmPassword ? `Bearer ${dmPassword}` : undefined,
-          ...init.headers
-        }
-      }).then(res => {
+          ...init.headers,
+        },
+      }).then((res) => {
         if (res.status === 401) {
           console.error("Unauthenticated access.");
           throw new Error("Unauthenticated access.");
@@ -84,21 +85,21 @@ export const DmArea = () => {
 
   // load initial state
   useAsyncEffect(
-    function*() {
-      const result = yield localFetch("/auth").then(res => res.json());
+    function* () {
+      const result = yield localFetch("/auth").then((res) => res.json());
       if (result.data.role !== "DM") {
         setMode({ title: "AUTHENTICATE" });
         return;
       }
 
-      const { data } = yield localFetch("/map").then(res => res.json());
+      const { data } = yield localFetch("/map").then((res) => res.json());
       setData(data);
       const isLoadedMapAvailable = Boolean(
-        data.maps.find(map => map.id === loadedMapIdRef.current)
+        data.maps.find((map) => map.id === loadedMapIdRef.current)
       );
 
       const isLiveMapAvailable = Boolean(
-        data.maps.find(map => map.id === data.currentMapId)
+        data.maps.find((map) => map.id === data.currentMapId)
       );
 
       if (!isLiveMapAvailable && !isLoadedMapAvailable) {
@@ -123,29 +124,31 @@ export const DmArea = () => {
     socket.on(eventName, ({ type, data }) => {
       if (type === "add") {
         setData(
-          produce(appData => {
-            const map = appData.maps.find(map => map.id === loadedMapId);
+          produce((appData) => {
+            const map = appData.maps.find((map) => map.id === loadedMapId);
             map.tokens.push(data.token);
           })
         );
       } else if (type === "update") {
         setData(
-          produce(appData => {
-            const map = appData.maps.find(map => map.id === loadedMapId);
-            map.tokens = map.tokens.map(token => {
+          produce((appData) => {
+            const map = appData.maps.find((map) => map.id === loadedMapId);
+            map.tokens = map.tokens.map((token) => {
               if (token.id !== data.token.id) return token;
               return {
                 ...token,
-                ...data.token
+                ...data.token,
               };
             });
           })
         );
       } else if (type === "remove") {
         setData(
-          produce(appData => {
-            const map = appData.maps.find(map => map.id === loadedMapId);
-            map.tokens = map.tokens.filter(token => token.id !== data.tokenId);
+          produce((appData) => {
+            const map = appData.maps.find((map) => map.id === loadedMapId);
+            map.tokens = map.tokens.filter(
+              (token) => token.id !== data.tokenId
+            );
           })
         );
       }
@@ -163,11 +166,11 @@ export const DmArea = () => {
 
       const res = await localFetch(`/map`, {
         method: "POST",
-        body: formData
-      }).then(res => res.json());
-      setData(data => ({
+        body: formData,
+      }).then((res) => res.json());
+      setData((data) => ({
         ...data,
-        maps: [...data.maps, res.data.map]
+        maps: [...data.maps, res.data.map],
       }));
     },
     [localFetch]
@@ -178,18 +181,18 @@ export const DmArea = () => {
       const res = await localFetch(`/map/${mapId}`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(data)
-      }).then(res => res.json());
+        body: JSON.stringify(data),
+      }).then((res) => res.json());
 
       if (!res.data.map) {
         return;
       }
 
       setData(
-        produce(data => {
-          data.maps = data.maps.map(map => {
+        produce((data) => {
+          data.maps = data.maps.map((map) => {
             if (map.id !== res.data.map.id) {
               return map;
             } else {
@@ -203,25 +206,25 @@ export const DmArea = () => {
   );
 
   const deleteMap = useCallback(
-    async mapId => {
+    async (mapId) => {
       await localFetch(`/map/${mapId}`, {
-        method: "DELETE"
+        method: "DELETE",
       });
-      setData(data => ({
+      setData((data) => ({
         ...data,
-        maps: data.maps.filter(map => map.id !== mapId)
+        maps: data.maps.filter((map) => map.id !== mapId),
       }));
     },
     [localFetch]
   );
 
   const deleteToken = useCallback(
-    tokenId => {
+    (tokenId) => {
       localFetch(`/map/${loadedMapId}/token/${tokenId}`, {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       });
     },
     [loadedMapId, localFetch]
@@ -232,11 +235,11 @@ export const DmArea = () => {
       localFetch(`/map/${loadedMapId}/token/${id}`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...updates
-        })
+          ...updates,
+        }),
       });
     }, 100)
   );
@@ -244,9 +247,9 @@ export const DmArea = () => {
   const updateToken = useCallback(
     ({ id, ...updates }) => {
       setData(
-        produce(data => {
-          const map = data.maps.find(map => map.id === loadedMapId);
-          map.tokens = map.tokens.map(token => {
+        produce((data) => {
+          const map = data.maps.find((map) => map.id === loadedMapId);
+          map.tokens = map.tokens.map((token) => {
             if (token.id !== id) return token;
             return { ...token, ...updates };
           });
@@ -265,7 +268,7 @@ export const DmArea = () => {
 
       await localFetch(`/map/${loadedMapId}/send`, {
         method: "POST",
-        body: formData
+        body: formData,
       });
       setLiveMapId(loadedMapId);
     },
@@ -276,11 +279,11 @@ export const DmArea = () => {
     await localFetch("/active-map", {
       method: "POST",
       body: JSON.stringify({
-        mapId: null
+        mapId: null,
       }),
       headers: {
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     });
     setLiveMapId(null);
   }, [localFetch]);
@@ -301,7 +304,7 @@ export const DmArea = () => {
     return (
       <Modal.Provider>
         <AuthenticationScreen
-          onAuthenticate={password => {
+          onAuthenticate={(password) => {
             setDmPassword(password);
           }}
           fetch={localFetch}
@@ -323,14 +326,14 @@ export const DmArea = () => {
               closeModal={() => {
                 setMode({ title: "EDIT_MAP" });
               }}
-              setLoadedMapId={loadedMapId => {
+              setLoadedMapId={(loadedMapId) => {
                 setMode({ title: "EDIT_MAP" });
                 setLoadedMapId(loadedMapId);
               }}
               updateMap={updateMap}
               deleteMap={deleteMap}
               createMap={createMap}
-              enterGridMode={mapId =>
+              enterGridMode={(mapId) =>
                 setMode({ title: "SET_MAP_GRID", data: { mapId } })
               }
               dmPassword={dmPassword}
@@ -349,7 +352,7 @@ export const DmArea = () => {
               map={setMapGridTargetMap}
               onSuccess={(mapId, grid) => {
                 updateMap(mapId, {
-                  grid
+                  grid,
                 });
                 setMode({ title: "SHOW_MAP_LIBRARY" });
               }}

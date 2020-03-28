@@ -22,8 +22,9 @@ export const useSvgGrid = (grid, dimensions, showGrid, gridColor) => {
         y={grid.y * ratio}
       >
         <path
-          d={`M ${grid.sideLength * ratio} 0 L 0 0 0 ${grid.sideLength *
-            ratio}`}
+          d={`M ${grid.sideLength * ratio} 0 L 0 0 0 ${
+            grid.sideLength * ratio
+          }`}
           fill="none"
           stroke={gridColor}
           strokeWidth="2"

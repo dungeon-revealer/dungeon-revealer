@@ -6,7 +6,7 @@ export const AreaMarker = React.memo(({ x, y, onFinishAnimation }) => {
     from: { radius: 1, opacity: 1 },
     to: { radius: 12 * 15, opacity: 0 },
     config: { duration: 2500 },
-    onRest: onFinishAnimation
+    onRest: onFinishAnimation,
   });
 
   return (

@@ -11,19 +11,19 @@ const ButtonBase = styled.button<{
   align-items: center;
   border-radius: 4px;
   display: inline-flex;
-  font-size: ${p => (p.big ? `24px` : `18px`)};
+  font-size: ${(p) => (p.big ? `24px` : `18px`)};
   font-weight: 700;
   line-height: 1.25;
-  padding: ${p =>
+  padding: ${(p) =>
     p.big ? `1.5rem 2rem` : p.small ? `0.5rem .75rem` : `1rem 1.5rem`};
-  width: ${p => (p.fullWidth ? "100%" : null)};
-  font-size: ${p => (p.small ? `12px` : undefined)};
+  width: ${(p) => (p.fullWidth ? "100%" : null)};
+  font-size: ${(p) => (p.small ? `12px` : undefined)};
 
   > svg + span {
-    margin-left: ${p => (p.iconOnly ? null : p.small ? `.5rem` : `1rem`)};
+    margin-left: ${(p) => (p.iconOnly ? null : p.small ? `.5rem` : `1rem`)};
   }
   > span + svg {
-    margin-left: ${p => (p.iconOnly ? null : p.small ? `.5rem` : `1rem`)};
+    margin-left: ${(p) => (p.iconOnly ? null : p.small ? `.5rem` : `1rem`)};
   }
 
   &:focus {

@@ -25,7 +25,7 @@ const CreateNewMapButton = ({ onSelectFile, children, ...props }) => {
         style={{ display: "none" }}
         ref={fileInputRef}
         accept=".jpeg,.jpg,.svg,.png"
-        onChange={ev => {
+        onChange={(ev) => {
           if (!ev.target.files) {
             return;
           }
@@ -43,7 +43,7 @@ const CreateNewMapButton = ({ onSelectFile, children, ...props }) => {
 const ModalType = {
   EDIT_TITLE: "EDIT_TITLE",
   DELETE_MAP: "DELETE_MAP",
-  CREATE_MAP: "CREATE_MAP"
+  CREATE_MAP: "CREATE_MAP",
 };
 
 export const SelectMapModal = ({
@@ -57,7 +57,7 @@ export const SelectMapModal = ({
   createMap,
   canClose,
   enterGridMode,
-  dmPassword
+  dmPassword,
 }) => {
   const [activeMapId, setActiveMapId] = useState(loadedMapId);
   const [modalType, setModalType] = useState(null);
@@ -65,7 +65,7 @@ export const SelectMapModal = ({
   const selectedFileRef = useRef(null);
 
   const onChangeFilter = useCallback(
-    ev => {
+    (ev) => {
       setFilterValue(ev.target.value);
     },
     [setFilterValue]
@@ -73,10 +73,10 @@ export const SelectMapModal = ({
 
   let activeMap = null;
   if (activeMapId) {
-    activeMap = maps.find(map => map.id === activeMapId) || null;
+    activeMap = maps.find((map) => map.id === activeMapId) || null;
   }
 
-  const beforeCreateMap = file => {
+  const beforeCreateMap = (file) => {
     selectedFileRef.current = file;
     setModalType(ModalType.CREATE_MAP);
   };
@@ -121,7 +121,7 @@ export const SelectMapModal = ({
                     paddingLeft: 12,
                     paddingRight: 12,
                     paddingTop: 10,
-                    paddingBottom: 10
+                    paddingBottom: 10,
                   }}
                 >
                   <Input
@@ -129,7 +129,7 @@ export const SelectMapModal = ({
                     placeholder="Filter"
                     value={filter}
                     onChange={onChangeFilter}
-                    onKeyDown={ev => {
+                    onKeyDown={(ev) => {
                       if (ev.keyCode === 27 && filter !== "") {
                         ev.stopPropagation();
                         setFilterValue("");
@@ -140,11 +140,11 @@ export const SelectMapModal = ({
                 <ScrollableList.List>
                   {maps
                     .filter(
-                      item =>
+                      (item) =>
                         filter === "" ||
                         item.title.toLowerCase().includes(filter)
                     )
-                    .map(item => (
+                    .map((item) => (
                       <ScrollableList.ListItem key={item.id}>
                         <ScrollableList.ListItemButton
                           tabIndex="1"
@@ -162,7 +162,7 @@ export const SelectMapModal = ({
                   <CreateNewMapButton
                     tabIndex="1"
                     fullWidth
-                    onSelectFile={file => {
+                    onSelectFile={(file) => {
                       beforeCreateMap(file);
                     }}
                   >
@@ -180,7 +180,7 @@ export const SelectMapModal = ({
                     paddingLeft: 16,
                     paddingRight: 16,
                     paddingTop: 8,
-                    paddingBottom: 16
+                    paddingBottom: 16,
                   }}
                 >
                   <h3
@@ -188,7 +188,7 @@ export const SelectMapModal = ({
                       margin: `1rem 16px 1rem 0`,
                       overflow: "hidden",
                       whiteSpace: "nowrap",
-                      textOverflow: "ellipsis"
+                      textOverflow: "ellipsis",
                     }}
                   >
                     {activeMap.title}
@@ -206,7 +206,7 @@ export const SelectMapModal = ({
                   style={{
                     height: "100%",
                     width: "100%",
-                    overflowY: "scroll"
+                    overflowY: "scroll",
                   }}
                 >
                   {/* eslint-disable-next-line jsx-a11y/alt-text */}
@@ -221,7 +221,7 @@ export const SelectMapModal = ({
                     paddingLeft: 16,
                     paddingRight: 16,
                     paddingTop: 20,
-                    paddingBottom: 16
+                    paddingBottom: 16,
                   }}
                 >
                   <div>
@@ -272,7 +272,7 @@ export const SelectMapModal = ({
                   justifyContent: "center",
                   alignItems: "center",
                   textAlign: "center",
-                  flexDirection: "column"
+                  flexDirection: "column",
                 }}
               >
                 {maps.length ? (
@@ -288,7 +288,7 @@ export const SelectMapModal = ({
                     </h3>
                     <CreateNewMapButton
                       big
-                      onSelectFile={file => {
+                      onSelectFile={(file) => {
                         beforeCreateMap(file);
                       }}
                     >
@@ -317,7 +317,7 @@ export const SelectMapModal = ({
           closeModal={() => {
             setModalType(null);
           }}
-          createMap={title =>
+          createMap={(title) =>
             createMap({ file: selectedFileRef.current, title })
           }
         />
@@ -331,7 +331,7 @@ const CreateNewMapModal = ({ closeModal, createMap }) => {
   const [error, setError] = useState("");
 
   const onChangeInputValue = useCallback(
-    ev => {
+    (ev) => {
       setInputValue(ev.target.value);
       setError(null);
     },
@@ -382,7 +382,7 @@ const ChangeMapTitleModal = ({ closeModal, updateMap }) => {
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState(null);
   const onChangeInputValue = useCallback(
-    ev => {
+    (ev) => {
       setInputValue(ev.target.value);
     },
     [setInputValue]

@@ -99,29 +99,29 @@ const PlayerMap = ({ fetch, pcPassword }) => {
   };
 
   useAsyncEffect(
-    function*() {
+    function* () {
       let fogCacheBusterCounter = 0;
-      socket.on("connect", function() {
+      socket.on("connect", function () {
         console.log("connected to server");
       });
 
-      socket.on("reconnecting", function() {
+      socket.on("reconnecting", function () {
         console.log("reconnecting to server");
       });
 
-      socket.on("reconnect", function() {
+      socket.on("reconnect", function () {
         console.log("reconnected to server");
       });
 
-      socket.on("reconnect_failed", function() {
+      socket.on("reconnect_failed", function () {
         console.log("reconnect failed!");
       });
 
-      socket.on("disconnect", function() {
+      socket.on("disconnect", function () {
         console.log("disconnected from server");
       });
 
-      const onReceiveMap = async data => {
+      const onReceiveMap = async (data) => {
         if (!data) {
           return;
         }
@@ -129,7 +129,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
         const context = mapCanvasRef.current.getContext("2d");
 
         if (pendingImageLoads.current) {
-          pendingImageLoads.current.forEach(task => {
+          pendingImageLoads.current.forEach((task) => {
             task.cancel();
           });
           pendingImageLoads.current = null;
@@ -164,7 +164,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
           pendingImageLoads.current = [task];
 
           task.promise
-            .then(fogImage => {
+            .then((fogImage) => {
               pendingImageLoads.current = null;
 
               context.clearRect(
@@ -198,7 +198,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
                 mapCanvasRef.current.height
               );
             })
-            .catch(err => {
+            .catch((err) => {
               // @TODO: distinguish between network error (rertry?) and cancel error
               console.error(err);
             });
@@ -216,11 +216,11 @@ const PlayerMap = ({ fetch, pcPassword }) => {
           ),
           loadImage(
             `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
-          )
+          ),
         ];
         pendingImageLoads.current = tasks;
 
-        Promise.all(tasks.map(task => task.promise))
+        Promise.all(tasks.map((task) => task.promise))
           .then(([map, fog]) => {
             pendingImageLoads.current = null;
 
@@ -277,34 +277,34 @@ const PlayerMap = ({ fetch, pcPassword }) => {
             centerMap(false);
             setShowSplashScreen(false);
           })
-          .catch(err => {
+          .catch((err) => {
             // @TODO: distinguish between network error (rertry?) and cancel error
             console.error(err);
           });
       };
 
       const {
-        data: { activeMap }
-      } = yield fetch("/active-map").then(res => res.json());
+        data: { activeMap },
+      } = yield fetch("/active-map").then((res) => res.json());
 
       if (activeMap) {
         yield onReceiveMap({ map: activeMap });
       }
 
-      socket.on("mark area", async data => {
-        setMarkedAreas(markedAreas => [
+      socket.on("mark area", async (data) => {
+        setMarkedAreas((markedAreas) => [
           ...markedAreas,
           {
             id: data.id,
             x: data.x * mapCanvasDimensions.current.ratio,
-            y: data.y * mapCanvasDimensions.current.ratio
-          }
+            y: data.y * mapCanvasDimensions.current.ratio,
+          },
         ]);
       });
 
       socket.on("map update", onReceiveMap);
 
-      const contextmenuListener = ev => {
+      const contextmenuListener = (ev) => {
         ev.preventDefault();
       };
       window.addEventListener("contextmenu", contextmenuListener);
@@ -320,7 +320,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
 
         window.removeEventListener("contextmenu", contextmenuListener);
         if (pendingImageLoads.current) {
-          pendingImageLoads.current.forEach(task => {
+          pendingImageLoads.current.forEach((task) => {
             task.cancel();
           });
           pendingImageLoads.current = null;
@@ -335,27 +335,27 @@ const PlayerMap = ({ fetch, pcPassword }) => {
     socket.on(eventName, ({ type, data }) => {
       if (type === "add") {
         setCurrentMap(
-          produce(map => {
+          produce((map) => {
             map.tokens.push(data.token);
           })
         );
       } else if (type === "update") {
         setCurrentMap(
-          produce(map => {
-            map.tokens = map.tokens.map(token => {
+          produce((map) => {
+            map.tokens = map.tokens.map((token) => {
               if (token.id !== data.token.id) return token;
               return {
                 ...token,
-                ...data.token
+                ...data.token,
               };
             });
           })
         );
       } else if (type === "remove") {
         setCurrentMap(
-          produce(map => {
+          produce((map) => {
             map.tokens = map.tokens = map.tokens.filter(
-              token => token.id !== data.tokenId
+              (token) => token.id !== data.tokenId
             );
           })
         );
@@ -366,7 +366,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
   }, [socket, mapId]);
 
   // long press event for setting a map marker
-  const longPressProps = useLongPress(ev => {
+  const longPressProps = useLongPress((ev) => {
     if (!mapCanvasDimensions.current) {
       return;
     }
@@ -394,7 +394,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
           cursor: "grab",
           background: "black",
           height: "100vh",
-          width: "100vw"
+          width: "100vw",
         }}
         ref={panZoomRef}
         {...longPressProps}
@@ -405,7 +405,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
             style={{
               pointerEvents: "none",
               backfaceVisibility: "hidden",
-              position: "absolute"
+              position: "absolute",
             }}
           />
           <ObjectLayer ref={objectSvgRef}>
@@ -435,7 +435,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
                   onClick={() => {
                     centerMap();
                   }}
-                  onTouchStart={ev => {
+                  onTouchStart={(ev) => {
                     ev.preventDefault();
                     centerMap();
                   }}
@@ -509,9 +509,9 @@ export const PlayerArea = () => {
         ...init,
         headers: {
           Authorization: pcPassword ? `Bearer ${pcPassword}` : undefined,
-          ...init.headers
-        }
-      }).then(res => {
+          ...init.headers,
+        },
+      }).then((res) => {
         if (res.status === 401) {
           console.error("Unauthenticated access.");
           throw new Error("Unauthenticated access.");
@@ -523,8 +523,8 @@ export const PlayerArea = () => {
   );
 
   useAsyncEffect(
-    function*() {
-      const result = yield localFetch("/auth").then(res => res.json());
+    function* () {
+      const result = yield localFetch("/auth").then((res) => res.json());
       if (!result.data.role) {
         setMode("AUTHENTICATE");
         return;
@@ -542,7 +542,7 @@ export const PlayerArea = () => {
       <AuthenticationScreen
         requiredRole="PC"
         fetch={localFetch}
-        onAuthenticate={password => {
+        onAuthenticate={(password) => {
           setPcPassword(password);
         }}
       />

@@ -40,9 +40,9 @@ const Provider: React.FC<{}> = ({ children }) => {
   const registeredModals = useStaticRef<ModalRegistration[]>(() => []);
 
   const createModalRegistration: CreateModalRegistrationFunction = useCallback(
-    escapeHandler => {
+    (escapeHandler) => {
       const modalRegistration = {
-        escapeHandler
+        escapeHandler,
       };
 
       const prevLength = registeredModals.length;
@@ -56,12 +56,12 @@ const Provider: React.FC<{}> = ({ children }) => {
       }
 
       return {
-        setEscapeHandler: handler => {
+        setEscapeHandler: (handler) => {
           modalRegistration.escapeHandler = handler;
         },
         destroy: () => {
           const index = registeredModals.findIndex(
-            registration => registration === modalRegistration
+            (registration) => registration === modalRegistration
           );
           if (index === -1) {
             throw new Error("Inconsistent state.");
@@ -70,7 +70,7 @@ const Provider: React.FC<{}> = ({ children }) => {
           if (registeredModals.length === 0) {
             enableBodyScroll(bodyElement);
           }
-        }
+        },
       };
     },
     [registeredModals]
@@ -111,17 +111,17 @@ const ModalBackground: React.FC<
 > = ({ children, styles, ...props }) => (
   <FocusTrap>
     <div
-      onClick={ev => {
+      onClick={(ev) => {
         ev.stopPropagation();
         if (props.onClick) props.onClick(ev);
       }}
-      onMouseDown={ev => {
+      onMouseDown={(ev) => {
         ev.stopPropagation();
       }}
-      onDoubleClick={ev => {
+      onDoubleClick={(ev) => {
         ev.stopPropagation();
       }}
-      onTouchStart={ev => {
+      onTouchStart={(ev) => {
         ev.stopPropagation();
       }}
       style={{
@@ -135,7 +135,7 @@ const ModalBackground: React.FC<
         alignItems: "center",
         justifyContent: "center",
         zIndex: 200,
-        ...styles
+        ...styles,
       }}
       {...props}
     >
@@ -190,13 +190,13 @@ const ModalPortal: React.FC<{
 // TODO: convert to const enum once all consumers use ts
 export enum ModalDialogSize {
   "DEFAULT" = "DEFAULT",
-  "SMALL" = "SMALL"
+  "SMALL" = "SMALL",
 }
 
 // TODO: convert to const enum once all consumers use ts
 export enum DialogSizeMappings {
   "DEFAULT" = 1024,
-  "SMALL" = 512
+  "SMALL" = 512,
 }
 
 const Dialog: React.FC<
@@ -212,7 +212,7 @@ const Dialog: React.FC<
   const onSubmit: (
     event: React.FormEvent<HTMLFormElement>
   ) => void = useCallback(
-    ev => {
+    (ev) => {
       ev.preventDefault();
       if (onSubmitOuter) {
         onSubmitOuter(ev);
@@ -231,9 +231,9 @@ const Dialog: React.FC<
         backgroundColor: "white",
         borderRadius: 5,
         marginLeft: 8,
-        marginRight: 8
+        marginRight: 8,
       }}
-      onClick={ev => {
+      onClick={(ev) => {
         ev.stopPropagation();
       }}
       {...props}
@@ -260,7 +260,7 @@ const Header: React.FC<{ style?: React.CSSProperties }> = ({
         borderBottom: "1px solid rgba(0,0,0,.1)",
         display: "flex",
         alignItems: "center",
-        ...style
+        ...style,
       }}
     >
       {children}
@@ -278,7 +278,7 @@ const Heading3 = styled.h3`
 
 const Body = styled.div<{ noPadding?: boolean }>`
   width: 100%;
-  padding: ${p => (p.noPadding ? null : `20px 20px 20px 20px`)};
+  padding: ${(p) => (p.noPadding ? null : `20px 20px 20px 20px`)};
 `;
 
 const Aside = styled.div`
@@ -332,5 +332,5 @@ export const Modal = Object.assign(ModalPortal, {
   Content,
   Actions,
   ActionGroup,
-  Provider
+  Provider,
 });

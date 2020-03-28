@@ -15,7 +15,7 @@ const _loadById = pipe(
   o.loadNoteById(),
   matchMode({
     NOT_FOUND: o.enterNoteNotFoundState(),
-    FOUND: o.enterNoteLoadedState()
+    FOUND: o.enterNoteLoadedState(),
   })
 );
 
@@ -25,7 +25,7 @@ export const loadById = pipe(
     NOT_FOUND: pipe(o.enterNoteLoadingState(), _loadById),
     LOADED: pipe(o.enterNoteCacheAndLoadingState(), _loadById),
     CACHE_AND_LOADING: _loadById,
-    LOADING: _loadById
+    LOADING: _loadById,
   })
 );
 
@@ -40,13 +40,13 @@ export const createNote: AsyncAction<
   const note = await effects.noteStore.create(
     { title, content },
     {
-      accessToken: sessionStore.accessToken
+      accessToken: sessionStore.accessToken,
     }
   );
   noteStore.notes[note.id] = {
     mode: "LOADED",
     id: note.id,
-    node: createNoteTreeNode(note)
+    node: createNoteTreeNode(note),
   };
   return note.id;
 };
@@ -75,7 +75,7 @@ export const deleteNote: AsyncAction<string> = async (
 ) => {
   state.noteStore.notes[noteId] = null;
   await effects.noteStore.deleteById(noteId, {
-    accessToken: state.sessionStore.accessToken
+    accessToken: state.sessionStore.accessToken,
   });
 };
 
@@ -85,7 +85,7 @@ export const saveNote: AsyncAction<string> = debounce(
     if (!isSome(note) || note.mode !== "LOADED") return;
     note.node.isDirty = false;
     const updatedNote = await effects.noteStore.update(noteId, note.node, {
-      accessToken: state.sessionStore.accessToken
+      accessToken: state.sessionStore.accessToken,
     });
 
     note = state.noteStore.notes[noteId];
