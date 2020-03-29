@@ -24,7 +24,7 @@ import { Provider as OvermindProvider } from "overmind-react";
 import { createOvermind } from "overmind";
 
 import { config } from "./overmind";
-import { getBaseUrl } from "../base-url";
+import { buildUrl } from "../public-url";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 const useDmPassword = createPersistedState("dmPassword");
@@ -61,7 +61,7 @@ export const DmArea = () => {
 
   const localFetch = useCallback(
     (input, init = {}) => {
-      return fetch(getBaseUrl() + input, {
+      return fetch(buildUrl(input), {
         ...init,
         headers: {
           Authorization: dmPassword ? `Bearer ${dmPassword}` : undefined,

@@ -1,15 +1,15 @@
 import { css } from "@emotion/core";
-import { getBaseUrl } from "./base-url";
+import { buildUrl } from "./public-url";
 
 export const globalStyles = css`
   @font-face {
     font-family: "folkard";
-    src: url("${getBaseUrl()}/fonts/folkard.woff") format("woff");
+    src: url("${buildUrl("/fonts/folkard.woff")}") format("woff");
   }
 
   @font-face {
     font-family: "KnightsTemplar";
-    src: url("${getBaseUrl()}/fonts/KnightsTemplar.woff") format("woff");
+    src: url("${buildUrl("/fonts/KnightsTemplar.woff")}") format("woff");
   }
 
   * {

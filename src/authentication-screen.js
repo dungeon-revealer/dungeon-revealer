@@ -5,7 +5,6 @@ import * as Button from "./button";
 import { BackgroundImageContainer } from "./background-image-container";
 import { BrandLogoText } from "./brand-logo-text";
 import { Modal, ModalDialogSize } from "./dm-area/modal";
-import { getBaseUrl } from "./base-url";
 
 const ButtonContainer = styled.div`
   margin-top: 16px;
@@ -40,7 +39,7 @@ export const AuthenticationScreen = ({
         onSubmit={async (ev) => {
           ev.preventDefault();
           setError(null);
-          const result = await fetch(getBaseUrl() + "/auth", {
+          const result = await fetch("/auth", {
             headers: {
               Authorization: `Bearer ${password}`,
             },

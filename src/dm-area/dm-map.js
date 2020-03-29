@@ -27,7 +27,7 @@ import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useOnKeyDown } from "../hooks/use-on-key-down";
 import { TokenInfoAside } from "./token-info-aside";
 import { useOvermind } from "../hooks/use-overmind";
-import { getBaseUrl } from "../base-url";
+import { buildUrl } from "../public-url";
 
 const ShapeButton = styled.button`
   border: none;
@@ -812,10 +812,10 @@ export const DmMap = ({
 
     let tasks = [
       loadImage(
-        getBaseUrl() + `/map/${loadedMapId}/map?authorization=${dmPassword}`
+        buildUrl(`/map/${loadedMapId}/map?authorization=${dmPassword}`)
       ),
       loadImage(
-        getBaseUrl() + `/map/${loadedMapId}/fog?authorization=${dmPassword}`
+        buildUrl(`/map/${loadedMapId}/fog?authorization=${dmPassword}`)
       ),
     ];
 
@@ -899,7 +899,7 @@ export const DmMap = ({
         })
       );
 
-      await fetch(getBaseUrl() + `/map/${loadedMapId}/fog`, {
+      await fetch(buildUrl(`/map/${loadedMapId}/fog`), {
         method: "POST",
         body: formData,
         headers: {
@@ -972,7 +972,7 @@ export const DmMap = ({
           const { ratio } = mapCanvasDimensions;
           switch (tool) {
             case "tokens": {
-              fetch(getBaseUrl() + `/map/${loadedMapId}/token`, {
+              fetch(buildUrl(`/map/${loadedMapId}/token`), {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",

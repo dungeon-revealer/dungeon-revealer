@@ -10,7 +10,7 @@ const createUniqueId = require("uuid/v4");
 const fs = require("fs-extra");
 const os = require("os");
 const server = (app.http = require("http").createServer(app));
-const io = require("socket.io")(server);
+const createSocketIOServer = require("socket.io");
 const busboy = require("connect-busboy");
 const { Maps } = require("./maps");
 const { Notes } = require("./notes");
@@ -18,7 +18,9 @@ const { Settings } = require("./settings");
 const { getDataDirectory } = require("./util");
 
 const PUBLIC_PATH = path.resolve(__dirname, "..", "build");
-const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+const PUBLIC_URL = process.env.PUBLIC_URL || "http://localhost:3000";
+
+const io = createSocketIOServer(server);
 
 fs.mkdirpSync(getDataDirectory());
 
@@ -583,8 +585,7 @@ app.get("/notes/:id", requiresDmRole, (req, res) => {
 const indexHtml = path.join(PUBLIC_PATH, "index.html");
 const indexHtmlContent = fs
   .readFileSync(indexHtml, "utf-8")
-  .replace(/__BASE_URL_PLACEHOLDER__/g, BASE_URL)
-  .replace(/window\.__BASE_URL__=""/, `window.__BASE_URL__="${BASE_URL}"`);
+  .replace(/__PUBLIC_URL_PLACEHOLDER__/g, PUBLIC_URL);
 
 app.get("/", (req, res) => {
   res.send(indexHtmlContent);

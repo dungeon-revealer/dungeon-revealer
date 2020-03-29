@@ -1,7 +1,7 @@
 import React from "react";
 import { Global } from "@emotion/core";
 import { render } from "react-dom";
-import { getBaseUrl } from "./base-url";
+import { getPublicUrl } from "./public-url";
 import { globalStyles } from "./global-styles";
 
 const element = document.querySelector("#root");
@@ -21,9 +21,9 @@ if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
 }
 
 const pathname =
-  getBaseUrl() === ""
+  getPublicUrl() === ""
     ? window.location.pathname
-    : window.location.href.replace(getBaseUrl(), "");
+    : window.location.href.replace(getPublicUrl(), "");
 
 const main = async () => {
   let component = null;

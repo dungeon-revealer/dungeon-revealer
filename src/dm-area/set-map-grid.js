@@ -8,7 +8,7 @@ import { useLongPress } from "../hooks/use-long-press";
 import { Input } from "../input";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { useUniqueId } from "../hooks/use-unique-id";
-import { getBaseUrl } from "../base-url";
+import { buildUrl } from "../public-url";
 
 const Container = styled.div`
   height: 100vh;
@@ -363,7 +363,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
   useAsyncEffect(
     function* (onCancel) {
       const task = loadImage(
-        getBaseUrl() + `/map/${map.id}/map?authorization=${dmPassword}`
+        buildUrl(`/map/${map.id}/map?authorization=${dmPassword}`)
       );
       onCancel(() => task.cancel());
       const image = yield task.promise;
