@@ -22,6 +22,7 @@ jobs:
     - stage: build
       script:
         - yarn run eslint
+        - yarn compilex64
 
     - stage: build docker image
       install: true
