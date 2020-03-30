@@ -104,6 +104,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
       let fogCacheBusterCounter = 0;
       socket.on("connect", function () {
         console.log("connected to server");
+        socket.emit("auth", { password: pcPassword });
       });
 
       socket.on("reconnecting", function () {

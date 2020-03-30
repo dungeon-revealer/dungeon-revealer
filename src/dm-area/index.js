@@ -16,6 +16,7 @@ import { SelectMapModal } from "./select-map-modal";
 import { NoteEditor } from "./note-editor";
 import { SetMapGrid } from "./set-map-grid";
 import { useSocket } from "../socket";
+import { buildApiUrl } from "../public-url";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { AuthenticationScreen } from "../authentication-screen";
 import { SplashScreen } from "../splash-screen";
@@ -24,7 +25,6 @@ import { Provider as OvermindProvider } from "overmind-react";
 import { createOvermind } from "overmind";
 
 import { config } from "./overmind";
-import { buildApiUrl } from "../public-url";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 const useDmPassword = createPersistedState("dmPassword");
@@ -93,6 +93,8 @@ export const DmArea = () => {
         return;
       }
 
+      socket.emit("auth", { password: dmPassword });
+
       const { data } = yield localFetch("/map").then((res) => res.json());
       setData(data);
       const isLoadedMapAvailable = Boolean(
@@ -115,7 +117,7 @@ export const DmArea = () => {
       );
       setMode({ title: "EDIT_MAP" });
     },
-    [setLoadedMapId, localFetch]
+    [setLoadedMapId, localFetch, dmPassword, socket]
   );
 
   // token add/remove/update event handlers
