@@ -24,7 +24,7 @@ import { Provider as OvermindProvider } from "overmind-react";
 import { createOvermind } from "overmind";
 
 import { config } from "./overmind";
-import { buildUrl, buildApiUrl } from "../public-url";
+import { buildApiUrl } from "../public-url";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 const useDmPassword = createPersistedState("dmPassword");

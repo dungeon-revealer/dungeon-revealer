@@ -10,7 +10,7 @@ const getUrlPrefix = once((): string => {
     return publicUrl;
   }
   const url = new URL(publicUrl);
-  return url.pathname;
+  return url.pathname === "/" ? "" : url.pathname;
 });
 
 export const buildUrl = (path: string) => `${getUrlPrefix()}${path}`;
