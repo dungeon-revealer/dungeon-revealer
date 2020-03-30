@@ -15,7 +15,7 @@ import { AreaMarkerRenderer } from "./object-layer/area-marker-renderer";
 import { TokenRenderer } from "./object-layer/token-renderer";
 import { SplashScreen } from "./splash-screen";
 import { AuthenticationScreen } from "./authentication-screen";
-import { buildUrl } from "./public-url";
+import { buildApiUrl } from "./public-url";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -159,7 +159,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
          */
         if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
           const task = loadImage(
-            buildUrl(
+            buildApiUrl(
               `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
             )
           );
@@ -215,12 +215,12 @@ const PlayerMap = ({ fetch, pcPassword }) => {
 
         const tasks = [
           loadImage(
-            buildUrl(
+            buildApiUrl(
               `/map/${data.map.id}/map?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
             )
           ),
           loadImage(
-            buildUrl(
+            buildApiUrl(
               `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
             )
           ),
@@ -390,7 +390,6 @@ const PlayerMap = ({ fetch, pcPassword }) => {
     const ref = new Referentiel(panZoomRef.current.getDragContainer());
     const [x, y] = ref.global_to_local(input);
     const { ratio } = mapCanvasDimensions.current;
-
     socket.emit("mark area", { x: x / ratio, y: y / ratio });
   }, 500);
 
@@ -512,7 +511,7 @@ export const PlayerArea = () => {
 
   const localFetch = useCallback(
     (input, init = {}) => {
-      return fetch(buildUrl(input), {
+      return fetch(buildApiUrl(input), {
         ...init,
         headers: {
           Authorization: pcPassword ? `Bearer ${pcPassword}` : undefined,

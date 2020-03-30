@@ -1,7 +1,6 @@
 "use strict";
 
 const express = require("express");
-const app = express();
 const path = require("path");
 const favicon = require("serve-favicon");
 const logger = require("morgan");
@@ -9,7 +8,7 @@ const bodyParser = require("body-parser");
 const createUniqueId = require("uuid/v4");
 const fs = require("fs-extra");
 const os = require("os");
-const server = (app.http = require("http").createServer(app));
+const http = require("http");
 const createSocketIOServer = require("socket.io");
 const busboy = require("connect-busboy");
 const { Maps } = require("./maps");
@@ -20,7 +19,12 @@ const { getDataDirectory } = require("./util");
 const PUBLIC_PATH = path.resolve(__dirname, "..", "build");
 const PUBLIC_URL = process.env.PUBLIC_URL || "http://localhost:3000";
 
-const io = createSocketIOServer(server);
+const app = express();
+const apiRouter = express.Router();
+const server = (app.http = http.createServer(app));
+const io = createSocketIOServer(server, {
+  path: "/api/socket.io",
+});
 
 fs.mkdirpSync(getDataDirectory());
 
@@ -101,7 +105,7 @@ const requiresDmRole = (req, res, next) => {
 
 app.use(authorizationMiddleware);
 
-app.get("/auth", (req, res) => {
+apiRouter.get("/auth", (req, res) => {
   return res.status(200).json({
     data: {
       role: req.role,
@@ -109,7 +113,7 @@ app.get("/auth", (req, res) => {
   });
 });
 
-app.get("/map/:id/map", requiresPcRole, (req, res) => {
+apiRouter.get("/map/:id/map", requiresPcRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -134,7 +138,7 @@ app.get("/map/:id/map", requiresPcRole, (req, res) => {
   return res.sendFile(path.join(basePath, map.mapPath));
 });
 
-app.get("/map/:id/fog", requiresPcRole, (req, res) => {
+apiRouter.get("/map/:id/fog", requiresPcRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -156,7 +160,7 @@ app.get("/map/:id/fog", requiresPcRole, (req, res) => {
   return res.sendFile(path.join(maps.getBasePath(map), map.fogProgressPath));
 });
 
-app.get("/map/:id/fog-live", requiresPcRole, (req, res) => {
+apiRouter.get("/map/:id/fog-live", requiresPcRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -178,7 +182,7 @@ app.get("/map/:id/fog-live", requiresPcRole, (req, res) => {
   return res.sendFile(path.join(maps.getBasePath(map), map.fogLivePath));
 });
 
-app.post("/map/:id/map", requiresPcRole, (req, res) => {
+apiRouter.post("/map/:id/map", requiresPcRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -197,7 +201,7 @@ app.post("/map/:id/map", requiresPcRole, (req, res) => {
   });
 });
 
-app.post("/map/:id/fog", requiresDmRole, (req, res) => {
+apiRouter.post("/map/:id/fog", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -211,7 +215,7 @@ app.post("/map/:id/fog", requiresDmRole, (req, res) => {
   });
 });
 
-app.post("/map/:id/send", requiresDmRole, (req, res) => {
+apiRouter.post("/map/:id/send", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -229,7 +233,7 @@ app.post("/map/:id/send", requiresDmRole, (req, res) => {
   });
 });
 
-app.delete("/map/:id", requiresDmRole, (req, res) => {
+apiRouter.delete("/map/:id", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.send(404);
@@ -242,7 +246,7 @@ app.delete("/map/:id", requiresDmRole, (req, res) => {
   });
 });
 
-app.get("/active-map", requiresPcRole, (req, res) => {
+apiRouter.get("/active-map", requiresPcRole, (req, res) => {
   let activeMap = null;
   const activeMapId = settings.get("currentMapId");
   if (activeMapId) {
@@ -257,7 +261,7 @@ app.get("/active-map", requiresPcRole, (req, res) => {
   });
 });
 
-app.post("/active-map", requiresDmRole, (req, res) => {
+apiRouter.post("/active-map", requiresDmRole, (req, res) => {
   const mapId = req.body.mapId;
   if (mapId === undefined) {
     res.status(404).json({
@@ -277,7 +281,7 @@ app.post("/active-map", requiresDmRole, (req, res) => {
   });
 });
 
-app.get("/map", requiresPcRole, (req, res) => {
+apiRouter.get("/map", requiresPcRole, (req, res) => {
   res.json({
     success: true,
     data: {
@@ -287,7 +291,7 @@ app.get("/map", requiresPcRole, (req, res) => {
   });
 });
 
-app.post("/map", requiresDmRole, (req, res) => {
+apiRouter.post("/map", requiresDmRole, (req, res) => {
   req.pipe(req.busboy);
 
   const data = {};
@@ -313,7 +317,7 @@ app.post("/map", requiresDmRole, (req, res) => {
   });
 });
 
-app.patch("/map/:id", requiresDmRole, (req, res) => {
+apiRouter.patch("/map/:id", requiresDmRole, (req, res) => {
   let map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -356,7 +360,7 @@ app.patch("/map/:id", requiresDmRole, (req, res) => {
   });
 });
 
-app.post("/map/:id/token", requiresDmRole, (req, res) => {
+apiRouter.post("/map/:id/token", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -390,7 +394,7 @@ app.post("/map/:id/token", requiresDmRole, (req, res) => {
   });
 });
 
-app.delete("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
+apiRouter.delete("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -417,7 +421,7 @@ app.delete("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
   });
 });
 
-app.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
+apiRouter.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
@@ -457,7 +461,7 @@ app.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
   });
 });
 
-app.get("/notes", requiresDmRole, ({ req, res }) => {
+apiRouter.get("/notes", requiresDmRole, ({ req, res }) => {
   const allNotes = notes.getAll();
 
   return res.json({
@@ -468,7 +472,7 @@ app.get("/notes", requiresDmRole, ({ req, res }) => {
   });
 });
 
-app.post("/notes", requiresDmRole, (req, res) => {
+apiRouter.post("/notes", requiresDmRole, (req, res) => {
   const title = req.body.title || "New note";
   const note = notes.createNote({ title, content: "" });
 
@@ -480,7 +484,7 @@ app.post("/notes", requiresDmRole, (req, res) => {
   });
 });
 
-app.patch("/notes/:id", requiresDmRole, (req, res) => {
+apiRouter.patch("/notes/:id", requiresDmRole, (req, res) => {
   let note = notes.getById(req.params.id);
   if (!note) {
     return res.status(404).json({
@@ -514,7 +518,7 @@ app.patch("/notes/:id", requiresDmRole, (req, res) => {
   });
 });
 
-app.delete("/notes/:id", requiresDmRole, (req, res) => {
+apiRouter.delete("/notes/:id", requiresDmRole, (req, res) => {
   const note = notes.getById(req.params.id);
   if (!note) {
     return res.status(404).json({
@@ -560,7 +564,7 @@ app.delete("/notes/:id", requiresDmRole, (req, res) => {
   });
 });
 
-app.get("/notes/:id", requiresDmRole, (req, res) => {
+apiRouter.get("/notes/:id", requiresDmRole, (req, res) => {
   const note = notes.getById(req.params.id);
 
   if (!note) {
@@ -581,6 +585,8 @@ app.get("/notes/:id", requiresDmRole, (req, res) => {
     },
   });
 });
+
+app.use("/api", apiRouter);
 
 const indexHtml = path.join(PUBLIC_PATH, "index.html");
 const indexHtmlContent = fs
