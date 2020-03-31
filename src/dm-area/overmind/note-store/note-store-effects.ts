@@ -1,5 +1,6 @@
 import { RawNoteType } from "./note-store-state";
 import { Maybe } from "../util";
+import { buildApiUrl } from "../../../public-url";
 
 const buildHeaders = ({ accessToken }: { accessToken: Maybe<string> }) => {
   return {
@@ -30,12 +31,14 @@ const createNote = ({
   updatedAt: new Date(updatedAt).getTime(),
 });
 
+const RESOURCE_PATH = "/notes";
+
 export const loadAll = async ({
   accessToken,
 }: {
   accessToken: string | null;
 }): Promise<RawNoteType[]> => {
-  const response = await fetch(`/notes`, {
+  const response = await fetch(buildApiUrl(RESOURCE_PATH), {
     headers: buildHeaders({ accessToken }),
   });
   const body = await response.json();
@@ -46,7 +49,7 @@ export const loadById = async (
   noteId: string,
   { accessToken }: { accessToken: string | null }
 ) => {
-  const response = await fetch(`/notes/${noteId}`, {
+  const response = await fetch(buildApiUrl(`${RESOURCE_PATH}/${noteId}`), {
     headers: buildHeaders({ accessToken }),
   });
   const body = await response.json();
@@ -62,7 +65,7 @@ export const create = async (
   { title, content }: { title: string; content: string },
   { accessToken }: { accessToken: string | null }
 ) => {
-  const response = await fetch("/notes", {
+  const response = await fetch(buildApiUrl(RESOURCE_PATH), {
     method: "POST",
     body: JSON.stringify({ title, content }),
     headers: buildHeaders({ accessToken }),
@@ -75,7 +78,7 @@ export const deleteById = async (
   noteId: string,
   { accessToken }: { accessToken: string | null }
 ) => {
-  await fetch(`/notes/${noteId}`, {
+  await fetch(buildApiUrl(`${RESOURCE_PATH}/${noteId}`), {
     method: "DELETE",
     headers: buildHeaders({ accessToken }),
   });
@@ -86,7 +89,7 @@ export const update = async (
   { title, content }: { title: string; content: string },
   { accessToken }: { accessToken: string | null }
 ) => {
-  const response = await fetch(`/notes/${noteId}`, {
+  const response = await fetch(buildApiUrl(`${RESOURCE_PATH}/${noteId}`), {
     method: "PATCH",
     headers: buildHeaders({ accessToken }),
     body: JSON.stringify({ title, content }),

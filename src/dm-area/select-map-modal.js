@@ -5,6 +5,7 @@ import * as Icons from "../feather-icons";
 import { Input, InputGroup } from "../input";
 import * as Button from "../button";
 import * as ScrollableList from "./components/scrollable-list";
+import { buildApiUrl } from "../public-url";
 
 const CreateNewMapButton = ({ onSelectFile, children, ...props }) => {
   const fileInputRef = useRef();
@@ -211,7 +212,9 @@ export const SelectMapModal = ({
                 >
                   {/* eslint-disable-next-line jsx-a11y/alt-text */}
                   <img
-                    src={`/map/${activeMap.id}/map?authorization=${dmPassword}`}
+                    src={buildApiUrl(
+                      `/map/${activeMap.id}/map?authorization=${dmPassword}`
+                    )}
                     style={{ width: "100%" }}
                   />
                 </div>

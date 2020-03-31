@@ -15,6 +15,7 @@ import { AreaMarkerRenderer } from "./object-layer/area-marker-renderer";
 import { TokenRenderer } from "./object-layer/token-renderer";
 import { SplashScreen } from "./splash-screen";
 import { AuthenticationScreen } from "./authentication-screen";
+import { buildApiUrl } from "./public-url";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -158,7 +159,9 @@ const PlayerMap = ({ fetch, pcPassword }) => {
          */
         if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
           const task = loadImage(
-            `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+            buildApiUrl(
+              `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+            )
           );
           fogCacheBusterCounter = fogCacheBusterCounter + 1;
           pendingImageLoads.current = [task];
@@ -212,10 +215,14 @@ const PlayerMap = ({ fetch, pcPassword }) => {
 
         const tasks = [
           loadImage(
-            `/map/${data.map.id}/map?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+            buildApiUrl(
+              `/map/${data.map.id}/map?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+            )
           ),
           loadImage(
-            `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+            buildApiUrl(
+              `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+            )
           ),
         ];
         pendingImageLoads.current = tasks;
@@ -383,7 +390,6 @@ const PlayerMap = ({ fetch, pcPassword }) => {
     const ref = new Referentiel(panZoomRef.current.getDragContainer());
     const [x, y] = ref.global_to_local(input);
     const { ratio } = mapCanvasDimensions.current;
-
     socket.emit("mark area", { x: x / ratio, y: y / ratio });
   }, 500);
 
@@ -505,7 +511,7 @@ export const PlayerArea = () => {
 
   const localFetch = useCallback(
     (input, init = {}) => {
-      return fetch(input, {
+      return fetch(buildApiUrl(input), {
         ...init,
         headers: {
           Authorization: pcPassword ? `Bearer ${pcPassword}` : undefined,
