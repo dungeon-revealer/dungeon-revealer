@@ -15,9 +15,7 @@ const { Maps } = require("./maps");
 const { Notes } = require("./notes");
 const { Settings } = require("./settings");
 const { getDataDirectory } = require("./util");
-
-const PUBLIC_PATH = path.resolve(__dirname, "..", "build");
-const PUBLIC_URL = process.env.PUBLIC_URL || "http://localhost:3000";
+const env = require("./env");
 
 const app = express();
 const apiRouter = express.Router();
@@ -37,7 +35,7 @@ app.use(busboy());
 // Not sure if this is needed, Chrome seems to grab the favicon just fine anyway
 // Maybe for cross-browser support
 app.use(logger("dev"));
-app.use(favicon(path.resolve(PUBLIC_PATH, "favicon.ico")));
+app.use(favicon(path.resolve(env.PUBLIC_PATH, "favicon.ico")));
 
 // Needed to handle JSON posts, size limit of 50mb
 app.use(bodyParser.json({ limit: "50mb" }));
@@ -45,15 +43,15 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
 const getRole = (password) => {
   let role = null;
-  if (process.env.PC_PASSWORD) {
-    if (password === process.env.PC_PASSWORD) {
+  if (env.PC_PASSWORD) {
+    if (password === env.PC_PASSWORD) {
       role = "PC";
     }
   } else {
     role = "PC";
   }
-  if (process.env.DM_PASSWORD) {
-    if (password === process.env.DM_PASSWORD) {
+  if (env.DM_PASSWORD) {
+    if (password === env.DM_PASSWORD) {
       role = "DM";
     }
   } else {
@@ -590,10 +588,10 @@ apiRouter.get("/notes/:id", requiresDmRole, (req, res) => {
 
 app.use("/api", apiRouter);
 
-const indexHtml = path.join(PUBLIC_PATH, "index.html");
+const indexHtml = path.join(env.PUBLIC_PATH, "index.html");
 const indexHtmlContent = fs
   .readFileSync(indexHtml, "utf-8")
-  .replace(/__PUBLIC_URL_PLACEHOLDER__/g, PUBLIC_URL);
+  .replace(/__PUBLIC_URL_PLACEHOLDER__/g, env.PUBLIC_URL);
 
 app.get("/", (req, res) => {
   res.send(indexHtmlContent);
@@ -604,7 +602,7 @@ app.get("/dm", (req, res) => {
 });
 
 // Consider all URLs under /public/ as static files, and return them raw.
-app.use(express.static(path.join(PUBLIC_PATH)));
+app.use(express.static(path.join(env.PUBLIC_PATH)));
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
