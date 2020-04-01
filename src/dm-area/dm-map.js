@@ -21,12 +21,13 @@ import { ToggleSwitch } from "../toggle-switch";
 import { useResetState } from "../hooks/use-reset-state";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useSvgGrid } from "../hooks/use-svg-grid";
-import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
-import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
+import { useStaticRef } from "../hooks/use-static-ref";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useOnKeyDown } from "../hooks/use-on-key-down";
-import { TokenInfoAside } from "./token-info-aside";
 import { useOvermind } from "../hooks/use-overmind";
+import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
+import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
+import { TokenInfoAside } from "./token-info-aside";
 import { buildApiUrl } from "../public-url";
 
 const ShapeButton = styled.button`
@@ -422,7 +423,8 @@ export const DmMap = ({
   const fogCanvasRef = useRef(null);
   const hasPreviousMap = useRef(false);
   const panZoomRef = useRef(null);
-  const panZoomReferentialRef = useRef(null);
+  const [panZoomReferential, setPanZoomReferential] = useState(null);
+  const latestPanZoomReferentialRef = useRef(null);
   const [cursorCoordinates, setCursorCoodinates] = useState(null);
   const [
     areaSelectionStartCoordinates,
@@ -548,33 +550,30 @@ export const DmMap = ({
   const getMouseCoordinates = useCallback(
     (ev) => {
       const ratio = getMapDisplayRatio();
-      if (!panZoomReferentialRef.current) return { x: 0, y: 0 };
-      const [x, y] = panZoomReferentialRef.current.global_to_local([
-        ev.pageX,
-        ev.pageY,
-      ]);
+      if (!panZoomReferential) return { x: 0, y: 0 };
+      const [x, y] = panZoomReferential.global_to_local([ev.pageX, ev.pageY]);
 
       return {
         x: x / ratio,
         y: y / ratio,
       };
     },
-    [getMapDisplayRatio]
+    [getMapDisplayRatio, panZoomReferential]
   );
 
   const getTouchCoordinates = useCallback(
     (touch) => {
-      if (!panZoomReferentialRef.current) {
+      if (!panZoomReferential) {
         throw new TypeError("Invalid state");
       }
       const ratio = getMapDisplayRatio();
-      const [x, y] = panZoomReferentialRef.current.global_to_local([
+      const [x, y] = panZoomReferential.global_to_local([
         touch.pageX,
         touch.pageY,
       ]);
       return { x: x / ratio, y: y / ratio };
     },
-    [getMapDisplayRatio]
+    [getMapDisplayRatio, panZoomReferential]
   );
 
   const drawInitial = useCallback(
@@ -792,7 +791,6 @@ export const DmMap = ({
 
     return () => {
       socket.off("mark area");
-      panZoomReferentialRef.current = null;
     };
   }, [socket]);
 
@@ -938,8 +936,8 @@ export const DmMap = ({
 
   const getRelativePosition = useCallback(
     (pageCoordinates) => {
-      const ref = new Referentiel(panZoomRef.current.dragContainer.current);
-      const [x, y] = ref.global_to_local([
+      if (!latestPanZoomReferentialRef.current) return { x: 0, y: 0 };
+      const [x, y] = latestPanZoomReferentialRef.current.global_to_local([
         pageCoordinates.x,
         pageCoordinates.y,
       ]);
@@ -955,6 +953,20 @@ export const DmMap = ({
     },
     [actions]
   );
+
+  const onStateChange = useStaticRef(() =>
+    debounce(
+      () =>
+        setPanZoomReferential(
+          new Referentiel(panZoomRef.current.dragContainer.current)
+        ),
+      100
+    )
+  );
+
+  useEffect(() => {
+    latestPanZoomReferentialRef.current = panZoomReferential;
+  });
 
   return (
     <>
@@ -1003,11 +1015,7 @@ export const DmMap = ({
             }
           }
         }}
-        onStateChange={() => {
-          panZoomReferentialRef.current = new Referentiel(
-            panZoomRef.current.dragContainer.current
-          );
-        }}
+        onStateChange={onStateChange}
         ref={panZoomRef}
       >
         <div

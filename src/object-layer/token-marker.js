@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { darken } from "polished";
-import { useSpring, animated, interpolate } from "react-spring";
+import { useSpring, animated, to as interpolate } from "react-spring";
 
 export const TokenMarker = React.memo(
   React.forwardRef(
@@ -60,7 +60,7 @@ export const TokenMarker = React.memo(
         }
       });
 
-      const realRadius = animatedRadius.interpolate((r) => r * ratio);
+      const realRadius = animatedRadius.to((r) => r * ratio);
 
       return (
         <animated.g
@@ -75,8 +75,8 @@ export const TokenMarker = React.memo(
           <animated.circle
             ref={circleRef}
             r={realRadius}
-            strokeWidth={realRadius.interpolate((val) => val * 0.05)}
-            stroke={animatedColor.interpolate((value) => darken(0.1, value))}
+            strokeWidth={realRadius.to((val) => val * 0.05)}
+            stroke={animatedColor.to((value) => darken(0.1, value))}
             fill={animatedColor}
             opacity="1"
             onClick={onClick}
