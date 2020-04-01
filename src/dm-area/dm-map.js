@@ -424,6 +424,7 @@ export const DmMap = ({
   const hasPreviousMap = useRef(false);
   const panZoomRef = useRef(null);
   const [panZoomReferential, setPanZoomReferential] = useState(null);
+  const latestPanZoomReferentialRef = useRef(null);
   const [cursorCoordinates, setCursorCoodinates] = useState(null);
   const [
     areaSelectionStartCoordinates,
@@ -935,15 +936,15 @@ export const DmMap = ({
 
   const getRelativePosition = useCallback(
     (pageCoordinates) => {
-      if (!panZoomReferential) return { x: 0, y: 0 };
-      const [x, y] = panZoomReferential.global_to_local([
+      if (!latestPanZoomReferentialRef.current) return { x: 0, y: 0 };
+      const [x, y] = latestPanZoomReferentialRef.current.global_to_local([
         pageCoordinates.x,
         pageCoordinates.y,
       ]);
       const { ratio } = mapCanvasDimensions;
       return { x: x / ratio, y: y / ratio };
     },
-    [mapCanvasDimensions, panZoomReferential]
+    [mapCanvasDimensions]
   );
 
   const onClickToken = useCallback(
@@ -962,6 +963,10 @@ export const DmMap = ({
       100
     )
   );
+
+  useEffect(() => {
+    latestPanZoomReferentialRef.current = panZoomReferential;
+  });
 
   return (
     <>
