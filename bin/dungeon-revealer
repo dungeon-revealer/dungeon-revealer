@@ -2,40 +2,60 @@
 "use strict";
 
 require("debug")("dungeon-revealer");
+const once = require("lodash/once");
+const flatMap = require("lodash/flatMap");
 const app = require("../server");
 const http = app.http;
 const os = require("os");
-const ifaces = os.networkInterfaces();
+const env = require("../server/env");
 
-app.set("port", process.env.PORT || 3000);
-app.set("host", process.env.HOST || "0.0.0.0");
+const getPublicInterfaces = () => {
+  const ifaces = os.networkInterfaces();
+  return flatMap(Object.values(ifaces))
+    .filter(iface => iface.family === "IPv4")
+    .map(iface => `http://${iface.address}:${env.PORT}`);
+};
 
-const server = http.listen(app.get("port"), app.get("host"), () => {
-  const port = server.address().port;
-  const baseAddress = `http://localhost:${port}`;
+const getListeningAddresses = () => {
+  if (env.HOST === "0.0.0.0") {
+    return getPublicInterfaces();
+  } else {
+    return [`http://${env.HOST}:${env.PORT}`];
+  }
+};
 
-  console.log(`Starting dungeon-revealer.\n`);
+const server = http.listen(env.PORT, env.HOST, () => {
+  console.log(`\nStarting dungeon-revealer.
 
-  console.log(`DM Section: ${baseAddress}/dm`);
+Configuration:
+- HOST: ${env.HOST} 
+- PORT: ${env.PORT}
+- PUBLIC_URL: ${env.PUBLIC_URL || "<none>"}
 
-  // This code borrowed from a SO answer
-  Object.keys(ifaces).forEach(ifname => {
-    const alias = 0;
+dungeon-revealer is reachable via the following addresses:
+`);
 
-    ifaces[ifname].forEach(iface => {
-      if ("IPv4" !== iface.family || iface.internal !== false) {
-        // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
-        return;
-      }
+  const addresses = getListeningAddresses();
 
-      if (alias >= 1) {
-        // this single interface has multiple ipv4 addresses
-        //console.log(ifname + ':' + alias, iface.address);
-      } else {
-        // this interface has only one ipv4 adress
-        const publicAddress = `http://${iface.address}:${port}`;
-        console.log(`Player Section: ${publicAddress}\n`);
-      }
-    });
+  addresses.forEach(address => {
+    console.log(`- ${address}`);
+  });
+
+  console.log(`
+Player Section: ${addresses[0]}
+DM Section: ${addresses[0]}/dm`);
+
+  console.log(`\n-------------------\n`);
+});
+
+const shutdownHandler = once(() => {
+  console.log("Shutting down");
+  server.close(err => {
+    if (err) {
+      console.error(err);
+      process.exitCode = 1;
+    }
   });
 });
+
+process.on("SIGINT", shutdownHandler);
