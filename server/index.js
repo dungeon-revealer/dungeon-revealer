@@ -43,9 +43,26 @@ app.use(favicon(path.resolve(PUBLIC_PATH, "favicon.ico")));
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-const authorizationMiddleware = (req, res, next) => {
-  req.role = null;
+const getRole = (password) => {
+  let role = null;
+  if (process.env.PC_PASSWORD) {
+    if (password === process.env.PC_PASSWORD) {
+      role = "PC";
+    }
+  } else {
+    role = "PC";
+  }
+  if (process.env.DM_PASSWORD) {
+    if (password === process.env.DM_PASSWORD) {
+      role = "DM";
+    }
+  } else {
+    role = "DM";
+  }
+  return role;
+};
 
+const authorizationMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
   const authParam = req.query.authorization;
   let token = null;
@@ -56,22 +73,7 @@ const authorizationMiddleware = (req, res, next) => {
     token = authParam;
   }
 
-  if (process.env.PC_PASSWORD) {
-    if (token === process.env.PC_PASSWORD) {
-      req.role = "PC";
-    }
-  } else {
-    req.role = "PC";
-  }
-
-  if (process.env.DM_PASSWORD) {
-    if (token === process.env.DM_PASSWORD) {
-      req.role = "DM";
-    }
-  } else {
-    req.role = "DM";
-  }
-
+  req.role = getRole(token);
   next();
 };
 
@@ -636,22 +638,50 @@ app.use((err, req, res) => {
   });
 });
 
+const authenticatedSockets = new Set();
+
 io.on("connection", (socket) => {
-  socket.once("disconnect", () => {
-    console.log("a user disconnected");
-  });
+  console.log(`WS client ${socket.handshake.address} ${socket.id} connected`);
 
-  socket.on("mark area", (msg) => {
-    io.emit("mark area", {
-      id: createUniqueId(),
-      ...msg,
+  socket.on("auth", ({ password }) => {
+    socket.removeAllListeners();
+
+    const role = getRole(password);
+    if (role === null) {
+      console.log(
+        `WS ${socket.handshake.address} ${socket.id} client authenticate failed`
+      );
+      return;
+    }
+
+    console.log(
+      `WS client ${socket.handshake.address} ${socket.id} authenticate ${role}`
+    );
+
+    authenticatedSockets.add(socket);
+
+    socket.on("mark area", (data) => {
+      Array.from(authenticatedSockets).forEach((socket) => {
+        socket.emit("mark area", {
+          id: createUniqueId(),
+          ...data,
+        });
+      });
+    });
+
+    if (role !== "DM") return;
+
+    socket.on("remove token", (msg) => {
+      Array.from(authenticatedSockets).forEach((socket) => {
+        socket.emit("remove token", {
+          ...msg,
+        });
+      });
     });
   });
 
-  socket.on("remove token", (msg) => {
-    io.emit("remove token", {
-      ...msg,
-    });
+  socket.once("disconnect", function () {
+    authenticatedSockets.delete(socket);
   });
 });
 
