@@ -14,7 +14,7 @@ const busboy = require("connect-busboy");
 const { Maps } = require("./maps");
 const { Notes } = require("./notes");
 const { Settings } = require("./settings");
-const { getDataDirectory } = require("./util");
+const { getDataDirectory, createResourceTaskProcessor } = require("./util");
 const env = require("./env");
 
 const app = express();
@@ -26,7 +26,9 @@ const io = createSocketIOServer(server, {
 
 fs.mkdirpSync(getDataDirectory());
 
-const maps = new Maps();
+const processTask = createResourceTaskProcessor();
+
+const maps = new Maps({ processTask });
 const notes = new Notes();
 const settings = new Settings();
 
@@ -104,6 +106,8 @@ const requiresDmRole = (req, res, next) => {
 };
 
 app.use(authorizationMiddleware);
+
+const wrap = (fn) => (...args) => fn(...args).catch(args[2]);
 
 apiRouter.get("/auth", (req, res) => {
   return res.status(200).json({
@@ -317,160 +321,180 @@ apiRouter.post("/map", requiresDmRole, (req, res) => {
   });
 });
 
-apiRouter.patch("/map/:id", requiresDmRole, (req, res) => {
-  let map = maps.get(req.params.id);
-  if (!map) {
-    return res.status(404).json({
-      success: false,
-      data: null,
-      error: {
-        message: `Map with id '${req.params.id}' does not exist.`,
-        code: "ERR_MAP_DOES_NOT_EXIST",
+apiRouter.patch(
+  "/map/:id",
+  requiresDmRole,
+  wrap(async (req, res) => {
+    let map = maps.get(req.params.id);
+    if (!map) {
+      return res.status(404).json({
+        success: false,
+        data: null,
+        error: {
+          message: `Map with id '${req.params.id}' does not exist.`,
+          code: "ERR_MAP_DOES_NOT_EXIST",
+        },
+      });
+    }
+    const updates = {};
+
+    if (req.body.title) {
+      updates.title = req.body.title;
+    }
+    if (req.body.grid) {
+      updates.grid = req.body.grid;
+      updates.showGrid = true;
+    }
+    if ({}.hasOwnProperty.call(req.body, "showGrid")) {
+      updates.showGrid = req.body.showGrid;
+    }
+    if ({}.hasOwnProperty.call(req.body, "showGridToPlayers")) {
+      updates.showGridToPlayers = req.body.showGridToPlayers;
+    }
+    if ({}.hasOwnProperty.call(req.body, "gridColor")) {
+      updates.gridColor = req.body.gridColor;
+    }
+
+    if (Object.keys(updates).length) {
+      map = await maps.updateMapSettings(map.id, updates);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        map,
       },
     });
-  }
-  const updates = {};
+  })
+);
 
-  if (req.body.title) {
-    updates.title = req.body.title;
-  }
-  if (req.body.grid) {
-    updates.grid = req.body.grid;
-    updates.showGrid = true;
-  }
-  if ({}.hasOwnProperty.call(req.body, "showGrid")) {
-    updates.showGrid = req.body.showGrid;
-  }
-  if ({}.hasOwnProperty.call(req.body, "showGridToPlayers")) {
-    updates.showGridToPlayers = req.body.showGridToPlayers;
-  }
-  if ({}.hasOwnProperty.call(req.body, "gridColor")) {
-    updates.gridColor = req.body.gridColor;
-  }
+apiRouter.post(
+  "/map/:id/token",
+  requiresDmRole,
+  wrap(async (req, res) => {
+    const map = maps.get(req.params.id);
+    if (!map) {
+      return res.status(404).json({
+        success: false,
+        data: null,
+        error: {
+          message: `Map with id '${req.params.id}' does not exist.`,
+          code: "ERR_MAP_DOES_NOT_EXIST",
+        },
+      });
+    }
 
-  if (Object.keys(updates).length) {
-    map = maps.updateMapSettings(map.id, updates);
-  }
+    const { token } = await maps.addToken(map.id, {
+      x: req.body.x,
+      y: req.body.y,
+      color: req.body.color,
+      label: req.body.label,
+      radius: req.body.radius,
+    });
 
-  res.json({
-    success: true,
-    data: {
-      map,
-    },
-  });
-});
-
-apiRouter.post("/map/:id/token", requiresDmRole, (req, res) => {
-  const map = maps.get(req.params.id);
-  if (!map) {
-    return res.status(404).json({
-      success: false,
-      data: null,
-      error: {
-        message: `Map with id '${req.params.id}' does not exist.`,
-        code: "ERR_MAP_DOES_NOT_EXIST",
+    res.json({
+      success: true,
+      data: {
+        token,
       },
     });
-  }
 
-  const { token } = maps.addToken(map.id, {
-    x: req.body.x,
-    y: req.body.y,
-    color: req.body.color,
-    label: req.body.label,
-    radius: req.body.radius,
-  });
+    io.emit(`token:mapId:${map.id}`, {
+      type: "add",
+      data: { token },
+    });
+  })
+);
 
-  res.json({
-    success: true,
-    data: {
-      token,
-    },
-  });
+apiRouter.delete(
+  "/map/:id/token/:tokenId",
+  requiresDmRole,
+  wrap(async (req, res) => {
+    const map = maps.get(req.params.id);
+    if (!map) {
+      return res.status(404).json({
+        success: false,
+        data: null,
+        error: {
+          message: `Map with id '${req.params.id}' does not exist.`,
+          code: "ERR_MAP_DOES_NOT_EXIST",
+        },
+      });
+    }
 
-  io.emit(`token:mapId:${map.id}`, {
-    type: "add",
-    data: { token },
-  });
-});
-
-apiRouter.delete("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
-  const map = maps.get(req.params.id);
-  if (!map) {
-    return res.status(404).json({
-      success: false,
-      data: null,
-      error: {
-        message: `Map with id '${req.params.id}' does not exist.`,
-        code: "ERR_MAP_DOES_NOT_EXIST",
+    const updatedMap = await maps.removeToken(map.id, req.params.tokenId);
+    res.json({
+      success: true,
+      data: {
+        map: updatedMap,
       },
     });
-  }
 
-  const updatedMap = maps.removeToken(map.id, req.params.tokenId);
-  res.json({
-    success: true,
-    data: {
-      map: updatedMap,
-    },
-  });
+    io.emit(`token:mapId:${map.id}`, {
+      type: "remove",
+      data: { tokenId: req.params.tokenId },
+    });
+  })
+);
 
-  io.emit(`token:mapId:${map.id}`, {
-    type: "remove",
-    data: { tokenId: req.params.tokenId },
-  });
-});
+apiRouter.patch(
+  "/map/:id/token/:tokenId",
+  requiresDmRole,
+  wrap(async (req, res) => {
+    const map = maps.get(req.params.id);
+    if (!map) {
+      return res.status(404).json({
+        success: false,
+        data: null,
+        error: {
+          message: `Map with id '${req.params.id}' does not exist.`,
+          code: "ERR_MAP_DOES_NOT_EXIST",
+        },
+      });
+    }
 
-apiRouter.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
-  const map = maps.get(req.params.id);
-  if (!map) {
-    return res.status(404).json({
-      success: false,
-      data: null,
-      error: {
-        message: `Map with id '${req.params.id}' does not exist.`,
-        code: "ERR_MAP_DOES_NOT_EXIST",
+    const result = await maps.updateToken(map.id, req.params.tokenId, {
+      type: req.body.type,
+      label: req.body.label,
+      x: req.body.x,
+      y: req.body.y,
+      color: req.body.color,
+      radius: req.body.radius,
+      isVisibleForPlayers: req.body.isVisibleForPlayers,
+      isLocked: req.body.isLocked,
+      title: req.body.title,
+      description: req.body.description,
+      reference: req.body.reference,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        map: result.map,
       },
     });
-  }
 
-  const result = maps.updateToken(map.id, req.params.tokenId, {
-    type: req.body.type,
-    label: req.body.label,
-    x: req.body.x,
-    y: req.body.y,
-    color: req.body.color,
-    radius: req.body.radius,
-    isVisibleForPlayers: req.body.isVisibleForPlayers,
-    isLocked: req.body.isLocked,
-    title: req.body.title,
-    description: req.body.description,
-    reference: req.body.reference,
-  });
+    io.emit(`token:mapId:${map.id}`, {
+      type: "update",
+      data: { token: result.token },
+    });
+  })
+);
 
-  res.json({
-    success: true,
-    data: {
-      map: result.map,
-    },
-  });
+apiRouter.get(
+  "/notes",
+  requiresDmRole,
+  wrap((req, res) => {
+    const allNotes = notes.getAll();
 
-  io.emit(`token:mapId:${map.id}`, {
-    type: "update",
-    data: { token: result.token },
-  });
-});
-
-apiRouter.get("/notes", requiresDmRole, ({ req, res }) => {
-  const allNotes = notes.getAll();
-
-  return res.json({
-    success: true,
-    data: {
-      notes: allNotes,
-    },
-  });
-});
+    return res.json({
+      success: true,
+      data: {
+        notes: allNotes,
+      },
+    });
+  })
+);
 
 apiRouter.post("/notes", requiresDmRole, (req, res) => {
   const title = req.body.title || "New note";
