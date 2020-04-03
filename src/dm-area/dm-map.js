@@ -29,6 +29,7 @@ import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { TokenInfoAside } from "./token-info-aside";
 import { buildApiUrl } from "../public-url";
+import { sendRequest } from "../http-request";
 
 const ShapeButton = styled.button`
   border: none;
@@ -423,6 +424,7 @@ export const DmMap = ({
   const fogCanvasRef = useRef(null);
   const hasPreviousMap = useRef(false);
   const panZoomRef = useRef(null);
+  const saveFogProgressTaskRef = useRef(null);
   const [panZoomReferential, setPanZoomReferential] = useState(null);
   const latestPanZoomReferentialRef = useRef(null);
   const [cursorCoordinates, setCursorCoodinates] = useState(null);
@@ -888,6 +890,10 @@ export const DmMap = ({
         return;
       }
 
+      if (saveFogProgressTaskRef.current) {
+        saveFogProgressTaskRef.current.abort();
+      }
+
       const formData = new FormData();
       const blob = await fogCanvasRef.current.convertToBlob();
       formData.append(
@@ -897,13 +903,15 @@ export const DmMap = ({
         })
       );
 
-      await fetch(buildApiUrl(`/map/${loadedMapId}/fog`), {
+      const task = sendRequest({
+        url: buildApiUrl(`/map/${loadedMapId}/fog`),
         method: "POST",
         body: formData,
         headers: {
           Authorization: dmPassword ? `Bearer ${dmPassword}` : undefined,
         },
       });
+      saveFogProgressTaskRef.current = task;
     }, 500);
 
     return () => {
