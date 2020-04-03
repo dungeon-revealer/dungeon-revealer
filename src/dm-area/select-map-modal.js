@@ -35,6 +35,7 @@ const CreateNewMapButton = ({ onSelectFile, children, ...props }) => {
             return;
           }
           onSelectFile(file);
+          ev.target.value = null;
         }}
       />
     </>
