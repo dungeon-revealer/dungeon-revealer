@@ -114,7 +114,7 @@ class Maps {
       if (!map) {
         throw new Error(`Map with id "${id}" not found.`);
       }
-      return this._updateMapSettings(map, data);
+      return await this._updateMapSettings(map, data);
     });
   }
 
@@ -170,7 +170,7 @@ class Maps {
       await fs.copyFile(filePath, livePath);
       await fs.move(filePath, progressPath);
 
-      const updatedMap = this._updateMapSettings(map, newMapData);
+      const updatedMap = await this._updateMapSettings(map, newMapData);
 
       return updatedMap;
     });
@@ -190,7 +190,7 @@ class Maps {
       const destination = path.join(mapDirectory, id, fileName);
       await fs.move(filePath, destination);
 
-      const result = this._updateMapSettings(map, { mapPath: fileName });
+      const result = await this._updateMapSettings(map, { mapPath: fileName });
       return result;
     });
   }
@@ -228,7 +228,7 @@ class Maps {
 
       tokens.push(token);
 
-      this._updateMapSettings(map, { tokens });
+      await this._updateMapSettings(map, { tokens });
 
       return {
         map,
@@ -301,7 +301,7 @@ class Maps {
         token.reference = reference;
       }
 
-      const updatedMap = this._updateMapSettings(map, {
+      const updatedMap = await this._updateMapSettings(map, {
         tokens: map.tokens,
       });
 
