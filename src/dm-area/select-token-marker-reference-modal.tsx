@@ -88,7 +88,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
         <Modal.Header>
           <Modal.Heading3>Attach Note</Modal.Heading3>
         </Modal.Header>
-        <Modal.Body style={{ display: "flex" }} noPadding>
+        <Modal.Body style={{ display: "flex", height: "70vh" }} noPadding>
           <Modal.Aside>
             <ScrollableList.List style={{ marginTop: 0 }}>
               {state.selectTokenMarkerReferenceModal.notes.map((note) => (
@@ -109,7 +109,13 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
           </Modal.Aside>
           <Modal.Content>
             {state.selectTokenMarkerReferenceModal.activeNote ? (
-              <div style={{ paddingLeft: 16, paddingRight: 16 }}>
+              <div
+                style={{
+                  paddingLeft: 16,
+                  paddingRight: 16,
+                  overflowY: "scroll",
+                }}
+              >
                 <HtmlContainer
                   dangerouslySetInnerHTML={{
                     __html: new HtmlConverter().makeHtml(
