@@ -97,16 +97,11 @@ class Maps {
     return map;
   }
 
-  _updateMapSettings(id, data) {
-    const map = this.maps.find((map) => map.id === id);
-    if (!map) {
-      throw new Error(`Map with id "${id}" not found.`);
-    }
-
+  async _updateMapSettings(map, data) {
     Object.assign(map, data);
 
-    fs.writeFileSync(
-      path.join(mapDirectory, id, "settings.json"),
+    await fs.writeFile(
+      path.join(mapDirectory, map.id, "settings.json"),
       JSON.stringify(map, undefined, 2)
     );
 
@@ -115,11 +110,15 @@ class Maps {
 
   async updateMapSettings(id, data) {
     return await this._processTask(`map:${id}`, async () => {
-      return this._updateMapSettings(id, data);
+      const map = this.maps.find((map) => map.id === id);
+      if (!map) {
+        throw new Error(`Map with id "${id}" not found.`);
+      }
+      return this._updateMapSettings(map, data);
     });
   }
 
-  async updateFogProgressImage(id, fileStream) {
+  async updateFogProgressImage(id, filePath) {
     return await this._processTask(`map:${id}`, async () => {
       const map = this.maps.find((map) => map.id === id);
       if (!map) {
@@ -129,32 +128,23 @@ class Maps {
       const mapFolderPath = path.join(mapDirectory, id);
 
       if (map.fogProgressPath) {
-        fs.removeSync(path.join(mapFolderPath, map.fogProgressPath));
+        await fs.remove(path.join(mapFolderPath, map.fogProgressPath));
       }
 
       const newMapData = {
         fogProgressPath: "fog.progress.png",
       };
 
-      const writeStream = fs.createWriteStream(
-        path.join(mapFolderPath, newMapData.fogProgressPath)
+      const fileDestination = path.join(
+        mapFolderPath,
+        newMapData.fogProgressPath
       );
-      fileStream.pipe(writeStream);
-
-      await new Promise((res, rej) => {
-        writeStream.on("close", (err) => {
-          if (err) {
-            return rej(err);
-          }
-          res();
-        });
-      });
-
-      return await this._updateMapSettings(id, newMapData);
+      await fs.move(filePath, fileDestination);
+      return await this._updateMapSettings(map, newMapData);
     });
   }
 
-  async updateFogLiveImage(id, fileStream) {
+  async updateFogLiveImage(id, filePath) {
     return await this._processTask(`map:${id}`, async () => {
       const map = this.maps.find((map) => map.id === id);
       if (!map) {
@@ -167,71 +157,40 @@ class Maps {
       };
 
       if (map.fogProgressPath) {
-        fs.removeSync(path.join(mapDirectory, id, map.fogProgressPath));
+        await fs.remove(path.join(mapDirectory, id, map.fogProgressPath));
       }
       if (map.fogLivePath) {
-        fs.removeSync(path.join(mapDirectory, id, map.fogLivePath));
+        await fs.remove(path.join(mapDirectory, id, map.fogLivePath));
       }
 
-      const liveFogWriteStream = fs.createWriteStream(
-        path.join(mapDirectory, id, newMapData.fogLivePath)
-      );
-      fileStream.pipe(liveFogWriteStream);
+      const livePath = path.join(mapDirectory, id, newMapData.fogLivePath);
+      // prettier-ignore
+      const progressPath = path.join(mapDirectory, id, newMapData.fogProgressPath);
 
-      const fogProgressWriteStream = fs.createWriteStream(
-        path.join(mapDirectory, id, newMapData.fogProgressPath)
-      );
-      fileStream.pipe(fogProgressWriteStream);
+      await fs.copyFile(filePath, livePath);
+      await fs.move(filePath, progressPath);
 
-      await Promise.all([
-        new Promise((res, rej) => {
-          liveFogWriteStream.on("close", (err) => {
-            if (err) {
-              return rej(err);
-            }
-            res();
-          });
-        }),
-        new Promise((res, rej) => {
-          fogProgressWriteStream.on("close", (err) => {
-            if (err) {
-              return rej(err);
-            }
-            res();
-          });
-        }),
-      ]);
-
-      const updatedMap = this._updateMapSettings(id, newMapData);
+      const updatedMap = this._updateMapSettings(map, newMapData);
 
       return updatedMap;
     });
   }
 
-  async updateMapImage(id, { fileStream, extension }) {
+  async updateMapImage(id, { filePath, extension }) {
     return await this._processTask(`map:${id}`, async () => {
       const map = this.maps.find((map) => map.id === id);
       if (!map) {
         throw new Error(`Map with id "${id}" not found.`);
       }
       if (map.mapPath) {
-        fs.removeSync(map.mapPath);
+        await fs.remove(map.mapPath);
       }
 
       const fileName = "map." + extension;
-      const writeStream = fs.createWriteStream(
-        path.join(mapDirectory, id, fileName)
-      );
-      fileStream.pipe(writeStream);
-      await new Promise((res, rej) => {
-        writeStream.on("close", (err) => {
-          if (err) {
-            return rej(err);
-          }
-          res();
-        });
-      });
-      const result = this._updateMapSettings(id, { mapPath: fileName });
+      const destination = path.join(mapDirectory, id, fileName);
+      await fs.move(filePath, destination);
+
+      const result = this._updateMapSettings(map, { mapPath: fileName });
       return result;
     });
   }
@@ -269,7 +228,7 @@ class Maps {
 
       tokens.push(token);
 
-      this._updateMapSettings(mapId, { tokens });
+      this._updateMapSettings(map, { tokens });
 
       return {
         map,
@@ -342,7 +301,7 @@ class Maps {
         token.reference = reference;
       }
 
-      const updatedMap = this._updateMapSettings(mapId, {
+      const updatedMap = this._updateMapSettings(map, {
         tokens: map.tokens,
       });
 
@@ -361,7 +320,7 @@ class Maps {
       }
 
       const tokens = (map.tokens || []).filter((token) => token.id !== tokenId);
-      const updatedMap = this.updateMapSettings(mapId, { tokens });
+      const updatedMap = await this._updateMapSettings(map, { tokens });
 
       return { map: updatedMap };
     });

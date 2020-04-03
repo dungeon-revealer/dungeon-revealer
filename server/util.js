@@ -1,6 +1,10 @@
 "use strict";
 
 const path = require("path");
+const fs = require("fs");
+const os = require("os");
+const uuid = require("uuid");
+const once = require("lodash/once");
 
 /**
  * Helper function for retreiving the correct data directory.
@@ -14,6 +18,11 @@ const getDataDirectory = () => {
     return path.resolve(__dirname, "..", "data");
   }
 };
+
+const getTmpDirectory = once(() => fs.realpathSync(os.tmpdir()));
+
+const getTmpFile = (extension = "") =>
+  path.join(getTmpDirectory(), uuid.v4() + extension);
 
 /**
  * utility that ensures tasks on a given resource are executed in sequence in order to prevent race conditions etc.
@@ -42,4 +51,5 @@ const createResourceTaskProcessor = () => {
 module.exports = {
   getDataDirectory,
   createResourceTaskProcessor,
+  getTmpFile,
 };

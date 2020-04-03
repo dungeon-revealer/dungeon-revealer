@@ -14,7 +14,11 @@ const busboy = require("connect-busboy");
 const { Maps } = require("./maps");
 const { Notes } = require("./notes");
 const { Settings } = require("./settings");
-const { getDataDirectory, createResourceTaskProcessor } = require("./util");
+const {
+  getDataDirectory,
+  createResourceTaskProcessor,
+  getTmpFile,
+} = require("./util");
 const env = require("./env");
 
 const app = express();
@@ -183,72 +187,101 @@ apiRouter.get("/map/:id/fog-live", requiresPcRole, (req, res) => {
       },
     });
   }
+
   return res.sendFile(path.join(maps.getBasePath(map), map.fogLivePath));
 });
 
 apiRouter.post("/map/:id/map", requiresPcRole, (req, res) => {
-  const map = maps.get(req.params.id);
-  if (!map) {
-    return res.send(404);
-  }
+  const tmpFile = getTmpFile();
+  let writeStream = null;
+
   req.pipe(req.busboy);
+
   req.busboy.once("file", (fieldname, file, filename) => {
-    const extension = filename.split(".").pop();
-    maps
-      .updateMapImage(req.params.id, { fileStream: file, extension })
-      .then((map) => {
-        res.json({ success: true, data: map });
-      })
-      .catch((err) => {
-        res.status(404).json({ data: null, error: err });
-      });
+    writeStream = fs.createWriteStream(tmpFile);
+    file.pipe(writeStream);
+  });
+
+  req.once("end", () => {
+    if (writeStream !== null) return;
+    res.status(422).json({ data: null, error: "No file was sent." });
+  });
+
+  req.busboy.once("finish", () => {
+    maps.updateMapImage(req.params.id, { filePath: tmpFile }).then((map) => {
+      res.send({ code: 200, body: { success: true, data: map } });
+    });
   });
 });
 
 apiRouter.post("/map/:id/fog", requiresDmRole, (req, res) => {
-  const map = maps.get(req.params.id);
-  if (!map) {
-    return res.send(404);
-  }
-
+  const tmpFile = getTmpFile();
+  let writeStream = null;
   req.pipe(req.busboy);
-  req.busboy.once("file", (fieldname, file, filename) => {
-    maps.updateFogProgressImage(req.params.id, file).then((map) => {
-      res.json({ success: true, data: map });
+
+  req.busboy.once("file", (fieldname, file) => {
+    writeStream = fs.createWriteStream(tmpFile);
+    file.pipe(writeStream);
+  });
+
+  req.once("end", () => {
+    if (writeStream !== null) return;
+    res.status(422).json({ data: null, error: "No file was sent." });
+  });
+
+  req.busboy.once("finish", () => {
+    maps.updateFogProgressImage(req.params.id, tmpFile).then((map) => {
+      res.send({
+        code: 200,
+        body: { success: true, data: map },
+      });
     });
   });
 });
 
 apiRouter.post("/map/:id/send", requiresDmRole, (req, res) => {
-  const map = maps.get(req.params.id);
-  if (!map) {
-    return res.send(404);
-  }
+  const tmpFile = getTmpFile();
+  let writeStream = null;
+
   req.pipe(req.busboy);
+
   req.busboy.once("file", (fieldname, file, filename) => {
-    maps.updateFogLiveImage(req.params.id, file).then((map) => {
+    writeStream = fs.createWriteStream(tmpFile);
+    file.pipe(writeStream);
+  });
+
+  req.once("end", () => {
+    if (writeStream !== null) return;
+    res.status(422).json({ data: null, error: "No file was sent." });
+  });
+
+  req.busboy.once("finish", () => {
+    maps.updateFogLiveImage(req.params.id, tmpFile).then((map) => {
       settings.set("currentMapId", map.id);
       res.json({ success: true, data: map });
       io.emit("map update", {
         map,
-        image: req.body.image,
       });
     });
   });
 });
 
-apiRouter.delete("/map/:id", requiresDmRole, (req, res) => {
-  const map = maps.get(req.params.id);
-  if (!map) {
-    return res.send(404);
-  }
+apiRouter.delete(
+  "/map/:id",
+  requiresDmRole,
+  wrap(async (req, res) => {
+    const map = maps.get(req.params.id);
+    if (!map) {
+      return res.send(404);
+    }
 
-  maps.deleteMap(map.id);
+    await maps.deleteMap(map.id);
 
-  res.status(200).json({
-    success: true,
-  });
-});
+    res.status(200).json({
+      success: true,
+    });
+  })
+);
 
 apiRouter.get("/active-map", requiresPcRole, (req, res) => {
   let activeMap = null;
@@ -278,7 +311,6 @@ apiRouter.post("/active-map", requiresDmRole, (req, res) => {
   settings.set("currentMapId", mapId);
   io.emit("map update", {
     map: null,
-    image: null,
   });
   res.json({
     success: true,
@@ -481,20 +513,16 @@ apiRouter.patch(
   })
 );
 
-apiRouter.get(
-  "/notes",
-  requiresDmRole,
-  wrap((req, res) => {
-    const allNotes = notes.getAll();
+apiRouter.get("/notes", requiresDmRole, async (req, res) => {
+  const allNotes = notes.getAll();
 
-    return res.json({
-      success: true,
-      data: {
-        notes: allNotes,
-      },
-    });
-  })
-);
+  return res.json({
+    success: true,
+    data: {
+      notes: allNotes,
+    },
+  });
+});
 
 apiRouter.post("/notes", requiresDmRole, (req, res) => {
   const title = req.body.title || "New note";
