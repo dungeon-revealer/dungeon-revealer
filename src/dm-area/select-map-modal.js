@@ -356,26 +356,28 @@ const CreateNewMapModal = ({ closeModal, createMap }) => {
             error={error}
           />
         </Modal.Body>
-        <Modal.Actions>
-          <Modal.ActionGroup>
-            <Button.Tertiary onClick={closeModal} type="button">
-              Abort
-            </Button.Tertiary>
-            <Button.Primary
-              type="submit"
-              onClick={() => {
-                if (inputValue.trim().length === 0) {
-                  setError("Please enter a map name.");
-                  return;
-                }
-                createMap(inputValue);
-                closeModal();
-              }}
-            >
-              Create Map
-            </Button.Primary>
-          </Modal.ActionGroup>
-        </Modal.Actions>
+        <Modal.Footer>
+          <Modal.Actions>
+            <Modal.ActionGroup>
+              <Button.Tertiary onClick={closeModal} type="button">
+                Abort
+              </Button.Tertiary>
+              <Button.Primary
+                type="submit"
+                onClick={() => {
+                  if (inputValue.trim().length === 0) {
+                    setError("Please enter a map name.");
+                    return;
+                  }
+                  createMap(inputValue);
+                  closeModal();
+                }}
+              >
+                Create Map
+              </Button.Primary>
+            </Modal.ActionGroup>
+          </Modal.Actions>
+        </Modal.Footer>
       </Modal.Dialog>
     </Modal>
   );
