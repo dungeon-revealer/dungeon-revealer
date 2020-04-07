@@ -5,7 +5,7 @@
     "start": "node ./bin/dungeon-revealer",
     "eslint": "eslint --ignore-path .gitignore --max-warnings 0 \"**/*.js\" \"bin/dungeon-revealer\"",
     "start:dev": "cross-env PORT=3001 EXTEND_ESLINT=true react-scripts start",
-    "build": "EXTEND_ESLINT=true PUBLIC_URL=__PUBLIC_URL_PLACEHOLDER__ react-scripts build && node scripts/patch-public-url.js",
+    "build": "cross-env EXTEND_ESLINT=true PUBLIC_URL=__PUBLIC_URL_PLACEHOLDER__ react-scripts build && node scripts/patch-public-url.js",
     "compilex64": "pkg . --out-path ./bin/ --targets node10-win-x64,node10-macos-x64,node10-linux-x64",
     "compilearm": "pkg . --out-path ./bin/arm/ --targets node10-linux-armv7",
     "test": "react-scripts test",
