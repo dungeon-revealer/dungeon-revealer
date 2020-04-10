@@ -7,7 +7,6 @@ const logger = require("morgan");
 const bodyParser = require("body-parser");
 const createUniqueId = require("uuid/v4");
 const fs = require("fs-extra");
-const os = require("os");
 const http = require("http");
 const createSocketIOServer = require("socket.io");
 const busboy = require("connect-busboy");
@@ -109,9 +108,18 @@ const requiresDmRole = (req, res, next) => {
   });
 };
 
-app.use(authorizationMiddleware);
+const handleUnexpectedError = (response) => (thrownThing) => {
+  console.error(thrownThing);
+  response.status(500).send({
+    data: null,
+    error: {
+      message: "An unexpected error occured.",
+      code: "ERR_UNEXPECTED",
+    },
+  });
+};
 
-const wrap = (fn) => (...args) => fn(...args).catch(args[2]);
+app.use(authorizationMiddleware);
 
 apiRouter.get("/auth", (req, res) => {
   return res.status(200).json({
@@ -191,7 +199,7 @@ apiRouter.get("/map/:id/fog-live", requiresPcRole, (req, res) => {
   return res.sendFile(path.join(maps.getBasePath(map), map.fogLivePath));
 });
 
-apiRouter.post("/map/:id/map", requiresPcRole, (req, res) => {
+apiRouter.post("/map/:id/map", requiresDmRole, (req, res) => {
   const tmpFile = getTmpFile();
   let writeStream = null;
 
@@ -208,9 +216,12 @@ apiRouter.post("/map/:id/map", requiresPcRole, (req, res) => {
   });
 
   req.busboy.once("finish", () => {
-    maps.updateMapImage(req.params.id, { filePath: tmpFile }).then((map) => {
-      res.send({ code: 200, body: { success: true, data: map } });
-    });
+    maps
+      .updateMapImage(req.params.id, { filePath: tmpFile })
+      .then((map) => {
+        res.status(200).json({ error: null, data: map });
+      })
+      .catch(handleUnexpectedError(res));
   });
 });
 
@@ -230,12 +241,15 @@ apiRouter.post("/map/:id/fog", requiresDmRole, (req, res) => {
   });
 
   req.busboy.once("finish", () => {
-    maps.updateFogProgressImage(req.params.id, tmpFile).then((map) => {
-      res.send({
-        code: 200,
-        body: { success: true, data: map },
-      });
-    });
+    maps
+      .updateFogProgressImage(req.params.id, tmpFile)
+      .then((map) => {
+        res.status(200).json({
+          error: null,
+          data: map,
+        });
+      })
+      .catch(handleUnexpectedError(res));
   });
 });
 
@@ -256,32 +270,37 @@ apiRouter.post("/map/:id/send", requiresDmRole, (req, res) => {
   });
 
   req.busboy.once("finish", () => {
-    maps.updateFogLiveImage(req.params.id, tmpFile).then((map) => {
-      settings.set("currentMapId", map.id);
-      res.json({ success: true, data: map });
-      io.emit("map update", {
-        map,
-      });
-    });
+    maps
+      .updateFogLiveImage(req.params.id, tmpFile)
+      .then((map) => {
+        settings.set("currentMapId", map.id);
+        res.json({ error: null, data: map });
+        io.emit("map update", {
+          map,
+        });
+      })
+      .catch(handleUnexpectedError(res));
   });
 });
 
-apiRouter.delete(
-  "/map/:id",
-  requiresDmRole,
-  wrap(async (req, res) => {
-    const map = maps.get(req.params.id);
-    if (!map) {
-      return res.send(404);
-    }
+apiRouter.delete("/map/:id", requiresDmRole, (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.send(404);
+  }
 
-    await maps.deleteMap(map.id);
-
-    res.status(200).json({
-      success: true,
-    });
-  })
-);
+  maps
+    .deleteMap(map.id)
+    .then(() => {
+      res.status(200).json({
+        error: null,
+        data: {
+          deletedMapId: map.id,
+        },
+      });
+    })
+    .catch(handleUnexpectedError(res));
+});
 
 apiRouter.get("/active-map", requiresPcRole, (req, res) => {
   let activeMap = null;
@@ -290,8 +309,8 @@ apiRouter.get("/active-map", requiresPcRole, (req, res) => {
     activeMap = maps.get(activeMapId);
   }
 
-  return res.status(200).json({
-    success: true,
+  res.status(200).json({
+    error: null,
     data: {
       activeMap,
     },
@@ -307,19 +326,26 @@ apiRouter.post("/active-map", requiresDmRole, (req, res) => {
         code: "ERR_MISSING_MAP_ID",
       },
     });
+    return;
   }
+
   settings.set("currentMapId", mapId);
+
   io.emit("map update", {
     map: null,
   });
+
   res.json({
-    success: true,
+    error: null,
+    data: {
+      activeMapId: mapId,
+    },
   });
 });
 
 apiRouter.get("/map", requiresPcRole, (req, res) => {
   res.json({
-    success: true,
+    error: null,
     data: {
       currentMapId: settings.get("currentMapId"),
       maps: maps.getAll(),
@@ -328,164 +354,161 @@ apiRouter.get("/map", requiresPcRole, (req, res) => {
 });
 
 apiRouter.post("/map", requiresDmRole, (req, res) => {
+  const tmpFile = getTmpFile();
+  let writeStream = null;
+  let mapTitle = "New Map";
+
   req.pipe(req.busboy);
 
-  const data = {};
-
-  req.busboy.on("file", (fieldname, stream, filename) => {
-    const extension = filename.split(".").pop();
-    const saveTo = path.join(os.tmpDir(), path.basename(fieldname));
-    data.file = {
-      path: saveTo,
-      extension,
-    };
-    stream.pipe(fs.createWriteStream(saveTo));
+  req.busboy.once("file", (fieldname, file, filename) => {
+    writeStream = fs.createWriteStream(tmpFile);
+    file.pipe(writeStream);
   });
+
   req.busboy.on("field", (fieldname, value) => {
     if (fieldname === "title") {
-      data[fieldname] = value;
+      mapTitle = String(value);
     }
   });
 
-  req.busboy.on("finish", () => {
-    const map = maps.createMap(data);
-    res.status(200).json({ success: true, data: { map } });
+  req.once("end", () => {
+    if (writeStream !== null) return;
+    res.status(422).json({ data: null, error: "No file was sent." });
+  });
+
+  req.busboy.once("finish", () => {
+    maps
+      .createMap({ title: mapTitle, filePath: tmpFile })
+      .then((map) => {
+        res.status(200).json({ error: null, data: { map } });
+      })
+      .catch(handleUnexpectedError(res));
   });
 });
 
-apiRouter.patch(
-  "/map/:id",
-  requiresDmRole,
-  wrap(async (req, res) => {
-    let map = maps.get(req.params.id);
-    if (!map) {
-      return res.status(404).json({
-        success: false,
-        data: null,
-        error: {
-          message: `Map with id '${req.params.id}' does not exist.`,
-          code: "ERR_MAP_DOES_NOT_EXIST",
-        },
-      });
-    }
-    const updates = {};
-
-    if (req.body.title) {
-      updates.title = req.body.title;
-    }
-    if (req.body.grid) {
-      updates.grid = req.body.grid;
-      updates.showGrid = true;
-    }
-    if ({}.hasOwnProperty.call(req.body, "showGrid")) {
-      updates.showGrid = req.body.showGrid;
-    }
-    if ({}.hasOwnProperty.call(req.body, "showGridToPlayers")) {
-      updates.showGridToPlayers = req.body.showGridToPlayers;
-    }
-    if ({}.hasOwnProperty.call(req.body, "gridColor")) {
-      updates.gridColor = req.body.gridColor;
-    }
-
-    if (Object.keys(updates).length) {
-      map = await maps.updateMapSettings(map.id, updates);
-    }
-
-    res.json({
-      success: true,
-      data: {
-        map,
+apiRouter.patch("/map/:id", requiresDmRole, async (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.status(404).json({
+      data: null,
+      error: {
+        message: `Map with id '${req.params.id}' does not exist.`,
+        code: "ERR_MAP_DOES_NOT_EXIST",
       },
     });
-  })
-);
+  }
+  const updates = {};
 
-apiRouter.post(
-  "/map/:id/token",
-  requiresDmRole,
-  wrap(async (req, res) => {
-    const map = maps.get(req.params.id);
-    if (!map) {
-      return res.status(404).json({
-        success: false,
-        data: null,
-        error: {
-          message: `Map with id '${req.params.id}' does not exist.`,
-          code: "ERR_MAP_DOES_NOT_EXIST",
+  if (req.body.title) {
+    updates.title = req.body.title;
+  }
+  if (req.body.grid) {
+    updates.grid = req.body.grid;
+    updates.showGrid = true;
+  }
+  if ({}.hasOwnProperty.call(req.body, "showGrid")) {
+    updates.showGrid = req.body.showGrid;
+  }
+  if ({}.hasOwnProperty.call(req.body, "showGridToPlayers")) {
+    updates.showGridToPlayers = req.body.showGridToPlayers;
+  }
+  if ({}.hasOwnProperty.call(req.body, "gridColor")) {
+    updates.gridColor = req.body.gridColor;
+  }
+
+  (Object.keys(updates).length > 0
+    ? maps.updateMapSettings(map.id, updates)
+    : Promise.resolve(map)
+  )
+    .then((map) => {
+      res.json({
+        error: null,
+        data: {
+          map,
         },
       });
-    }
+    })
+    .catch(handleUnexpectedError(res));
+});
 
-    const { token } = await maps.addToken(map.id, {
+apiRouter.post("/map/:id/token", requiresDmRole, (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.status(404).json({
+      data: null,
+      error: {
+        message: `Map with id '${req.params.id}' does not exist.`,
+        code: "ERR_MAP_DOES_NOT_EXIST",
+      },
+    });
+  }
+
+  maps
+    .addToken(map.id, {
       x: req.body.x,
       y: req.body.y,
       color: req.body.color,
       label: req.body.label,
       radius: req.body.radius,
-    });
-
-    res.json({
-      success: true,
-      data: {
-        token,
-      },
-    });
-
-    io.emit(`token:mapId:${map.id}`, {
-      type: "add",
-      data: { token },
-    });
-  })
-);
-
-apiRouter.delete(
-  "/map/:id/token/:tokenId",
-  requiresDmRole,
-  wrap(async (req, res) => {
-    const map = maps.get(req.params.id);
-    if (!map) {
-      return res.status(404).json({
-        success: false,
-        data: null,
-        error: {
-          message: `Map with id '${req.params.id}' does not exist.`,
-          code: "ERR_MAP_DOES_NOT_EXIST",
+    })
+    .then(({ token }) => {
+      res.json({
+        error: null,
+        data: {
+          token,
         },
       });
-    }
+      io.emit(`token:mapId:${map.id}`, {
+        type: "add",
+        data: { token },
+      });
+    })
+    .catch(handleUnexpectedError(res));
+});
 
-    const updatedMap = await maps.removeToken(map.id, req.params.tokenId);
-    res.json({
-      success: true,
-      data: {
-        map: updatedMap,
+apiRouter.delete("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.status(404).json({
+      data: null,
+      error: {
+        message: `Map with id '${req.params.id}' does not exist.`,
+        code: "ERR_MAP_DOES_NOT_EXIST",
       },
     });
+  }
 
-    io.emit(`token:mapId:${map.id}`, {
-      type: "remove",
-      data: { tokenId: req.params.tokenId },
-    });
-  })
-);
-
-apiRouter.patch(
-  "/map/:id/token/:tokenId",
-  requiresDmRole,
-  wrap(async (req, res) => {
-    const map = maps.get(req.params.id);
-    if (!map) {
-      return res.status(404).json({
-        success: false,
-        data: null,
-        error: {
-          message: `Map with id '${req.params.id}' does not exist.`,
-          code: "ERR_MAP_DOES_NOT_EXIST",
+  maps
+    .removeToken(map.id, req.params.tokenId)
+    .then(({ map }) => {
+      res.json({
+        error: null,
+        data: {
+          map,
         },
       });
-    }
+      io.emit(`token:mapId:${map.id}`, {
+        type: "remove",
+        data: { tokenId: req.params.tokenId },
+      });
+    })
+    .catch(handleUnexpectedError(res));
+});
 
-    const result = await maps.updateToken(map.id, req.params.tokenId, {
+apiRouter.patch("/map/:id/token/:tokenId", requiresDmRole, (req, res) => {
+  const map = maps.get(req.params.id);
+  if (!map) {
+    return res.status(404).json({
+      data: null,
+      error: {
+        message: `Map with id '${req.params.id}' does not exist.`,
+        code: "ERR_MAP_DOES_NOT_EXIST",
+      },
+    });
+  }
+
+  maps
+    .updateToken(map.id, req.params.tokenId, {
       type: req.body.type,
       label: req.body.label,
       x: req.body.x,
@@ -497,27 +520,27 @@ apiRouter.patch(
       title: req.body.title,
       description: req.body.description,
       reference: req.body.reference,
-    });
-
-    res.json({
-      success: true,
-      data: {
-        map: result.map,
-      },
-    });
-
-    io.emit(`token:mapId:${map.id}`, {
-      type: "update",
-      data: { token: result.token },
-    });
-  })
-);
+    })
+    .then(({ token, map }) => {
+      res.json({
+        error: null,
+        data: {
+          map,
+        },
+      });
+      io.emit(`token:mapId:${map.id}`, {
+        type: "update",
+        data: { token },
+      });
+    })
+    .catch(handleUnexpectedError(res));
+});
 
 apiRouter.get("/notes", requiresDmRole, async (req, res) => {
   const allNotes = notes.getAll();
 
   return res.json({
-    success: true,
+    error: null,
     data: {
       notes: allNotes,
     },
@@ -529,7 +552,7 @@ apiRouter.post("/notes", requiresDmRole, (req, res) => {
   const note = notes.createNote({ title, content: "" });
 
   return res.json({
-    success: true,
+    error: null,
     data: {
       note,
     },
@@ -540,7 +563,6 @@ apiRouter.patch("/notes/:id", requiresDmRole, (req, res) => {
   let note = notes.getById(req.params.id);
   if (!note) {
     return res.status(404).json({
-      success: false,
       data: null,
       error: {
         message: `Note with id '${req.params.id}' does not exist.`,
@@ -563,7 +585,7 @@ apiRouter.patch("/notes/:id", requiresDmRole, (req, res) => {
   note = notes.updateNote(note.id, changes);
 
   res.json({
-    success: true,
+    error: null,
     data: {
       note,
     },
@@ -574,7 +596,6 @@ apiRouter.delete("/notes/:id", requiresDmRole, (req, res) => {
   const note = notes.getById(req.params.id);
   if (!note) {
     return res.status(404).json({
-      success: false,
       data: null,
       error: {
         message: `Note with id '${req.params.id}' does not exist.`,
@@ -599,17 +620,17 @@ apiRouter.delete("/notes/:id", requiresDmRole, (req, res) => {
     }))
     .forEach(({ mapId, affectedTokens }) => {
       affectedTokens.forEach(({ id }) => {
-        const result = maps.updateToken(mapId, id, { reference: null });
-
-        io.emit(`token:mapId:${mapId}`, {
-          type: "update",
-          data: { token: result.token },
+        maps.updateToken(mapId, id, { reference: null }).then(({ token }) => {
+          io.emit(`token:mapId:${mapId}`, {
+            type: "update",
+            data: { token },
+          });
         });
       });
     });
 
   res.json({
-    success: true,
+    error: null,
     data: {
       deletedNoteId: note.id,
     },
@@ -621,7 +642,6 @@ apiRouter.get("/notes/:id", requiresDmRole, (req, res) => {
 
   if (!note) {
     return res.status(404).json({
-      success: false,
       data: null,
       error: {
         message: `Note with id '${req.params.id}' does not exist.`,
@@ -631,7 +651,7 @@ apiRouter.get("/notes/:id", requiresDmRole, (req, res) => {
   }
 
   res.json({
-    success: true,
+    error: null,
     data: {
       note,
     },

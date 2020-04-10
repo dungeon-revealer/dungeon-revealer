@@ -66,35 +66,36 @@ class Maps {
     return this.maps.find((map) => map.id === id) || null;
   }
 
-  createMap({ title, file }) {
+  async createMap({ title, filePath }) {
     const id = uuid();
-    fs.mkdirSync(path.join(mapDirectory, id));
-    const mapPath = `map.${file.extension}`;
-    const map = {
-      id,
-      title,
-      // automatically saved after interaction
-      fogProgressPath: null,
-      // progress becomes live when DM publishes map
-      fogLivePath: null,
-      mapPath,
-      grid: null,
-      showGrid: false,
-      showGridToPlayers: false,
-      gridColor: "rgba(0, 0, 0, 0.5)",
-      tokens: [],
-    };
+    return this._processTask(`map:${id}`, async () => {
+      fs.mkdirp(path.join(mapDirectory, id));
+      const mapPath = `map`;
+      const map = {
+        id,
+        title,
+        // automatically saved after interaction
+        fogProgressPath: null,
+        // progress becomes live when DM publishes map
+        fogLivePath: null,
+        mapPath,
+        grid: null,
+        showGrid: false,
+        showGridToPlayers: false,
+        gridColor: "rgba(0, 0, 0, 0.5)",
+        tokens: [],
+      };
 
-    fs.moveSync(file.path, path.join(mapDirectory, id, mapPath));
+      await fs.move(filePath, path.join(mapDirectory, id, mapPath));
+      await fs.writeFile(
+        path.join(mapDirectory, id, "settings.json"),
+        JSON.stringify(map, undefined, 2)
+      );
 
-    fs.writeFileSync(
-      path.join(mapDirectory, id, "settings.json"),
-      JSON.stringify(map, undefined, 2)
-    );
+      this.maps.push(map);
 
-    this.maps.push(map);
-
-    return map;
+      return map;
+    });
   }
 
   async _updateMapSettings(map, data) {
