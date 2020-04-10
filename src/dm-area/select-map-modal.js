@@ -418,14 +418,16 @@ const ChangeMapTitleModal = ({ closeModal, updateMap }) => {
             error={error}
           />
         </Modal.Body>
-        <Modal.Actions>
-          <Modal.ActionGroup>
-            <Button.Tertiary type="button" onClick={closeModal}>
-              Abort
-            </Button.Tertiary>
-            <Button.Primary type="submit">Change Map Title</Button.Primary>
-          </Modal.ActionGroup>
-        </Modal.Actions>
+        <Modal.Footer>
+          <Modal.Actions>
+            <Modal.ActionGroup>
+              <Button.Tertiary type="button" onClick={closeModal}>
+                Abort
+              </Button.Tertiary>
+              <Button.Primary type="submit">Change Map Title</Button.Primary>
+            </Modal.ActionGroup>
+          </Modal.Actions>
+        </Modal.Footer>
       </Modal.Dialog>
     </Modal>
   );
@@ -439,22 +441,24 @@ const DeleteMapModal = ({ closeModal, deleteMap }) => {
           <Modal.Heading3>Delete Map</Modal.Heading3>
         </Modal.Header>
         <Modal.Body>Do you really want to delete this map?</Modal.Body>
-        <Modal.Actions>
-          <Modal.ActionGroup>
-            <Button.Tertiary type="submit" onClick={closeModal}>
-              Abort
-            </Button.Tertiary>
-            <Button.Primary
-              type="button"
-              onClick={() => {
-                deleteMap();
-                closeModal();
-              }}
-            >
-              Delete
-            </Button.Primary>
-          </Modal.ActionGroup>
-        </Modal.Actions>
+        <Modal.Footer>
+          <Modal.Actions>
+            <Modal.ActionGroup>
+              <Button.Tertiary type="submit" onClick={closeModal}>
+                Abort
+              </Button.Tertiary>
+              <Button.Primary
+                type="button"
+                onClick={() => {
+                  deleteMap();
+                  closeModal();
+                }}
+              >
+                Delete
+              </Button.Primary>
+            </Modal.ActionGroup>
+          </Modal.Actions>
+        </Modal.Footer>
       </Modal.Dialog>
     </Modal>
   );
