@@ -124,9 +124,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
                   }}
                 />
               </div>
-            ) : (
-              "NOPE"
-            )}
+            ) : null}
           </Modal.Content>
         </Modal.Body>
         <Modal.Footer>

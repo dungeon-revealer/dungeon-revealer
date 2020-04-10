@@ -309,7 +309,6 @@ const Content = styled.div`
 `;
 
 const Actions = styled.div`
-  padding-top: 20px;
   display: flex;
   justify-content: flex-end;
 `;

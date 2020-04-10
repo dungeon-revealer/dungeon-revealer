@@ -13,22 +13,24 @@ export const DeleteNoteConfirmationDialogModal: React.FC<{
           <Modal.Heading3>Delete Note</Modal.Heading3>
         </Modal.Header>
         <Modal.Body>Do you really want to delete this note?</Modal.Body>
-        <Modal.Actions>
-          <Modal.ActionGroup>
-            <Button.Tertiary type="submit" onClick={close}>
-              Abort
-            </Button.Tertiary>
-            <Button.Primary
-              type="button"
-              onClick={() => {
-                close();
-                confirm();
-              }}
-            >
-              Delete
-            </Button.Primary>
-          </Modal.ActionGroup>
-        </Modal.Actions>
+        <Modal.Footer>
+          <Modal.Actions>
+            <Modal.ActionGroup>
+              <Button.Tertiary type="submit" onClick={close}>
+                Abort
+              </Button.Tertiary>
+              <Button.Primary
+                type="button"
+                onClick={() => {
+                  close();
+                  confirm();
+                }}
+              >
+                Delete
+              </Button.Primary>
+            </Modal.ActionGroup>
+          </Modal.Actions>
+        </Modal.Footer>
       </Modal.Dialog>
     </Modal>
   );
