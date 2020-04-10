@@ -1,0 +1,53 @@
+name: Build Binaries
+
+on: push
+
+jobs:
+  windows-build:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10
+      - run: yarn install
+      - run: yarn build
+      - run: yarn pkg . --target node10-win-x64 --output ./bin/dungeon-revealer-win-x64.exe
+      - uses: actions/upload-artifact@v1
+        with:
+          name: windows-binary-x64
+          path: bin/dungeon-revealer-win-x64.exe
+  linux-build:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10
+      - run: yarn install
+      - run: yarn build
+      - run: yarn pkg . --target node10-linux-x64 --output ./bin/dungeon-revealer-linux-x64
+      - uses: actions/upload-artifact@v1
+        with:
+          name: linux-binary-x64
+          path: bin/dungeon-revealer-linux-x64
+  osx-build:
+    name: OSX
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10
+      - run: yarn install
+      - run: yarn build
+      - run: yarn pkg . --target node10-osx-x64 --output ./bin/dungeon-revealer-osx-x64
+      - uses: actions/upload-artifact@v1
+        with:
+          name: osx-binary-x64
+          path: bin/dungeon-revealer-osx-x64
