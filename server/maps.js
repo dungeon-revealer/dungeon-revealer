@@ -4,9 +4,7 @@ const path = require("path");
 const fs = require("fs-extra");
 const junk = require("junk");
 const uuid = require("uuid/v4");
-const { getDataDirectory } = require("./util");
 
-const mapDirectory = path.join(getDataDirectory(), "maps");
 const isDirectory = (source) => fs.lstatSync(source).isDirectory();
 
 const prepareToken = (token) => {
@@ -30,17 +28,22 @@ const prepareToken = (token) => {
 };
 
 class Maps {
-  constructor({ processTask }) {
-    fs.mkdirpSync(mapDirectory);
+  constructor({ processTask, dataDirectory }) {
+    this._mapsDirectoryPath = path.join(dataDirectory, "maps");
+    fs.mkdirpSync(this._mapsDirectoryPath);
     this._processTask = processTask;
     this.maps = this._loadMaps();
   }
 
+  _buildMapFolderPath(mapId) {
+    return path.join(this._mapsDirectoryPath, mapId);
+  }
+
   _loadMaps() {
     const mapDirectories = fs
-      .readdirSync(path.join(mapDirectory))
+      .readdirSync(this._mapsDirectoryPath)
       .filter(junk.not)
-      .map((id) => path.join(mapDirectory, id))
+      .map((id) => this._buildMapFolderPath(id))
       .filter(isDirectory);
 
     return mapDirectories.map((directory) => {
@@ -55,7 +58,7 @@ class Maps {
   }
 
   getBasePath(map) {
-    return path.join(mapDirectory, map.id);
+    return path.join(this._mapsDirectoryPath, map.id);
   }
 
   getAll() {
@@ -66,11 +69,11 @@ class Maps {
     return this.maps.find((map) => map.id === id) || null;
   }
 
-  async createMap({ title, filePath }) {
+  async createMap({ title, filePath, fileExtension }) {
     const id = uuid();
     return this._processTask(`map:${id}`, async () => {
-      fs.mkdirp(path.join(mapDirectory, id));
-      const mapPath = `map`;
+      fs.mkdirp(this._buildMapFolderPath(id));
+      const mapPath = `map${fileExtension ? `.${fileExtension}` : ``}`;
       const map = {
         id,
         title,
@@ -86,9 +89,9 @@ class Maps {
         tokens: [],
       };
 
-      await fs.move(filePath, path.join(mapDirectory, id, mapPath));
+      await fs.move(filePath, path.join(this._buildMapFolderPath(id), mapPath));
       await fs.writeFile(
-        path.join(mapDirectory, id, "settings.json"),
+        path.join(this._mapsDirectoryPath, id, "settings.json"),
         JSON.stringify(map, undefined, 2)
       );
 
@@ -102,7 +105,7 @@ class Maps {
     Object.assign(map, data);
 
     await fs.writeFile(
-      path.join(mapDirectory, map.id, "settings.json"),
+      path.join(this._buildMapFolderPath(map.id), "settings.json"),
       JSON.stringify(map, undefined, 2)
     );
 
@@ -126,7 +129,7 @@ class Maps {
         throw new Error(`Map with id "${id}" not found.`);
       }
 
-      const mapFolderPath = path.join(mapDirectory, id);
+      const mapFolderPath = this._buildMapFolderPath(map.id);
 
       if (map.fogProgressPath) {
         await fs.remove(path.join(mapFolderPath, map.fogProgressPath));
@@ -158,15 +161,23 @@ class Maps {
       };
 
       if (map.fogProgressPath) {
-        await fs.remove(path.join(mapDirectory, id, map.fogProgressPath));
+        await fs.remove(
+          path.join(this._buildMapFolderPath(map.id), map.fogProgressPath)
+        );
       }
       if (map.fogLivePath) {
-        await fs.remove(path.join(mapDirectory, id, map.fogLivePath));
+        await fs.remove(
+          path.join(this._buildMapFolderPath(map.id), map.fogLivePath)
+        );
       }
 
-      const livePath = path.join(mapDirectory, id, newMapData.fogLivePath);
+      const livePath = path.join(
+        this._mapsDirectoryPath,
+        id,
+        newMapData.fogLivePath
+      );
       // prettier-ignore
-      const progressPath = path.join(mapDirectory, id, newMapData.fogProgressPath);
+      const progressPath = path.join(this._buildMapFolderPath(map.id), newMapData.fogProgressPath);
 
       await fs.copyFile(filePath, livePath);
       await fs.move(filePath, progressPath);
@@ -177,7 +188,7 @@ class Maps {
     });
   }
 
-  async updateMapImage(id, { filePath, extension }) {
+  async updateMapImage(id, { filePath, fileExtension }) {
     return await this._processTask(`map:${id}`, async () => {
       const map = this.maps.find((map) => map.id === id);
       if (!map) {
@@ -187,8 +198,8 @@ class Maps {
         await fs.remove(map.mapPath);
       }
 
-      const fileName = "map." + extension;
-      const destination = path.join(mapDirectory, id, fileName);
+      const fileName = `map${fileExtension ? `.${fileExtension}` : ``}`;
+      const destination = path.join(this._buildMapFolderPath(map.id), fileName);
       await fs.move(filePath, destination);
 
       const result = await this._updateMapSettings(map, { mapPath: fileName });
@@ -334,7 +345,7 @@ class Maps {
         throw new Error(`Map with id "${id}" not found.`);
       }
       this.maps.splice(mapIndex, 1);
-      fs.removeSync(path.join(mapDirectory, id));
+      await fs.remove(this._buildMapFolderPath(id));
     });
   }
 }

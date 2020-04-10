@@ -10,7 +10,7 @@ const once = require("lodash/once");
  * Helper function for retreiving the correct data directory.
  * In the bundled pkg "binary" we use the execPath.
  */
-const getDataDirectory = () => {
+const getDefaultDataDirectory = () => {
   if (process.pkg) {
     return path.resolve(path.dirname(process.execPath), "data");
   } else {
@@ -23,6 +23,12 @@ const getTmpDirectory = once(() => fs.realpathSync(os.tmpdir()));
 
 const getTmpFile = (extension = "") =>
   path.join(getTmpDirectory(), uuid.v4() + extension);
+
+const parseFileExtension = (fileName) => {
+  const parts = fileName.split(".");
+  if (parts.length < 2) return null;
+  return parts.pop();
+};
 
 /**
  * utility that ensures tasks on a given resource are executed in sequence in order to prevent race conditions etc.
@@ -49,7 +55,8 @@ const createResourceTaskProcessor = () => {
 };
 
 module.exports = {
-  getDataDirectory,
-  createResourceTaskProcessor,
+  getDefaultDataDirectory,
+  parseFileExtension,
   getTmpFile,
+  createResourceTaskProcessor,
 };

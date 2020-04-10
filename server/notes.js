@@ -4,9 +4,6 @@ const path = require("path");
 const fs = require("fs-extra");
 const junk = require("junk");
 const uuid = require("uuid/v4");
-const { getDataDirectory } = require("./util");
-
-const notesDirectory = path.join(getDataDirectory(), "notes");
 
 const createNote = ({
   id,
@@ -23,17 +20,18 @@ const createNote = ({
 });
 
 class Notes {
-  constructor() {
-    fs.mkdirpSync(notesDirectory);
-    this.notes = {}
+  constructor({ dataDirectory }) {
+    this._notesDirectoryPath = path.join(dataDirectory, "notes");
+    fs.mkdirpSync(this._notesDirectoryPath);
+    this.notes = {};
     this._loadNotes();
   }
 
   _loadNotes() {
-    fs.readdirSync(notesDirectory)
+    fs.readdirSync(this._notesDirectoryPath)
       .filter(junk.not)
       .filter((item) => item.endsWith(".json"))
-      .map((fileName) => path.join(notesDirectory, fileName))
+      .map((fileName) => path.join(this._notesDirectoryPath, fileName))
       .map((notePath) => {
         const rawConfig = fs.readFileSync(notePath, "utf-8");
         return JSON.parse(rawConfig);
@@ -59,7 +57,10 @@ class Notes {
       title,
       content,
     });
-    fs.writeFileSync(path.join(notesDirectory, fileName), JSON.stringify(note));
+    fs.writeFileSync(
+      path.join(this._notesDirectoryPath, fileName),
+      JSON.stringify(note)
+    );
     this.notes[id] = note;
     return note;
   }
@@ -73,7 +74,7 @@ class Notes {
     Object.assign(note, changes, { updatedAt: new Date() });
 
     fs.writeFileSync(
-      path.join(notesDirectory, `${id}.json`),
+      path.join(this._notesDirectoryPath, `${id}.json`),
       JSON.stringify(note, undefined, 2)
     );
 
@@ -86,7 +87,7 @@ class Notes {
       throw new Error(`Note with id "${id}" not found.`);
     }
     delete this.notes[id];
-    fs.removeSync(path.join(notesDirectory, `${id}.json`));
+    fs.removeSync(path.join(this._notesDirectoryPath, `${id}.json`));
   }
 }
 

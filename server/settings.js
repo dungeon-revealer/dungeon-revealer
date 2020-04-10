@@ -2,24 +2,22 @@
 
 const path = require("path");
 const fs = require("fs");
-const { getDataDirectory } = require("./util");
-
-const settingsPath = path.join(getDataDirectory(), "settings.json");
 
 const defaultSettings = {
   currentMapId: null,
 };
 
 class Settings {
-  constructor() {
+  constructor({ dataDirectory }) {
+    this._settingsPath = path.join(dataDirectory, "settings.json");
     let settings = {};
     try {
-      const settingsRaw = fs.readFileSync(settingsPath);
+      const settingsRaw = fs.readFileSync(this._settingsPath);
       settings = JSON.parse(settingsRaw);
       // eslint-disable-next-line no-empty
     } catch (err) {
       fs.writeFileSync(
-        settingsPath,
+        this._settingsPath,
         JSON.stringify(defaultSettings, undefined, 2)
       );
     }
@@ -33,7 +31,10 @@ class Settings {
 
   set(name, value) {
     this.settings[name] = value;
-    fs.writeFileSync(settingsPath, JSON.stringify(this.settings, undefined, 2));
+    fs.writeFileSync(
+      this._settingsPath,
+      JSON.stringify(this.settings, undefined, 2)
+    );
   }
 }
 

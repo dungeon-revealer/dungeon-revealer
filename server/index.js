@@ -14,9 +14,9 @@ const { Maps } = require("./maps");
 const { Notes } = require("./notes");
 const { Settings } = require("./settings");
 const {
-  getDataDirectory,
   createResourceTaskProcessor,
   getTmpFile,
+  parseFileExtension,
 } = require("./util");
 const env = require("./env");
 
@@ -27,13 +27,13 @@ const io = createSocketIOServer(server, {
   path: "/api/socket.io",
 });
 
-fs.mkdirpSync(getDataDirectory());
+fs.mkdirpSync(env.DATA_DIRECTORY);
 
 const processTask = createResourceTaskProcessor();
 
-const maps = new Maps({ processTask });
-const notes = new Notes();
-const settings = new Settings();
+const maps = new Maps({ processTask, dataDirectory: env.DATA_DIRECTORY });
+const notes = new Notes({ dataDirectory: env.DATA_DIRECTORY });
+const settings = new Settings({ dataDirectory: env.DATA_DIRECTORY });
 
 app.use(busboy());
 
@@ -202,10 +202,12 @@ apiRouter.get("/map/:id/fog-live", requiresPcRole, (req, res) => {
 apiRouter.post("/map/:id/map", requiresDmRole, (req, res) => {
   const tmpFile = getTmpFile();
   let writeStream = null;
+  let fileExtension = null;
 
   req.pipe(req.busboy);
 
   req.busboy.once("file", (fieldname, file, filename) => {
+    fileExtension = parseFileExtension(filename);
     writeStream = fs.createWriteStream(tmpFile);
     file.pipe(writeStream);
   });
@@ -217,7 +219,7 @@ apiRouter.post("/map/:id/map", requiresDmRole, (req, res) => {
 
   req.busboy.once("finish", () => {
     maps
-      .updateMapImage(req.params.id, { filePath: tmpFile })
+      .updateMapImage(req.params.id, { filePath: tmpFile, fileExtension })
       .then((map) => {
         res.status(200).json({ error: null, data: map });
       })
@@ -357,10 +359,12 @@ apiRouter.post("/map", requiresDmRole, (req, res) => {
   const tmpFile = getTmpFile();
   let writeStream = null;
   let mapTitle = "New Map";
+  let fileExtension = null;
 
   req.pipe(req.busboy);
 
   req.busboy.once("file", (fieldname, file, filename) => {
+    fileExtension = parseFileExtension(filename);
     writeStream = fs.createWriteStream(tmpFile);
     file.pipe(writeStream);
   });
@@ -378,7 +382,7 @@ apiRouter.post("/map", requiresDmRole, (req, res) => {
 
   req.busboy.once("finish", () => {
     maps
-      .createMap({ title: mapTitle, filePath: tmpFile })
+      .createMap({ title: mapTitle, filePath: tmpFile, fileExtension })
       .then((map) => {
         res.status(200).json({ error: null, data: { map } });
       })
