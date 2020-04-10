@@ -161,7 +161,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
         if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
           const task = loadImage(
             buildApiUrl(
-              `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+              `/map/${data.map.id}/fog-live?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
             )
           );
           fogCacheBusterCounter = fogCacheBusterCounter + 1;
@@ -222,7 +222,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
           ),
           loadImage(
             buildApiUrl(
-              `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+              `/map/${data.map.id}/fog-live?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
             )
           ),
         ];

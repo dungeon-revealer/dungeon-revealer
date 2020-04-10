@@ -154,7 +154,7 @@ apiRouter.get("/map/:id/map", requiresPcRole, (req, res) => {
   return res.sendFile(path.join(basePath, map.mapPath));
 });
 
-apiRouter.get("/map/:id/fog", requiresPcRole, (req, res) => {
+apiRouter.get("/map/:id/fog", requiresDmRole, (req, res) => {
   const map = maps.get(req.params.id);
   if (!map) {
     return res.status(404).json({
