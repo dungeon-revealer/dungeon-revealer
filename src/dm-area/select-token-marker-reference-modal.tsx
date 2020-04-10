@@ -7,6 +7,7 @@ import styled from "@emotion/styled/macro";
 import { useOvermind } from "../hooks/use-overmind";
 import { useFetch } from "./fetch-context";
 import { HtmlContainer } from "./components/html-container";
+import * as u from "./overmind/util";
 
 const OrSeperator = styled.span`
   padding-left: 18px;
@@ -54,14 +55,15 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
   const attachExistingNote = useCallback(async () => {
     if (
       state.selectTokenMarkerReferenceModal.mode !== "ACTIVE" ||
-      state.selectTokenMarkerReferenceModal.activeNoteId === null
-    )
+      u.isNone(state.selectTokenMarkerReferenceModal.activeNote)
+    ) {
       return;
+    }
     const tokenId = state.selectTokenMarkerReferenceModal.tokenId;
 
     const reference = {
       type: "note" as "note",
-      id: state.selectTokenMarkerReferenceModal.activeNoteId,
+      id: state.selectTokenMarkerReferenceModal.activeNote.id,
     };
 
     await updateToken({ id: tokenId, reference });
@@ -124,9 +126,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
                   }}
                 />
               </div>
-            ) : (
-              "NOPE"
-            )}
+            ) : null}
           </Modal.Content>
         </Modal.Body>
         <Modal.Footer>

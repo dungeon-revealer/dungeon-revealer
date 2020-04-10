@@ -4,9 +4,7 @@ const path = require("path");
 const fs = require("fs-extra");
 const junk = require("junk");
 const uuid = require("uuid/v4");
-const { getDataDirectory } = require("./util");
 
-const mapDirectory = path.join(getDataDirectory(), "maps");
 const isDirectory = (source) => fs.lstatSync(source).isDirectory();
 
 const prepareToken = (token) => {
@@ -30,16 +28,22 @@ const prepareToken = (token) => {
 };
 
 class Maps {
-  constructor() {
-    fs.mkdirpSync(mapDirectory);
+  constructor({ processTask, dataDirectory }) {
+    this._mapsDirectoryPath = path.join(dataDirectory, "maps");
+    fs.mkdirpSync(this._mapsDirectoryPath);
+    this._processTask = processTask;
     this.maps = this._loadMaps();
+  }
+
+  _buildMapFolderPath(mapId) {
+    return path.join(this._mapsDirectoryPath, mapId);
   }
 
   _loadMaps() {
     const mapDirectories = fs
-      .readdirSync(path.join(mapDirectory))
+      .readdirSync(this._mapsDirectoryPath)
       .filter(junk.not)
-      .map((id) => path.join(mapDirectory, id))
+      .map((id) => this._buildMapFolderPath(id))
       .filter(isDirectory);
 
     return mapDirectories.map((directory) => {
@@ -53,6 +57,10 @@ class Maps {
     });
   }
 
+  getBasePath(map) {
+    return path.join(this._mapsDirectoryPath, map.id);
+  }
+
   getAll() {
     return this.maps;
   }
@@ -61,159 +69,145 @@ class Maps {
     return this.maps.find((map) => map.id === id) || null;
   }
 
-  createMap({ title, file }) {
+  async createMap({ title, filePath, fileExtension }) {
     const id = uuid();
-    fs.mkdirSync(path.join(mapDirectory, id));
-    const mapPath = `map.${file.extension}`;
-    const map = {
-      id,
-      title,
-      // automatically saved after interaction
-      fogProgressPath: null,
-      // progress becomes live when DM publishes map
-      fogLivePath: null,
-      mapPath,
-      grid: null,
-      showGrid: false,
-      showGridToPlayers: false,
-      gridColor: "rgba(0, 0, 0, 0.5)",
-      tokens: [],
-    };
+    return this._processTask(`map:${id}`, async () => {
+      fs.mkdirp(this._buildMapFolderPath(id));
+      const mapPath = `map${fileExtension ? `.${fileExtension}` : ``}`;
+      const map = {
+        id,
+        title,
+        // automatically saved after interaction
+        fogProgressPath: null,
+        // progress becomes live when DM publishes map
+        fogLivePath: null,
+        mapPath,
+        grid: null,
+        showGrid: false,
+        showGridToPlayers: false,
+        gridColor: "rgba(0, 0, 0, 0.5)",
+        tokens: [],
+      };
 
-    fs.moveSync(file.path, path.join(mapDirectory, id, mapPath));
+      await fs.move(filePath, path.join(this._buildMapFolderPath(id), mapPath));
+      await fs.writeFile(
+        path.join(this._mapsDirectoryPath, id, "settings.json"),
+        JSON.stringify(map, undefined, 2)
+      );
 
-    fs.writeFileSync(
-      path.join(mapDirectory, id, "settings.json"),
-      JSON.stringify(map, undefined, 2)
-    );
+      this.maps.push(map);
 
-    this.maps.push(map);
-
-    return map;
+      return map;
+    });
   }
 
-  updateMapSettings(id, data) {
-    const map = this.maps.find((map) => map.id === id);
-    if (!map) {
-      throw new Error(`Map with id "${id}" not found.`);
-    }
-
+  async _updateMapSettings(map, data) {
     Object.assign(map, data);
 
-    fs.writeFileSync(
-      path.join(mapDirectory, id, "settings.json"),
+    await fs.writeFile(
+      path.join(this._buildMapFolderPath(map.id), "settings.json"),
       JSON.stringify(map, undefined, 2)
     );
 
     return map;
   }
 
-  async updateFogProgressImage(id, fileStream) {
-    const map = this.maps.find((map) => map.id === id);
-    if (!map) {
-      throw new Error(`Map with id "${id}" not found.`);
-    }
-    const mapFolderPath = path.join(mapDirectory, id);
-    if (map.fogProgressPath) {
-      fs.removeSync(path.join(mapFolderPath, map.fogProgressPath));
-    }
-
-    const newMapData = {
-      fogProgressPath: "fog.progress.png",
-    };
-
-    const writeStream = fs.createWriteStream(
-      path.join(mapFolderPath, newMapData.fogProgressPath)
-    );
-    fileStream.pipe(writeStream);
-
-    return new Promise((res, rej) => {
-      writeStream.on("close", (err) => {
-        if (err) {
-          return rej(err);
-        }
-        res(this.updateMapSettings(id, newMapData));
-      });
+  async updateMapSettings(id, data) {
+    return await this._processTask(`map:${id}`, async () => {
+      const map = this.maps.find((map) => map.id === id);
+      if (!map) {
+        throw new Error(`Map with id "${id}" not found.`);
+      }
+      return await this._updateMapSettings(map, data);
     });
   }
 
-  async updateFogLiveImage(id, fileStream) {
-    const map = this.maps.find((map) => map.id === id);
-    if (!map) {
-      throw new Error(`Map with id "${id}" not found.`);
-    }
+  async updateFogProgressImage(id, filePath) {
+    return await this._processTask(`map:${id}`, async () => {
+      const map = this.maps.find((map) => map.id === id);
+      if (!map) {
+        throw new Error(`Map with id "${id}" not found.`);
+      }
 
-    const newMapData = {
-      fogLivePath: "fog.live.png",
-      fogProgressPath: "fog.progress.png",
-    };
+      const mapFolderPath = this._buildMapFolderPath(map.id);
 
-    if (map.fogProgressPath) {
-      fs.removeSync(path.join(mapDirectory, id, map.fogProgressPath));
-    }
-    if (map.fogLivePath) {
-      fs.removeSync(path.join(mapDirectory, id, map.fogLivePath));
-    }
+      if (map.fogProgressPath) {
+        await fs.remove(path.join(mapFolderPath, map.fogProgressPath));
+      }
 
-    const liveFogWriteStream = fs.createWriteStream(
-      path.join(mapDirectory, id, newMapData.fogLivePath)
-    );
-    fileStream.pipe(liveFogWriteStream);
+      const newMapData = {
+        fogProgressPath: "fog.progress.png",
+      };
 
-    const fogProgressWriteStream = fs.createWriteStream(
-      path.join(mapDirectory, id, newMapData.fogProgressPath)
-    );
-    fileStream.pipe(fogProgressWriteStream);
-
-    await Promise.all([
-      new Promise((res, rej) => {
-        liveFogWriteStream.on("close", (err) => {
-          if (err) {
-            return rej(err);
-          }
-          res();
-        });
-      }),
-      new Promise((res, rej) => {
-        fogProgressWriteStream.on("close", (err) => {
-          if (err) {
-            return rej(err);
-          }
-          res();
-        });
-      }),
-    ]);
-
-    await this.updateMapSettings(id, newMapData);
-
-    return map;
-  }
-
-  async updateMapImage(id, { fileStream, extension }) {
-    const map = this.maps.find((map) => map.id === id);
-    if (!map) {
-      throw new Error(`Map with id "${id}" not found.`);
-    }
-    if (map.mapPath) {
-      fs.removeSync(map.mapPath);
-    }
-
-    const fileName = "map." + extension;
-    const writeStream = fs.createWriteStream(
-      path.join(mapDirectory, id, fileName)
-    );
-    fileStream.pipe(writeStream);
-    return new Promise((res, rej) => {
-      writeStream.on("close", (err) => {
-        if (err) {
-          return rej(err);
-        }
-        res(this.updateMapSettings(id, { mapPath: fileName }));
-      });
+      const fileDestination = path.join(
+        mapFolderPath,
+        newMapData.fogProgressPath
+      );
+      await fs.move(filePath, fileDestination);
+      return await this._updateMapSettings(map, newMapData);
     });
   }
 
-  addToken(
+  async updateFogLiveImage(id, filePath) {
+    return await this._processTask(`map:${id}`, async () => {
+      const map = this.maps.find((map) => map.id === id);
+      if (!map) {
+        throw new Error(`Map with id "${id}" not found.`);
+      }
+
+      const newMapData = {
+        fogLivePath: "fog.live.png",
+        fogProgressPath: "fog.progress.png",
+      };
+
+      if (map.fogProgressPath) {
+        await fs.remove(
+          path.join(this._buildMapFolderPath(map.id), map.fogProgressPath)
+        );
+      }
+      if (map.fogLivePath) {
+        await fs.remove(
+          path.join(this._buildMapFolderPath(map.id), map.fogLivePath)
+        );
+      }
+
+      const livePath = path.join(
+        this._mapsDirectoryPath,
+        id,
+        newMapData.fogLivePath
+      );
+      // prettier-ignore
+      const progressPath = path.join(this._buildMapFolderPath(map.id), newMapData.fogProgressPath);
+
+      await fs.copyFile(filePath, livePath);
+      await fs.move(filePath, progressPath);
+
+      const updatedMap = await this._updateMapSettings(map, newMapData);
+
+      return updatedMap;
+    });
+  }
+
+  async updateMapImage(id, { filePath, fileExtension }) {
+    return await this._processTask(`map:${id}`, async () => {
+      const map = this.maps.find((map) => map.id === id);
+      if (!map) {
+        throw new Error(`Map with id "${id}" not found.`);
+      }
+      if (map.mapPath) {
+        await fs.remove(map.mapPath);
+      }
+
+      const fileName = `map${fileExtension ? `.${fileExtension}` : ``}`;
+      const destination = path.join(this._buildMapFolderPath(map.id), fileName);
+      await fs.move(filePath, destination);
+
+      const result = await this._updateMapSettings(map, { mapPath: fileName });
+      return result;
+    });
+  }
+
+  async addToken(
     mapId,
     {
       x = 0,
@@ -225,35 +219,37 @@ class Maps {
       type = "entity",
     }
   ) {
-    const token = prepareToken({
-      id: uuid(),
-      x,
-      y,
-      radius,
-      color,
-      label,
-      isVisibleForPlayers,
-      type,
+    return await this._processTask(`map:${mapId}`, async () => {
+      const token = prepareToken({
+        id: uuid(),
+        x,
+        y,
+        radius,
+        color,
+        label,
+        isVisibleForPlayers,
+        type,
+      });
+
+      const map = this.get(mapId);
+      if (!map) {
+        throw new Error(`Map with id "${mapId}" not found.`);
+      }
+
+      const tokens = map.tokens || [];
+
+      tokens.push(token);
+
+      await this._updateMapSettings(map, { tokens });
+
+      return {
+        map,
+        token,
+      };
     });
-
-    const map = this.get(mapId);
-    if (!map) {
-      throw new Error(`Map with id "${mapId}" not found.`);
-    }
-
-    const tokens = map.tokens || [];
-
-    tokens.push(token);
-
-    this.updateMapSettings(mapId, { tokens });
-
-    return {
-      map,
-      token,
-    };
   }
 
-  updateToken(
+  async updateToken(
     mapId,
     tokenId,
     {
@@ -270,85 +266,87 @@ class Maps {
       reference,
     }
   ) {
-    const map = this.get(mapId);
-    if (!map) {
-      throw new Error(`Map with id "${mapId}" not found.`);
-    }
-    const token = (map.tokens || []).find((token) => token.id === tokenId);
+    return await this._processTask(`map:${mapId}`, async () => {
+      const map = this.get(mapId);
+      if (!map) {
+        throw new Error(`Map with id "${mapId}" not found.`);
+      }
+      const token = (map.tokens || []).find((token) => token.id === tokenId);
 
-    if (!token) {
-      throw new Error(
-        `Token with id "${tokenId}" does not exist on map with id "${mapId}".`
-      );
-    }
+      if (!token) {
+        throw new Error(
+          `Token with id "${tokenId}" does not exist on map with id "${mapId}".`
+        );
+      }
 
-    if (type !== undefined) {
-      token.type = type;
-    }
-    if (isLocked !== undefined) {
-      token.isLocked = isLocked;
-    }
-    if (title !== undefined) {
-      token.title = title;
-    }
-    if (description !== undefined) {
-      token.description = description;
-    }
-    if (x !== undefined) {
-      token.x = x;
-    }
-    if (y !== undefined) {
-      token.y = y;
-    }
-    if (radius !== undefined) {
-      token.radius = radius;
-    }
-    if (color !== undefined) {
-      token.color = color;
-    }
-    if (label !== undefined) {
-      token.label = label;
-    }
-    if (isVisibleForPlayers !== undefined) {
-      token.isVisibleForPlayers = isVisibleForPlayers;
-    }
-    if (reference !== undefined) {
-      token.reference = reference;
-    }
+      if (type !== undefined) {
+        token.type = type;
+      }
+      if (isLocked !== undefined) {
+        token.isLocked = isLocked;
+      }
+      if (title !== undefined) {
+        token.title = title;
+      }
+      if (description !== undefined) {
+        token.description = description;
+      }
+      if (x !== undefined) {
+        token.x = x;
+      }
+      if (y !== undefined) {
+        token.y = y;
+      }
+      if (radius !== undefined) {
+        token.radius = radius;
+      }
+      if (color !== undefined) {
+        token.color = color;
+      }
+      if (label !== undefined) {
+        token.label = label;
+      }
+      if (isVisibleForPlayers !== undefined) {
+        token.isVisibleForPlayers = isVisibleForPlayers;
+      }
+      if (reference !== undefined) {
+        token.reference = reference;
+      }
 
-    const updatedMap = this.updateMapSettings(mapId, {
-      tokens: map.tokens,
+      const updatedMap = await this._updateMapSettings(map, {
+        tokens: map.tokens,
+      });
+
+      return {
+        map: updatedMap,
+        token,
+      };
     });
-
-    return {
-      map: updatedMap,
-      token,
-    };
   }
 
-  removeToken(mapId, tokenId) {
-    const map = this.get(mapId);
-    if (!map) {
-      throw new Error(`Map with id "${mapId}" not found.`);
-    }
+  async removeToken(mapId, tokenId) {
+    return await this._processTask(`map:${mapId}`, async () => {
+      const map = this.get(mapId);
+      if (!map) {
+        throw new Error(`Map with id "${mapId}" not found.`);
+      }
 
-    const tokens = (map.tokens || []).filter((token) => token.id !== tokenId);
-    const updatedMap = this.updateMapSettings(mapId, { tokens });
+      const tokens = (map.tokens || []).filter((token) => token.id !== tokenId);
+      const updatedMap = await this._updateMapSettings(map, { tokens });
 
-    return { map: updatedMap };
+      return { map: updatedMap };
+    });
   }
 
-  deleteMap(id) {
-    const mapIndex = this.maps.findIndex((map) => map.id === id);
-    if (mapIndex === -1) {
-      throw new Error(`Map with id "${id}" not found.`);
-    }
-    this.maps.splice(mapIndex, 1);
-    fs.removeSync(path.join(mapDirectory, id));
-  }
-
-  getBasePath(map) {
-    return path.join(mapDirectory, map.id);
+  async deleteMap(id) {
+    return await this._processTask(`map:${id}`, async () => {
+      const mapIndex = this.maps.findIndex((map) => map.id === id);
+      if (mapIndex === -1) {
+        throw new Error(`Map with id "${id}" not found.`);
+      }
+      this.maps.splice(mapIndex, 1);
+      await fs.remove(this._buildMapFolderPath(id));
+    });
   }
 }
 

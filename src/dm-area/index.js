@@ -25,6 +25,7 @@ import { Provider as OvermindProvider } from "overmind-react";
 import { createOvermind } from "overmind";
 
 import { config } from "./overmind";
+import { sendRequest } from "../http-request";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 const useDmPassword = createPersistedState("dmPassword");
@@ -264,18 +265,37 @@ export const DmArea = () => {
     [loadedMapId, persistTokenChanges, localFetch]
   );
 
+  const sendLiveMapTaskRef = useRef(null);
+  const dmPasswordRef = useRef(dmPassword);
+
+  useEffect(() => {
+    dmPasswordRef.current = dmPassword;
+  });
+
   const sendLiveMap = useCallback(
     async ({ image }) => {
+      if (sendLiveMapTaskRef.current) {
+        sendLiveMapTaskRef.current.abort();
+      }
       const formData = new FormData();
       formData.append("image", image);
 
-      await localFetch(`/map/${loadedMapId}/send`, {
+      const task = sendRequest({
+        url: buildApiUrl(`/map/${loadedMapId}/send`),
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: dmPasswordRef.current
+            ? `Bearer ${dmPasswordRef.current}`
+            : undefined,
+        },
       });
+      sendLiveMapTaskRef.current = task;
+      const result = await task.done;
+      if (result.type !== "success") return;
       setLiveMapId(loadedMapId);
     },
-    [loadedMapId, localFetch]
+    [loadedMapId]
   );
 
   const hideMap = useCallback(async () => {

@@ -70,9 +70,12 @@ export const updateNote: AsyncAction<{
 };
 
 export const deleteNote: AsyncAction<string> = async (
-  { state, effects },
+  { state, effects, actions },
   noteId
 ) => {
+  if (state.tokenInfoAside.activeToken?.referenceId === noteId) {
+    await actions.tokenInfoAside.close();
+  }
   state.noteStore.notes[noteId] = null;
   await effects.noteStore.deleteById(noteId, {
     accessToken: state.sessionStore.accessToken,

@@ -99,9 +99,11 @@ const PlayerMap = ({ fetch, pcPassword }) => {
     panZoomRef.current.autoCenter(0.8, isAnimated);
   };
 
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
+  const cacheBusterRef = useRef(0);
+
   useAsyncEffect(
     function* () {
-      let fogCacheBusterCounter = 0;
       socket.on("connect", function () {
         console.log("connected to server");
         socket.emit("auth", { password: pcPassword });
@@ -161,10 +163,10 @@ const PlayerMap = ({ fetch, pcPassword }) => {
         if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
           const task = loadImage(
             buildApiUrl(
-              `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+              `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${pcPassword}`
             )
           );
-          fogCacheBusterCounter = fogCacheBusterCounter + 1;
+          cacheBusterRef.current = cacheBusterRef.current + 1;
           pendingImageLoads.current = [task];
 
           task.promise
@@ -217,12 +219,12 @@ const PlayerMap = ({ fetch, pcPassword }) => {
         const tasks = [
           loadImage(
             buildApiUrl(
-              `/map/${data.map.id}/map?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+              `/map/${data.map.id}/map?cache_buster=${cacheBusterRef.current}&authorization=${pcPassword}`
             )
           ),
           loadImage(
             buildApiUrl(
-              `/map/${data.map.id}/fog?cache_buster=${fogCacheBusterCounter}&authorization=${pcPassword}`
+              `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${pcPassword}`
             )
           ),
         ];
@@ -335,7 +337,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
         }
       };
     },
-    [socket, fetch, pcPassword]
+    [socket, fetch, pcPassword, refetchTrigger]
   );
 
   useEffect(() => {
@@ -372,6 +374,15 @@ const PlayerMap = ({ fetch, pcPassword }) => {
 
     return () => socket.off(eventName);
   }, [socket, mapId]);
+
+  useEffect(() => {
+    const listener = () => {
+      setRefetchTrigger((i) => i + 1);
+    };
+
+    window.addEventListener("focus", listener);
+    return () => window.removeEventListener("focus", listener);
+  }, []);
 
   // long press event for setting a map marker
   const longPressProps = useLongPress((ev) => {

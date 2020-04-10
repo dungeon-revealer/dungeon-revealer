@@ -345,7 +345,7 @@ export const DmTokenMarker = React.memo(
               currentX = x - diffX;
               currentY = y - diffY;
 
-              tokenRef.current.setTransform(currentX, currentY);
+              tokenRef.current.setTransform(currentX * ratio, currentY * ratio);
             };
             const onTouchEnd = (ev) => {
               ev.preventDefault();
@@ -383,7 +383,10 @@ export const DmTokenMarker = React.memo(
                 y: ev.pageY,
               });
 
-              tokenRef.current.setTransform(x - diffX, y - diffY);
+              tokenRef.current.setTransform(
+                (x - diffX) * ratio,
+                (y - diffY) * ratio
+              );
             };
             const onMouseUp = (ev) => {
               ev.preventDefault();

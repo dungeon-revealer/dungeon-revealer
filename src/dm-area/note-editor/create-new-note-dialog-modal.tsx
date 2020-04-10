@@ -40,14 +40,16 @@ export const CreateNewNoteDialogModal: React.FC<{
             error={error}
           />
         </Modal.Body>
-        <Modal.Actions>
-          <Modal.ActionGroup>
-            <Button.Tertiary type="button" onClick={close}>
-              Abort
-            </Button.Tertiary>
-            <Button.Primary type="submit">Create Note</Button.Primary>
-          </Modal.ActionGroup>
-        </Modal.Actions>
+        <Modal.Footer>
+          <Modal.Actions>
+            <Modal.ActionGroup>
+              <Button.Tertiary type="button" onClick={close}>
+                Abort
+              </Button.Tertiary>
+              <Button.Primary type="submit">Create Note</Button.Primary>
+            </Modal.ActionGroup>
+          </Modal.Actions>
+        </Modal.Footer>
       </Modal.Dialog>
     </Modal>
   );
