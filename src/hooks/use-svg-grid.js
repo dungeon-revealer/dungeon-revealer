@@ -9,7 +9,13 @@ export const useSvgGrid = (grid, dimensions, showGrid, gridColor) => {
   const id = useUniqueId();
   const patternDefinition = useMemo(() => {
     // in case there is no grid we don't need the type definitions.
-    if (!grid || !grid.sideLength || !grid.x || !grid.y || !showGrid) {
+    if (
+      !grid ||
+      !grid.sideLength ||
+      typeof grid.x !== "number" ||
+      typeof grid.y !== "number" ||
+      !showGrid
+    ) {
       return null;
     }
     return (
