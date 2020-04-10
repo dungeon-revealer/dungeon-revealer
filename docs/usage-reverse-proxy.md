@@ -34,3 +34,24 @@ server {
 }
 
 ```
+
+## Example Apache HTTPD Configuration
+
+For this example we assume that dungeon-revealer is listening on `127.0.0.1`.
+
+```
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_http_module modules/mod_proxy_http.so
+LoadModule proxy_wstunnel_module modules/mod_proxy_wstunnel.so
+
+<VirtualHost *:80>
+
+  RewriteEngine On
+
+  RewriteCond %{HTTP:Upgrade} websocket               [NC]
+  RewriteRule /dungeon-revealer/(.*)           ws://127.0.0.1:3000/$1  [P]
+
+  ProxyPass /dungeon-revealer http://127.0.0.1:3000
+  ProxyPassReverse /dungeon-revealer http://127.0.0.1:3000
+</VirtualHost>
+```
