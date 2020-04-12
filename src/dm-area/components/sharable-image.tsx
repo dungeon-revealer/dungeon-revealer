@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "@emotion/styled/macro";
-import { Modal } from "../modal";
+import { Modal } from "../../modal";
 import { buildUrl } from "../../public-url";
 import * as Icon from "../../feather-icons";
 import * as Button from "../../button";

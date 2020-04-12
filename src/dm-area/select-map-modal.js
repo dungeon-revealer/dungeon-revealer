@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from "react";
 
-import { Modal, ModalDialogSize } from "./modal";
+import { Modal, ModalDialogSize } from "../modal";
 import * as Icons from "../feather-icons";
 import { Input, InputGroup } from "../input";
 import * as Button from "../button";

@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useOvermind } from "../../hooks/use-overmind";
 import styled from "@emotion/styled/macro";
 
-import { Modal } from "../modal";
+import { Modal } from "../../modal";
 import * as Button from "../../button";
 import * as Icons from "../../feather-icons";
 import * as ScrollableList from "../components/scrollable-list";

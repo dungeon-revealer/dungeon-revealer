@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, ModalDialogSize } from "../modal";
+import { Modal, ModalDialogSize } from "../../modal";
 import * as Button from "../../button";
 
 export const DeleteNoteConfirmationDialogModal: React.FC<{

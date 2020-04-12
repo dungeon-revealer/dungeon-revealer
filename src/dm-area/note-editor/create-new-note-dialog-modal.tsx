@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Modal, ModalDialogSize } from "../modal";
+import { Modal, ModalDialogSize } from "../../modal";
 import * as Button from "../../button";
 import { InputGroup } from "../../input";
 

@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { Modal } from "./modal";
+import { Modal } from "../modal";
 import * as Button from "../button";
 import * as ScrollableList from "./components/scrollable-list";
 import styled from "@emotion/styled/macro";

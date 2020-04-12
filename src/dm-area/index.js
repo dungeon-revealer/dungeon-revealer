@@ -10,7 +10,7 @@ import produce from "immer";
 import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import createPersistedState from "use-persisted-state";
-import { Modal } from "./modal";
+import { Modal } from "../modal";
 import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
 import { NoteEditor } from "./note-editor";
