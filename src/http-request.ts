@@ -59,6 +59,9 @@ export const sendRequest = (options: ISendRequestOptions): ISendRequestTask => {
   });
 
   request.open(options.method, options.url, true);
+  for (const [header, value] of Object.entries(options.headers)) {
+    request.setRequestHeader(header, value);
+  }
   request.send(options.body);
 
   return {
