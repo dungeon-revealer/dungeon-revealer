@@ -2,7 +2,7 @@ import React from "react";
 import { Converter as HtmlConverter } from "showdown";
 import styled from "@emotion/styled/macro";
 import "react-mde/lib/styles/css/react-mde-all.css";
-import { MarkdownEditor } from "../note-editor/note-editor";
+import { MarkdownEditor } from "../components/markdown-editor";
 import * as Button from "../../button";
 import * as Icon from "../../feather-icons";
 import { Input } from "../../input";

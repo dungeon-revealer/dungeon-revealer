@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { Converter as HtmlConverter } from "showdown";
-import ReactMde, { commands as ReactMdeCommands } from "react-mde";
 import { useOvermind } from "../../hooks/use-overmind";
 import styled from "@emotion/styled/macro";
 
@@ -12,6 +11,7 @@ import { CreateNewNoteDialogModal } from "./create-new-note-dialog-modal";
 import { DeleteNoteConfirmationDialogModal } from "./delete-note-confirmation-dialog-modal";
 import { HtmlContainer } from "../components/html-container";
 import { Input } from "../../input";
+import { MarkdownEditor } from "../components/markdown-editor";
 
 const Header = styled.div`
   white-space: nowrap;
@@ -25,57 +25,6 @@ const Heading = styled.h3`
   overflow: hidden;
   margin-right: 16px;
 `;
-
-const ReactMdeStyled = styled(ReactMde)`
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  border: none;
-
-  .mde-textarea-wrapper {
-    height: 100%;
-  }
-  .mde-header + div {
-    height: 100%;
-  }
-
-  .grip {
-    display: none;
-  }
-
-  textarea {
-    outline: none;
-  }
-`;
-
-const MARKDOWN_EDITOR_COMMANDS = [
-  {
-    commands: [
-      ReactMdeCommands.boldCommand,
-      ReactMdeCommands.italicCommand,
-      ReactMdeCommands.strikeThroughCommand,
-      ReactMdeCommands.orderedListCommand,
-      ReactMdeCommands.unorderedListCommand,
-      ReactMdeCommands.quoteCommand,
-    ],
-  },
-];
-
-export const MarkdownEditor: React.FC<{
-  value: string;
-  onChange: (input: string) => void;
-}> = ({ value, onChange }) => {
-  return (
-    <ReactMdeStyled
-      commands={MARKDOWN_EDITOR_COMMANDS}
-      value={value}
-      onChange={onChange}
-      // @ts-ignore
-      minEditorHeight="100%"
-      disablePreview
-    />
-  );
-};
 
 export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { state, actions } = useOvermind();
