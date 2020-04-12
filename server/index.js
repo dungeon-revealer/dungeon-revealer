@@ -784,11 +784,15 @@ io.on("connection", (socket) => {
 
     if (role !== "DM") return;
 
-    socket.on("remove token", (msg) => {
+    socket.on("remove token", (message) => {
       Array.from(authenticatedSockets).forEach((socket) => {
-        socket.emit("remove token", {
-          ...msg,
-        });
+        socket.emit("remove token", message);
+      });
+    });
+
+    socket.on("share image", (message) => {
+      Array.from(authenticatedSockets).forEach((socket) => {
+        socket.emit("share image", message);
       });
     });
   });
