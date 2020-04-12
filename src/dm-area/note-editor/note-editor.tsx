@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import { Converter as HtmlConverter } from "showdown";
 import { useOvermind } from "../../hooks/use-overmind";
 import styled from "@emotion/styled/macro";
 
@@ -246,11 +245,7 @@ const ContentRendered: React.FC<{
             overflow: "scroll",
           }}
         >
-          <HtmlContainer
-            dangerouslySetInnerHTML={{
-              __html: new HtmlConverter().makeHtml(state.activeNote.content),
-            }}
-          />
+          <HtmlContainer markdown={state.activeNote.content} />
         </div>
       )}
     </>

@@ -1,5 +1,4 @@
 import React from "react";
-import { Converter as HtmlConverter } from "showdown";
 import styled from "@emotion/styled/macro";
 import "react-mde/lib/styles/css/react-mde-all.css";
 import { MarkdownEditor } from "../components/markdown-editor";
@@ -155,11 +154,7 @@ const NoteReference: React.FC<{
           </div>
         ) : (
           <div style={{ overflowY: "scroll", overflowX: "hidden" }}>
-            <HtmlContainer
-              dangerouslySetInnerHTML={{
-                __html: new HtmlConverter().makeHtml(note.content),
-              }}
-            />
+            <HtmlContainer markdown={note.content} />
           </div>
         )}
       </Window>

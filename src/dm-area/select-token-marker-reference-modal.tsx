@@ -1,5 +1,4 @@
 import React, { useCallback } from "react";
-import { Converter as HtmlConverter } from "showdown";
 import { Modal } from "./modal";
 import * as Button from "../button";
 import * as ScrollableList from "./components/scrollable-list";
@@ -119,11 +118,9 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
                 }}
               >
                 <HtmlContainer
-                  dangerouslySetInnerHTML={{
-                    __html: new HtmlConverter().makeHtml(
-                      state.selectTokenMarkerReferenceModal.activeNote.content
-                    ),
-                  }}
+                  markdown={
+                    state.selectTokenMarkerReferenceModal.activeNote.content
+                  }
                 />
               </div>
             ) : null}

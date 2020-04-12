@@ -13,6 +13,7 @@ const busboy = require("connect-busboy");
 const { Maps } = require("./maps");
 const { Notes } = require("./notes");
 const { Settings } = require("./settings");
+const { ImageStorage } = require("./image-storage");
 const {
   createResourceTaskProcessor,
   getTmpFile,
@@ -34,6 +35,7 @@ const processTask = createResourceTaskProcessor();
 const maps = new Maps({ processTask, dataDirectory: env.DATA_DIRECTORY });
 const notes = new Notes({ dataDirectory: env.DATA_DIRECTORY });
 const settings = new Settings({ dataDirectory: env.DATA_DIRECTORY });
+const imageStorage = new ImageStorage({ dataDirectory: env.DATA_DIRECTORY });
 
 app.use(busboy());
 
@@ -660,6 +662,43 @@ apiRouter.get("/notes/:id", requiresDmRole, (req, res) => {
       note,
     },
   });
+});
+
+apiRouter.post("/images", requiresDmRole, (req, res) => {
+  const tmpFile = getTmpFile();
+  let writeStream = null;
+  let fileExtension = null;
+
+  req.pipe(req.busboy);
+
+  req.busboy.once("file", (fieldname, file, filename) => {
+    fileExtension = parseFileExtension(filename);
+    writeStream = fs.createWriteStream(tmpFile);
+    file.pipe(writeStream);
+  });
+
+  req.once("end", () => {
+    if (writeStream !== null) return;
+    res.status(422).json({ data: null, error: "No file was sent." });
+  });
+
+  req.busboy.once("finish", () => {
+    imageStorage
+      .store({ filePath: tmpFile, fileExtension })
+      .then(({ fileName }) => {
+        res.json({
+          error: null,
+          data: {
+            fileName,
+          },
+        });
+      })
+      .catch(handleUnexpectedError(res));
+  });
+});
+
+apiRouter.get("/images/:id", (req, res) => {
+  return res.sendFile(imageStorage.resolvePath(req.params.id));
 });
 
 app.use("/api", apiRouter);

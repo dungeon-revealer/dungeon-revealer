@@ -2,6 +2,9 @@ import React from "react";
 import ReactMde, { commands as ReactMdeCommands, Command } from "react-mde";
 import styled from "@emotion/styled/macro";
 import { CommandGroup, TextRange } from "react-mde/lib/definitions/types";
+import { sendRequest, ISendRequestTask } from "../../http-request";
+import { buildApiUrl } from "../../public-url";
+import { useOvermind } from "../../hooks/use-overmind";
 
 const selectString = ({
   text,
@@ -138,11 +141,34 @@ export const MarkdownEditor: React.FC<{
   value: string;
   onChange: (input: string) => void;
 }> = ({ value, onChange }) => {
+  const uploadTaskRef = React.useRef<ISendRequestTask | null>(null);
+  const { state } = useOvermind();
+
+  const uploadFile = React.useCallback((file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const task = (uploadTaskRef.current = sendRequest({
+      url: buildApiUrl("/images"),
+      method: "POST",
+      body: formData,
+      headers: {
+        authorization: state.sessionStore.accessToken,
+      },
+    }));
+
+    return task.done.then((result) => {
+      if (result.type !== "success") return null;
+      const json = JSON.parse(result.data as string);
+      return `/api/images/${json.data.fileName}`;
+    });
+  }, []);
+
   const [imageCommand, uploadImageNode] = useImageCommand({
-    uploadFile: (file: File) =>
-      // TODO: uplaod to backend
-      new Promise((res) => setTimeout(() => res("/uploads/image.jpeg"), 5000)),
+    uploadFile,
   });
+
+  React.useEffect(() => () => uploadTaskRef.current?.abort(), []);
 
   const commands = React.useMemo<CommandGroup[]>(
     () => [
