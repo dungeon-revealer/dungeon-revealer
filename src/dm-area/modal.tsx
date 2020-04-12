@@ -107,9 +107,9 @@ const Provider: React.FC<{}> = ({ children }) => {
 const ModalBackground: React.FC<
   React.HTMLAttributes<HTMLDivElement> & {
     styles?: React.CSSProperties;
-  }
-> = ({ children, styles, ...props }) => (
-  <FocusTrap>
+  } & { focus: boolean }
+> = ({ children, styles, focus, ...props }) => {
+  const inner = (
     <div
       onClick={(ev) => {
         ev.stopPropagation();
@@ -141,14 +141,24 @@ const ModalBackground: React.FC<
     >
       {children}
     </div>
-  </FocusTrap>
-);
+  );
+
+  if (focus) return <FocusTrap>{inner}</FocusTrap>;
+  return inner;
+};
 
 const ModalPortal: React.FC<{
   onClickOutside?: () => void;
   onPressEscape: () => void;
   backgroundStyles?: any;
-}> = ({ children, onClickOutside, onPressEscape, backgroundStyles }) => {
+  focus?: boolean;
+}> = ({
+  children,
+  onClickOutside,
+  onPressEscape,
+  backgroundStyles,
+  focus = true,
+}) => {
   const createModalRegistration = React.useContext(Context);
   const modalElement = useStaticRef(() => document.createElement("div"));
   const modalRegistration = React.useRef<CreateModalRegistrationResult | null>(
@@ -180,7 +190,11 @@ const ModalPortal: React.FC<{
   }, [onPressEscape]);
 
   return createPortal(
-    <ModalBackground onClick={onClickOutside} styles={backgroundStyles}>
+    <ModalBackground
+      onClick={onClickOutside}
+      focus={focus}
+      styles={backgroundStyles}
+    >
       {children}
     </ModalBackground>,
     modalElement

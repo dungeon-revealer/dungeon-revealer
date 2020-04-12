@@ -1,6 +1,18 @@
 import React from "react";
 import styled from "@emotion/styled/macro";
-import { convertHtml } from "../html-converter";
+import { ShowdownExtension } from "showdown";
+import MarkdownView from "react-showdown";
+import { SharableImage } from "./sharable-image";
+
+const imageExtension: ShowdownExtension = {
+  type: "lang",
+  filter: function (text) {
+    const regex = /\!\[(.*)\]\((\/.*)\)/;
+    const res = text.match(regex);
+    if (res === null) return text;
+    return `<SharableImage src="${res[2]}" />`;
+  },
+};
 
 const HtmlContainerStyled = styled.div`
   flex-grow: 1;
@@ -17,12 +29,22 @@ const HtmlContainerStyled = styled.div`
   }
 `;
 
+const extensions = [imageExtension];
+
+const components = {
+  SharableImage,
+};
+
 export const HtmlContainer: React.FC<{ markdown: string }> = React.memo(
   ({ markdown }) => {
     return (
-      <HtmlContainerStyled
-        dangerouslySetInnerHTML={{ __html: convertHtml(markdown) }}
-      />
+      <HtmlContainerStyled>
+        <MarkdownView
+          markdown={markdown}
+          extensions={extensions}
+          components={components}
+        />
+      </HtmlContainerStyled>
     );
   }
 );
