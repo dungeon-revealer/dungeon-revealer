@@ -3,14 +3,25 @@ import styled from "@emotion/styled/macro";
 import { ShowdownExtension } from "showdown";
 import MarkdownView from "react-showdown";
 import { SharableImage } from "./sharable-image";
+import sanitizeHtml from "sanitize-html";
+
+const sanitizeHtmlExtension: ShowdownExtension = {
+  type: "lang",
+  filter: (text) => {
+    return sanitizeHtml(text, {
+      allowedTags: [],
+      allowedAttributes: {},
+    });
+  },
+};
 
 const imageExtension: ShowdownExtension = {
   type: "lang",
-  filter: function (text) {
-    const regex = /\!\[(.*)\]\((\/.*)\)/;
-    const res = text.match(regex);
-    if (res === null) return text;
-    return `<SharableImage src="${res[2]}" />`;
+  filter: (text) => {
+    return text.replace(
+      /\!\[(.*)\]\((\/.*)\)/g,
+      (a, b, src) => `<SharableImage src="${src}" />`
+    );
   },
 };
 
@@ -29,7 +40,7 @@ const HtmlContainerStyled = styled.div`
   }
 `;
 
-const extensions = [imageExtension];
+const extensions = [sanitizeHtmlExtension, imageExtension];
 
 const components = {
   SharableImage,
