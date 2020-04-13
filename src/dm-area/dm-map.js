@@ -23,7 +23,6 @@ import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useSvgGrid } from "../hooks/use-svg-grid";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
-import { useOnKeyDown } from "../hooks/use-on-key-down";
 import { useOvermind } from "../hooks/use-overmind";
 import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
@@ -737,47 +736,6 @@ export const DmMap = ({
     });
   }, [sendLiveMap]);
 
-  useOnKeyDown((ev) => {
-    /**
-     * overwrite CMD + S
-     * @source: https://michilehr.de/overwrite-cmds-and-ctrls-in-javascript/
-     */
-    if (
-      (window.navigator.platform.match("Mac") ? ev.metaKey : ev.ctrlKey) &&
-      ev.keyCode === 83
-    ) {
-      // eslint-disable-next-line default-case
-      switch (ev.key) {
-        case "s":
-          ev.preventDefault();
-          sendMap();
-          return;
-      }
-    }
-
-    // eslint-disable-next-line default-case
-    switch (ev.key) {
-      case "Shift":
-        setMode((mode) => (mode === "shroud" ? "clear" : "shroud"));
-        break;
-      case "1":
-        setTool("move");
-        break;
-      case "2":
-        setTool("area");
-        break;
-      case "3":
-        setTool("brush");
-        break;
-      case "4":
-        setTool("mark");
-        break;
-      case "5":
-        setTool("tokens");
-        break;
-    }
-  });
-
   useEffect(() => {
     socket.on("mark area", async (data) => {
       const { ratio } = latestMapCanvasDimensions.current;
@@ -976,8 +934,58 @@ export const DmMap = ({
     latestPanZoomReferentialRef.current = panZoomReferential;
   });
 
+  const rootContainer = React.useRef(null);
+  useEffect(() => {
+    if (document.activeElement === document.body) {
+      rootContainer.current && rootContainer.current.focus();
+    }
+  });
+
   return (
-    <>
+    <div
+      tabIndex="0"
+      ref={rootContainer}
+      onKeyDown={(ev) => {
+        /**
+         * overwrite CMD + S
+         * @source: https://michilehr.de/overwrite-cmds-and-ctrls-in-javascript/
+         */
+        if (
+          (window.navigator.platform.match("Mac") ? ev.metaKey : ev.ctrlKey) &&
+          ev.keyCode === 83
+        ) {
+          // eslint-disable-next-line default-case
+          switch (ev.key) {
+            case "s":
+              ev.preventDefault();
+              sendMap();
+              return;
+          }
+        }
+
+        // eslint-disable-next-line default-case
+        switch (ev.key) {
+          case "Shift":
+            setMode((mode) => (mode === "shroud" ? "clear" : "shroud"));
+            break;
+          case "1":
+            setTool("move");
+            break;
+          case "2":
+            setTool("area");
+            break;
+          case "3":
+            setTool("brush");
+            break;
+          case "4":
+            setTool("mark");
+            break;
+          case "5":
+            setTool("tokens");
+            break;
+        }
+      }}
+    >
       <PanZoom
         disableDoubleClickZoom={tool !== "move"}
         preventPan={() => tool !== "move" && !isAltPressed}
@@ -1484,7 +1492,7 @@ export const DmMap = ({
         </Toolbar>
       </div>
       <TokenInfoAside />
-    </>
+    </div>
   );
 };
 
@@ -1530,8 +1538,8 @@ const ShowGridSettingsPopup = React.memo(
               <div style={{ marginLeft: 8 }}>
                 <ToggleSwitch
                   checked={showGrid}
-                  onChange={(ev) => {
-                    setShowGrid(ev.target.checked);
+                  onChange={(checked) => {
+                    setShowGrid(checked);
                   }}
                 />
               </div>
@@ -1549,8 +1557,8 @@ const ShowGridSettingsPopup = React.memo(
               <div style={{ marginLeft: 8 }}>
                 <ToggleSwitch
                   checked={showGridToPlayers}
-                  onChange={(ev) => {
-                    setShowGridToPlayers(ev.target.checked);
+                  onChange={(checked) => {
+                    setShowGridToPlayers(checked);
                   }}
                 />
               </div>

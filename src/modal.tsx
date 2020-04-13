@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { disableBodyScroll, enableBodyScroll } from "body-scroll-lock";
-import FocusTrap from "focus-trap-react";
+import FocusLock from "react-focus-lock";
 import styled from "@emotion/styled/macro";
 import { useStaticRef } from "./hooks/use-static-ref";
 
@@ -13,20 +13,14 @@ const bodyElement = document.getElementById("body");
 if (!bodyElement) {
   throw new TypeError("Body Element was not found.");
 }
-type EscapeHandlerType = (ev: KeyboardEvent) => void;
 
-type ModalRegistration = {
-  escapeHandler: EscapeHandlerType;
-};
+type ModalRegistration = {};
 
 type CreateModalRegistrationResult = {
-  setEscapeHandler: (escapeHandler: EscapeHandlerType) => void;
   destroy: () => void;
 };
 
-type CreateModalRegistrationFunction = (
-  escapeHandler: EscapeHandlerType
-) => CreateModalRegistrationResult;
+type CreateModalRegistrationFunction = () => CreateModalRegistrationResult;
 
 const Context = React.createContext<CreateModalRegistrationFunction>(
   null as any
@@ -39,61 +33,32 @@ const Context = React.createContext<CreateModalRegistrationFunction>(
 const Provider: React.FC<{}> = ({ children }) => {
   const registeredModals = useStaticRef<ModalRegistration[]>(() => []);
 
-  const createModalRegistration: CreateModalRegistrationFunction = useCallback(
-    (escapeHandler) => {
-      const modalRegistration = {
-        escapeHandler,
-      };
+  const createModalRegistration: CreateModalRegistrationFunction = useCallback(() => {
+    const modalRegistration = {};
 
-      const prevLength = registeredModals.length;
+    const prevLength = registeredModals.length;
 
-      registeredModals.unshift(modalRegistration);
+    registeredModals.unshift(modalRegistration);
 
-      const postLength = registeredModals.length;
+    const postLength = registeredModals.length;
 
-      if (prevLength === 0 && postLength > 0) {
-        disableBodyScroll(bodyElement);
-      }
+    if (prevLength === 0 && postLength > 0) {
+      disableBodyScroll(bodyElement);
+    }
 
-      return {
-        setEscapeHandler: (handler) => {
-          modalRegistration.escapeHandler = handler;
-        },
-        destroy: () => {
-          const index = registeredModals.findIndex(
-            (registration) => registration === modalRegistration
-          );
-          if (index === -1) {
-            throw new Error("Inconsistent state.");
-          }
-          registeredModals.splice(index, 1);
-          if (registeredModals.length === 0) {
-            enableBodyScroll(bodyElement);
-          }
-        },
-      };
-    },
-    [registeredModals]
-  );
-
-  // register escape event listener
-  useEffect(() => {
-    const keydownListener = (ev: KeyboardEvent) => {
-      if (ev.keyCode === 27) {
-        for (const registeredModal of registeredModals) {
-          // only handle the first escapeHandler that occures.
-          if (registeredModal.escapeHandler) {
-            registeredModal.escapeHandler(ev);
-            break;
-          }
+    return {
+      destroy: () => {
+        const index = registeredModals.findIndex(
+          (registration) => registration === modalRegistration
+        );
+        if (index === -1) {
+          throw new Error("Inconsistent state.");
         }
-      }
-    };
-
-    window.addEventListener("keydown", keydownListener);
-
-    return () => {
-      window.removeEventListener("keydown", keydownListener);
+        registeredModals.splice(index, 1);
+        if (registeredModals.length === 0) {
+          enableBodyScroll(bodyElement);
+        }
+      },
     };
   }, [registeredModals]);
 
@@ -107,13 +72,20 @@ const Provider: React.FC<{}> = ({ children }) => {
 const ModalBackground: React.FC<
   React.HTMLAttributes<HTMLDivElement> & {
     styles?: React.CSSProperties;
-  } & { focus: boolean }
-> = ({ children, styles, focus, ...props }) => {
+  } & { focus: boolean; onPressEscape: () => void }
+> = ({ children, styles, focus = true, onClick, onPressEscape, ...props }) => {
   const inner = (
     <div
       onClick={(ev) => {
         ev.stopPropagation();
-        if (props.onClick) props.onClick(ev);
+        if (onClick) onClick(ev);
+      }}
+      onKeyDown={(ev) => {
+        ev.stopPropagation();
+        if (ev.keyCode === 27) onPressEscape();
+      }}
+      onKeyPress={(ev) => {
+        ev.stopPropagation();
       }}
       onMouseDown={(ev) => {
         ev.stopPropagation();
@@ -143,7 +115,7 @@ const ModalBackground: React.FC<
     </div>
   );
 
-  if (focus) return <FocusTrap>{inner}</FocusTrap>;
+  if (focus) return <FocusLock returnFocus={true}>{inner}</FocusLock>;
   return inner;
 };
 
@@ -161,39 +133,27 @@ const ModalPortal: React.FC<{
 }) => {
   const createModalRegistration = React.useContext(Context);
   const modalElement = useStaticRef(() => document.createElement("div"));
-  const modalRegistration = React.useRef<CreateModalRegistrationResult | null>(
-    null
-  );
 
   useEffect(() => {
     modalRoot.append(modalElement);
-    modalRegistration.current = createModalRegistration(onPressEscape);
+    const modalRegistration = createModalRegistration();
 
     return () => {
       modalRoot.removeChild(modalElement);
-      if (!modalRegistration.current) {
-        return;
-      }
-      modalRegistration.current.destroy();
+      modalRegistration.destroy();
     };
     // modalElement will never change
-    // onPressEscape is omitted because the registration should only be done once.
-    // further changes should be handled by the useEffect below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modalElement]);
-
-  useEffect(() => {
-    if (!modalRegistration.current) {
-      return;
-    }
-    modalRegistration.current.setEscapeHandler(onPressEscape);
-  }, [onPressEscape]);
 
   return createPortal(
     <ModalBackground
-      onClick={onClickOutside}
+      onClick={(ev) => {
+        ev.stopPropagation();
+        onClickOutside?.();
+      }}
       focus={focus}
       styles={backgroundStyles}
+      onPressEscape={onPressEscape}
     >
       {children}
     </ModalBackground>,

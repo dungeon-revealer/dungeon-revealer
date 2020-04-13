@@ -8,13 +8,20 @@ const LightBoxImage = styled.img`
   overflow: scroll;
 `;
 
+const ButtonBackground = styled.button`
+  all: unset;
+  display: block;
+`;
+
 export const ImageLightBoxModal: React.FC<{
   src: string;
   close: () => void;
 }> = ({ src, close }) => {
   return (
-    <Modal onClickOutside={close} onPressEscape={close} focus={false}>
-      <LightBoxImage src={src} />
+    <Modal onClickOutside={close} onPressEscape={close}>
+      <ButtonBackground onClick={(ev) => ev.stopPropagation()}>
+        <LightBoxImage src={src} />
+      </ButtonBackground>
     </Modal>
   );
 };

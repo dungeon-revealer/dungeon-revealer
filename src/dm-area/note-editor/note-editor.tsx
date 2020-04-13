@@ -63,8 +63,9 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       <Modal onClickOutside={onClose} onPressEscape={onClose}>
         <Modal.Dialog
           onKeyDown={(ev) => {
-            ev.stopPropagation();
-            if (ev.key !== "Escape") return;
+            if (ev.key === "Escape" && state.noteEditor.isEditMode) {
+              ev.stopPropagation();
+            }
           }}
         >
           <Modal.Header>

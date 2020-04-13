@@ -1,4 +1,5 @@
 import styled from "@emotion/styled/macro";
+import { lighten } from "polished";
 
 const ButtonBase = styled.button<{
   big?: boolean;
@@ -25,10 +26,6 @@ const ButtonBase = styled.button<{
   > span + svg {
     margin-left: ${(p) => (p.iconOnly ? null : p.small ? `.5rem` : `1rem`)};
   }
-
-  &:focus {
-    outline: none;
-  }
 `;
 
 export const Primary = styled(ButtonBase)`
@@ -54,9 +51,10 @@ export const Secondary = styled(ButtonBase)`
 
 export const Tertiary = styled(ButtonBase)`
   background-color: transparent;
-  color: #627d98;
+  color: ${(p) => (p.disabled ? lighten(0.3, "#627d98") : "#627d98")};
+  cursor: ${(p) => (p.disabled ? "inherit" : null)};
 
   &:hover {
-    background-color: #f0f4f8;
+    background-color: ${(p) => (p.disabled ? null : "#f0f4f8")};
   }
 `;
