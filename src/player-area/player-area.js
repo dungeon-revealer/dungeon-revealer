@@ -348,7 +348,9 @@ const PlayerMap = ({ fetch, pcPassword }) => {
   );
 
   useEffect(() => {
+    if (!mapId) return;
     const eventName = `token:mapId:${mapId}`;
+
     socket.on(eventName, ({ type, data }) => {
       if (type === "add") {
         setCurrentMap(
