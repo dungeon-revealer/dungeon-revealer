@@ -8,20 +8,17 @@ import sanitizeHtml from "sanitize-html";
 const sanitizeHtmlExtension: ShowdownExtension = {
   type: "lang",
   filter: (text) => {
-    return sanitizeHtml(text, {
-      allowedTags: [],
-      allowedAttributes: {},
+    const sanitizedHtml = sanitizeHtml(text, {
+      allowedTags: ["Image"],
+      allowedAttributes: {
+        Image: ["id"],
+      },
+      selfClosing: ["Image"],
+      parser: {
+        lowerCaseTags: false,
+      },
     });
-  },
-};
-
-const imageExtension: ShowdownExtension = {
-  type: "lang",
-  filter: (text) => {
-    return text.replace(
-      /\!\[(.*)\]\((\/.*)\)/g,
-      (a, b, src) => `<SharableImage src="${src}" />`
-    );
+    return sanitizedHtml;
   },
 };
 
@@ -40,10 +37,10 @@ const HtmlContainerStyled = styled.div`
   }
 `;
 
-const extensions = [sanitizeHtmlExtension, imageExtension];
+const extensions = [sanitizeHtmlExtension];
 
 const components = {
-  SharableImage,
+  Image: SharableImage,
 };
 
 export const HtmlContainer: React.FC<{ markdown: string }> = React.memo(

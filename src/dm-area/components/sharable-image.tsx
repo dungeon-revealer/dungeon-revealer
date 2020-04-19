@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "@emotion/styled/macro";
-import { buildUrl } from "../../public-url";
+import { buildApiUrl } from "../../public-url";
 import { useMarkdownActions } from "../../hooks/use-markdown-actions";
 import * as Icon from "../../feather-icons";
 import * as Button from "../../button";
@@ -27,7 +27,7 @@ const Menu = styled.span`
   }
 `;
 
-export const SharableImage: React.FC<{ src: string }> = ({ src }) => {
+export const SharableImage: React.FC<{ id: string }> = ({ id }) => {
   const [showMenu, setShowMenu] = React.useState(false);
   const [showLightboxImage, setShowLightBoxImage] = React.useState(false);
   const actions = useMarkdownActions();
@@ -41,14 +41,14 @@ export const SharableImage: React.FC<{ src: string }> = ({ src }) => {
         setShowMenu(false);
       }}
     >
-      <Image src={buildUrl(src)} />
+      <Image src={buildApiUrl(`/images/${id}`)} />
       {showMenu ? (
         <Menu>
           <Button.Primary
             small
             title="Share with Players"
             iconOnly
-            onClick={() => actions.shareImage(src)}
+            onClick={() => actions.shareImage(id)}
           >
             <Icon.Share height={16} />
           </Button.Primary>
@@ -64,7 +64,7 @@ export const SharableImage: React.FC<{ src: string }> = ({ src }) => {
       ) : null}
       {showLightboxImage ? (
         <ImageLightBoxModal
-          src={src}
+          src={buildApiUrl(`/images/${id}`)}
           close={() => setShowLightBoxImage(false)}
         />
       ) : null}

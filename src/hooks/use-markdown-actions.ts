@@ -10,8 +10,8 @@ export const MarkdownActionsProvider: React.FC<{
   socket: SocketIOClient.Socket;
 }> = ({ children, socket }) => {
   const shareImage = React.useCallback(
-    (url: string) => {
-      socket.emit("share image", { url });
+    (id: string) => {
+      socket.emit("share image", { id });
     },
     [socket]
   );

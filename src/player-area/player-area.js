@@ -71,7 +71,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
   const panZoomRef = useRef(null);
   const currentMapRef = useRef(null);
   const [currentMap, setCurrentMap] = useState(null);
-  const [sharedMapUrl, setSharedMapUrl] = useState(false);
+  const [sharedMediaId, setSharedMediaId] = useState(false);
 
   const mapId = currentMap ? currentMap.id : null;
   const socket = useSocket();
@@ -315,8 +315,8 @@ const PlayerMap = ({ fetch, pcPassword }) => {
         ]);
       });
 
-      socket.on("share image", ({ url }) => {
-        setSharedMapUrl(url);
+      socket.on("share image", ({ id }) => {
+        setSharedMediaId(id);
       });
 
       socket.on("map update", onReceiveMap);
@@ -519,10 +519,10 @@ const PlayerMap = ({ fetch, pcPassword }) => {
           <SplashScreen text="Ready." />
         </AbsoluteFullscreenContainer>
       )}
-      {sharedMapUrl ? (
+      {sharedMediaId ? (
         <ImageLightBoxModal
-          src={sharedMapUrl}
-          close={() => setSharedMapUrl(null)}
+          src={buildApiUrl(`/images/${sharedMediaId}`)}
+          close={() => setSharedMediaId(null)}
         />
       ) : null}
     </>
