@@ -3,10 +3,15 @@ type ISendRequestOptions = {
   headers: {
     [headerName: string]: string | null;
   };
-} & {
-  method: "POST";
-  body: FormData;
-};
+} & (
+  | {
+      method: "POST";
+      body: FormData;
+    }
+  | {
+      method: "GET";
+    }
+);
 
 type IResult =
   | {
@@ -17,7 +22,7 @@ type IResult =
     }
   | {
       type: "success";
-      data: unknown;
+      data: string;
     };
 
 export type ISendRequestTask = {
@@ -63,7 +68,8 @@ export const sendRequest = (options: ISendRequestOptions): ISendRequestTask => {
     if (!value) continue;
     request.setRequestHeader(header, value);
   }
-  request.send(options.body);
+
+  request.send(options.method === "GET" ? undefined : options.body);
 
   return {
     abort: () => request.abort(),
