@@ -54,6 +54,8 @@
     "morgan": "1.10.0",
     "serve-favicon": "2.5.0",
     "socket.io": "2.2.0",
+    "sqlite": "4.0.7",
+    "sqlite3": "4.1.1",
     "uuid": "3.4.0"
   },
   "devDependencies": {
@@ -69,6 +71,7 @@
     "@types/sanitize-html": "1.22.0",
     "@types/showdown": "1.9.3",
     "@types/socket.io-client": "1.4.32",
+    "@types/sqlite3": "3.1.6",
     "babel-eslint": "10.1.0",
     "body-scroll-lock": "3.0.1",
     "cross-env": "7.0.2",
@@ -76,6 +79,7 @@
     "eslint": "6.8.0",
     "eslint-config-prettier": "6.10.1",
     "eslint-plugin-react-app": "6.2.2",
+    "htmlparser2": "4.1.0",
     "husky": "4.2.5",
     "immer": "6.0.3",
     "lint-staged": "10.1.3",
