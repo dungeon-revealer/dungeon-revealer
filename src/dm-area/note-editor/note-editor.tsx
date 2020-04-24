@@ -170,6 +170,13 @@ const EmptyContainer = styled.div`
   width: 100%;
 `;
 
+const HtmlContainerWrapper = styled.div`
+  padding-left: 16px;
+  padding-right: 16px;
+  flex-grow: 1;
+  overflow-y: scroll;
+`;
+
 const ContentRendered: React.FC<{
   state: ReturnType<typeof useOvermind>["state"]["noteEditor"];
   actions: ReturnType<typeof useOvermind>["actions"]["noteEditor"];
@@ -238,16 +245,9 @@ const ContentRendered: React.FC<{
           />
         </>
       ) : (
-        <div
-          style={{
-            paddingLeft: 16,
-            paddingRight: 16,
-            flexGrow: 1,
-            overflow: "scroll",
-          }}
-        >
+        <HtmlContainerWrapper>
           <HtmlContainer markdown={state.activeNote.content} />
-        </div>
+        </HtmlContainerWrapper>
       )}
     </>
   );

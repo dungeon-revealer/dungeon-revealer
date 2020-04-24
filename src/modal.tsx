@@ -258,7 +258,6 @@ const Body = styled.div<{ noPadding?: boolean }>`
 const Aside = styled.div`
   display: flex;
   flex-direction: column;
-  overflow: scroll;
   max-width: 30%;
   width: 100%;
   border-right: 1px solid rgba(0, 0, 0, 0.1);
