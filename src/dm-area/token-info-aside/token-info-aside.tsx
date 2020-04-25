@@ -61,6 +61,23 @@ export const TokenInfoAside: React.FC<{}> = () => {
   return null;
 };
 
+const EditorContainer = styled.div`
+  display: flex;
+  flex-direction: "column";
+  flex-grow: 1;
+  margin-left: -16px;
+  margin-right: -16px;
+`;
+
+const HtmlRendererContainer = styled.div`
+  overflow-y: scroll;
+  overflow-x: hidden;
+  margin-left: -16px;
+  margin-right: -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+`;
+
 const NoteReference: React.FC<{
   close: () => void;
   isEditMode: boolean;
@@ -146,15 +163,13 @@ const NoteReference: React.FC<{
           )}
         </div>
         {isEditMode ? (
-          <div
-            style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}
-          >
+          <EditorContainer>
             <MarkdownEditor value={note.content} onChange={updateNoteContent} />
-          </div>
+          </EditorContainer>
         ) : (
-          <div style={{ overflowY: "scroll", overflowX: "hidden" }}>
+          <HtmlRendererContainer>
             <HtmlContainer markdown={note.content} />
-          </div>
+          </HtmlRendererContainer>
         )}
       </Window>
     </Container>

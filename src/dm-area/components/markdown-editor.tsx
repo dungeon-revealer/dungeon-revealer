@@ -246,6 +246,11 @@ const SideMenu = styled.div`
   border-radius: 5px;
 `;
 
+const SideMenuTitle = styled.div`
+  font-weight: bold;
+  margin-bottom: 12px;
+`;
+
 const SideMenuImage = styled.img`
   max-width: 100%;
   max-height: 150px;
@@ -502,7 +507,7 @@ export const MarkdownEditor: React.FC<{
       {uploadImageNode}
       {menu ? (
         <SideMenu>
-          <b>Linked Image</b>
+          <SideMenuTitle>Linked Image</SideMenuTitle>
           <SideMenuImage src={buildApiUrl(`/images/${menu.data.id}`)} />
           <Button.Primary small onClick={() => setShowMediaLibrary(true)}>
             Change
