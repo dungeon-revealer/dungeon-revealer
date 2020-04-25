@@ -1039,7 +1039,7 @@
     "@emotion/utils" "0.11.3"
     "@emotion/weak-memoize" "0.2.5"
 
-"@emotion/core@10.0.28":
+"@emotion/core@10.0.28", "@emotion/core@^10.0.14":
   version "10.0.28"
   resolved "https://registry.yarnpkg.com/@emotion/core/-/core-10.0.28.tgz#bb65af7262a234593a9e952c041d0f1c9b9bef3d"
   integrity sha512-pH8UueKYO5jgg0Iq+AmCLxBsvuGtvlmiDCOuv8fGNYn3cowFpLN98L8zO56U0H1PjDIyAlXymgL3Wu7u7v6hbA==
@@ -1680,6 +1680,13 @@
   version "16.9.6"
   resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-16.9.6.tgz#9e7f83d90566521cc2083be2277c6712dcaf754c"
   integrity sha512-S6ihtlPMDotrlCJE9ST1fRmYrQNNwfgL61UB4I1W7M6kPulUKx9fXAleW5zpdIjUQ4fTaaog8uERezjsGUj9HQ==
+  dependencies:
+    "@types/react" "*"
+
+"@types/react-toast-notifications@2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@types/react-toast-notifications/-/react-toast-notifications-2.4.0.tgz#0ca0732cfae5a6ef5939a676fffac6e64c78bc25"
+  integrity sha512-nBI6gQ0E5gwi3IcTrVOR3oKoMGRfH1gK67kI6RIKUmiV5Sc3ZC/eymYBFt6iDo0dhlYET6kdtR0tcUh9h5L0sQ==
   dependencies:
     "@types/react" "*"
 
@@ -3810,7 +3817,7 @@ cssstyle@^1.0.0, cssstyle@^1.1.1:
   dependencies:
     cssom "0.3.x"
 
-csstype@^2.2.0, csstype@^2.5.7:
+csstype@^2.2.0, csstype@^2.5.7, csstype@^2.6.7:
   version "2.6.10"
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-2.6.10.tgz#e63af50e66d7c266edb6b32909cfd0aabe03928b"
   integrity sha512-D34BqZU4cIlMCY93rZHbrq9pjTAQJ3U8S8rfBqjwHxkGPThWFjzZDQpgMJY0QViLxth6ZKYiwFBo14RdN44U/w==
@@ -4107,6 +4114,14 @@ dom-converter@^0.2:
   integrity sha512-gd3ypIPfOMr9h5jIKq8E3sHOTCjeirnl0WK5ZdS1AW0Odt0b1PaWaHdJ4Qk4klv+YB9aJBS7mESXjFoDQPu6DA==
   dependencies:
     utila "~0.4"
+
+dom-helpers@^5.0.1:
+  version "5.1.4"
+  resolved "https://registry.yarnpkg.com/dom-helpers/-/dom-helpers-5.1.4.tgz#4609680ab5c79a45f2531441f1949b79d6587f4b"
+  integrity sha512-TjMyeVUvNEnOnhzs6uAn9Ya47GmMo3qq7m+Lr/3ON0Rs5kHvb8I+SQYjLUSYn7qhEm0QjW0yrBkvz9yOrwwz1A==
+  dependencies:
+    "@babel/runtime" "^7.8.7"
+    csstype "^2.6.7"
 
 dom-serializer@0, dom-serializer@^0.2.1:
   version "0.2.2"
@@ -9928,6 +9943,24 @@ react-spring@9.0.0-canary.808.8.4a87fcb:
     "@react-spring/three" "9.0.0-canary.808.8.4a87fcb"
     "@react-spring/web" "9.0.0-canary.808.8.4a87fcb"
     "@react-spring/zdog" "9.0.0-canary.808.8.4a87fcb"
+
+react-toast-notifications@2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/react-toast-notifications/-/react-toast-notifications-2.4.0.tgz#6213730bd1fe158fc01aeef200687ea94c5c5b24"
+  integrity sha512-8tkrbNh7LxkiFmtqAL/AiI55efIeI+fBk3c6ImsiZ0VObb4yvOq0cqYuJHyUiv9fuD2aBxvXGVH+n4Snt8qoWA==
+  dependencies:
+    "@emotion/core" "^10.0.14"
+    react-transition-group "^4.3.0"
+
+react-transition-group@^4.3.0:
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/react-transition-group/-/react-transition-group-4.3.0.tgz#fea832e386cf8796c58b61874a3319704f5ce683"
+  integrity sha512-1qRV1ZuVSdxPlPf4O8t7inxUGpdyO5zG9IoNfJxSO0ImU2A1YWkEQvFPuIPZmMLkg5hYs7vv5mMOyfgSkvAwvw==
+  dependencies:
+    "@babel/runtime" "^7.5.5"
+    dom-helpers "^5.0.1"
+    loose-envify "^1.4.0"
+    prop-types "^15.6.2"
 
 react@16.13.1:
   version "16.13.1"
