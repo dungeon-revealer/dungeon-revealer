@@ -1,32 +1,24 @@
 import React from "react";
-import ReactMde, { commands as ReactMdeCommands, Command } from "react-mde";
-import * as Button from "../../button";
 import styled from "@emotion/styled/macro";
-import { CommandGroup, TextRange } from "react-mde/lib/definitions/types";
+import {
+  Range as MonacoRange,
+  Position as MonacoPosition,
+} from "monaco-editor";
+import { parseDOM } from "htmlparser2";
+import MonacoEditor from "react-monaco-editor";
+import * as Button from "../../button";
 import { sendRequest, ISendRequestTask } from "../../http-request";
 import { buildApiUrl } from "../../public-url";
 import { useOvermind } from "../../hooks/use-overmind";
 import { SelectLibrarayImageModal } from "./select-library-image-modal";
-import { parseDOM } from "htmlparser2";
 
-const selectString = ({
-  text,
-  needle,
-}: {
-  text: string;
-  needle: string;
-}): TextRange => {
-  const index = text.indexOf(needle);
-  if (index === -1) return { start: text.length, end: text.length };
-  return {
-    start: index,
-    end: index + needle.length,
-  };
-};
+import { transparentize } from "polished";
+import { BoldIcon, ItalicIcon, ImageIcon, ListIcon } from "../../feather-icons";
 
 const useImageCommand: (opts: {
   uploadFile: (file: File) => Promise<string | null>;
-}) => [Command, React.ReactNode] = ({ uploadFile }) => {
+  editorReference: React.RefObject<MonacoEditor>;
+}) => [() => void, React.ReactNode] = ({ uploadFile, editorReference }) => {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const stateRef = React.useRef<{
@@ -44,53 +36,88 @@ const useImageCommand: (opts: {
     []
   );
 
-  const command = React.useMemo<Command>(() => {
-    return {
-      name: "image",
-      buttonProps: { "aria-label": "Add image" },
-      execute: (_, api) => {
-        stateRef.current.onSelectImage = (file: File) => {
-          const placeholderTemplate = `[Uploading ${file.name}...]`;
-          const state = api.getState();
+  const onClick = React.useCallback(() => {
+    stateRef.current.onSelectImage = (file: File) => {
+      const editor = editorReference.current?.editor;
+      const model = editor?.getModel();
+      const selection = editor?.getSelection();
+      if (!model || !editor || !selection) return;
 
-          // always add image add the end.
-          api.setSelectionRange({
-            start: state.text.length,
-            end: state.text.length,
-          });
-          api.replaceSelection(placeholderTemplate);
+      const placeholderTemplate = `[Uploading ${file.name}...]`;
 
-          // switch back to previous selection.
-          api.setSelectionRange(state.selection);
+      editor.executeEdits("", [
+        {
+          range: new MonacoRange(
+            selection.startLineNumber,
+            selection.startColumn,
+            selection.endLineNumber,
+            selection.endColumn
+          ),
+          text: placeholderTemplate,
+        },
+      ]);
+      editor.focus();
 
-          uploadFile(file).then((id) => {
-            if (!stateRef.current.isMounted) return;
-            const state = api.getState();
+      uploadFile(file).then((id) => {
+        if (!stateRef.current.isMounted) return;
+        const editor = editorReference.current?.editor;
+        const model = editor?.getModel();
+        const selection = editor?.getSelection();
+        if (!model || !editor || !selection) return;
 
-            const content = id
-              ? `<Image id="${id}" />`
-              : `[Uploading ${file.name} failed.]`;
+        const content = id
+          ? `<Image id="${id}" />`
+          : `[Uploading ${file.name} failed.]`;
 
-            // replace placeholder string
-            const range = selectString({
-              text: state.text,
-              needle: placeholderTemplate,
-            });
+        const value = editor.getValue();
 
-            api.setSelectionRange({
-              start: range.start,
-              end: range.end,
-            });
+        const index = value.indexOf(placeholderTemplate);
 
-            api.replaceSelection(content);
+        if (index === -1) {
+          // add at the end
+          const line = model.getLineCount();
+          const column = model.getLineMaxColumn(line);
+          editor.executeEdits("", [
+            {
+              range: new MonacoRange(line, column, line, column),
+              text: `\n\n${content}`,
+            },
+          ]);
+        } else {
+          const start = model.getPositionAt(index);
+          const end = model.getPositionAt(index + placeholderTemplate.length);
+          editor.executeEdits("", [
+            {
+              range: new MonacoRange(
+                start.lineNumber,
+                start.column,
+                end.lineNumber,
+                end.column
+              ),
+              text: content,
+            },
+          ]);
+        }
 
-            // switch back to previous selection.
-            api.setSelectionRange(state.selection);
-          });
-        };
-        fileInputRef.current?.click();
-      },
+        // replace placeholder string
+        // const range = selectString({
+        //   text: model.getValue(),
+        //   needle: placeholderTemplate,
+        // });
+
+        // api.setSelectionRange({
+        //   start: range.start,
+        //   end: range.end,
+        // });
+
+        // api.replaceSelection(content);
+
+        // switch back to previous selection.
+        // api.setSelectionRange(state.selection);
+      });
     };
+
+    fileInputRef.current?.click();
   }, []);
 
   const element = React.useMemo<React.ReactNode>(() => {
@@ -115,45 +142,21 @@ const useImageCommand: (opts: {
     );
   }, []);
 
-  return [command, element];
+  return [onClick, element];
 };
 
 const Container = styled.div`
   position: relative;
   display: flex;
-  height: 100%;
-  width: 100%;
-`;
-
-const ReactMdeStyled = styled(ReactMde)`
-  display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
-  border: none;
 
-  textarea {
-    line-height: 16px;
-  }
-
-  .mde-textarea-wrapper {
-    height: 100%;
-  }
-  .mde-header {
-    z-index: 1;
-  }
-  .mde-header + div {
-    height: 100%;
-  }
-
-  .grip {
-    display: none;
-  }
-
-  textarea {
-    outline: none;
+  .active-image-component {
+    background-color: ${transparentize(0.5, "pink")};
   }
 `;
+
 /**
  * Takes a string that includes a single HTML element and invokes the callback with the corresponding AST.
  */
@@ -167,7 +170,8 @@ const parseTagAstFromHtmlTagString = (input: string) => {
 };
 
 const getMarkdownImageSelectionRange = (
-  textArea: HTMLTextAreaElement
+  column: number,
+  text: string
 ): { id: string; position: { start: number; end: number } } | null => {
   const IMAGE_START_TAG = "<Image";
 
@@ -176,15 +180,13 @@ const getMarkdownImageSelectionRange = (
   let startIndex = -1;
 
   while (characterBeforeCounter <= 100) {
-    const index = textArea.selectionEnd - characterBeforeCounter;
-    if (textArea.value[index] === "<") {
-      if (
-        textArea.value.substr(index, IMAGE_START_TAG.length) === IMAGE_START_TAG
-      ) {
+    const index = column - characterBeforeCounter;
+    if (text[index] === "<") {
+      if (text.substr(index, IMAGE_START_TAG.length) === IMAGE_START_TAG) {
         startIndex = index;
       }
       break;
-    } else if (textArea.value[index] === ">") {
+    } else if (text[index] === ">") {
       // encountered another tag -> abort mission!
       break;
     }
@@ -199,9 +201,9 @@ const getMarkdownImageSelectionRange = (
   let characterAfterCounter = 0;
   let endIndex = -1;
   while (characterAfterCounter <= 100) {
-    const index = textArea.selectionEnd + characterAfterCounter;
+    const index = column + characterAfterCounter;
 
-    if (textArea.value[index] === "/" && textArea.value[index + 1] === ">") {
+    if (text[index] === "/" && text[index + 1] === ">") {
       endIndex = index + 2;
       break;
     }
@@ -213,7 +215,7 @@ const getMarkdownImageSelectionRange = (
     return null;
   }
 
-  const part = textArea.value.substring(startIndex, endIndex);
+  const part = text.substring(startIndex, endIndex);
 
   const node = parseTagAstFromHtmlTagString(part);
   if (!node) return null;
@@ -252,6 +254,20 @@ const SideMenuImage = styled.img`
   margin-right: auto;
 `;
 
+const TextToolBar = styled.div`
+  display: flex;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 8px;
+`;
+
+const ToolBarButton = styled.button`
+  border-color: white;
+  border-radius: 5px;
+  padding: 8px;
+  display: flex;
+`;
+
 export const MarkdownEditor: React.FC<{
   value: string;
   onChange: (input: string) => void;
@@ -279,28 +295,17 @@ export const MarkdownEditor: React.FC<{
     });
   }, []);
 
-  const [imageCommand, uploadImageNode] = useImageCommand({
+  const ref = React.useRef<MonacoEditor | null>(null);
+  const editorStateRef = React.useRef({
+    decorations: [] as string[],
+  });
+
+  const [onClickImageButton, uploadImageNode] = useImageCommand({
     uploadFile,
+    editorReference: ref,
   });
 
   React.useEffect(() => () => uploadTaskRef.current?.abort(), []);
-
-  const commands = React.useMemo<CommandGroup[]>(
-    () => [
-      {
-        commands: [
-          ReactMdeCommands.boldCommand,
-          ReactMdeCommands.italicCommand,
-          ReactMdeCommands.strikeThroughCommand,
-          ReactMdeCommands.orderedListCommand,
-          ReactMdeCommands.unorderedListCommand,
-          ReactMdeCommands.quoteCommand,
-          imageCommand,
-        ],
-      },
-    ],
-    []
-  );
 
   const [menu, setMenu] = React.useState<{
     type: "image";
@@ -314,47 +319,185 @@ export const MarkdownEditor: React.FC<{
   } | null>(null);
   const [showMediaLibrary, setShowMediaLibrary] = React.useState(false);
 
-  const ref = React.useRef<ReactMde | null>(null);
-
-  React.useEffect(() => {
-    const handler = () => {
-      if (ref.current?.textAreaRef) {
-        const textArea = ref.current?.textAreaRef;
-
-        const imageSelectionRange = getMarkdownImageSelectionRange(textArea);
-        if (imageSelectionRange) {
-          setMenu({
-            type: "image",
-            data: {
-              id: imageSelectionRange.id,
-              textPosition: imageSelectionRange.position,
-            },
-          });
-        } else {
-          setMenu(null);
-        }
-      }
-    };
-
-    ref.current?.textAreaRef.addEventListener("mouseup", handler);
-    ref.current?.textAreaRef.addEventListener("keyup", handler);
-
-    return () => {
-      ref.current?.textAreaRef.removeEventListener("mouseup", handler);
-      ref.current?.textAreaRef.removeEventListener("keyup", handler);
-    };
-  }, []);
-
   return (
     <Container>
-      <ReactMdeStyled
-        ref={ref}
-        commands={commands}
+      <TextToolBar>
+        <ToolBarButton
+          title="Bold"
+          onClick={() => {
+            const editor = ref.current?.editor;
+            const model = editor?.getModel();
+            const selection = editor?.getSelection();
+            if (!model || !editor || !selection) return;
+            const selectedText = model.getValueInRange(selection);
+            if (
+              selectedText.trim().startsWith("**") &&
+              selectedText.trim().endsWith("**")
+            ) {
+              editor.executeEdits("", [
+                {
+                  range: new MonacoRange(
+                    selection.startLineNumber,
+                    selection.startColumn,
+                    selection.endLineNumber,
+                    selection.endColumn
+                  ),
+                  text: model.getValueInRange(selection).replace(/\*\*/g, ""),
+                },
+              ]);
+            } else {
+              editor.executeEdits("", [
+                {
+                  range: new MonacoRange(
+                    selection.startLineNumber,
+                    selection.startColumn,
+                    selection.endLineNumber,
+                    selection.endColumn
+                  ),
+                  text: `**` + model.getValueInRange(selection) + `**`,
+                },
+              ]);
+            }
+            editor.focus();
+          }}
+        >
+          <BoldIcon height={16} />
+        </ToolBarButton>
+        <ToolBarButton
+          onClick={() => {
+            const editor = ref.current?.editor;
+            const model = editor?.getModel();
+            const selection = editor?.getSelection();
+            if (!model || !editor || !selection) return;
+            const selectedText = model.getValueInRange(selection);
+            if (
+              selectedText.trim().startsWith("*") &&
+              selectedText.trim().endsWith("*")
+            ) {
+              editor.executeEdits("", [
+                {
+                  range: new MonacoRange(
+                    selection.startLineNumber,
+                    selection.startColumn,
+                    selection.endLineNumber,
+                    selection.endColumn
+                  ),
+                  text: model.getValueInRange(selection).replace(/\*/g, ""),
+                },
+              ]);
+            } else {
+              editor.executeEdits("", [
+                {
+                  range: new MonacoRange(
+                    selection.startLineNumber,
+                    selection.startColumn,
+                    selection.endLineNumber,
+                    selection.endColumn
+                  ),
+                  text: `*` + model.getValueInRange(selection) + `*`,
+                },
+              ]);
+            }
+            editor.focus();
+          }}
+        >
+          <ItalicIcon height={16} />
+        </ToolBarButton>
+        <ToolBarButton
+          title="Insert List"
+          onClick={() => {
+            const editor = ref.current?.editor;
+            const model = editor?.getModel();
+            const selection = editor?.getSelection();
+            if (!model || !editor || !selection) return;
+            let selectedText = model.getLineContent(selection.startLineNumber);
+            const length = selectedText.length;
+            if (selectedText.startsWith("-")) {
+              selectedText = selectedText.replace(/- /, "");
+            } else {
+              selectedText = "- " + selectedText.trimLeft();
+            }
+
+            editor.executeEdits("", [
+              {
+                range: new MonacoRange(
+                  selection.startLineNumber,
+                  1,
+                  selection.startLineNumber,
+                  length + 1
+                ),
+                text: selectedText,
+              },
+            ]);
+            editor.setPosition(
+              new MonacoPosition(selection.startLineNumber, length + 1 + 2)
+            );
+            editor.focus();
+          }}
+        >
+          <ListIcon height={16} />
+        </ToolBarButton>
+        <ToolBarButton title="Insert Image" onClick={onClickImageButton}>
+          <ImageIcon height={16} />
+        </ToolBarButton>
+      </TextToolBar>
+      <MonacoEditor
         value={value}
         onChange={onChange}
-        // @ts-ignore
-        minEditorHeight="100%"
-        disablePreview
+        language="markdown"
+        options={{ minimap: { enabled: false }, lineNumbers: "off" }}
+        ref={ref}
+        editorDidMount={(editor) => {
+          editor.onDidChangeCursorPosition((event) => {
+            const text = editor.getValue();
+            const model = editor.getModel();
+            if (!model) return;
+            const positionOffset = model.getOffsetAt(event.position);
+            const imageSelectionRange = getMarkdownImageSelectionRange(
+              positionOffset,
+              text
+            );
+
+            if (imageSelectionRange) {
+              const startPosition = model.getPositionAt(
+                imageSelectionRange.position.start
+              );
+              const endPosition = model.getPositionAt(
+                imageSelectionRange.position.end
+              );
+              editorStateRef.current.decorations = editor.deltaDecorations(
+                editorStateRef.current.decorations,
+                [
+                  {
+                    range: new MonacoRange(
+                      startPosition.lineNumber,
+                      startPosition.column,
+                      endPosition.lineNumber,
+                      endPosition.column
+                    ),
+                    options: { inlineClassName: ".active-image-component" },
+                  },
+                ]
+              );
+
+              setMenu({
+                type: "image",
+                data: {
+                  id: imageSelectionRange.id,
+                  textPosition: {
+                    ...imageSelectionRange.position,
+                  },
+                },
+              });
+            } else {
+              editorStateRef.current.decorations = editor.deltaDecorations(
+                editorStateRef.current.decorations,
+                []
+              );
+              setMenu(null);
+            }
+          });
+        }}
       />
       {uploadImageNode}
       {menu ? (
@@ -368,16 +511,26 @@ export const MarkdownEditor: React.FC<{
             <SelectLibrarayImageModal
               close={() => setShowMediaLibrary(false)}
               onSelect={(id) => {
-                if (!ref.current?.textAreaRef.value) return;
+                if (!ref.current?.editor) return;
+                const editor = ref.current.editor;
+                const model = editor.getModel();
+                if (!model) return;
+                const value = editor.getValue();
+
                 const newTag = `<Image id="${id}" />`;
                 const newValue = replaceRange(
-                  ref.current.textAreaRef.value,
+                  value,
                   menu.data.textPosition.start,
                   menu.data.textPosition.end,
                   newTag
                 );
 
-                onChange(newValue);
+                editor.setValue(newValue);
+                const position = model.getPositionAt(
+                  menu.data.textPosition.start
+                );
+                editor.setPosition(position);
+
                 setMenu({
                   type: "image",
                   data: {
@@ -388,7 +541,30 @@ export const MarkdownEditor: React.FC<{
                     },
                   },
                 });
+
+                const startPosition = model.getPositionAt(
+                  menu.data.textPosition.start
+                );
+                const endPosition = model.getPositionAt(
+                  menu.data.textPosition.start + newTag.length
+                );
+
+                editorStateRef.current.decorations = editor.deltaDecorations(
+                  editorStateRef.current.decorations,
+                  [
+                    {
+                      range: new MonacoRange(
+                        startPosition.lineNumber,
+                        startPosition.column,
+                        endPosition.lineNumber,
+                        endPosition.column
+                      ),
+                      options: { inlineClassName: ".active-image-component" },
+                    },
+                  ]
+                );
                 setShowMediaLibrary(false);
+                setTimeout(() => editor.focus());
               }}
             />
           ) : null}

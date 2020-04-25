@@ -1,0 +1,23 @@
+diff --git a/node_modules/react-scripts/config/webpack.config.js b/node_modules/react-scripts/config/webpack.config.js
+index 25840d9..066b9ba 100644
+--- a/node_modules/react-scripts/config/webpack.config.js
++++ b/node_modules/react-scripts/config/webpack.config.js
+@@ -36,6 +36,7 @@ const typescriptFormatter = require('react-dev-utils/typescriptFormatter');
+ const getCacheIdentifier = require('react-dev-utils/getCacheIdentifier');
+ // @remove-on-eject-end
+ const postcssNormalize = require('postcss-normalize');
++const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
+ 
+ const appPackageJson = require(paths.appPackageJson);
+ 
+@@ -648,6 +649,10 @@ module.exports = function(webpackEnv) {
+           };
+         },
+       }),
++      new MonacoWebpackPlugin({
++        // available options are documented at https://github.com/Microsoft/monaco-editor-webpack-plugin#options
++        languages: ['markdown']
++      }),
+       // Moment.js is an extremely popular library that bundles large locale files
+       // by default due to how webpack interprets its code. This is a practical
+       // solution that requires the user to opt into importing specific locales.

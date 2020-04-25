@@ -134,7 +134,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   </Modal.Footer>
                 </Modal.Aside>
                 <Modal.Content>
-                  <ContentRendered
+                  <ContentRenderer
                     state={state.noteEditor}
                     actions={actions.noteEditor}
                   />
@@ -170,6 +170,14 @@ const EmptyContainer = styled.div`
   width: 100%;
 `;
 
+const HeaderContainer = styled.div`
+  display: flex;
+  margin-left: 16px;
+  margin-right: 16px;
+  padding-top: 8px;
+  padding-bottom: 16px;
+`;
+
 const HtmlContainerWrapper = styled.div`
   padding-left: 16px;
   padding-right: 16px;
@@ -177,7 +185,7 @@ const HtmlContainerWrapper = styled.div`
   overflow-y: scroll;
 `;
 
-const ContentRendered: React.FC<{
+const ContentRenderer: React.FC<{
   state: ReturnType<typeof useOvermind>["state"]["noteEditor"];
   actions: ReturnType<typeof useOvermind>["actions"]["noteEditor"];
 }> = ({ state, actions }) => {
@@ -194,15 +202,7 @@ const ContentRendered: React.FC<{
 
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          paddingLeft: 16,
-          paddingRight: 16,
-          paddingTop: 8,
-          paddingBottom: 16,
-        }}
-      >
+      <HeaderContainer>
         {state.isEditMode ? (
           <>
             <Input
@@ -236,7 +236,7 @@ const ContentRendered: React.FC<{
             </div>
           </Header>
         )}
-      </div>
+      </HeaderContainer>
       {state.isEditMode ? (
         <>
           <MarkdownEditor
