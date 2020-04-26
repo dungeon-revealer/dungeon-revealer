@@ -185,11 +185,28 @@ const HtmlContainerWrapper = styled.div`
   overflow-y: scroll;
 `;
 
+const NoteEditorSideReference = styled.div`
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 0;
+  width: 300px;
+  background: white;
+  border-left: 1px solid lightgrey;
+  border-radius: 5px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+`;
+
+const EditorContainer = styled.div`
+  position: relative;
+  flex: 1;
+`;
+
 const ContentRenderer: React.FC<{
   state: ReturnType<typeof useOvermind>["state"]["noteEditor"];
   actions: ReturnType<typeof useOvermind>["actions"]["noteEditor"];
 }> = ({ state, actions }) => {
   useOvermind();
+  const sideBarRef = React.useRef<HTMLDivElement>(null);
 
   if (!state.activeNote) {
     return (
@@ -238,17 +255,20 @@ const ContentRenderer: React.FC<{
         )}
       </HeaderContainer>
       {state.isEditMode ? (
-        <>
+        <EditorContainer>
           <MarkdownEditor
             value={state.activeNote.content}
             onChange={actions.updateActiveNoteContent}
+            sideBarRef={sideBarRef}
           />
-        </>
+          <NoteEditorSideReference ref={sideBarRef} />
+        </EditorContainer>
       ) : (
         <HtmlContainerWrapper>
           <HtmlContainer markdown={state.activeNote.content} />
         </HtmlContainerWrapper>
       )}
+      <div ref={sideBarRef} />
     </>
   );
 };

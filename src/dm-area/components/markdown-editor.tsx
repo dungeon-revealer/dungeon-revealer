@@ -1,4 +1,5 @@
 import React from "react";
+import * as ReactDom from "react-dom";
 import styled from "@emotion/styled/macro";
 import {
   Range as MonacoRange,
@@ -13,7 +14,13 @@ import { useOvermind } from "../../hooks/use-overmind";
 import { SelectLibrarayImageModal } from "./select-library-image-modal";
 
 import { transparentize } from "polished";
-import { BoldIcon, ItalicIcon, ImageIcon, ListIcon } from "../../feather-icons";
+import {
+  BoldIcon,
+  ItalicIcon,
+  ImageIcon,
+  ListIcon,
+  Link,
+} from "../../feather-icons";
 
 const useImageCommand: (opts: {
   uploadFile: (file: File) => Promise<string | null>;
@@ -237,13 +244,7 @@ const replaceRange = (
 };
 
 const SideMenu = styled.div`
-  position: absolute;
-  padding: 12px;
-  left: calc(100% + 12px);
-  width: 300px;
-  background: white;
-  border-left: 1px solid lightgrey;
-  border-radius: 5px;
+  padding: 16px;
 `;
 
 const SideMenuTitle = styled.div`
@@ -276,7 +277,8 @@ const ToolBarButton = styled.button`
 export const MarkdownEditor: React.FC<{
   value: string;
   onChange: (input: string) => void;
-}> = ({ value, onChange }) => {
+  sideBarRef: React.RefObject<HTMLElement>;
+}> = ({ value, onChange, sideBarRef }) => {
   const uploadTaskRef = React.useRef<ISendRequestTask | null>(null);
   const { state } = useOvermind();
 
@@ -505,76 +507,84 @@ export const MarkdownEditor: React.FC<{
         }}
       />
       {uploadImageNode}
-      {menu ? (
-        <SideMenu>
-          <SideMenuTitle>Linked Image</SideMenuTitle>
-          <SideMenuImage src={buildApiUrl(`/images/${menu.data.id}`)} />
-          <Button.Primary small onClick={() => setShowMediaLibrary(true)}>
-            Change
-          </Button.Primary>
-          {showMediaLibrary ? (
-            <SelectLibrarayImageModal
-              close={() => setShowMediaLibrary(false)}
-              onSelect={(id) => {
-                if (!ref.current?.editor) return;
-                const editor = ref.current.editor;
-                const model = editor.getModel();
-                if (!model) return;
-                const value = editor.getValue();
+      {menu && sideBarRef.current
+        ? ReactDom.createPortal(
+            <SideMenu>
+              <SideMenuTitle>
+                <Link height={16} style={{ marginBottom: "-2px" }} /> Linked
+                Image
+              </SideMenuTitle>
+              <SideMenuImage src={buildApiUrl(`/images/${menu.data.id}`)} />
+              <Button.Primary small onClick={() => setShowMediaLibrary(true)}>
+                Change
+              </Button.Primary>
+              {showMediaLibrary ? (
+                <SelectLibrarayImageModal
+                  close={() => setShowMediaLibrary(false)}
+                  onSelect={(id) => {
+                    if (!ref.current?.editor) return;
+                    const editor = ref.current.editor;
+                    const model = editor.getModel();
+                    if (!model) return;
+                    const value = editor.getValue();
 
-                const newTag = `<Image id="${id}" />`;
-                const newValue = replaceRange(
-                  value,
-                  menu.data.textPosition.start,
-                  menu.data.textPosition.end,
-                  newTag
-                );
+                    const newTag = `<Image id="${id}" />`;
+                    const newValue = replaceRange(
+                      value,
+                      menu.data.textPosition.start,
+                      menu.data.textPosition.end,
+                      newTag
+                    );
 
-                editor.setValue(newValue);
-                const position = model.getPositionAt(
-                  menu.data.textPosition.start
-                );
-                editor.setPosition(position);
+                    editor.setValue(newValue);
+                    const position = model.getPositionAt(
+                      menu.data.textPosition.start
+                    );
+                    editor.setPosition(position);
 
-                setMenu({
-                  type: "image",
-                  data: {
-                    id,
-                    textPosition: {
-                      start: menu.data.textPosition.start,
-                      end: menu.data.textPosition.start + newTag.length,
-                    },
-                  },
-                });
+                    setMenu({
+                      type: "image",
+                      data: {
+                        id,
+                        textPosition: {
+                          start: menu.data.textPosition.start,
+                          end: menu.data.textPosition.start + newTag.length,
+                        },
+                      },
+                    });
 
-                const startPosition = model.getPositionAt(
-                  menu.data.textPosition.start
-                );
-                const endPosition = model.getPositionAt(
-                  menu.data.textPosition.start + newTag.length
-                );
+                    const startPosition = model.getPositionAt(
+                      menu.data.textPosition.start
+                    );
+                    const endPosition = model.getPositionAt(
+                      menu.data.textPosition.start + newTag.length
+                    );
 
-                editorStateRef.current.decorations = editor.deltaDecorations(
-                  editorStateRef.current.decorations,
-                  [
-                    {
-                      range: new MonacoRange(
-                        startPosition.lineNumber,
-                        startPosition.column,
-                        endPosition.lineNumber,
-                        endPosition.column
-                      ),
-                      options: { inlineClassName: ".active-image-component" },
-                    },
-                  ]
-                );
-                setShowMediaLibrary(false);
-                setTimeout(() => editor.focus());
-              }}
-            />
-          ) : null}
-        </SideMenu>
-      ) : null}
+                    editorStateRef.current.decorations = editor.deltaDecorations(
+                      editorStateRef.current.decorations,
+                      [
+                        {
+                          range: new MonacoRange(
+                            startPosition.lineNumber,
+                            startPosition.column,
+                            endPosition.lineNumber,
+                            endPosition.column
+                          ),
+                          options: {
+                            inlineClassName: ".active-image-component",
+                          },
+                        },
+                      ]
+                    );
+                    setShowMediaLibrary(false);
+                    setTimeout(() => editor.focus());
+                  }}
+                />
+              ) : null}
+            </SideMenu>,
+            sideBarRef.current
+          )
+        : null}
     </Container>
   );
 };

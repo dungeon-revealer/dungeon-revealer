@@ -78,6 +78,16 @@ const HtmlRendererContainer = styled.div`
   padding-right: 16px;
 `;
 
+const NoteEditorSideReference = styled.div`
+  position: absolute;
+  right: calc(100% + 12px);
+  width: 300px;
+  background: white;
+  border-left: 1px solid lightgrey;
+  border-radius: 5px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+`;
+
 const NoteReference: React.FC<{
   close: () => void;
   isEditMode: boolean;
@@ -96,6 +106,7 @@ const NoteReference: React.FC<{
   updateNoteContent,
 }) => {
   useOvermind();
+  const sideBarRef = React.useRef<HTMLDivElement>(null);
 
   return (
     <Container>
@@ -163,9 +174,16 @@ const NoteReference: React.FC<{
           )}
         </div>
         {isEditMode ? (
-          <EditorContainer>
-            <MarkdownEditor value={note.content} onChange={updateNoteContent} />
-          </EditorContainer>
+          <>
+            <EditorContainer>
+              <MarkdownEditor
+                value={note.content}
+                onChange={updateNoteContent}
+                sideBarRef={sideBarRef}
+              />
+            </EditorContainer>
+            <NoteEditorSideReference ref={sideBarRef} />
+          </>
         ) : (
           <HtmlRendererContainer>
             <HtmlContainer markdown={note.content} />
