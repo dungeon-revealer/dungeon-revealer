@@ -11,7 +11,7 @@ import * as Button from "../../button";
 import { sendRequest, ISendRequestTask } from "../../http-request";
 import { buildApiUrl } from "../../public-url";
 import { useOvermind } from "../../hooks/use-overmind";
-import { SelectLibrarayImageModal } from "./select-library-image-modal";
+import { SelectLibraryImageModal } from "./select-library-image-modal";
 
 import { transparentize } from "polished";
 import {
@@ -519,7 +519,7 @@ export const MarkdownEditor: React.FC<{
                 Change
               </Button.Primary>
               {showMediaLibrary ? (
-                <SelectLibrarayImageModal
+                <SelectLibraryImageModal
                   close={() => setShowMediaLibrary(false)}
                   onSelect={(id) => {
                     if (!ref.current?.editor) return;
