@@ -61,13 +61,12 @@ module.exports = ({ roleMiddleware, fileStorage }) => {
   });
 
   router.get("/images", (req, res) => {
-    const rawOffset = req.params.offset || null;
-    let offset = rawOffset ? parseInt(rawOffset, 10) : null;
+    let offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
     if (Number.isNaN(offset)) {
       offset = 0;
     }
 
-    fileStorage.list(0).then((list) => {
+    fileStorage.list(offset).then((list) => {
       res.json({
         error: null,
         data: {

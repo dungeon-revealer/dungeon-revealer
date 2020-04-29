@@ -45,7 +45,7 @@ const createDatabaseInterface = (db) => {
         "created_at"
       FROM "file_uploads"
       ORDER BY "created_at" DESC
-      LIMIT 10 OFFSET ?
+      LIMIT 20 OFFSET ?
       ;
     `)
   );
@@ -117,7 +117,7 @@ class FileStorage {
   }
 
   async list(offset) {
-    const records = await this._db.selectManyOffset(offset);
+    const records = await this._db.selectManyOffset({ offset });
     return records;
   }
 
