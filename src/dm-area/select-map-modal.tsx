@@ -427,22 +427,26 @@ const CreateNewMapModal: React.FC<{
         <Modal.Footer>
           <Modal.Actions>
             <Modal.ActionGroup>
-              <Button.Tertiary onClick={closeModal} type="button">
-                Abort
-              </Button.Tertiary>
-              <Button.Primary
-                type="submit"
-                onClick={() => {
-                  if (inputValue.trim().length === 0) {
-                    setError("Please enter a map name.");
-                    return;
-                  }
-                  createMap(inputValue);
-                  closeModal();
-                }}
-              >
-                Create Map
-              </Button.Primary>
+              <div>
+                <Button.Tertiary onClick={closeModal} type="button">
+                  Abort
+                </Button.Tertiary>
+              </div>
+              <div>
+                <Button.Primary
+                  type="submit"
+                  onClick={() => {
+                    if (inputValue.trim().length === 0) {
+                      setError("Please enter a map name.");
+                      return;
+                    }
+                    createMap(inputValue);
+                    closeModal();
+                  }}
+                >
+                  Create Map
+                </Button.Primary>
+              </div>
             </Modal.ActionGroup>
           </Modal.Actions>
         </Modal.Footer>
@@ -491,10 +495,14 @@ const ChangeMapTitleModal: React.FC<{
         <Modal.Footer>
           <Modal.Actions>
             <Modal.ActionGroup>
-              <Button.Tertiary type="button" onClick={closeModal}>
-                Abort
-              </Button.Tertiary>
-              <Button.Primary type="submit">Change Map Title</Button.Primary>
+              <div>
+                <Button.Tertiary type="button" onClick={closeModal}>
+                  Abort
+                </Button.Tertiary>
+              </div>
+              <div>
+                <Button.Primary type="submit">Change Map Title</Button.Primary>
+              </div>
             </Modal.ActionGroup>
           </Modal.Actions>
         </Modal.Footer>
@@ -517,18 +525,22 @@ const DeleteMapModal: React.FC<{
         <Modal.Footer>
           <Modal.Actions>
             <Modal.ActionGroup>
-              <Button.Tertiary type="submit" onClick={closeModal}>
-                Abort
-              </Button.Tertiary>
-              <Button.Primary
-                type="button"
-                onClick={() => {
-                  deleteMap();
-                  closeModal();
-                }}
-              >
-                Delete
-              </Button.Primary>
+              <div>
+                <Button.Tertiary type="submit" onClick={closeModal}>
+                  Abort
+                </Button.Tertiary>
+              </div>
+              <div>
+                <Button.Primary
+                  type="button"
+                  onClick={() => {
+                    deleteMap();
+                    closeModal();
+                  }}
+                >
+                  Delete
+                </Button.Primary>
+              </div>
             </Modal.ActionGroup>
           </Modal.Actions>
         </Modal.Footer>

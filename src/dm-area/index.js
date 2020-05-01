@@ -14,11 +14,12 @@ import { Modal } from "../modal";
 import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
 import { NoteEditor } from "./note-editor";
+import { MediaLibrary } from "./media-library";
 import { SetMapGrid } from "./set-map-grid";
 import { useSocket } from "../socket";
 import { buildApiUrl } from "../public-url";
 import { useStaticRef } from "../hooks/use-static-ref";
-import { MarkdownActionsProvider } from "../hooks/use-markdown-actions";
+import { ShareImageActionProvider } from "../hooks/use-share-image-action";
 import { AuthenticationScreen } from "../authentication-screen";
 import { SplashScreen } from "../splash-screen";
 import { FetchContext } from "./fetch-context";
@@ -343,7 +344,7 @@ export const DmArea = () => {
       <ToastProvider placement="bottom-right">
         <Modal.Provider>
           <FetchContext.Provider value={localFetch}>
-            <MarkdownActionsProvider socket={socket}>
+            <ShareImageActionProvider socket={socket}>
               {mode.title === "SHOW_MAP_LIBRARY" ? (
                 <SelectMapModal
                   canClose={loadedMap !== null}
@@ -374,6 +375,13 @@ export const DmArea = () => {
                   state={rootState.noteEditor}
                 />
               ) : null}
+              {mode.title === "MEDIA_LIBRARY" ? (
+                <MediaLibrary
+                  onClose={() => {
+                    setMode({ title: "EDIT_MAP" });
+                  }}
+                />
+              ) : null}
               {setMapGridTargetMap ? (
                 <SetMapGrid
                   map={setMapGridTargetMap}
@@ -402,6 +410,9 @@ export const DmArea = () => {
                   openNotes={() => {
                     setMode({ title: "SHOW_NOTES" });
                   }}
+                  openMediaLibrary={() => {
+                    setMode({ title: "MEDIA_LIBRARY" });
+                  }}
                   enterGridMode={enterGridMode}
                   updateMap={updateMap}
                   deleteToken={deleteToken}
@@ -409,7 +420,7 @@ export const DmArea = () => {
                   tokenInfoAsidetokenInfoAsideState={rootState.tokenInfoAside}
                 />
               ) : null}
-            </MarkdownActionsProvider>
+            </ShareImageActionProvider>
           </FetchContext.Provider>
         </Modal.Provider>
       </ToastProvider>

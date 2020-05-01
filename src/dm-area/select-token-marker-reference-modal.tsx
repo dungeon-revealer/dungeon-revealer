@@ -11,6 +11,10 @@ import * as u from "./overmind/util";
 const OrSeperator = styled.span`
   padding-left: 18px;
   font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
 `;
 
 export const SelectTokenMarkerReferenceModal: React.FC<{
@@ -129,18 +133,24 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
         <Modal.Footer>
           <Modal.Actions>
             <Modal.ActionGroup>
-              <Button.Tertiary
-                onClick={actions.selectTokenMarkerReferenceModal.close}
-              >
-                Abort
-              </Button.Tertiary>
-              <Button.Primary tabIndex={1} onClick={attachNewNote}>
-                Create new Note
-              </Button.Primary>
+              <div>
+                <Button.Tertiary
+                  onClick={actions.selectTokenMarkerReferenceModal.close}
+                >
+                  Abort
+                </Button.Tertiary>
+              </div>
+              <div>
+                <Button.Primary tabIndex={1} onClick={attachNewNote}>
+                  Create new Note
+                </Button.Primary>
+              </div>
               <OrSeperator>or</OrSeperator>
-              <Button.Primary tabIndex={1} onClick={attachExistingNote}>
-                Link Note
-              </Button.Primary>
+              <div>
+                <Button.Primary tabIndex={1} onClick={attachExistingNote}>
+                  Link Note
+                </Button.Primary>
+              </div>
             </Modal.ActionGroup>
           </Modal.Actions>
         </Modal.Footer>

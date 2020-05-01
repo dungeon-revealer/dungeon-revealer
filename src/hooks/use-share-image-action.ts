@@ -1,13 +1,14 @@
-import React from "react";
+import * as React from "react";
 import { useToasts } from "react-toast-notifications";
 
-const MarkdownContext = React.createContext({
-  shareImage: (url: string) => {},
-});
+type ShareImageFunction = (id: string) => void;
+const ShareImageContext = React.createContext<ShareImageFunction>(
+  () => undefined
+);
 
-export const useMarkdownActions = () => React.useContext(MarkdownContext);
+export const useShareImageAction = () => React.useContext(ShareImageContext);
 
-export const MarkdownActionsProvider: React.FC<{
+export const ShareImageActionProvider: React.FC<{
   socket: SocketIOClient.Socket;
 }> = ({ children, socket }) => {
   const { addToast } = useToasts();
@@ -21,10 +22,9 @@ export const MarkdownActionsProvider: React.FC<{
     },
     [socket]
   );
-  return React.createElement(MarkdownContext.Provider, {
+
+  return React.createElement(ShareImageContext.Provider, {
     children,
-    value: {
-      shareImage,
-    },
+    value: shareImage,
   });
 };

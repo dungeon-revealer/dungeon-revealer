@@ -1,11 +1,14 @@
 import * as React from "react";
+import useAsyncEffect from "@n1ru4l/use-async-effect";
 import styled from "@emotion/styled/macro";
+import { darken } from "polished";
 import * as Icons from "../../feather-icons";
 import * as Button from "../../button";
 import { Modal } from "../../modal";
 import { buildApiUrl } from "../../public-url";
-import { sendRequest } from "../../http-request";
-import { darken } from "polished";
+import { sendRequest, ISendRequestTask } from "../../http-request";
+import { useGetIsMounted } from "../../hooks/use-get-is-mounted";
+import { useInvokeOnScrollEnd } from "../../hooks/use-invoke-on-scroll-end";
 
 const Content = styled.div`
   width: 90vw;
@@ -41,18 +44,6 @@ const ListItemImage = styled.img`
 const ListItemTitle = styled.div`
   padding-top: 8px;
 `;
-
-const useInvokeOnScrollEnd = (action: () => void) => {
-  return React.useCallback(
-    ({ currentTarget }: React.UIEvent<HTMLElement>) => {
-      const hasReachedBottom =
-        currentTarget.scrollHeight - currentTarget.scrollTop ===
-        currentTarget.clientHeight;
-      if (hasReachedBottom) action();
-    },
-    [action]
-  );
-};
 
 type MediaLibraryItem = {
   id: string;
@@ -132,45 +123,48 @@ export const SelectLibraryImageModal: React.FC<{
   onSelect: (mediaId: string) => void;
 }> = ({ close, onSelect }) => {
   const [state, dispatch] = React.useReducer(stateReducer, initialState);
+  const getIsMounted = useGetIsMounted();
 
   const selectedFile = React.useMemo(() => {
     if (state.mode === "LOADING") return null;
     return state.items.find((item) => item.id === state.selectedFileId) || null;
   }, [state]);
 
-  React.useEffect(() => {
+  useAsyncEffect(function* (onCancel, cast) {
     const task = sendRequest({
       method: "GET",
       headers: {},
       url: buildApiUrl("/images"),
     });
-
-    task.done.then((result) => {
-      if (result.type === "abort") return;
-      if (result.type === "success") {
-        const jsonResponse = JSON.parse(result.data);
-        dispatch({
-          type: "LOAD_INITIAL_RESULT",
-          data: {
-            items: jsonResponse.data.list,
-          },
-        });
-      }
-    });
-
-    return task.abort;
+    onCancel(task.abort);
+    const result = yield* cast(task.done);
+    if (result.type === "success") {
+      const jsonResponse = JSON.parse(result.data);
+      dispatch({
+        type: "LOAD_INITIAL_RESULT",
+        data: {
+          items: jsonResponse.data.list,
+        },
+      });
+    }
   }, []);
+
+  const fetchMoreTask = React.useRef<ISendRequestTask | null>(null);
+  React.useEffect(() => fetchMoreTask?.current?.abort, []);
 
   const fetchMore = React.useCallback(() => {
     if (state.mode !== "LOADED") return;
+    fetchMoreTask.current?.abort();
+
     const task = sendRequest({
       method: "GET",
       headers: {},
       url: buildApiUrl(`/images?offset=${state.items.length}`),
     });
+    fetchMoreTask.current = task;
 
     task.done.then((result) => {
-      if (result.type === "abort") return;
+      if (getIsMounted() === false) return;
       if (result.type === "success") {
         const jsonResponse = JSON.parse(result.data);
         dispatch({
@@ -196,7 +190,7 @@ export const SelectLibraryImageModal: React.FC<{
       <Content onClick={(ev) => ev.stopPropagation()} tabIndex={1}>
         <Modal.Header>
           <Modal.Heading2>
-            <Icons.MapIcon
+            <Icons.ImageIcon
               width={28}
               height={28}
               style={{ marginBottom: -2, marginRight: 16 }}
@@ -231,14 +225,18 @@ export const SelectLibraryImageModal: React.FC<{
         <Modal.Footer>
           <Modal.Actions>
             <Modal.ActionGroup>
-              <Button.Tertiary onClick={close}>Abort</Button.Tertiary>
-              <Button.Primary
-                disabled={selectedFile === null}
-                tabIndex={1}
-                onClick={() => selectedFile && onSelect(selectedFile.id)}
-              >
-                Select Image
-              </Button.Primary>
+              <div>
+                <Button.Tertiary onClick={close}>Abort</Button.Tertiary>
+              </div>
+              <div>
+                <Button.Primary
+                  disabled={selectedFile === null}
+                  tabIndex={1}
+                  onClick={() => selectedFile && onSelect(selectedFile.id)}
+                >
+                  Select Image
+                </Button.Primary>
+              </div>
             </Modal.ActionGroup>
           </Modal.Actions>
         </Modal.Footer>

@@ -410,6 +410,7 @@ export const DmMap = ({
   hideMap,
   showMapModal,
   openNotes,
+  openMediaLibrary,
   enterGridMode,
   updateMap,
   deleteToken,
@@ -1260,6 +1261,16 @@ export const DmMap = ({
               >
                 <Icons.MapIcon />
                 <Icons.Label>Map Library</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
+            <Toolbar.Item isEnabled>
+              <Toolbar.Button
+                onClick={() => {
+                  openMediaLibrary();
+                }}
+              >
+                <Icons.ImageIcon />
+                <Icons.Label>Media Library</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item isEnabled>

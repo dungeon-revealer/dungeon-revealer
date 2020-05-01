@@ -284,13 +284,22 @@ const Content = styled.div`
 const Actions = styled.div`
   display: flex;
   justify-content: flex-end;
+  width: 100%;
 `;
 
-const ActionGroup = styled.div`
-  margin-left: 20px;
-  > button {
+const ActionGroup = styled.div<{ left?: boolean }>`
+  margin-left: ${(p) => (p.left ? "0" : "20px")};
+  margin-right: ${(p) => (p.left ? "auto" : "null")};
+
+  > * {
     margin-left: 18px;
   }
+
+  > *:first-of-type {
+    margin-left: 0;
+  }
+
+  display: flex;
 `;
 
 export const Modal = Object.assign(ModalPortal, {

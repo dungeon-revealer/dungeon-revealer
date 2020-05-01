@@ -16,18 +16,22 @@ export const DeleteNoteConfirmationDialogModal: React.FC<{
         <Modal.Footer>
           <Modal.Actions>
             <Modal.ActionGroup>
-              <Button.Tertiary type="submit" onClick={close}>
-                Abort
-              </Button.Tertiary>
-              <Button.Primary
-                type="button"
-                onClick={() => {
-                  close();
-                  confirm();
-                }}
-              >
-                Delete
-              </Button.Primary>
+              <div>
+                <Button.Tertiary type="submit" onClick={close}>
+                  Abort
+                </Button.Tertiary>
+              </div>{" "}
+              <div>
+                <Button.Primary
+                  type="button"
+                  onClick={() => {
+                    close();
+                    confirm();
+                  }}
+                >
+                  Delete
+                </Button.Primary>
+              </div>
             </Modal.ActionGroup>
           </Modal.Actions>
         </Modal.Footer>
