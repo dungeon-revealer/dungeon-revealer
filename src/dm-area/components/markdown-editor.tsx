@@ -4,6 +4,7 @@ import styled from "@emotion/styled/macro";
 import {
   Range as MonacoRange,
   Position as MonacoPosition,
+  editor,
 } from "monaco-editor";
 import { parseDOM } from "htmlparser2";
 import MonacoEditor from "react-monaco-editor";
@@ -22,6 +23,29 @@ import {
   Link,
 } from "../../feather-icons";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
+
+const insertImageIntoEditor = (
+  editor: editor.IStandaloneCodeEditor,
+  id: string
+) => {
+  const model = editor.getModel();
+  const selection = editor.getSelection();
+  if (!model || !editor || !selection) return;
+
+  const placeholderTemplate = `<Image id="${id}" />`;
+
+  editor.executeEdits("", [
+    {
+      range: new MonacoRange(
+        selection.startLineNumber,
+        selection.startColumn,
+        selection.endLineNumber,
+        selection.endColumn
+      ),
+      text: placeholderTemplate,
+    },
+  ]);
+};
 
 const useImageCommand: (opts: {
   uploadFile: (file: File) => Promise<string | null>;
@@ -242,6 +266,46 @@ const ToolBarButton = styled.button`
   display: flex;
 `;
 
+const ToolBarButtonDropDown = styled.div`
+  display: inline-block;
+  position: relative;
+
+  &:hover [data-menu] {
+    display: block;
+  }
+`;
+
+const DropDownMenu = styled.div`
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  height: 50px;
+  z-index: 1;
+  padding: 0;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  height: auto;
+`;
+
+const DropDownMenuInner = styled.div`
+  background-color: #fff;
+  min-width: 140px;
+`;
+
+const DropDownMenuItem = styled.button`
+  background-color: none;
+  border: none;
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  &:hover {
+    background-color: #e6e6e6;
+  }
+`;
+
 export const MarkdownEditor: React.FC<{
   value: string;
   onChange: (input: string) => void;
@@ -294,7 +358,17 @@ export const MarkdownEditor: React.FC<{
       };
     };
   } | null>(null);
+
+  // TODO: Ideally we only have one showMediaLibrary state that is more complex
+
+  // media library for changing the selection of an existing Image component
   const [showMediaLibrary, setShowMediaLibrary] = React.useState(false);
+
+  // media library for inserting a new Image component
+  const [showMediaLibrary2, setShowMediaLibrary2] = React.useState(false);
+  const selectImageFromLibrary = React.useCallback(() => {
+    setShowMediaLibrary2(true);
+  }, []);
 
   return (
     <Container>
@@ -414,9 +488,21 @@ export const MarkdownEditor: React.FC<{
         >
           <ListIcon height={16} />
         </ToolBarButton>
-        <ToolBarButton title="Insert Image" onClick={onClickImageButton}>
-          <ImageIcon height={16} />
-        </ToolBarButton>
+        <ToolBarButtonDropDown>
+          <ToolBarButton title="Insert Image" onClick={onClickImageButton}>
+            <ImageIcon height={16} />
+          </ToolBarButton>
+          <DropDownMenu data-menu>
+            <DropDownMenuInner>
+              <DropDownMenuItem onClick={onClickImageButton}>
+                Upload
+              </DropDownMenuItem>
+              <DropDownMenuItem onClick={selectImageFromLibrary}>
+                Select from Library
+              </DropDownMenuItem>
+            </DropDownMenuInner>
+          </DropDownMenu>
+        </ToolBarButtonDropDown>
       </TextToolBar>
       <MonacoEditor
         value={value}
@@ -555,6 +641,18 @@ export const MarkdownEditor: React.FC<{
             sideBarRef.current
           )
         : null}
+      {showMediaLibrary2 ? (
+        <SelectLibraryImageModal
+          close={() => setShowMediaLibrary2(false)}
+          onSelect={(id) => {
+            const editor = ref.current?.editor;
+            if (!editor) return;
+            setShowMediaLibrary2(false);
+            insertImageIntoEditor(editor, id);
+            setTimeout(() => editor.focus());
+          }}
+        />
+      ) : null}
     </Container>
   );
 };
