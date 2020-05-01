@@ -25,11 +25,18 @@ const Heading = styled.h3`
   margin-right: 16px;
 `;
 
-export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const NoteEditor: React.FC<{ onClose: () => void }> = ({
+  onClose: _onClose,
+}) => {
   const { state, actions } = useOvermind();
   useEffect(() => {
     actions.noteEditor.loadNotes();
   }, [actions]);
+
+  const onClose = React.useCallback(() => {
+    actions.noteEditor.exitEditMode();
+    _onClose();
+  }, [_onClose]);
 
   if (state.noteEditor.isLoading) return null;
 
