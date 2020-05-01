@@ -105,22 +105,6 @@ const useImageCommand: (opts: {
             },
           ]);
         }
-
-        // replace placeholder string
-        // const range = selectString({
-        //   text: model.getValue(),
-        //   needle: placeholderTemplate,
-        // });
-
-        // api.setSelectionRange({
-        //   start: range.start,
-        //   end: range.end,
-        // });
-
-        // api.replaceSelection(content);
-
-        // switch back to previous selection.
-        // api.setSelectionRange(state.selection);
       });
     };
 
@@ -292,7 +276,9 @@ export const MarkdownEditor: React.FC<{
       method: "POST",
       body: formData,
       headers: {
-        authorization: state.sessionStore.accessToken,
+        Authorization: state.sessionStore.accessToken
+          ? `Bearer ${state.sessionStore.accessToken}`
+          : null,
       },
     }));
 
