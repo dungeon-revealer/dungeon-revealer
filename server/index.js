@@ -22,8 +22,8 @@ const getListeningAddresses = () => {
   }
 };
 
-bootstrapServer().then((app) => {
-  const server = app.http.listen(env.PORT, env.HOST, () => {
+bootstrapServer().then(({ httpServer }) => {
+  const server = httpServer.listen(env.PORT, env.HOST, () => {
     console.log(`\nStarting dungeon-revealer.
 
 Configuration:
@@ -47,14 +47,26 @@ DM Section: ${addresses[0]}/dm`);
     console.log(`\n-------------------\n`);
   });
 
+  const connections = new Set();
+  server.on("connection", (connection) => {
+    connections.add(connection);
+    connection.on("close", () => {
+      connections.delete(connection);
+    });
+  });
+
   const shutdownHandler = once(() => {
     console.log("Shutting down");
-    server.close((err) => {
+    httpServer.close((err) => {
       if (err) {
         console.error(err);
         process.exitCode = 1;
       }
     });
+
+    for (const connection of connections) {
+      connection.destroy();
+    }
   });
 
   process.on("SIGINT", shutdownHandler);
