@@ -5,7 +5,7 @@ const path = require("path");
 const favicon = require("serve-favicon");
 const logger = require("morgan");
 const bodyParser = require("body-parser");
-const createUniqueId = require("uuid/v4");
+const { v4: uuid } = require("uuid");
 const fs = require("fs-extra");
 const http = require("http");
 const createSocketIOServer = require("socket.io");
@@ -269,7 +269,7 @@ const bootstrapServer = async () => {
       socket.on("mark area", (data) => {
         Array.from(authenticatedSockets).forEach((socket) => {
           socket.emit("mark area", {
-            id: createUniqueId(),
+            id: uuid(),
             ...data,
           });
         });

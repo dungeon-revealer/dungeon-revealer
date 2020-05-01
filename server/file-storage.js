@@ -3,7 +3,7 @@
 const once = require("lodash/once");
 const path = require("path");
 const fs = require("fs-extra");
-const uuid = require("uuid/v4");
+const { v4: uuid } = require("uuid");
 
 /**
  *

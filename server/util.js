@@ -3,7 +3,7 @@
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
-const uuid = require("uuid");
+const { v4: uuid } = require("uuid");
 const once = require("lodash/once");
 
 /**
@@ -22,7 +22,7 @@ const getDefaultDataDirectory = () => {
 const getTmpDirectory = once(() => fs.realpathSync(os.tmpdir()));
 
 const getTmpFile = (extension = "") =>
-  path.join(getTmpDirectory(), uuid.v4() + extension);
+  path.join(getTmpDirectory(), uuid() + extension);
 
 const parseFileExtension = (fileName) => {
   const parts = fileName.split(".");
