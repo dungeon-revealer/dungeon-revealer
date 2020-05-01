@@ -26,8 +26,8 @@ const bootstrapServer = async () => {
 
   const app = express();
   const apiRouter = express.Router();
-  app.http = http.createServer(app);
-  const io = createSocketIOServer(app.http, {
+  const httpServer = http.createServer(app);
+  const io = createSocketIOServer(httpServer, {
     path: "/api/socket.io",
   });
 
@@ -295,7 +295,7 @@ const bootstrapServer = async () => {
     });
   });
 
-  return app;
+  return { app, httpServer, io };
 };
 
 module.exports = { bootstrapServer };
