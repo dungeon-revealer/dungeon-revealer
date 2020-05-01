@@ -258,6 +258,7 @@ const SideMenuImage = styled.img`
   display: block;
   margin-left: auto;
   margin-right: auto;
+  margin-bottom: 12px;
 `;
 
 const TextToolBar = styled.div`
