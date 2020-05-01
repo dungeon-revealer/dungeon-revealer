@@ -118,12 +118,29 @@ const createDatabaseInterface = (db) => {
   const deleteRecordById = (id) =>
     getDeleteRecordByIdStatement().then((statement) => statement.get(id));
 
+  const getUpdateTitleWhereIdStatement = lazy(() =>
+    db.prepare(`
+      UPDATE "file_uploads"
+      SET
+        "title" = ?
+      WHERE
+        "id" = ?
+      ;
+    `)
+  );
+
+  const updateTitleWhereId = (id, title) =>
+    getUpdateTitleWhereIdStatement().then((statement) =>
+      statement.get(title, id)
+    );
+
   return {
     createFileUploadRecord,
     selectManyOffset,
     selectPath,
     selectRecordById,
     deleteRecordById,
+    updateTitleWhereId,
   };
 };
 
@@ -159,13 +176,21 @@ class FileStorage {
     return records;
   }
 
-  async get(id) {
+  async getById(id) {
     const record = await this._db.selectRecordById(id);
     return record;
   }
 
-  async delete(id) {
+  async deleteById(id) {
     await this._db.deleteRecordById(id);
+  }
+
+  async updateById(id, { title }) {
+    if (title !== undefined) {
+      await this._db.updateTitleWhereId(id, title);
+    }
+    const record = await this.getById(id);
+    return record;
   }
 
   async resolvePath(fileId) {

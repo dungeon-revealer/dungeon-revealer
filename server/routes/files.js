@@ -60,11 +60,27 @@ module.exports = ({ roleMiddleware, fileStorage }) => {
       .catch(handleUnexpectedError(res));
   });
 
-  router.delete("/images/:id", (req, res) => {
-    const id = req.params.id;
+  router.patch("/images/:id", (req, res) => {
+    const { id } = req.params;
 
     fileStorage
-      .delete(id)
+      .updateById(id, req.body)
+      .then((record) => {
+        res.json({
+          error: null,
+          data: {
+            image: record,
+          },
+        });
+      })
+      .catch(handleUnexpectedError(res));
+  });
+
+  router.delete("/images/:id", (req, res) => {
+    const { id } = req.params;
+
+    fileStorage
+      .deleteById(id)
       .then(() => {
         res.json({
           error: null,

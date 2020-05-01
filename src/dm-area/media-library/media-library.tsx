@@ -57,6 +57,12 @@ type MediaLibraryAction =
       data: {
         deletedItemId: string;
       };
+    }
+  | {
+      type: "UPDATE_ITEM_DONE";
+      data: {
+        item: MediaLibraryItem;
+      };
     };
 
 const stateReducer: React.Reducer<MediaLibraryState, MediaLibraryAction> = (
@@ -86,6 +92,15 @@ const stateReducer: React.Reducer<MediaLibraryState, MediaLibraryAction> = (
         ...state,
         mode: "LOADED",
         items: [...state.items, ...action.data.items],
+      };
+    }
+    case "UPDATE_ITEM_DONE": {
+      if (state.mode === "LOADING") return state;
+      return {
+        ...state,
+        items: state.items.map((item) =>
+          item.id === action.data.item.id ? action.data.item : item
+        ),
       };
     }
   }
@@ -169,6 +184,35 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
     });
   }, []);
 
+  const updateImageAction = React.useCallback(
+    (id: string, { title }: { title: string }) => {
+      const task = sendRequest({
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        url: buildApiUrl(`/images/${id}`),
+        body: JSON.stringify({
+          title,
+        }),
+      });
+
+      task.done.then((result) => {
+        if (getIsMounted() === false) return;
+        if (result.type === "success") {
+          const jsonResponse = JSON.parse(result.data);
+          dispatch({
+            type: "UPDATE_ITEM_DONE",
+            data: {
+              item: jsonResponse.data.image,
+            },
+          });
+        }
+      });
+    },
+    []
+  );
+
   const onScroll = useInvokeOnScrollEnd(
     React.useCallback(() => {
       if (state.mode === "LOADED") {
@@ -211,6 +255,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
                     item={item}
                     key={item.id}
                     deleteItem={() => deleteImageAction(item.id)}
+                    updateItem={(opts) => updateImageAction(item.id, opts)}
                   />
                 ))}
           </Grid>
@@ -220,10 +265,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
   );
 };
 
-const Item: React.FC<{ item: MediaLibraryItem; deleteItem: () => void }> = ({
-  item,
-  deleteItem,
-}) => {
+const Item: React.FC<{
+  item: MediaLibraryItem;
+  deleteItem: () => void;
+  updateItem: (opts: { title: string }) => void;
+}> = ({ item, deleteItem, updateItem }) => {
   const [showMenu, setShowMenu] = React.useState(false);
   const [showLightboxImage, setShowLightBoxImage] = React.useState(false);
   const [showEditModal, setShowEditModal] = React.useState(false);
@@ -279,7 +325,9 @@ const Item: React.FC<{ item: MediaLibraryItem; deleteItem: () => void }> = ({
           title={item.title}
           onClose={() => setShowEditModal(false)}
           onDelete={deleteItem}
-          onConfirm={() => {}}
+          onConfirm={({ title }) => {
+            updateItem({ title });
+          }}
         />
       ) : null}
     </ListItem>
@@ -336,6 +384,7 @@ const EditImageModal: React.FC<{
                 <Button.Primary
                   type="submit"
                   onClick={() => {
+                    onClose();
                     onConfirm({ title: inputValue });
                   }}
                 >

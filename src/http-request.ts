@@ -6,13 +6,17 @@ type ISendRequestOptions = {
 } & (
   | {
       method: "POST";
-      body: FormData;
+      body: FormData | string;
     }
   | {
       method: "GET";
     }
   | {
       method: "DELETE";
+    }
+  | {
+      method: "PATCH";
+      body: FormData | string;
     }
 );
 
@@ -72,7 +76,11 @@ export const sendRequest = (options: ISendRequestOptions): ISendRequestTask => {
     request.setRequestHeader(header, value);
   }
 
-  request.send(options.method === "POST" ? options.body : undefined);
+  request.send(
+    options.method === "POST" || options.method === "PATCH"
+      ? options.body
+      : undefined
+  );
 
   return {
     abort: () => request.abort(),
