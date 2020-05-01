@@ -54,9 +54,21 @@ const createResourceTaskProcessor = () => {
   };
 };
 
+const handleUnexpectedError = (response) => (thrownThing) => {
+  console.error(thrownThing);
+  response.status(500).send({
+    data: null,
+    error: {
+      message: "An unexpected error occured.",
+      code: "ERR_UNEXPECTED",
+    },
+  });
+};
+
 module.exports = {
   getDefaultDataDirectory,
   parseFileExtension,
   getTmpFile,
   createResourceTaskProcessor,
+  handleUnexpectedError,
 };

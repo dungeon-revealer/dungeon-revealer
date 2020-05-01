@@ -5,7 +5,7 @@ import { TokenMarker } from "./token-marker";
 import { Input } from "../input";
 import * as Button from "../button";
 import * as Icon from "../feather-icons";
-import { Modal } from "../dm-area/modal";
+import { Modal } from "../modal";
 import { ToggleSwitch } from "../toggle-switch";
 import { useOvermind } from "../hooks/use-overmind";
 
@@ -178,8 +178,8 @@ const TokenContextMenu = ({
           <div style={{ marginLeft: 8 }}>
             <ToggleSwitch
               checked={isVisibleForPlayers}
-              onChange={(ev) => {
-                updateToken({ isVisibleForPlayers: ev.target.checked });
+              onChange={(checked) => {
+                updateToken({ isVisibleForPlayers: checked });
               }}
             />
           </div>
@@ -415,10 +415,7 @@ export const DmTokenMarker = React.memo(
             backgroundStyles={{
               backgroundColor: "transparent",
             }}
-            onClickOutside={(ev) => {
-              ev.preventDefault();
-              ev.stopPropagation();
-
+            onClickOutside={() => {
               setContextMenuCoordinates(null);
             }}
             onPressEscape={() => setContextMenuCoordinates(null)}

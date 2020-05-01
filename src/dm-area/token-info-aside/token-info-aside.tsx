@@ -1,8 +1,6 @@
 import React from "react";
-import { Converter as HtmlConverter } from "showdown";
 import styled from "@emotion/styled/macro";
-import "react-mde/lib/styles/css/react-mde-all.css";
-import { MarkdownEditor } from "../note-editor/note-editor";
+import { MarkdownEditor } from "../components/markdown-editor";
 import * as Button from "../../button";
 import * as Icon from "../../feather-icons";
 import { Input } from "../../input";
@@ -63,6 +61,33 @@ export const TokenInfoAside: React.FC<{}> = () => {
   return null;
 };
 
+const EditorContainer = styled.div`
+  display: flex;
+  flex-direction: "column";
+  flex-grow: 1;
+  margin-left: -16px;
+  margin-right: -16px;
+`;
+
+const HtmlRendererContainer = styled.div`
+  overflow-y: scroll;
+  overflow-x: hidden;
+  margin-left: -16px;
+  margin-right: -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+`;
+
+const NoteEditorSideReference = styled.div`
+  position: absolute;
+  right: calc(100% + 12px);
+  width: 300px;
+  background: white;
+  border-left: 1px solid lightgrey;
+  border-radius: 5px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+`;
+
 const NoteReference: React.FC<{
   close: () => void;
   isEditMode: boolean;
@@ -81,6 +106,7 @@ const NoteReference: React.FC<{
   updateNoteContent,
 }) => {
   useOvermind();
+  const sideBarRef = React.useRef<HTMLDivElement>(null);
 
   return (
     <Container>
@@ -148,19 +174,20 @@ const NoteReference: React.FC<{
           )}
         </div>
         {isEditMode ? (
-          <div
-            style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}
-          >
-            <MarkdownEditor value={note.content} onChange={updateNoteContent} />
-          </div>
+          <>
+            <EditorContainer>
+              <MarkdownEditor
+                value={note.content}
+                onChange={updateNoteContent}
+                sideBarRef={sideBarRef}
+              />
+            </EditorContainer>
+            <NoteEditorSideReference ref={sideBarRef} />
+          </>
         ) : (
-          <div style={{ overflowY: "scroll", overflowX: "hidden" }}>
-            <HtmlContainer
-              dangerouslySetInnerHTML={{
-                __html: new HtmlConverter().makeHtml(note.content),
-              }}
-            />
-          </div>
+          <HtmlRendererContainer>
+            <HtmlContainer markdown={note.content} />
+          </HtmlRendererContainer>
         )}
       </Window>
     </Container>

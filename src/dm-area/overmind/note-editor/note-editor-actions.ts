@@ -29,9 +29,9 @@ export const updateActiveNoteTitle: AsyncAction<string> = async (
   { state, actions },
   title
 ) => {
-  if (!state.noteEditor.activeNoteId) return;
+  if (!state.noteEditor.activeNote) return;
   await actions.noteStore.updateNote({
-    noteId: state.noteEditor.activeNoteId,
+    noteId: state.noteEditor.activeNote.id,
     title,
   });
 };
@@ -40,9 +40,9 @@ export const updateActiveNoteContent: AsyncAction<string> = async (
   { state, actions },
   content
 ) => {
-  if (!state.noteEditor.activeNoteId) return;
+  if (!state.noteEditor.activeNote) return;
   await actions.noteStore.updateNote({
-    noteId: state.noteEditor.activeNoteId,
+    noteId: state.noteEditor.activeNote.id,
     content,
   });
 };
@@ -59,12 +59,16 @@ export const createNewNote: AsyncAction<{
 export const deleteActiveNote: AsyncAction = async ({ state, actions }) => {
   const { noteEditor } = state;
 
-  if (!noteEditor.activeNoteId) return;
+  if (!noteEditor.activeNote) return;
 
-  await actions.noteStore.deleteNote(noteEditor.activeNoteId);
+  await actions.noteStore.deleteNote(noteEditor.activeNote.id);
   noteEditor.activeNoteId = null;
 };
 
 export const toggleIsEditMode: Action = ({ state }) => {
   state.noteEditor.isEditMode = !state.noteEditor.isEditMode;
+};
+
+export const exitEditMode: Action = ({ state }) => {
+  state.noteEditor.isEditMode = false;
 };

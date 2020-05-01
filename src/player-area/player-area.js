@@ -1,21 +1,23 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import produce from "immer";
 import createPersistedState from "use-persisted-state";
-import { PanZoom } from "./pan-zoom";
+import { PanZoom } from "../pan-zoom";
 import Referentiel from "referentiel";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
-import { loadImage, getOptimalDimensions } from "./util";
-import { useLongPress } from "./hooks/use-long-press";
-import { ObjectLayer } from "./object-layer";
-import { Toolbar } from "./toolbar";
+import { loadImage, getOptimalDimensions } from "../util";
+import { useLongPress } from "../hooks/use-long-press";
+import { ObjectLayer } from "../object-layer";
+import { Toolbar } from "../toolbar";
 import styled from "@emotion/styled/macro";
-import * as Icons from "./feather-icons";
-import { useSocket } from "./socket";
-import { AreaMarkerRenderer } from "./object-layer/area-marker-renderer";
-import { TokenRenderer } from "./object-layer/token-renderer";
-import { SplashScreen } from "./splash-screen";
-import { AuthenticationScreen } from "./authentication-screen";
-import { buildApiUrl } from "./public-url";
+import * as Icons from "../feather-icons";
+import { useSocket } from "../socket";
+import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
+import { TokenRenderer } from "../object-layer/token-renderer";
+import { SplashScreen } from "../splash-screen";
+import { AuthenticationScreen } from "../authentication-screen";
+import { buildApiUrl } from "../public-url";
+import { Modal } from "../modal";
+import { ImageLightBoxModal } from "../image-lightbox-modal";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -69,6 +71,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
   const panZoomRef = useRef(null);
   const currentMapRef = useRef(null);
   const [currentMap, setCurrentMap] = useState(null);
+  const [sharedMediaId, setSharedMediaId] = useState(false);
 
   const mapId = currentMap ? currentMap.id : null;
   const socket = useSocket();
@@ -312,6 +315,10 @@ const PlayerMap = ({ fetch, pcPassword }) => {
         ]);
       });
 
+      socket.on("share image", ({ id }) => {
+        setSharedMediaId(id);
+      });
+
       socket.on("map update", onReceiveMap);
 
       const contextmenuListener = (ev) => {
@@ -341,7 +348,9 @@ const PlayerMap = ({ fetch, pcPassword }) => {
   );
 
   useEffect(() => {
+    if (!mapId) return;
     const eventName = `token:mapId:${mapId}`;
+
     socket.on(eventName, ({ type, data }) => {
       if (type === "add") {
         setCurrentMap(
@@ -510,6 +519,12 @@ const PlayerMap = ({ fetch, pcPassword }) => {
           <SplashScreen text="Ready." />
         </AbsoluteFullscreenContainer>
       )}
+      {sharedMediaId ? (
+        <ImageLightBoxModal
+          src={buildApiUrl(`/images/${sharedMediaId}`)}
+          close={() => setSharedMediaId(null)}
+        />
+      ) : null}
     </>
   );
 };
@@ -567,7 +582,11 @@ export const PlayerArea = () => {
     );
   }
   if (mode === "READY") {
-    return <PlayerMap fetch={localFetch} pcPassword={pcPassword} />;
+    return (
+      <Modal.Provider>
+        <PlayerMap fetch={localFetch} pcPassword={pcPassword} />
+      </Modal.Provider>
+    );
   }
 
   throw new Error("Invalid mode.");

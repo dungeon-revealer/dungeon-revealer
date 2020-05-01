@@ -7,6 +7,10 @@ const Switch = styled.div`
   width: 60px;
   height: 34px;
 
+  &:focus-within {
+    outline: -webkit-focus-ring-color auto 5px;
+  }
+
   > input {
     opacity: 0;
     width: 0;
@@ -52,10 +56,19 @@ const Slider = styled.div`
   }
 `;
 
-export const ToggleSwitch = (props) => {
+export const ToggleSwitch: React.FC<{
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}> = ({ checked, onChange }) => {
   return (
     <Switch>
-      <input type="checkbox" {...props} />
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(ev) => {
+          onChange(ev.target.checked);
+        }}
+      />
       <Slider />
     </Switch>
   );

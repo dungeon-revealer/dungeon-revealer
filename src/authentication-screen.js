@@ -4,7 +4,7 @@ import { Input } from "./input";
 import * as Button from "./button";
 import { BackgroundImageContainer } from "./background-image-container";
 import { BrandLogoText } from "./brand-logo-text";
-import { Modal, ModalDialogSize } from "./dm-area/modal";
+import { Modal, ModalDialogSize } from "./modal";
 
 const ButtonContainer = styled.div`
   margin-top: 16px;

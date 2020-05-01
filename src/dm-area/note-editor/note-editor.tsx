@@ -1,10 +1,8 @@
 import React, { useEffect } from "react";
-import { Converter as HtmlConverter } from "showdown";
-import ReactMde, { commands as ReactMdeCommands } from "react-mde";
 import { useOvermind } from "../../hooks/use-overmind";
 import styled from "@emotion/styled/macro";
 
-import { Modal } from "../modal";
+import { Modal } from "../../modal";
 import * as Button from "../../button";
 import * as Icons from "../../feather-icons";
 import * as ScrollableList from "../components/scrollable-list";
@@ -12,6 +10,7 @@ import { CreateNewNoteDialogModal } from "./create-new-note-dialog-modal";
 import { DeleteNoteConfirmationDialogModal } from "./delete-note-confirmation-dialog-modal";
 import { HtmlContainer } from "../components/html-container";
 import { Input } from "../../input";
+import { MarkdownEditor } from "../components/markdown-editor";
 
 const Header = styled.div`
   white-space: nowrap;
@@ -26,62 +25,18 @@ const Heading = styled.h3`
   margin-right: 16px;
 `;
 
-const ReactMdeStyled = styled(ReactMde)`
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  border: none;
-
-  .mde-textarea-wrapper {
-    height: 100%;
-  }
-  .mde-header + div {
-    height: 100%;
-  }
-
-  .grip {
-    display: none;
-  }
-
-  textarea {
-    outline: none;
-  }
-`;
-
-const MARKDOWN_EDITOR_COMMANDS = [
-  {
-    commands: [
-      ReactMdeCommands.boldCommand,
-      ReactMdeCommands.italicCommand,
-      ReactMdeCommands.strikeThroughCommand,
-      ReactMdeCommands.orderedListCommand,
-      ReactMdeCommands.unorderedListCommand,
-      ReactMdeCommands.quoteCommand,
-    ],
-  },
-];
-
-export const MarkdownEditor: React.FC<{
-  value: string;
-  onChange: (input: string) => void;
-}> = ({ value, onChange }) => {
-  return (
-    <ReactMdeStyled
-      commands={MARKDOWN_EDITOR_COMMANDS}
-      value={value}
-      onChange={onChange}
-      // @ts-ignore
-      minEditorHeight="100%"
-      disablePreview
-    />
-  );
-};
-
-export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const NoteEditor: React.FC<{ onClose: () => void }> = ({
+  onClose: _onClose,
+}) => {
   const { state, actions } = useOvermind();
   useEffect(() => {
     actions.noteEditor.loadNotes();
   }, [actions]);
+
+  const onClose = React.useCallback(() => {
+    actions.noteEditor.exitEditMode();
+    _onClose();
+  }, [_onClose]);
 
   if (state.noteEditor.isLoading) return null;
 
@@ -115,8 +70,9 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       <Modal onClickOutside={onClose} onPressEscape={onClose}>
         <Modal.Dialog
           onKeyDown={(ev) => {
-            ev.stopPropagation();
-            if (ev.key !== "Escape") return;
+            if (ev.key === "Escape" && state.noteEditor.isEditMode) {
+              ev.stopPropagation();
+            }
           }}
         >
           <Modal.Header>
@@ -185,7 +141,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   </Modal.Footer>
                 </Modal.Aside>
                 <Modal.Content>
-                  <ContentRendered
+                  <ContentRenderer
                     state={state.noteEditor}
                     actions={actions.noteEditor}
                   />
@@ -221,11 +177,43 @@ const EmptyContainer = styled.div`
   width: 100%;
 `;
 
-const ContentRendered: React.FC<{
+const HeaderContainer = styled.div`
+  display: flex;
+  margin-left: 16px;
+  margin-right: 16px;
+  padding-top: 8px;
+  padding-bottom: 16px;
+`;
+
+const HtmlContainerWrapper = styled.div`
+  padding-left: 16px;
+  padding-right: 16px;
+  flex-grow: 1;
+  overflow-y: scroll;
+`;
+
+const NoteEditorSideReference = styled.div`
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 0;
+  width: 300px;
+  background: white;
+  border-left: 1px solid lightgrey;
+  border-radius: 5px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+`;
+
+const EditorContainer = styled.div`
+  position: relative;
+  flex: 1;
+`;
+
+const ContentRenderer: React.FC<{
   state: ReturnType<typeof useOvermind>["state"]["noteEditor"];
   actions: ReturnType<typeof useOvermind>["actions"]["noteEditor"];
 }> = ({ state, actions }) => {
   useOvermind();
+  const sideBarRef = React.useRef<HTMLDivElement>(null);
 
   if (!state.activeNote) {
     return (
@@ -238,15 +226,7 @@ const ContentRendered: React.FC<{
 
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          paddingLeft: 16,
-          paddingRight: 16,
-          paddingTop: 8,
-          paddingBottom: 16,
-        }}
-      >
+      <HeaderContainer>
         {state.isEditMode ? (
           <>
             <Input
@@ -280,30 +260,22 @@ const ContentRendered: React.FC<{
             </div>
           </Header>
         )}
-      </div>
+      </HeaderContainer>
       {state.isEditMode ? (
-        <>
+        <EditorContainer>
           <MarkdownEditor
             value={state.activeNote.content}
             onChange={actions.updateActiveNoteContent}
+            sideBarRef={sideBarRef}
           />
-        </>
+          <NoteEditorSideReference ref={sideBarRef} />
+        </EditorContainer>
       ) : (
-        <div
-          style={{
-            paddingLeft: 16,
-            paddingRight: 16,
-            flexGrow: 1,
-            overflow: "scroll",
-          }}
-        >
-          <HtmlContainer
-            dangerouslySetInnerHTML={{
-              __html: new HtmlConverter().makeHtml(state.activeNote.content),
-            }}
-          />
-        </div>
+        <HtmlContainerWrapper>
+          <HtmlContainer markdown={state.activeNote.content} />
+        </HtmlContainerWrapper>
       )}
+      <div ref={sideBarRef} />
     </>
   );
 };

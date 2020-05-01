@@ -1,12 +1,24 @@
 type ISendRequestOptions = {
   url: string;
   headers: {
-    [headerName: string]: string;
+    [headerName: string]: string | null;
   };
-} & {
-  method: "POST";
-  body: FormData;
-};
+} & (
+  | {
+      method: "POST";
+      body: FormData | string;
+    }
+  | {
+      method: "GET";
+    }
+  | {
+      method: "DELETE";
+    }
+  | {
+      method: "PATCH";
+      body: FormData | string;
+    }
+);
 
 type IResult =
   | {
@@ -17,10 +29,10 @@ type IResult =
     }
   | {
       type: "success";
-      data: unknown;
+      data: string;
     };
 
-type ISendRequestTask = {
+export type ISendRequestTask = {
   abort: () => void;
   done: Promise<IResult>;
 };
@@ -60,9 +72,15 @@ export const sendRequest = (options: ISendRequestOptions): ISendRequestTask => {
 
   request.open(options.method, options.url, true);
   for (const [header, value] of Object.entries(options.headers)) {
+    if (!value) continue;
     request.setRequestHeader(header, value);
   }
-  request.send(options.body);
+
+  request.send(
+    options.method === "POST" || options.method === "PATCH"
+      ? options.body
+      : undefined
+  );
 
   return {
     abort: () => request.abort(),

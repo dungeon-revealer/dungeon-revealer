@@ -640,3 +640,116 @@ export const Link: React.FC<React.SVGProps<SVGSVGElement>> = ({
     <path d="M15 7h3a5 5 0 015 5 5 5 0 01-5 5h-3m-6 0H6a5 5 0 01-5-5 5 5 0 015-5h3M8 12h8" />
   </svg>
 );
+
+export const Maximize: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+  </svg>
+);
+
+export const Share: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <circle cx={18} cy={5} r={3} />
+    <circle cx={6} cy={12} r={3} />
+    <circle cx={18} cy={19} r={3} />
+    <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
+  </svg>
+);
+
+export const BoldIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6zM6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z" />
+  </svg>
+);
+
+export const ItalicIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M19 4h-9M14 20H5M15 4L9 20" />
+  </svg>
+);
+
+export const ImageIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <rect x={3} y={3} width={18} height={18} rx={2} ry={2} />
+    <circle cx={8.5} cy={8.5} r={1.5} />
+    <path d="M21 15l-5-5L5 21" />
+  </svg>
+);
+
+export const ListIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+  </svg>
+);

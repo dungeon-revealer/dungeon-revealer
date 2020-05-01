@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Modal, ModalDialogSize } from "../modal";
+import { Modal, ModalDialogSize } from "../../modal";
 import * as Button from "../../button";
 import { InputGroup } from "../../input";
 
@@ -43,10 +43,14 @@ export const CreateNewNoteDialogModal: React.FC<{
         <Modal.Footer>
           <Modal.Actions>
             <Modal.ActionGroup>
-              <Button.Tertiary type="button" onClick={close}>
-                Abort
-              </Button.Tertiary>
-              <Button.Primary type="submit">Create Note</Button.Primary>
+              <div>
+                <Button.Tertiary type="button" onClick={close}>
+                  Abort
+                </Button.Tertiary>
+              </div>
+              <div>
+                <Button.Primary type="submit">Create Note</Button.Primary>
+              </div>
             </Modal.ActionGroup>
           </Modal.Actions>
         </Modal.Footer>

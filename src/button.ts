@@ -1,11 +1,15 @@
 import styled from "@emotion/styled/macro";
+import { lighten } from "polished";
 
-const ButtonBase = styled.button<{
+type ButtonBaseProps = {
+  disabled?: boolean;
   big?: boolean;
   small?: boolean;
   iconOnly?: boolean;
   fullWidth?: boolean;
-}>`
+};
+
+const ButtonBase = styled.button<ButtonBaseProps>`
   cursor: pointer;
   border: none;
   align-items: center;
@@ -17,6 +21,7 @@ const ButtonBase = styled.button<{
   padding: ${(p) =>
     p.big ? `1.5rem 2rem` : p.small ? `0.5rem .75rem` : `1rem 1.5rem`};
   width: ${(p) => (p.fullWidth ? "100%" : null)};
+  height: ${(p) => (p.big ? `60px` : p.small ? `32px` : `54px`)};
   font-size: ${(p) => (p.small ? `12px` : undefined)};
 
   > svg + span {
@@ -24,10 +29,6 @@ const ButtonBase = styled.button<{
   }
   > span + svg {
     margin-left: ${(p) => (p.iconOnly ? null : p.small ? `.5rem` : `1rem`)};
-  }
-
-  &:focus {
-    outline: none;
   }
 `;
 
@@ -52,11 +53,17 @@ export const Secondary = styled(ButtonBase)`
   }
 `;
 
-export const Tertiary = styled(ButtonBase)`
+export const Tertiary = styled(ButtonBase)<
+  ButtonBaseProps & {
+    danger?: boolean;
+  }
+>`
   background-color: transparent;
-  color: #627d98;
+  color: ${(p) =>
+    p.disabled ? lighten(0.3, "#627d98") : p.danger ? "#f44336" : "#627d98"};
+  cursor: ${(p) => (p.disabled ? "inherit" : null)};
 
   &:hover {
-    background-color: #f0f4f8;
+    background-color: ${(p) => (p.disabled ? null : "#f0f4f8")};
   }
 `;

@@ -1,16 +1,19 @@
 import once from "lodash/once";
 
-export const getPublicUrl = (): string => {
-  return process.env.PUBLIC_URL;
-};
+export const getPublicUrl = once((): string => {
+  const publicUrl = document
+    .querySelector("base")
+    ?.getAttribute("href")
+    ?.replace(/\/$/, "");
+  if (!publicUrl || publicUrl === "__PUBLIC_URL_PLACEHOLDER__") return "";
+  return publicUrl;
+});
 
-const getUrlPrefix = once((): string => {
+export const getUrlPrefix = once((): string => {
   const publicUrl = getPublicUrl();
-  if (publicUrl.length === 0 || publicUrl.startsWith("/")) {
-    return publicUrl;
-  }
-  const url = new URL(publicUrl);
-  return url.pathname === "/" ? "" : url.pathname;
+  if (publicUrl === "") return "";
+  const pathname = new URL(publicUrl).pathname;
+  return pathname === "/" ? "" : pathname;
 });
 
 export const buildUrl = (path: string) => `${getUrlPrefix()}${path}`;

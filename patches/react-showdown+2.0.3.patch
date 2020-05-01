@@ -1,0 +1,14 @@
+diff --git a/node_modules/react-showdown/dist/react-showdown.esm.js b/node_modules/react-showdown/dist/react-showdown.esm.js
+index ef5e9c6..1411b60 100644
+--- a/node_modules/react-showdown/dist/react-showdown.esm.js
++++ b/node_modules/react-showdown/dist/react-showdown.esm.js
+@@ -188,7 +188,8 @@ function MarkdownView(props) {
+     // Don't change the attribute names so that stuff like `className` works correctly.
+     lowerCaseAttributeNames: false,
+     // Encode entities automatically, so that &copy; and &uuml; works correctly.
+-    decodeEntities: true
++    decodeEntities: true,
++    recognizeSelfClosing: true
+   });
+   return createElement('div', otherProps, root.map(mapElement));
+ } // Match react-dom omittedCloseTags. See also:
