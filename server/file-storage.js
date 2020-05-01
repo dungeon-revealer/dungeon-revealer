@@ -16,10 +16,11 @@ const lazy = (task) => once(task);
  * @param {import("sqlite").Database} db
  **/
 const createDatabaseInterface = (db) => {
-  const transformRecord = ({ id, title, created_at: createdAt }) => ({
+  const transformRecord = ({ id, title, created_at: createdAt, path }) => ({
     id,
     title,
     createdAt,
+    path,
   });
 
   const getInsertOneStatement = lazy(() =>
@@ -48,6 +49,7 @@ const createDatabaseInterface = (db) => {
       SELECT
         "id",
         "title",
+        "path",
         "created_at"
       FROM "file_uploads"
       ORDER BY "created_at" DESC
@@ -87,6 +89,7 @@ const createDatabaseInterface = (db) => {
       SELECT
         "id",
         "title",
+        "path",
         "created_at"
       FROM "file_uploads"
       WHERE
@@ -146,7 +149,7 @@ const createDatabaseInterface = (db) => {
 
 class FileStorage {
   constructor({ dataDirectory, db }) {
-    this._storageDirectoryPath = path.join(dataDirectory, "images");
+    this._storageDirectoryPath = path.join(dataDirectory, "files");
     this._db = createDatabaseInterface(db);
     fs.mkdirpSync(this._storageDirectoryPath);
   }
@@ -168,7 +171,9 @@ class FileStorage {
       createdAt: new Date().getTime(),
     });
 
-    return { id, fileName };
+    const record = await this.getById(id);
+
+    return record;
   }
 
   async list(offset) {
@@ -182,6 +187,11 @@ class FileStorage {
   }
 
   async deleteById(id) {
+    const file = await this.getById(id);
+    if (!file) return;
+    await fs.unlink(
+      path.resolve(path.join(this._storageDirectoryPath, file.path))
+    );
     await this._db.deleteRecordById(id);
   }
 

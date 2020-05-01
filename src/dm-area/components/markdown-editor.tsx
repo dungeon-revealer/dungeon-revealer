@@ -21,12 +21,17 @@ import {
   ListIcon,
   Link,
 } from "../../feather-icons";
+import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
 
 const useImageCommand: (opts: {
   uploadFile: (file: File) => Promise<string | null>;
   editorReference: React.RefObject<MonacoEditor>;
-}) => [() => void, React.ReactNode] = ({ uploadFile, editorReference }) => {
-  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+}) => [React.ReactNode, () => void] = ({ uploadFile, editorReference }) => {
+  const [reactTreeNode, showFileDialog] = useSelectFileDialog(
+    React.useCallback((file) => {
+      stateRef.current.onSelectImage?.(file);
+    }, [])
+  );
 
   const stateRef = React.useRef<{
     isMounted: boolean;
@@ -108,32 +113,10 @@ const useImageCommand: (opts: {
       });
     };
 
-    fileInputRef.current?.click();
-  }, []);
+    showFileDialog();
+  }, [showFileDialog]);
 
-  const element = React.useMemo<React.ReactNode>(() => {
-    return (
-      <input
-        type="file"
-        style={{ display: "none" }}
-        ref={fileInputRef}
-        accept=".jpeg,.jpg,.svg,.png"
-        onChange={(ev) => {
-          if (!ev.target.files) {
-            return;
-          }
-          const file: File | null = ev.target.files[0] || null;
-          if (!file) {
-            return;
-          }
-          stateRef.current.onSelectImage?.(file);
-          ev.target.value = "";
-        }}
-      />
-    );
-  }, []);
-
-  return [onClick, element];
+  return [reactTreeNode, onClick];
 };
 
 const Container = styled.div`
@@ -285,7 +268,7 @@ export const MarkdownEditor: React.FC<{
     return task.done.then((result) => {
       if (result.type !== "success") return null;
       const json = JSON.parse(result.data as string);
-      return json.data.id;
+      return json.data.item.id;
     });
   }, []);
 
@@ -294,7 +277,7 @@ export const MarkdownEditor: React.FC<{
     decorations: [] as string[],
   });
 
-  const [onClickImageButton, uploadImageNode] = useImageCommand({
+  const [uploadImageNode, onClickImageButton] = useImageCommand({
     uploadFile,
     editorReference: ref,
   });

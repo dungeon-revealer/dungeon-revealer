@@ -34,12 +34,11 @@ module.exports = ({ roleMiddleware, fileStorage }) => {
     req.busboy.once("finish", () => {
       fileStorage
         .store({ filePath: tmpFile, fileExtension, fileName })
-        .then(({ id, fileName }) => {
+        .then((record) => {
           res.json({
             error: null,
             data: {
-              id,
-              fileName,
+              item: record,
             },
           });
         })

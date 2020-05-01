@@ -11,6 +11,8 @@ import styled from "@emotion/styled/macro";
 import { ImageLightBoxModal } from "../../image-lightbox-modal";
 import { useShareImageAction } from "../../hooks/use-share-image-action";
 import { InputGroup } from "../../input";
+import { useOvermind } from "../../hooks/use-overmind";
+import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
 
 type MediaLibraryProps = {
   onClose: () => void;
@@ -63,6 +65,12 @@ type MediaLibraryAction =
       data: {
         item: MediaLibraryItem;
       };
+    }
+  | {
+      type: "CREATE_ITEM_DONE";
+      data: {
+        item: MediaLibraryItem;
+      };
     };
 
 const stateReducer: React.Reducer<MediaLibraryState, MediaLibraryAction> = (
@@ -103,6 +111,13 @@ const stateReducer: React.Reducer<MediaLibraryState, MediaLibraryAction> = (
         ),
       };
     }
+    case "CREATE_ITEM_DONE": {
+      if (state.mode === "LOADING") return state;
+      return {
+        ...state,
+        items: [action.data.item, ...state.items],
+      };
+    }
   }
 };
 
@@ -115,11 +130,16 @@ const initialState: MediaLibraryState = {
 export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
   const [state, dispatch] = React.useReducer(stateReducer, initialState);
   const getIsMounted = useGetIsMounted();
+  const overmind = useOvermind();
 
   useAsyncEffect(function* (onCancel, cast) {
     const task = sendRequest({
       method: "GET",
-      headers: {},
+      headers: {
+        Authorization: overmind.state.sessionStore.accessToken
+          ? `Bearer ${overmind.state.sessionStore.accessToken}`
+          : null,
+      },
       url: buildApiUrl("/images"),
     });
     onCancel(task.abort);
@@ -144,7 +164,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
 
     const task = sendRequest({
       method: "GET",
-      headers: {},
+      headers: {
+        Authorization: overmind.state.sessionStore.accessToken
+          ? `Bearer ${overmind.state.sessionStore.accessToken}`
+          : null,
+      },
       url: buildApiUrl(`/images?offset=${state.items.length}`),
     });
     fetchMoreTask.current = task;
@@ -166,7 +190,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
   const deleteImageAction = React.useCallback((id: string) => {
     const task = sendRequest({
       method: "DELETE",
-      headers: {},
+      headers: {
+        Authorization: overmind.state.sessionStore.accessToken
+          ? `Bearer ${overmind.state.sessionStore.accessToken}`
+          : null,
+      },
       url: buildApiUrl(`/images/${id}`),
     });
 
@@ -190,6 +218,9 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          Authorization: overmind.state.sessionStore.accessToken
+            ? `Bearer ${overmind.state.sessionStore.accessToken}`
+            : null,
         },
         url: buildApiUrl(`/images/${id}`),
         body: JSON.stringify({
@@ -219,6 +250,37 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
         fetchMore();
       }
     }, [state])
+  );
+
+  const [reactTreeNode, showSelectFileDialog] = useSelectFileDialog(
+    React.useCallback((file) => {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const task = sendRequest({
+        url: buildApiUrl("/images"),
+        method: "POST",
+        body: formData,
+        headers: {
+          Authorization: overmind.state.sessionStore.accessToken
+            ? `Bearer ${overmind.state.sessionStore.accessToken}`
+            : null,
+        },
+      });
+
+      task.done.then((response) => {
+        if (getIsMounted() === false) return;
+        if (response.type === "success") {
+          const result = JSON.parse(response.data);
+          dispatch({
+            type: "CREATE_ITEM_DONE",
+            data: {
+              item: result.data.item,
+            },
+          });
+        }
+      });
+    }, [])
   );
 
   return (
@@ -260,6 +322,19 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
                 ))}
           </Grid>
         </Modal.Body>
+        <Modal.Footer>
+          <Modal.Actions>
+            <Modal.ActionGroup>
+              <div>
+                <Button.Primary onClick={showSelectFileDialog} role="button">
+                  <Icon.PlusIcon height={24} width={24} />
+                  <span>Upload new File</span>
+                </Button.Primary>
+              </div>
+            </Modal.ActionGroup>
+          </Modal.Actions>
+        </Modal.Footer>
+        {reactTreeNode}
       </Content>
     </Modal>
   );
@@ -270,50 +345,42 @@ const Item: React.FC<{
   deleteItem: () => void;
   updateItem: (opts: { title: string }) => void;
 }> = ({ item, deleteItem, updateItem }) => {
-  const [showMenu, setShowMenu] = React.useState(false);
   const [showLightboxImage, setShowLightBoxImage] = React.useState(false);
   const [showEditModal, setShowEditModal] = React.useState(false);
   const shareImage = useShareImageAction();
 
   return (
-    <ListItem
-      onMouseEnter={() => {
-        setShowMenu(true);
-      }}
-      onMouseLeave={() => {
-        setShowMenu(false);
-      }}
-    >
-      <ListItemImage src={buildApiUrl(`/images/${item.id}`)} />
+    <ListItem>
+      <ListItemImageContainer onClick={() => setShowLightBoxImage(true)}>
+        <ListItemImage src={buildApiUrl(`/images/${item.id}`)} />
+      </ListItemImageContainer>
       <ListItemTitle>{item.title}</ListItemTitle>
-      {showMenu ? (
-        <Menu>
-          <Button.Primary
-            small
-            title="Edit"
-            iconOnly
-            onClick={() => setShowEditModal(true)}
-          >
-            <Icon.EditIcon height={16} />
-          </Button.Primary>
-          <Button.Primary
-            small
-            title="Share with Players"
-            iconOnly
-            onClick={() => shareImage(item.id)}
-          >
-            <Icon.Share height={16} />
-          </Button.Primary>
-          <Button.Primary
-            small
-            title="Maximize"
-            iconOnly
-            onClick={() => setShowLightBoxImage(true)}
-          >
-            <Icon.Maximize height={16} />
-          </Button.Primary>
-        </Menu>
-      ) : null}
+      <Menu data-menu>
+        <Button.Primary
+          small
+          title="Edit"
+          iconOnly
+          onClick={() => setShowEditModal(true)}
+        >
+          <Icon.EditIcon height={16} />
+        </Button.Primary>
+        <Button.Primary
+          small
+          title="Share with Players"
+          iconOnly
+          onClick={() => shareImage(item.id)}
+        >
+          <Icon.Share height={16} />
+        </Button.Primary>
+        <Button.Primary
+          small
+          title="Maximize"
+          iconOnly
+          onClick={() => setShowLightBoxImage(true)}
+        >
+          <Icon.Maximize height={16} />
+        </Button.Primary>
+      </Menu>
       {showLightboxImage ? (
         <ImageLightBoxModal
           src={buildApiUrl(`/images/${item.id}`)}
@@ -400,7 +467,7 @@ const EditImageModal: React.FC<{
 };
 
 const Menu = styled.span`
-  display: block;
+  display: none;
   position: absolute;
   top: 0;
   right: 0;
@@ -435,6 +502,23 @@ const ListItem = styled.div`
   margin-bottom: 16px;
 
   background-color: #fff;
+
+  &:hover [data-menu] {
+    display: block;
+  }
+`;
+
+const ListItemImageContainer = styled.button`
+  display: block;
+  border: none;
+  background-color: transparent;
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: auto;
+  margin-right: auto;
+  cursor: pointer;
 `;
 
 const ListItemImage = styled.img`

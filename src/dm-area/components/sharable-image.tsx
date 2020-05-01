@@ -9,6 +9,10 @@ import { ImageLightBoxModal } from "../../image-lightbox-modal";
 const Container = styled.span`
   display: block;
   position: relative;
+
+  &:hover [data-menu] {
+    display: block;
+  }
 `;
 
 const Image = styled.img`
@@ -16,7 +20,7 @@ const Image = styled.img`
 `;
 
 const Menu = styled.span`
-  display: block;
+  display: none;
   position: absolute;
   top: 0;
   right: 0;
@@ -28,40 +32,30 @@ const Menu = styled.span`
 `;
 
 export const SharableImage: React.FC<{ id: string }> = ({ id }) => {
-  const [showMenu, setShowMenu] = React.useState(false);
   const [showLightboxImage, setShowLightBoxImage] = React.useState(false);
   const shareImage = useShareImageAction();
 
   return (
-    <Container
-      onMouseEnter={() => {
-        setShowMenu(true);
-      }}
-      onMouseLeave={() => {
-        setShowMenu(false);
-      }}
-    >
+    <Container>
       <Image src={buildApiUrl(`/images/${id}`)} />
-      {showMenu ? (
-        <Menu>
-          <Button.Primary
-            small
-            title="Share with Players"
-            iconOnly
-            onClick={() => shareImage(id)}
-          >
-            <Icon.Share height={16} />
-          </Button.Primary>
-          <Button.Primary
-            small
-            title="Maximize"
-            iconOnly
-            onClick={() => setShowLightBoxImage(true)}
-          >
-            <Icon.Maximize height={16} />
-          </Button.Primary>
-        </Menu>
-      ) : null}
+      <Menu data-menu>
+        <Button.Primary
+          small
+          title="Share with Players"
+          iconOnly
+          onClick={() => shareImage(id)}
+        >
+          <Icon.Share height={16} />
+        </Button.Primary>
+        <Button.Primary
+          small
+          title="Maximize"
+          iconOnly
+          onClick={() => setShowLightBoxImage(true)}
+        >
+          <Icon.Maximize height={16} />
+        </Button.Primary>
+      </Menu>
       {showLightboxImage ? (
         <ImageLightBoxModal
           src={buildApiUrl(`/images/${id}`)}

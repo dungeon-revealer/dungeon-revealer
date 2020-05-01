@@ -6,6 +6,7 @@ import { Input, InputGroup } from "../input";
 import * as Button from "../button";
 import * as ScrollableList from "./components/scrollable-list";
 import { buildApiUrl } from "../public-url";
+import { useSelectFileDialog } from "../hooks/use-select-file-dialog";
 
 const CreateNewMapButton: React.FC<
   {
@@ -15,36 +16,13 @@ const CreateNewMapButton: React.FC<
     "tabIndex" | "fullWidth" | "big"
   >
 > = ({ onSelectFile, children, ...props }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [reactTreeNode, showFileDialog] = useSelectFileDialog(onSelectFile);
   return (
     <>
-      <Button.Primary
-        {...props}
-        onClick={() => {
-          if (fileInputRef.current) {
-            fileInputRef.current.click();
-          }
-        }}
-      >
+      <Button.Primary {...props} onClick={showFileDialog}>
         {children}
       </Button.Primary>
-      <input
-        type="file"
-        style={{ display: "none" }}
-        ref={fileInputRef}
-        accept=".jpeg,.jpg,.svg,.png"
-        onChange={(ev) => {
-          if (!ev.target.files) {
-            return;
-          }
-          const [file] = Array.from(ev.target.files) as Array<File | undefined>;
-          if (!file) {
-            return;
-          }
-          onSelectFile(file);
-          ev.target.value = "";
-        }}
-      />
+      {reactTreeNode}
     </>
   );
 };
