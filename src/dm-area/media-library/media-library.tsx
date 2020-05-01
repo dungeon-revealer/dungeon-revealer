@@ -51,7 +51,14 @@ type MediaLibraryAction =
       data: {
         items: Array<MediaLibraryItem>;
       };
+    }
+  | {
+      type: "DELETE_ITEM_DONE";
+      data: {
+        deletedItemId: string;
+      };
     };
+
 const stateReducer: React.Reducer<MediaLibraryState, MediaLibraryAction> = (
   state,
   action
@@ -62,6 +69,15 @@ const stateReducer: React.Reducer<MediaLibraryState, MediaLibraryAction> = (
         ...state,
         mode: "LOADED",
         items: action.data.items,
+      };
+    }
+    case "DELETE_ITEM_DONE": {
+      if (state.mode === "LOADING") return state;
+      return {
+        ...state,
+        items: state.items.filter(
+          (item) => item.id !== action.data.deletedItemId
+        ),
       };
     }
     case "LOAD_MORE_RESULT": {
@@ -132,6 +148,27 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
     });
   }, [state]);
 
+  const deleteImageAction = React.useCallback((id: string) => {
+    const task = sendRequest({
+      method: "DELETE",
+      headers: {},
+      url: buildApiUrl(`/images/${id}`),
+    });
+
+    task.done.then((result) => {
+      if (getIsMounted() === false) return;
+      if (result.type === "success") {
+        const jsonResponse = JSON.parse(result.data);
+        dispatch({
+          type: "DELETE_ITEM_DONE",
+          data: {
+            deletedItemId: jsonResponse.data.deletedImageId,
+          },
+        });
+      }
+    });
+  }, []);
+
   const onScroll = useInvokeOnScrollEnd(
     React.useCallback(() => {
       if (state.mode === "LOADED") {
@@ -169,7 +206,13 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
           <Grid>
             {state.mode === "LOADING"
               ? null
-              : state.items.map((item) => <Item item={item} key={item.id} />)}
+              : state.items.map((item) => (
+                  <Item
+                    item={item}
+                    key={item.id}
+                    deleteItem={() => deleteImageAction(item.id)}
+                  />
+                ))}
           </Grid>
         </Modal.Body>
       </Content>
@@ -177,7 +220,10 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
   );
 };
 
-const Item: React.FC<{ item: MediaLibraryItem }> = ({ item }) => {
+const Item: React.FC<{ item: MediaLibraryItem; deleteItem: () => void }> = ({
+  item,
+  deleteItem,
+}) => {
   const [showMenu, setShowMenu] = React.useState(false);
   const [showLightboxImage, setShowLightBoxImage] = React.useState(false);
   const [showEditModal, setShowEditModal] = React.useState(false);
@@ -232,6 +278,7 @@ const Item: React.FC<{ item: MediaLibraryItem }> = ({ item }) => {
         <EditImageModal
           title={item.title}
           onClose={() => setShowEditModal(false)}
+          onDelete={deleteItem}
           onConfirm={() => {}}
         />
       ) : null}
@@ -242,8 +289,9 @@ const Item: React.FC<{ item: MediaLibraryItem }> = ({ item }) => {
 const EditImageModal: React.FC<{
   title: string;
   onClose: () => void;
+  onDelete: () => void;
   onConfirm: (opts: { title: string }) => void;
-}> = ({ title, onClose, onConfirm }) => {
+}> = ({ title, onClose, onConfirm, onDelete }) => {
   const [inputValue, setInputValue] = React.useState(title);
 
   const onChangeInputValue = React.useCallback(
@@ -272,7 +320,7 @@ const EditImageModal: React.FC<{
           <Modal.Actions>
             <Modal.ActionGroup left>
               <div>
-                <Button.Tertiary onClick={onClose} type="button" danger>
+                <Button.Tertiary onClick={onDelete} type="button" danger>
                   <Icon.TrashIcon height={18} width={18} />
                   <span>Delete</span>
                 </Button.Tertiary>

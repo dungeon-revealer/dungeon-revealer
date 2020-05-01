@@ -11,6 +11,9 @@ type ISendRequestOptions = {
   | {
       method: "GET";
     }
+  | {
+      method: "DELETE";
+    }
 );
 
 type IResult =
@@ -69,7 +72,7 @@ export const sendRequest = (options: ISendRequestOptions): ISendRequestTask => {
     request.setRequestHeader(header, value);
   }
 
-  request.send(options.method === "GET" ? undefined : options.body);
+  request.send(options.method === "POST" ? options.body : undefined);
 
   return {
     abort: () => request.abort(),

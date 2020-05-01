@@ -60,6 +60,22 @@ module.exports = ({ roleMiddleware, fileStorage }) => {
       .catch(handleUnexpectedError(res));
   });
 
+  router.delete("/images/:id", (req, res) => {
+    const id = req.params.id;
+
+    fileStorage
+      .delete(id)
+      .then(() => {
+        res.json({
+          error: null,
+          data: {
+            deletedImageId: id,
+          },
+        });
+      })
+      .catch(handleUnexpectedError(res));
+  });
+
   router.get("/images", (req, res) => {
     let offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
     if (Number.isNaN(offset)) {

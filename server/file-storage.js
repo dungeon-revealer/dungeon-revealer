@@ -16,6 +16,12 @@ const lazy = (task) => once(task);
  * @param {import("sqlite").Database} db
  **/
 const createDatabaseInterface = (db) => {
+  const transformRecord = ({ id, title, created_at: createdAt }) => ({
+    id,
+    title,
+    createdAt,
+  });
+
   const getInsertOneStatement = lazy(() =>
     db.prepare(`
       INSERT INTO "file_uploads" (
@@ -56,13 +62,7 @@ const createDatabaseInterface = (db) => {
   const selectManyOffset = ({ offset = 0 }) =>
     getSelectManyOffsetStatement()
       .then((statement) => statement.all(offset))
-      .then((records) =>
-        records.map(({ id, title, created_at: createdAt }) => ({
-          id,
-          title,
-          createdAt,
-        }))
-      );
+      .then((records) => records.map(transformRecord));
 
   const getSelectPathStatement = lazy(() =>
     db.prepare(`
@@ -82,10 +82,48 @@ const createDatabaseInterface = (db) => {
       .then((statement) => statement.get(id))
       .then((record) => (record ? record.path : null));
 
+  const getSelectRecordByIdStatement = lazy(() =>
+    db.prepare(`
+      SELECT
+        "id",
+        "title",
+        "created_at"
+      FROM "file_uploads"
+      WHERE
+        "id" = ?
+      ;
+  `)
+  );
+
+  /**
+   * @param {string} id
+   */
+  const selectRecordById = (id) =>
+    getSelectRecordByIdStatement()
+      .then((statement) => statement.get(id))
+      .then((record) => (record ? transformRecord(record) : null));
+
+  const getDeleteRecordByIdStatement = lazy(() =>
+    db.prepare(`
+      DELETE
+      FROM "file_uploads"
+      WHERE
+        "id" = ? 
+    `)
+  );
+
+  /**
+   * @param {string} id
+   */
+  const deleteRecordById = (id) =>
+    getDeleteRecordByIdStatement().then((statement) => statement.get(id));
+
   return {
     createFileUploadRecord,
     selectManyOffset,
     selectPath,
+    selectRecordById,
+    deleteRecordById,
   };
 };
 
@@ -119,6 +157,15 @@ class FileStorage {
   async list(offset) {
     const records = await this._db.selectManyOffset({ offset });
     return records;
+  }
+
+  async get(id) {
+    const record = await this._db.selectRecordById(id);
+    return record;
+  }
+
+  async delete(id) {
+    await this._db.deleteRecordById(id);
   }
 
   async resolvePath(fileId) {
