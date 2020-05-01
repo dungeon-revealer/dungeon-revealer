@@ -1,7 +1,0 @@
-FROM arm32v7/node:dubnium-jessie
-
-WORKDIR /usr/src/app
-
-COPY . .
-
-CMD ["yarn", "install"]

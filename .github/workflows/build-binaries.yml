@@ -3,10 +3,9 @@ name: Build Binaries
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
-
   job_build_x64:
     name: ${{ matrix.os }} Binaries
     runs-on: ${{ matrix.os }}
@@ -24,9 +23,9 @@ jobs:
 
       - name: Compile x64 binary
         run: |
-            yarn install
-            yarn build
-            yarn pkg . --target host --out-path ./bin/
+          npm install
+          npm run build
+          npm run pkg . --target host --out-path ./bin/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
@@ -43,12 +42,12 @@ jobs:
 
       - name: Build arm
         run: |
-            sudo docker run --rm --privileged multiarch/qemu-user-static:register
-            wget https://github.com/multiarch/qemu-user-static/releases/download/v4.1.1-1/qemu-arm-static.tar.gz -O /tmp/qemu-arm-static.tar.gz
-            tar zxvf /tmp/qemu-arm-static.tar.gz -C /tmp
-            docker build -t dr-armbuild -f Dockerfile-armbuild .
-            sudo docker run --rm -v /tmp/qemu-arm-static:/usr/bin/qemu-arm-static -v $(pwd)/bin/:/usr/src/app/bin/ dr-armbuild /bin/sh -c 'yarn install; yarn compilearm'
-            cp bin/arm/dungeon-revealer bin/dungeon-revealer-linux-armv7
+          sudo docker run --rm --privileged multiarch/qemu-user-static:register
+          wget https://github.com/multiarch/qemu-user-static/releases/download/v4.1.1-1/qemu-arm-static.tar.gz -O /tmp/qemu-arm-static.tar.gz
+          tar zxvf /tmp/qemu-arm-static.tar.gz -C /tmp
+          docker build -t dr-armbuild -f armbuild.Dockerfile .
+          sudo docker run --rm -v /tmp/qemu-arm-static:/usr/bin/qemu-arm-static -v $(pwd)/bin/:/usr/src/app/bin/ dr-armbuild /bin/sh -c 'npm install; npm run compilearm'
+          cp bin/arm/dungeon-revealer bin/dungeon-revealer-linux-armv7
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
@@ -92,11 +91,11 @@ jobs:
       - name: Prepare assets
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-            chmod +x bin/dungeon-revealer-linux bin/dungeon-revealer-macos bin/dungeon-revealer-linux-armv7
-            zip "dungeon-revealer-linux-$GH_TAG.zip" -j bin/dungeon-revealer-linux README.md
-            zip "dungeon-revealer-linux-armv7-$GH_TAG.zip" -j bin/dungeon-revealer-linux-armv7 README.md
-            zip "dungeon-revealer-macos-$GH_TAG.zip" -j bin/dungeon-revealer-macos README.md
-            zip "dungeon-revealer-win-$GH_TAG.zip" -j bin/dungeon-revealer-win.exe README.md
+          chmod +x bin/dungeon-revealer-linux bin/dungeon-revealer-macos bin/dungeon-revealer-linux-armv7
+          zip "dungeon-revealer-linux-$GH_TAG.zip" -j bin/dungeon-revealer-linux README.md
+          zip "dungeon-revealer-linux-armv7-$GH_TAG.zip" -j bin/dungeon-revealer-linux-armv7 README.md
+          zip "dungeon-revealer-macos-$GH_TAG.zip" -j bin/dungeon-revealer-macos README.md
+          zip "dungeon-revealer-win-$GH_TAG.zip" -j bin/dungeon-revealer-win.exe README.md
 
       # We have to upload assets individually using upload-release-asset@v1
       # There isn't a matrix for steps.

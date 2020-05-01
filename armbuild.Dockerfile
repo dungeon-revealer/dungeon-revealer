@@ -1,4 +1,4 @@
-FROM node:12-alpine as dependency-builder
+FROM arm32v7/node:12-alpine as dependency-builder
 
 WORKDIR /usr/src/build
 
@@ -7,7 +7,7 @@ COPY package-lock.json .
 
 RUN npm install
 
-FROM node:12-alpine as application-builder
+FROM arm32v7/node:12-alpine as application-builder
 
 WORKDIR /usr/src/build
 
@@ -24,7 +24,7 @@ COPY public /usr/src/build/public
 
 RUN npm run build
 
-FROM node:12-alpine as production-dependency-builder
+FROM arm32v7/node:12-alpine as production-dependency-builder
 
 WORKDIR /usr/src/build
 
@@ -35,7 +35,7 @@ COPY --from=dependency-builder /usr/src/build/node_modules /usr/src/build/node_m
 # then we remove all dependencies we no longer need
 RUN npm prune --production
 
-FROM node:12-alpine
+FROM arm32v7/node:12-alpine
 
 # Create app directory
 WORKDIR /usr/src/app

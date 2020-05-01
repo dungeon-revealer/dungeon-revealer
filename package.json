@@ -14,15 +14,18 @@
   "main": "app.js",
   "bin": "bin/dungeon-revealer",
   "scripts": {
-    "build": "cross-env EXTEND_ESLINT=true PUBLIC_URL=. react-scripts build",
+    "build:frontend": "cross-env EXTEND_ESLINT=true PUBLIC_URL=. react-scripts build",
+    "build:backend": "tsc --project tsconfig.server.json",
+    "build": "npm run build:backend && npm run build:frontend",
     "compilearm": "pkg . --out-path ./bin/arm/ --targets node10-linux-armv7",
     "compilex64": "pkg . --out-path ./bin/ --targets node10-win-x64,node10-macos-x64,node10-linux-x64",
     "eject": "react-scripts eject",
     "eslint": "eslint --ignore-path .gitignore --max-warnings 0 \"**/*.js\" \"bin/dungeon-revealer\"",
-    "postinstall": "patch-package && npm run build",
+    "postinstall": "patch-package",
     "start": "node ./bin/dungeon-revealer",
-    "start:dev": "cross-env PORT=3001 EXTEND_ESLINT=true react-scripts start",
-    "test": "react-scripts test"
+    "test": "react-scripts test",
+    "start:frontend:dev": "cross-env PORT=3001 EXTEND_ESLINT=true react-scripts start",
+    "start:server:dev": "ts-node-dev --project tsconfig.server.json server/index.js"
   },
   "husky": {
     "hooks": {
@@ -108,6 +111,7 @@
     "showdown": "1.9.1",
     "socket.io-client": "2.2.0",
     "ts-jest": "25.3.1",
+    "ts-node-dev": "1.0.0-pre.44",
     "typescript": "3.8.3",
     "use-persisted-state": "0.3.0"
   },
