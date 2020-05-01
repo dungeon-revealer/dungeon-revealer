@@ -19,8 +19,8 @@ jobs:
   include:
     - stage: build
       script:
-        - yarn run eslint
-        - yarn compilex64
+        - npm run eslint
+        - npm run compilex64
 
     - stage: build docker image
       install: true
