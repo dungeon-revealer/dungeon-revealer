@@ -55,7 +55,7 @@
     "serve-favicon": "2.5.0",
     "socket.io": "2.2.0",
     "sqlite": "4.0.7",
-    "sqlite3": "4.1.1",
+    "sqlite3": "4.2.0",
     "uuid": "3.4.0"
   },
   "devDependencies": {
