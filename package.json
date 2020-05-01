@@ -117,7 +117,7 @@
   },
   "pkg": {
     "scripts": [
-      "server/*.js"
+      "server-build/*.js"
     ],
     "assets": [
       "build/**/*"
