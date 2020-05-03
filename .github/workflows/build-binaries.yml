@@ -42,12 +42,8 @@ jobs:
 
       - name: Build arm
         run: |
-          sudo docker run --rm --privileged multiarch/qemu-user-static:register
-          wget https://github.com/multiarch/qemu-user-static/releases/download/v4.1.1-1/qemu-arm-static.tar.gz -O /tmp/qemu-arm-static.tar.gz
-          tar zxvf /tmp/qemu-arm-static.tar.gz -C /tmp
-          docker build -t dr-armbuild -f armbuild.Dockerfile .
-          sudo docker run --rm -v /tmp/qemu-arm-static:/usr/bin/qemu-arm-static -v $(pwd)/bin/:/usr/src/app/bin/ dr-armbuild /bin/sh -c 'npm install; npm run compilearm'
-          cp bin/arm/dungeon-revealer bin/dungeon-revealer-linux-armv7
+            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+            docker run --rm -v $(pwd):/usr/src/app/ arm32v7/node:12 /bin/sh -c 'cd /usr/src/app/; npm install; npm run compile:armv7'
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
