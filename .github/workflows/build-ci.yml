@@ -3,7 +3,7 @@ name: Node.js CI
 on:
   push:
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build:
@@ -20,10 +20,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - run: yarn install
-      - run: yarn build
-      - run: yarn eslint
-      - run: yarn test
+      - run: npm install
+      - run: npm run build
+      - run: npm run eslint
+      - run: npm run test
         env:
           CI: true
 
