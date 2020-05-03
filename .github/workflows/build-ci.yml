@@ -35,5 +35,5 @@ jobs:
       - name: Build image
         uses: docker/build-push-action@v1
         with:
-          repository: apclary/dungeon-revealer
+          repository: ${{ secrets.DOCKER_USERNAME }}/dungeon-revealer
           push: false
