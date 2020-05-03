@@ -22,6 +22,8 @@ const database = require("./database");
 const env = require("./env");
 
 const bootstrapServer = async () => {
+  fs.mkdirpSync(env.DATA_DIRECTORY);
+
   const db = await database.initialize({ dataPath: env.DATA_DIRECTORY });
 
   const app = express();
@@ -30,8 +32,6 @@ const bootstrapServer = async () => {
   const io = createSocketIOServer(httpServer, {
     path: "/api/socket.io",
   });
-
-  fs.mkdirpSync(env.DATA_DIRECTORY);
 
   const processTask = createResourceTaskProcessor();
 
