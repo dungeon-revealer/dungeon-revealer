@@ -1,0 +1,100 @@
+diff --git a/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/ReactiveTree.js b/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/ReactiveTree.js
+index 2b154c4..c51776c 100644
+--- a/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/ReactiveTree.js
++++ b/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/ReactiveTree.js
+@@ -5,7 +5,7 @@ Object.defineProperty(exports, "__esModule", {
+ });
+ exports.default = exports.createReactiveTreeInner = void 0;
+ 
+-var _execute = require("graphql/execution/execute");
++var _path = require("graphql/jsutils/Path");
+ 
+ var _collectSubFields = _interopRequireDefault(require("../util/collectSubFields"));
+ 
+@@ -67,8 +67,8 @@ const ReactiveTree = ({
+   });
+   const queryFieldDef = liveDataType.getFields().query;
+   let graphqlPath;
+-  graphqlPath = (0, _execute.addPath)(undefined, subscriptionName);
+-  graphqlPath = (0, _execute.addPath)(graphqlPath, 'query');
++  graphqlPath = (0, _path.addPath)(undefined, subscriptionName);
++  graphqlPath = (0, _path.addPath)(graphqlPath, 'query');
+   const sourceRootConfig = {
+     // all ReactiveNodes that are source roots in the current query in the order
+     // that they are initially resolved which is the same order they will
+diff --git a/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/updateChildNodes.js b/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/updateChildNodes.js
+index 7421408..f32df51 100644
+--- a/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/updateChildNodes.js
++++ b/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/updateChildNodes.js
+@@ -7,8 +7,10 @@ exports.default = void 0;
+ 
+ var _graphql = require("graphql");
+ 
++var _path = require("graphql/jsutils/Path");
+ var _execute = require("graphql/execution/execute");
+ 
++
+ var _collectSubFields = _interopRequireDefault(require("../util/collectSubFields"));
+ 
+ var _ReactiveNode = require("./ReactiveNode");
+@@ -57,7 +59,7 @@ const updateChildNodes = reactiveNode => {
+ 
+     Object.entries(fields).forEach(([childResponseName, childFieldNodes]) => {
+       const childFieldDef = (0, _execute.getFieldDef)(schema, type, childFieldNodes[0].name.value);
+-      const childPath = (0, _execute.addPath)(graphqlPath, childResponseName);
++      const childPath = (0, _path.addPath)(graphqlPath, childResponseName);
+       const childReactiveNode = (0, _ReactiveNode.createNode)({
+         exeContext,
+         parentType: type,
+diff --git a/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/updateListChildNodes.js b/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/updateListChildNodes.js
+index 524f01f..b2675da 100644
+--- a/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/updateListChildNodes.js
++++ b/node_modules/graphql-live-subscriptions/dist/queryExecutors/reactiveTree/updateListChildNodes.js
+@@ -7,7 +7,7 @@ exports.default = exports.ADD = exports.REMOVE = void 0;
+ 
+ var _graphql = require("graphql");
+ 
+-var _execute = require("graphql/execution/execute");
++var _path = require("graphql/jsutils/Path");
+ 
+ var _listDiff = _interopRequireDefault(require("@d1plo1d/list-diff2"));
+ 
+@@ -63,7 +63,7 @@ const updateListChildNodes = reactiveNode => {
+             parentType: reactiveNode.type,
+             type: reactiveNode.type.ofType,
+             fieldNodes,
+-            graphqlPath: (0, _execute.addPath)(graphqlPath, move.index),
++            graphqlPath: (0, _path.addPath)(graphqlPath, move.index),
+             sourceRootConfig
+           }); // add the child at it's index
+ 
+diff --git a/node_modules/graphql-live-subscriptions/dist/subscribeToLiveData.js b/node_modules/graphql-live-subscriptions/dist/subscribeToLiveData.js
+index aa8dd1f..5e6ac63 100644
+--- a/node_modules/graphql-live-subscriptions/dist/subscribeToLiveData.js
++++ b/node_modules/graphql-live-subscriptions/dist/subscribeToLiveData.js
+@@ -135,8 +135,8 @@ const subscribeToLiveData = ({
+ 
+   connectionPubSub.unsubscribe = subID => {
+     originalUnsubscribe(subID);
+-    eventEmitter.removeEventListener('update', onUpdate);
+-    eventEmitter.removeEventListener('patch', onPatch);
++    eventEmitter.removeListener('update', onUpdate);
++    eventEmitter.removeListener('patch', onPatch);
+   };
+ 
+   setImmediate(async () => {
+diff --git a/node_modules/graphql-live-subscriptions/src/queryExecutors/reactiveTree/ReactiveTree.js b/node_modules/graphql-live-subscriptions/src/queryExecutors/reactiveTree/ReactiveTree.js
+index f549654..0ad4d3e 100644
+--- a/node_modules/graphql-live-subscriptions/src/queryExecutors/reactiveTree/ReactiveTree.js
++++ b/node_modules/graphql-live-subscriptions/src/queryExecutors/reactiveTree/ReactiveTree.js
+@@ -1,8 +1,8 @@
+-import { addPath } from 'graphql/execution/execute'
++import { addPath } from 'graphql/jsutils/Path'
+ import collectSubFields from '../util/collectSubFields'
+ 
+ import * as ReactiveNode from './ReactiveNode'
+-
++console.log("aaaa",addPath)
+ export const createReactiveTreeInner = (opts) => {
+   const {
+     exeContext,

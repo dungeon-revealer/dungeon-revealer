@@ -1,16 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ES2019",
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "module": "CommonJS",
+    "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "outDir": "./../server-build"
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "build"
   },
-  "include": ["./"]
+  "include": ["src"]
 }

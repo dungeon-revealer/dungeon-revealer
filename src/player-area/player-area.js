@@ -18,6 +18,11 @@ import { AuthenticationScreen } from "../authentication-screen";
 import { buildApiUrl } from "../public-url";
 import { Modal } from "../modal";
 import { ImageLightBoxModal } from "../image-lightbox-modal";
+import { Chat } from "../chat";
+import {
+  RelayEnvironmentProvider,
+  createEnvironment,
+} from "../relay-environment";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -67,14 +72,13 @@ const drawGridToContext = (grid, dimensions, canvas, gridColor) => {
   }
 };
 
-const PlayerMap = ({ fetch, pcPassword }) => {
+const PlayerMap = ({ fetch, pcPassword, socket }) => {
   const panZoomRef = useRef(null);
   const currentMapRef = useRef(null);
   const [currentMap, setCurrentMap] = useState(null);
   const [sharedMediaId, setSharedMediaId] = useState(false);
 
   const mapId = currentMap ? currentMap.id : null;
-  const socket = useSocket();
   const [showSplashScreen, setShowSplashScreen] = useState(true);
 
   /**
@@ -107,27 +111,6 @@ const PlayerMap = ({ fetch, pcPassword }) => {
 
   useAsyncEffect(
     function* () {
-      socket.on("connect", function () {
-        console.log("connected to server");
-        socket.emit("auth", { password: pcPassword });
-      });
-
-      socket.on("reconnecting", function () {
-        console.log("reconnecting to server");
-      });
-
-      socket.on("reconnect", function () {
-        console.log("reconnected to server");
-      });
-
-      socket.on("reconnect_failed", function () {
-        console.log("reconnect failed!");
-      });
-
-      socket.on("disconnect", function () {
-        console.log("disconnected from server");
-      });
-
       const onReceiveMap = async (data) => {
         if (!data) {
           return;
@@ -327,11 +310,6 @@ const PlayerMap = ({ fetch, pcPassword }) => {
       window.addEventListener("contextmenu", contextmenuListener);
 
       return () => {
-        socket.off("connect");
-        socket.off("reconnecting");
-        socket.off("reconnect");
-        socket.off("reconnect_failed");
-        socket.off("disconnect");
         socket.off("mark area");
         socket.off("map update");
 
@@ -532,6 +510,7 @@ const PlayerMap = ({ fetch, pcPassword }) => {
 const usePcPassword = createPersistedState("pcPassword");
 
 export const PlayerArea = () => {
+  const socket = useSocket();
   const [pcPassword, setPcPassword] = usePcPassword("");
 
   const [mode, setMode] = useState("LOADING");
@@ -567,6 +546,37 @@ export const PlayerArea = () => {
     [localFetch]
   );
 
+  const [relayEnvironment, setRelayEnvironment] = React.useState(null);
+
+  React.useEffect(() => {
+    socket.emit("auth", { password: pcPassword });
+    setRelayEnvironment(createEnvironment(socket));
+
+    socket.on("reconnecting", function () {
+      console.log("reconnecting to server");
+    });
+
+    socket.on("reconnect", function () {
+      console.log("reconnected to server");
+    });
+
+    socket.on("reconnect_failed", function () {
+      console.log("reconnect failed!");
+    });
+
+    socket.on("disconnect", function () {
+      console.log("disconnected from server");
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("reconnecting");
+      socket.off("reconnect");
+      socket.off("reconnect_failed");
+      socket.off("disconnect");
+    };
+  }, [socket, pcPassword]);
+
   if (mode === "LOADING") {
     return <SplashScreen text="Loading..." />;
   }
@@ -581,10 +591,18 @@ export const PlayerArea = () => {
       />
     );
   }
+  console.log(relayEnvironment);
   if (mode === "READY") {
     return (
       <Modal.Provider>
-        <PlayerMap fetch={localFetch} pcPassword={pcPassword} />
+        <PlayerMap fetch={localFetch} pcPassword={pcPassword} socket={socket} />
+        {relayEnvironment ? (
+          <RelayEnvironmentProvider value={relayEnvironment}>
+            <div style={{ position: "absolute", bottom: 10, right: 10 }}>
+              <Chat />
+            </div>
+          </RelayEnvironmentProvider>
+        ) : null}
       </Modal.Provider>
     );
   }

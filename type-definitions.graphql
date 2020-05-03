@@ -1,0 +1,46 @@
+### THIS FILE IS AUTO GENERATED
+
+type ChatMessage {
+  id: ID!
+  authorName: String!
+  rawContent: String!
+  createdAt: String!
+}
+
+type ChatMessageConnection {
+  messages: [ChatMessage!]!
+}
+
+type ChatMessageConnectionLiveSubscription {
+  query: ChatMessageConnection
+  patch: [RFC6902Operation]
+}
+
+input ChatMessageCreateInput {
+  rawContent: String!
+  authorName: String!
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
+type Mutation {
+  chatMessageCreate(input: ChatMessageCreateInput!): Boolean
+}
+
+type Query {
+  chat: ChatMessageConnection!
+}
+
+type RFC6902Operation {
+  op: String!
+  path: String!
+  from: String
+  value: JSON
+}
+
+type Subscription {
+  chat: ChatMessageConnectionLiveSubscription
+}

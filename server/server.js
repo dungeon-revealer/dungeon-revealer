@@ -13,6 +13,8 @@ const busboy = require("connect-busboy");
 const createFilesRouter = require("./routes/files");
 const createMapRouter = require("./routes/map");
 const createNotesRouter = require("./routes/notes");
+const createGraphQLRouter = require("./routes/graphql").default;
+
 const { Maps } = require("./maps");
 const { Notes } = require("./notes");
 const { Settings } = require("./settings");
@@ -189,10 +191,16 @@ const bootstrapServer = async () => {
     roleMiddleware,
     fileStorage,
   });
+  const ioHandler = [];
+  const { router: graphqlRouter } = createGraphQLRouter({
+    roleMiddleware,
+    registerSocketCommand: (handler) => ioHandler.push(handler),
+  });
 
   apiRouter.use(mapsRouter);
   apiRouter.use(notesRouter);
   apiRouter.use(fileRouter);
+  apiRouter.use(graphqlRouter);
 
   app.use("/api", apiRouter);
 
@@ -251,6 +259,10 @@ const bootstrapServer = async () => {
 
     socket.on("auth", ({ password }) => {
       socket.removeAllListeners();
+
+      ioHandler.forEach((handler) => {
+        handler(socket);
+      });
 
       const role = getRole(password);
       if (role === null) {

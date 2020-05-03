@@ -12,6 +12,7 @@ dungeon-revealer-linux
 dungeon-revealer-macos
 build
 server-build
+__generated__
 
 # Runtime Data/ Persisted Data #
 ################################
