@@ -1,5 +1,9 @@
 FROM node:12-alpine as dependency-builder
 
+# add build tools for other architectures
+# subsequent builds should cache this layer
+RUN apk add make g++ python
+
 WORKDIR /usr/src/build
 
 COPY package.json .
