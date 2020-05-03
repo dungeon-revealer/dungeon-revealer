@@ -25,7 +25,7 @@ jobs:
         run: |
           npm install
           npm run build
-          npm run pkg . --target host --out-path ./bin/
+          npm run compile
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
