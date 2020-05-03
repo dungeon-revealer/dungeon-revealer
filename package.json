@@ -48,6 +48,7 @@
     "not op_mini all"
   ],
   "dependencies": {
+    "@types/use-persisted-state": "0.3.0",
     "body-parser": "1.19.0",
     "connect-busboy": "0.0.2",
     "debug": "4.1.1",
