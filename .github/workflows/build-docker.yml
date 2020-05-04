@@ -54,7 +54,7 @@ jobs:
 
       - name: Set environment
         run: |
-          echo "::set-env name=DOCKER_REPO::${{ secrets.DOCKER_USERNAME }}/dungeon-revealer"
+          echo "::set-env name=DOCKER_REPO::dungeonrevealer/dungeon-revealer"
 
       - name: Set up Docker Buildx
         id: buildx
@@ -97,7 +97,7 @@ jobs:
         run: |
           export TAG="${GITHUB_REF#'refs/tags/'}"
           echo "::set-env name=GH_TAG::$TAG"
-          echo "::set-env name=DOCKER_REPO::${{ secrets.DOCKER_USERNAME }}/dungeon-revealer"
+          echo "::set-env name=DOCKER_REPO::dungeonrevealer/dungeon-revealer"
 
       - name: Set up Docker Buildx
         id: buildx
