@@ -16,11 +16,11 @@ You can protect the DM area by setting a password.
 
 ### Getting the app
 
-The easiest way to use dungeon-revealer is to download the app from the [releases](https://github.com/apclary/dungeon-revealer/releases) page here on github. There is also a [docker image](https://hub.docker.com/r/apclary/dungeon-revealer) that is kept up to date with the releases in this repository.
+The easiest way to use dungeon-revealer is to download the app from the [releases](https://github.com/dungeon-revealer/dungeon-revealer/releases) page here on github. There is also a [docker image](https://hub.docker.com/r/apclary/dungeon-revealer) that is kept up to date with the releases in this repository.
 
 #### Prebuilt app
 
-**Download the app for your system from the [releases page](https://github.com/apclary/dungeon-revealer/releases).**
+**Download the app for your system from the [releases page](https://github.com/dungeon-revealer/dungeon-revealer/releases).**
 We provide builds for Windows, Linux, and OSX.
 
 Running from the command prompt will present connection information and some debugging.
