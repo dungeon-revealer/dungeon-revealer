@@ -1,4 +1,4 @@
-# dungeon-revealer [![Build Status](https://travis-ci.org/dungeon-revealer/dungeon-revealer.svg?branch=master)](https://travis-ci.org/dungeon-revealer/dungeon-revealer)
+# dungeon-revealer [![Build Status](https://github.com/dungeon-revealer/dungeon-revealer/workflows/Node.js%20CI/badge.svg)](https://github.com/dungeon-revealer/dungeon-revealer/actions)
 
 A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
 
@@ -16,7 +16,7 @@ You can protect the DM area by setting a password.
 
 ### Getting the app
 
-The easiest way to use dungeon-revealer is to download the app from the [releases](https://github.com/dungeon-revealer/dungeon-revealer/releases) page here on github. There is also a [docker image](https://hub.docker.com/r/apclary/dungeon-revealer) that is kept up to date with the releases in this repository.
+The easiest way to use dungeon-revealer is to download the app from the [releases](https://github.com/dungeon-revealer/dungeon-revealer/releases) page here on github. There is also a [docker image](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer) that is kept up to date with the releases in this repository.
 
 #### Prebuilt app
 
@@ -56,14 +56,16 @@ This information is also present in the command prompt window.
 
 ##### Docker
 
-To create a docker instance, run the following:
+We provide docker images for x64, x86, and arm architectures.
+An up to date version of docker is required to make sure the correct image architecture is pulled for your host machine.
+To create an instance, run the following:
 
 ```
-docker pull apclary/dungeon-revealer:latest
-docker run -e DM_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/data -d apclary/dungeon-revealer:latest
+docker pull dungeonrevealer/dungeon-revealer:latest
+docker run -e DM_PASSWORD=<password> -e PC_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/data -d dungeonrevealer/dungeon-revealer:latest
 ```
 
-- Replace `<password>` with your chosen DM password
+- Replace `<password>` with your chosen passwords.
 - Replace `<PORT>` with your preferred port.
 - `<DATA_DIR>` is the directory on the host filesystem in which you want to store the maps and settings. `<DATA_DIR>` **must be an absolute path.** One way to achieve this in linux is to navigate to the directory you want in the terminal and then use `$PWD/data` as `<DATA_DIR>`.
 
