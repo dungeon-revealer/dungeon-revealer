@@ -20,7 +20,6 @@ COPY --from=dependency-builder /usr/src/build/package-lock.json /usr/src/build/p
 COPY --from=dependency-builder /usr/src/build/node_modules /usr/src/build/node_modules
 
 COPY tsconfig.json /usr/src/build/tsconfig.json
-COPY tsconfig.server.json /usr/src/build/tsconfig.server.json
 
 COPY server /usr/src/build/server
 COPY src /usr/src/build/src
