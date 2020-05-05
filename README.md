@@ -56,11 +56,13 @@ This information is also present in the command prompt window.
 
 ##### Docker
 
-To create a docker instance, run the following:
+We provide docker images for x64, x86, and arm architectures.
+An up to date version of docker is required to make sure the correct image architecture is pulled for your host machine.
+To create an instance, run the following:
 
 ```
 docker pull dungeonrevealer/dungeon-revealer:latest
-docker run -e DM_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/data -d dungeonrevealer/dungeon-revealer:latest
+docker run -e DM_PASSWORD=<password> -e PC_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/data -d dungeonrevealer/dungeon-revealer:latest
 ```
 
 - Replace `<password>` with your chosen DM password
