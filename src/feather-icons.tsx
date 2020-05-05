@@ -753,3 +753,22 @@ export const ListIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
     <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
   </svg>
 );
+
+export const ClipboardIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+    <rect x={8} y={2} width={8} height={4} rx={1} ry={1} />
+  </svg>
+);

@@ -29,6 +29,7 @@ import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { TokenInfoAside } from "./token-info-aside";
 import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
+import { useToasts } from "react-toast-notifications";
 
 const ShapeButton = styled.button`
   border: none;
@@ -942,6 +943,34 @@ export const DmMap = ({
     }
   });
 
+  const { addToast } = useToasts();
+
+  const copyMapToClipboard = React.useCallback(() => {
+    const mapCanvas = mapCanvasRef.current;
+    const fogCanvas = fogCanvasRef.current;
+    if (!mapCanvas || !fogCanvas) return;
+    const canvas = new OffscreenCanvas(mapCanvas.width, mapCanvas.height);
+    const context = canvas.getContext("2d");
+    context.drawImage(mapCanvas, 0, 0);
+    context.drawImage(fogCanvas, 0, 0);
+
+    canvas.convertToBlob().then((blob) => {
+      navigator.clipboard
+        .write([
+          new window.ClipboardItem({
+            [blob.type]: blob,
+          }),
+        ])
+        .then(() => {
+          addToast(`Copied map image to clipboard.`, {
+            appearance: "success",
+            autoDismiss: true,
+          });
+        })
+        .catch(console.error);
+    });
+  }, [addToast]);
+
   return (
     <div
       tabIndex="0"
@@ -1325,6 +1354,12 @@ export const DmMap = ({
                 <Icons.Label color="hsl(211, 27%, 70%)">Not Live</Icons.Label>
               </Toolbar.Item>
             )}
+            <Toolbar.Item isEnabled>
+              <Toolbar.Button onClick={copyMapToClipboard}>
+                <Icons.ClipboardIcon fill="rgba(0, 0, 0, 1)" />
+                <Icons.Label>Clipboard</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
             <Toolbar.Item isEnabled>
               <Toolbar.Button onClick={sendMap}>
                 <Icons.SendIcon fill="rgba(0, 0, 0, 1)" />
