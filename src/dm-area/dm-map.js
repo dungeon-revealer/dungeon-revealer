@@ -31,6 +31,29 @@ import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
 import { useToasts } from "react-toast-notifications";
 
+const isChrome = () => {
+  const isChromium = window.chrome;
+  const winNav = window.navigator;
+  const vendorName = winNav.vendor;
+  const isOpera = typeof window.opr !== "undefined";
+  const isIEedge = winNav.userAgent.indexOf("Edge") > -1;
+  const isIOSChrome = winNav.userAgent.match("CriOS");
+
+  if (isIOSChrome) {
+    return false;
+  } else if (
+    isChromium !== null &&
+    typeof isChromium !== "undefined" &&
+    vendorName === "Google Inc." &&
+    isOpera === false &&
+    isIEedge === false
+  ) {
+    return true;
+  } else {
+    return false;
+  }
+};
+
 const ShapeButton = styled.button`
   border: none;
   background-color: transparent;
@@ -954,21 +977,28 @@ export const DmMap = ({
     context.drawImage(mapCanvas, 0, 0);
     context.drawImage(fogCanvas, 0, 0);
 
-    canvas.convertToBlob().then((blob) => {
-      navigator.clipboard
-        .write([
-          new window.ClipboardItem({
-            [blob.type]: blob,
-          }),
-        ])
-        .then(() => {
-          addToast(`Copied map image to clipboard.`, {
-            appearance: "success",
-            autoDismiss: true,
-          });
-        })
-        .catch(console.error);
-    });
+    if (isChrome()) {
+      canvas.convertToBlob().then((blob) => {
+        navigator.clipboard
+          .write([
+            new window.ClipboardItem({
+              [blob.type]: blob,
+            }),
+          ])
+          .then(() => {
+            addToast(`Copied map image to clipboard.`, {
+              appearance: "success",
+              autoDismiss: true,
+            });
+          })
+          .catch(console.error);
+      });
+    } else {
+      // this is actually a Canvas and not an OffscreenCanvas (at least on Firefox)
+      // The OffscreenCanvas should not have a `toDataURL` method.
+      const dataUri = canvas.toDataURL("image/jpeg");
+      window.open(dataUri, "_blank");
+    }
   }, [addToast]);
 
   return (
