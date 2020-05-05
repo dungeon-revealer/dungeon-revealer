@@ -43,50 +43,8 @@ jobs:
           name: docker-cache
           path: docker-cache
 
-  deploy_dev:
-    name: Deploy Dev
-    if: startsWith(github.ref, 'refs/heads/') # Just the branches
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set environment
-        run: |
-          echo "::set-env name=DOCKER_REPO::dungeonrevealer/dungeon-revealer"
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: crazy-max/ghaction-docker-buildx@v1
-        with:
-          buildx-version: latest
-          qemu-version: latest
-
-      - name: Login to DockerHub Registry
-        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-
-      - uses: actions/download-artifact@v1
-        with:
-          name: docker-cache
-          path: docker-cache
-
-      - name: Run Buildx
-        run: |
-          docker buildx build \
-            --platform linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64 \
-            --output "type=image,push=true" \
-            -t $DOCKER_REPO:dev \
-            --cache-from=type=local,src=docker-cache/linux/amd64 \
-            --cache-from=type=local,src=docker-cache/linux/386 \
-            --cache-from=type=local,src=docker-cache/linux/arm/v6 \
-            --cache-from=type=local,src=docker-cache/linux/arm/v7 \
-            --cache-from=type=local,src=docker-cache/linux/arm64 ./
-
-
-  deploy_release:
-    name: Deploy release
-    if: startsWith(github.ref, 'refs/tags/') # Just the tags
+  deploy:
+    name: Deploy
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -114,7 +72,21 @@ jobs:
           name: docker-cache
           path: docker-cache
 
-      - name: Run Buildx
+      - name: Run Buildx Dev
+        if: startsWith(github.ref, 'refs/heads/') # Just the branches
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64 \
+            --output "type=image,push=true" \
+            -t $DOCKER_REPO:dev \
+            --cache-from=type=local,src=docker-cache/linux/amd64 \
+            --cache-from=type=local,src=docker-cache/linux/386 \
+            --cache-from=type=local,src=docker-cache/linux/arm/v6 \
+            --cache-from=type=local,src=docker-cache/linux/arm/v7 \
+            --cache-from=type=local,src=docker-cache/linux/arm64 ./
+
+      - name: Run Buildx Release
+        if: startsWith(github.ref, 'refs/tags/') # Just the tags
         run: |
           docker buildx build \
             --platform linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64 \
