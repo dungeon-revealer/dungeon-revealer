@@ -30,29 +30,7 @@ import { TokenInfoAside } from "./token-info-aside";
 import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
 import { useToasts } from "react-toast-notifications";
-
-const isChrome = () => {
-  const isChromium = window.chrome;
-  const winNav = window.navigator;
-  const vendorName = winNav.vendor;
-  const isOpera = typeof window.opr !== "undefined";
-  const isIEedge = winNav.userAgent.indexOf("Edge") > -1;
-  const isIOSChrome = winNav.userAgent.match("CriOS");
-
-  if (isIOSChrome) {
-    return false;
-  } else if (
-    isChromium !== null &&
-    typeof isChromium !== "undefined" &&
-    vendorName === "Google Inc." &&
-    isOpera === false &&
-    isIEedge === false
-  ) {
-    return true;
-  } else {
-    return false;
-  }
-};
+import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
 
 const ShapeButton = styled.button`
   border: none;
@@ -967,21 +945,24 @@ export const DmMap = ({
   });
 
   const { addToast } = useToasts();
+  const asyncClipBoardApi = useAsyncClipboardApi();
 
   const copyMapToClipboard = React.useCallback(() => {
     const mapCanvas = mapCanvasRef.current;
     const fogCanvas = fogCanvasRef.current;
     if (!mapCanvas || !fogCanvas) return;
-    const canvas = new OffscreenCanvas(mapCanvas.width, mapCanvas.height);
-    const context = canvas.getContext("2d");
-    context.drawImage(mapCanvas, 0, 0);
-    context.drawImage(fogCanvas, 0, 0);
 
-    if (isChrome()) {
+    if (asyncClipBoardApi) {
+      const canvas = new OffscreenCanvas(mapCanvas.width, mapCanvas.height);
+      const context = canvas.getContext("2d");
+      context.drawImage(mapCanvas, 0, 0);
+      context.drawImage(fogCanvas, 0, 0);
+
+      const { clipboard, ClipboardItem } = asyncClipBoardApi;
       canvas.convertToBlob().then((blob) => {
-        navigator.clipboard
+        clipboard
           .write([
-            new window.ClipboardItem({
+            new ClipboardItem({
               [blob.type]: blob,
             }),
           ])
@@ -994,12 +975,20 @@ export const DmMap = ({
           .catch(console.error);
       });
     } else {
-      // this is actually a Canvas and not an OffscreenCanvas (at least on Firefox)
-      // The OffscreenCanvas should not have a `toDataURL` method.
-      const dataUri = canvas.toDataURL("image/jpeg");
+      // In case we don't have the Offscreen Canvas we need to use a normal canvas in order to get the base64 string.
+      // The OffscreenCanvas has no `toDataURL` method.
+      const canvas = document.createElement("canvas");
+      canvas.width = mapCanvas.width;
+      canvas.height = mapCanvas.height;
+
+      const context = canvas.getContext("2d");
+      context.drawImage(mapCanvas, 0, 0);
+      context.drawImage(fogCanvas, 0, 0);
+
+      const dataUri = canvas.toDataURL("image/png");
       window.open(dataUri, "_blank");
     }
-  }, [addToast]);
+  }, [addToast, asyncClipBoardApi]);
 
   return (
     <div
