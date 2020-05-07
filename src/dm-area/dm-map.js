@@ -975,7 +975,7 @@ export const DmMap = ({
           .catch(console.error);
       });
     } else {
-      // In case we don't have the Offscreen Canvas we need to use a normal canvas in order to get the base64 string.
+      // In case we don't have the AsyncClilboard available we need to use a normal canvas in order to get the base64 string.
       // The OffscreenCanvas has no `toDataURL` method.
       const canvas = document.createElement("canvas");
       canvas.width = mapCanvas.width;
