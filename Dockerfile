@@ -1,23 +1,42 @@
-FROM node:12-alpine as dependency-builder
+# Using BuildKit is highly recommended
+# DOCKER_BUILDKIT=1 docker build .
 
-# add build tools for other architectures
-# subsequent builds should cache this layer
-RUN apk add make g++ python
+# CACHE = 'fresh' or 'cache' if you want a fresh build, or a cached sqlite3 build
+ARG CACHE=fresh
+
+
+FROM node:12-alpine as base
 
 WORKDIR /usr/src/build
+
+# add build tools for other architectures
+RUN apk add --no-cache make g++ python
+
+
+FROM base as sqlite3-builder
+
+ARG SQLITE3_VERSION="latest"
+
+RUN npm install sqlite3@${SQLITE3_VERSION}
+
+
+FROM sqlite3-builder as cache-dependency-builder
 
 COPY package.json .
 COPY package-lock.json .
 
 RUN npm install
 
-FROM node:12-alpine as application-builder
 
-WORKDIR /usr/src/build
+FROM base as fresh-dependency-builder
 
-COPY --from=dependency-builder /usr/src/build/package.json /usr/src/build/package.json
-COPY --from=dependency-builder /usr/src/build/package-lock.json /usr/src/build/package-lock.json
-COPY --from=dependency-builder /usr/src/build/node_modules /usr/src/build/node_modules
+COPY package.json .
+COPY package-lock.json .
+
+RUN npm install
+
+
+FROM ${CACHE}-dependency-builder as application-builder
 
 COPY tsconfig.json /usr/src/build/tsconfig.json
 
@@ -27,18 +46,14 @@ COPY public /usr/src/build/public
 
 RUN npm run build
 
-FROM node:12-alpine as production-dependency-builder
 
-WORKDIR /usr/src/build
-
-COPY --from=dependency-builder /usr/src/build/package.json /usr/src/build/package.json
-COPY --from=dependency-builder /usr/src/build/package-lock.json /usr/src/build/package-lock.json
-COPY --from=dependency-builder /usr/src/build/node_modules /usr/src/build/node_modules
+FROM ${CACHE}-dependency-builder as production-dependency-builder
 
 # then we remove all dependencies we no longer need
 RUN npm prune --production
 
-FROM node:12-alpine
+
+FROM node:12-alpine as final
 
 # Create app directory
 WORKDIR /usr/src/app

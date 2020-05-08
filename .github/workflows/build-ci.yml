@@ -32,8 +32,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: Build image
-        uses: docker/build-push-action@v1
-        with:
-          repository: dungeonrevealer/dungeon-revealer
-          push: false
+        run: |
+          DOCKER_BUILDKIT=1 docker build .
