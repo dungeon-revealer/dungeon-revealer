@@ -23,6 +23,7 @@ jobs:
           export PLATFORM=${{ matrix.platform }}
           echo "::set-env name=DOCKER_REPO::dungeonrevealer/dungeon-revealer"
           echo "::set-env name=PLATFORM_DASH::${PLATFORM////-}"
+          echo "::set-env name=BUILD_FAIL::true"
         # ${foo////-} replaces slashes with dashes
         # foo='linux/arm/v7'
         # ${foo////-} -> linux-arm-v7
@@ -40,23 +41,60 @@ jobs:
       - name: Login to DockerHub Registry
         run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-      - name: Run Buildx
+      - name: Run Buildx cache from registry
+        continue-on-error: true
         run: |
           docker buildx build \
             --platform ${{ matrix.platform }} \
             --output "type=image,push=false" \
             --build-arg CACHE=cache \
             --build-arg SQLITE3_VERSION=$(cat package.json | jq -r '.dependencies.sqlite3') \
-            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-$PLATFORM_DASH .
+            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-$PLATFORM_DASH . && echo "::set-env name=BUILD_FAIL::false"
+
+      - name: Run Buildx local build cache
+        if: env.BUILD_FAIL == 'true'
+        continue-on-error: true
+        run: |
+          docker buildx build \
+            --platform ${{ matrix.platform }} \
+            --output "type=image,push=false" \
+            --build-arg CACHE=cache \
+            --build-arg SQLITE3_VERSION=$(cat package.json | jq -r '.dependencies.sqlite3') . && echo "::set-env name=BUILD_FAIL::false"
+
+      - name: Run Buildx no cache
+        if: env.BUILD_FAIL == 'true'
+        run: |
+          docker buildx build \
+            --platform ${{ matrix.platform }} \
+            --output "type=image,push=false" \
+            --build-arg CACHE=cache \
+            --no-cache \
+            --build-arg SQLITE3_VERSION=$(cat package.json | jq -r '.dependencies.sqlite3') .
 
       - name: Cache to registry
+        continue-on-error: true
         run: |
           docker buildx build \
             --platform ${{ matrix.platform }} \
             --build-arg CACHE=cache \
             --build-arg SQLITE3_VERSION=$(cat package.json | jq -r '.dependencies.sqlite3') \
             --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-$PLATFORM_DASH \
-            --cache-to=type=registry,ref=$DOCKER_REPO:build-cache-$PLATFORM_DASH,mode=max . || echo "Caching failed."
+            --cache-to=type=registry,ref=$DOCKER_REPO:build-cache-$PLATFORM_DASH,mode=max .
+
+      - name: Cache to local
+        run: |
+          docker buildx build \
+            --platform ${{ matrix.platform }} \
+            --build-arg CACHE=cache \
+            --build-arg SQLITE3_VERSION=$(cat package.json | jq -r '.dependencies.sqlite3') \
+            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-$PLATFORM_DASH \
+            --cache-to=type=local,dest=docker-cache/${{ matrix.platform }},mode=max .
+
+      - name: Upload local cache to artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: docker-cache
+          path: docker-cache
 
 
   deploy:
@@ -83,6 +121,12 @@ jobs:
       - name: Login to DockerHub Registry
         run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
+      - name: Download local cache artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: docker-cache
+          path: docker-cache
+
       - name: Run Buildx Dev
         if: startsWith(github.ref, 'refs/heads/') # Just the branches
         run: |
@@ -91,11 +135,11 @@ jobs:
             --output "type=image,push=true" \
             --build-arg CACHE=cache \
             --build-arg SQLITE3_VERSION=$(cat package.json | jq -r '.dependencies.sqlite3') \
-            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-linux-amd64 \
-            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-linux-386 \
-            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-linux-arm-v6 \
-            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-linux-arm-v7 \
-            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-linux-arm64 \
+            --cache-from=type=local,src=docker-cache/linux/amd64 \
+            --cache-from=type=local,src=docker-cache/linux/386 \
+            --cache-from=type=local,src=docker-cache/linux/arm/v6 \
+            --cache-from=type=local,src=docker-cache/linux/arm/v7 \
+            --cache-from=type=local,src=docker-cache/linux/arm64 \
             -t $DOCKER_REPO:dev .
 
       - name: Run Buildx Release
@@ -106,11 +150,11 @@ jobs:
             --output "type=image,push=true" \
             --build-arg CACHE=cache \
             --build-arg SQLITE3_VERSION=$(cat package.json | jq -r '.dependencies.sqlite3') \
-            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-linux-amd64 \
-            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-linux-386 \
-            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-linux-arm-v6 \
-            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-linux-arm-v7 \
-            --cache-from=type=registry,ref=$DOCKER_REPO:build-cache-linux-arm64 \
+            --cache-from=type=local,src=docker-cache/linux/amd64 \
+            --cache-from=type=local,src=docker-cache/linux/386 \
+            --cache-from=type=local,src=docker-cache/linux/arm/v6 \
+            --cache-from=type=local,src=docker-cache/linux/arm/v7 \
+            --cache-from=type=local,src=docker-cache/linux/arm64 \
             -t $DOCKER_REPO:release \
             -t $DOCKER_REPO:$GH_TAG \
             -t $DOCKER_REPO:stable \
