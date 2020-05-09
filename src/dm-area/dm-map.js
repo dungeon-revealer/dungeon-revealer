@@ -1331,6 +1331,10 @@ export const DmMap = ({
                 <Icons.Label>Notes</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
+          </Toolbar.Group>
+        </Toolbar>
+        <Toolbar horizontal style={{ marginLeft: 24 }}>
+          <Toolbar.Group>
             <Toolbar.Item>
               <ConditionalWrap
                 condition={liveMapId}
