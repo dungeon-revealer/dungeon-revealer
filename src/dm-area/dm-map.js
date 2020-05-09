@@ -29,6 +29,8 @@ import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { TokenInfoAside } from "./token-info-aside";
 import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
+import { useToasts } from "react-toast-notifications";
+import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
 
 const ShapeButton = styled.button`
   border: none;
@@ -942,6 +944,52 @@ export const DmMap = ({
     }
   });
 
+  const { addToast } = useToasts();
+  const asyncClipBoardApi = useAsyncClipboardApi();
+
+  const copyMapToClipboard = React.useCallback(() => {
+    const mapCanvas = mapCanvasRef.current;
+    const fogCanvas = fogCanvasRef.current;
+    if (!mapCanvas || !fogCanvas) return;
+
+    if (asyncClipBoardApi) {
+      const canvas = new OffscreenCanvas(mapCanvas.width, mapCanvas.height);
+      const context = canvas.getContext("2d");
+      context.drawImage(mapCanvas, 0, 0);
+      context.drawImage(fogCanvas, 0, 0);
+
+      const { clipboard, ClipboardItem } = asyncClipBoardApi;
+      canvas.convertToBlob().then((blob) => {
+        clipboard
+          .write([
+            new ClipboardItem({
+              [blob.type]: blob,
+            }),
+          ])
+          .then(() => {
+            addToast(`Copied map image to clipboard.`, {
+              appearance: "success",
+              autoDismiss: true,
+            });
+          })
+          .catch(console.error);
+      });
+    } else {
+      // In case we don't have the AsyncClilboard available we need to use a normal canvas in order to get the base64 string.
+      // The OffscreenCanvas has no `toDataURL` method.
+      const canvas = document.createElement("canvas");
+      canvas.width = mapCanvas.width;
+      canvas.height = mapCanvas.height;
+
+      const context = canvas.getContext("2d");
+      context.drawImage(mapCanvas, 0, 0);
+      context.drawImage(fogCanvas, 0, 0);
+
+      const dataUri = canvas.toDataURL("image/png");
+      window.open(dataUri, "_blank");
+    }
+  }, [addToast, asyncClipBoardApi]);
+
   return (
     <div
       tabIndex="0"
@@ -1283,6 +1331,10 @@ export const DmMap = ({
                 <Icons.Label>Notes</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
+          </Toolbar.Group>
+        </Toolbar>
+        <Toolbar horizontal style={{ marginLeft: 24 }}>
+          <Toolbar.Group>
             <Toolbar.Item>
               <ConditionalWrap
                 condition={liveMapId}
@@ -1325,6 +1377,12 @@ export const DmMap = ({
                 <Icons.Label color="hsl(211, 27%, 70%)">Not Live</Icons.Label>
               </Toolbar.Item>
             )}
+            <Toolbar.Item isEnabled>
+              <Toolbar.Button onClick={copyMapToClipboard}>
+                <Icons.ClipboardIcon fill="rgba(0, 0, 0, 1)" />
+                <Icons.Label>Clipboard</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
             <Toolbar.Item isEnabled>
               <Toolbar.Button onClick={sendMap}>
                 <Icons.SendIcon fill="rgba(0, 0, 0, 1)" />
