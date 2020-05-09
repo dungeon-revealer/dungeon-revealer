@@ -104,7 +104,7 @@
     "react-monaco-editor": "0.36.0",
     "react-scripts": "3.4.1",
     "react-showdown": "2.0.3",
-    "react-spring": "9.0.0-canary.808.8.4a87fcb",
+    "react-spring": "9.0.0-rc.2",
     "react-toast-notifications": "2.4.0",
     "referentiel": "0.0.8",
     "replacestream": "4.0.3",
