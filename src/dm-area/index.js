@@ -13,6 +13,7 @@ import createPersistedState from "use-persisted-state";
 import { Modal } from "../modal";
 import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
+import { ImportFileModal } from "./import-file-modal";
 import { NoteEditor } from "./note-editor";
 import { MediaLibrary } from "./media-library";
 import { SetMapGrid } from "./set-map-grid";
@@ -171,13 +172,13 @@ export const DmArea = () => {
       formData.append("file", file);
       formData.append("title", title);
 
-      const res = await localFetch(`/map`, {
+      const response = await localFetch(`/map`, {
         method: "POST",
         body: formData,
       }).then((res) => res.json());
       setData((data) => ({
         ...data,
-        maps: [...data.maps, res.data.map],
+        maps: [...data.maps, response.data.map],
       }));
     },
     [localFetch]
@@ -322,6 +323,15 @@ export const DmArea = () => {
     setMode({ title: "SET_MAP_GRID", data: { mapId: loadedMapId } });
   }, [loadedMapId]);
 
+  const [droppedFile, setDroppedFile] = React.useState(null);
+
+  const onDropFile = React.useCallback(
+    (file) => {
+      setDroppedFile(file);
+    },
+    [setDroppedFile]
+  );
+
   if (mode.title === "LOADING") {
     return <SplashScreen text="Loading...." />;
   }
@@ -418,6 +428,14 @@ export const DmArea = () => {
                   deleteToken={deleteToken}
                   updateToken={updateToken}
                   tokenInfoAsidetokenInfoAsideState={rootState.tokenInfoAside}
+                  onDropFile={onDropFile}
+                />
+              ) : null}
+              {droppedFile ? (
+                <ImportFileModal
+                  file={droppedFile}
+                  close={() => setDroppedFile(null)}
+                  createMap={createMap}
                 />
               ) : null}
             </ShareImageActionProvider>
