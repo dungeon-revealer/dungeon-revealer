@@ -24,6 +24,7 @@ import { useSvgGrid } from "../hooks/use-svg-grid";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useOvermind } from "../hooks/use-overmind";
+import { useDropZone } from "../hooks/use-drop-zone";
 import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { TokenInfoAside } from "./token-info-aside";
@@ -418,6 +419,7 @@ export const DmMap = ({
   deleteToken,
   updateToken,
   dmPassword,
+  onDropFile,
 }) => {
   const { actions } = useOvermind();
   const mapContainerRef = useRef(null);
@@ -990,10 +992,24 @@ export const DmMap = ({
     }
   }, [addToast, asyncClipBoardApi]);
 
+  const [dropZoneEventHandler] = useDropZone(
+    React.useCallback(
+      (files) => {
+        const [file] = files;
+        onDropFile(file);
+      },
+      [onDropFile]
+    )
+  );
+
   return (
     <div
       tabIndex="0"
       ref={rootContainer}
+      onDragEnter={dropZoneEventHandler.onDragEnter}
+      onDragLeave={dropZoneEventHandler.onDragLeave}
+      onDragOver={dropZoneEventHandler.onDragOver}
+      onDrop={dropZoneEventHandler.onDrop}
       onKeyDown={(ev) => {
         /**
          * overwrite CMD + S
