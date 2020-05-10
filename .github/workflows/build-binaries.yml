@@ -38,22 +38,11 @@ jobs:
 
       - name: Package binary
         run: |
-          echo "a"
-          ls
           mkdir dungeon-revealer-win
-          echo "b"
-          ls
-          cd bin
-          ls
-          cd ..
-          mv ./bin/dungeon-revealer-win.exe ./dungeon-revealer-win/
-          echo "c"
+          mv ./bin/dungeon-revealer.exe ./dungeon-revealer-win/
           mv ./node_sqlite3.node ./dungeon-revealer-win/
-          echo "d"
           mv ./LICENSE ./dungeon-revealer-win/
-          echo "e"
           mv ./README.md ./dungeon-revealer-win/
-          echo "f"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
