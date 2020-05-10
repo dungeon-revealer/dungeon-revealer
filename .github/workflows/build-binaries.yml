@@ -43,6 +43,9 @@ jobs:
           mkdir dungeon-revealer-win
           echo "b"
           ls
+          cd bin
+          ls
+          cd ..
           mv ./bin/dungeon-revealer-win.exe ./dungeon-revealer-win/
           echo "c"
           mv ./node_sqlite3.node ./dungeon-revealer-win/
