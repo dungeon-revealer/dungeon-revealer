@@ -38,11 +38,19 @@ jobs:
 
       - name: Package binary
         run: |
+          echo "a"
+          ls
           mkdir dungeon-revealer-win
+          echo "b"
+          ls
           mv ./bin/dungeon-revealer-win.exe ./dungeon-revealer-win/
+          echo "c"
           mv ./node_sqlite3.node ./dungeon-revealer-win/
+          echo "d"
           mv ./LICENSE ./dungeon-revealer-win/
+          echo "e"
           mv ./README.md ./dungeon-revealer-win/
+          echo "f"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
@@ -163,11 +171,6 @@ jobs:
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
           docker run --rm -v $(pwd):/usr/src/app/ arm32v7/node:12 /bin/sh -c 'cd /usr/src/app/; npm install; npm run build; node ./scripts/copy-node-bindings-path.js; npm run compile:armv7;'
-
-      - name: Package binary
-        run: |
-          BINARY_NAME="bin/dungeon-revealer-linux-armv7"
-          zip "dungeon-revealer-linux-armv7-$GH_TAG.zip" -j "$BINARY_NAME" README.md node_sqlite3.node LICENSE
 
       - name: Package binary
         run: |
