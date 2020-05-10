@@ -35,5 +35,5 @@ jobs:
       - name: Build image
         uses: docker/build-push-action@v1
         with:
-          repository: dungeonrevealer/dungeon-revealer
+          repository: ${{ secrets.DOCKER_REPO }}
           push: false

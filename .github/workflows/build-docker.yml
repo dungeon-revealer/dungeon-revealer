@@ -55,7 +55,6 @@ jobs:
         run: |
           export TAG="${GITHUB_REF#'refs/tags/'}"
           echo "::set-env name=GH_TAG::$TAG"
-          echo "::set-env name=DOCKER_REPO::dungeonrevealer/dungeon-revealer"
 
       - name: Set up Docker Buildx
         id: buildx
@@ -78,7 +77,7 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64 \
             --output "type=image,push=true" \
-            -t $DOCKER_REPO:dev \
+            -t ${{ secrets.DOCKER_REPO }}:dev \
             --cache-from=type=local,src=docker-cache/linux/amd64 \
             --cache-from=type=local,src=docker-cache/linux/386 \
             --cache-from=type=local,src=docker-cache/linux/arm/v6 \
@@ -91,10 +90,10 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64 \
             --output "type=image,push=true" \
-            -t $DOCKER_REPO:release \
-            -t $DOCKER_REPO:$GH_TAG \
-            -t $DOCKER_REPO:stable \
-            -t $DOCKER_REPO:latest \
+            -t ${{ secrets.DOCKER_REPO }}:release \
+            -t ${{ secrets.DOCKER_REPO }}:$GH_TAG \
+            -t ${{ secrets.DOCKER_REPO }}:stable \
+            -t ${{ secrets.DOCKER_REPO }}:latest \
             --cache-from=type=local,src=docker-cache/linux/amd64 \
             --cache-from=type=local,src=docker-cache/linux/386 \
             --cache-from=type=local,src=docker-cache/linux/arm/v6 \
