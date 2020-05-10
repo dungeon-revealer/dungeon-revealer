@@ -1,6 +1,7 @@
 "use strict";
 
 const path = require("path");
+const fs = require("fs");
 const binary = require("node-pre-gyp");
 
 const bindingPath = binary.find(
@@ -9,4 +10,10 @@ const bindingPath = binary.find(
   )
 );
 
-console.log(bindingPath);
+const targetDirectory = path.resolve(__dirname, "..");
+
+fs.copyFileSync(
+  bindingPath,
+  path.join(targetDirectory, path.basename(bindingPath))
+);
+fs.unlinkSync(bindingPath);
