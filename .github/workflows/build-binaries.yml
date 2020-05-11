@@ -206,14 +206,15 @@ jobs:
           draft: true
           prerelease: false
 
-      - uses: actions/download-artifact@v1
+      - uses: actions/download-artifact@v2
         with:
-          path: bin/
+          path: bin
 
       # Zip all artifacts
       - name: Zip Archives
         run: |
           cd bin
+          ls
           for idir in */;
           do
             (cd "$idir"; zip -r "../${idir%/}.zip" .);
