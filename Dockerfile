@@ -1,44 +1,33 @@
-FROM node:12-alpine as dependency-builder
+FROM node:12-alpine as base
 
 # add build tools for other architectures
 # subsequent builds should cache this layer
 RUN apk add make g++ python
 
+
+FROM base as dependency-builder
+
 WORKDIR /usr/src/build
 
-COPY package.json .
-COPY package-lock.json .
+RUN echo "unsafe-perm = true" > .npmrc
+
+COPY . .
 
 RUN npm install
 
-FROM node:12-alpine as application-builder
 
-WORKDIR /usr/src/build
-
-COPY --from=dependency-builder /usr/src/build/package.json /usr/src/build/package.json
-COPY --from=dependency-builder /usr/src/build/package-lock.json /usr/src/build/package-lock.json
-COPY --from=dependency-builder /usr/src/build/node_modules /usr/src/build/node_modules
-
-COPY tsconfig.json /usr/src/build/tsconfig.json
-
-COPY server /usr/src/build/server
-COPY src /usr/src/build/src
-COPY public /usr/src/build/public
+FROM dependency-builder as application-builder
 
 RUN npm run build
 
-FROM node:12-alpine as production-dependency-builder
 
-WORKDIR /usr/src/build
-
-COPY --from=dependency-builder /usr/src/build/package.json /usr/src/build/package.json
-COPY --from=dependency-builder /usr/src/build/package-lock.json /usr/src/build/package-lock.json
-COPY --from=dependency-builder /usr/src/build/node_modules /usr/src/build/node_modules
+FROM dependency-builder as production-dependency-builder
 
 # then we remove all dependencies we no longer need
 RUN npm prune --production
 
-FROM node:12-alpine
+
+FROM node:12-alpine as final
 
 # Create app directory
 WORKDIR /usr/src/app

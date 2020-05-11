@@ -6,12 +6,13 @@ on:
       - "v*"
 
 jobs:
-  job_build_x64:
+
+  job_build:
     name: ${{ matrix.os }} Binaries
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu, macos, windows]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -21,17 +22,34 @@ jobs:
         with:
           node-version: 10
 
-      - name: Compile x64 binary
+      - name: Install Dependencies
         run: |
           npm install
+
+      - name: Build Code
+        run: |
           npm run build
+
+      - name: Compile x64 binary
+        id: compile
+        run: |
+          node ./scripts/copy-node-bindings-path.js
           npm run compile
 
+      - name: Package binary
+        run: |
+          mkdir dungeon-revealer-${{ matrix.os }}
+          mv ./bin/dungeon-revealer* ./dungeon-revealer-${{ matrix.os }}/
+          mv ./node_sqlite3.node ./dungeon-revealer-${{ matrix.os }}/
+          mv ./LICENSE ./dungeon-revealer-${{ matrix.os }}/
+          mv ./README.md ./dungeon-revealer-${{ matrix.os }}/
+
       - name: Upload artifacts
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
-          name: binaries
-          path: bin/
+          name: dungeon-revealer-${{ matrix.os }}
+          path: "dungeon-revealer-${{ matrix.os }}/"
+
 
   job_build_arm:
     name: ARM Linux Binaries
@@ -42,31 +60,40 @@ jobs:
 
       - name: Build arm
         run: |
-            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-            docker run --rm -v $(pwd):/usr/src/app/ arm32v7/node:12 /bin/sh -c 'cd /usr/src/app/; npm install; npm run compile:armv7'
+          echo "unsafe-perm = true" > .npmrc
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          docker run --rm -v $(pwd):/usr/src/app/ arm32v7/node:12 /bin/sh -c 'cd /usr/src/app/ && npm install && npm run build && node ./scripts/copy-node-bindings-path.js && npm run compile:armv7 && cp node_sqlite3.node bin/'
+
+      - name: Package binary
+        run: |
+          mkdir dungeon-revealer-linux-armv7
+          mv ./bin/dungeon-revealer-linux-armv7 ./dungeon-revealer-linux-armv7/
+          mv ./bin/node_sqlite3.node ./dungeon-revealer-linux-armv7/
+          mv ./LICENSE ./dungeon-revealer-linux-armv7/
+          mv ./README.md ./dungeon-revealer-linux-armv7/
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
-          name: binaries
-          path: bin/
+          name: dungeon-revealer-linux-armv7
+          path: "dungeon-revealer-linux-armv7/"
 
   job_upload:
     name: Upload Release Assets
-    needs: [job_build_x64, job_build_arm]
+    needs: [job_build, job_build_arm]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Github Actions is weird about environment variables.
-      # Setting a variable in this way makes it available to all subsequent steps in the job.
-      # The only way to get the tag is to extract it from github-ref.
-      # For example, GITHUB_REF='refs/tags/v1.5'.
+      - name: Setup node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10
+
       - name: Set environment
         run: |
-          export TAG="${GITHUB_REF#'refs/tags/'}"
-          echo "::set-env name=GH_TAG::$TAG"
+          node ./scripts/set-git-tag-env.js
 
       - name: Create Release
         id: create_release
@@ -79,19 +106,21 @@ jobs:
           draft: true
           prerelease: false
 
-      - uses: actions/download-artifact@v1
+      - uses: actions/download-artifact@v2
         with:
-          name: binaries
           path: bin/
 
-      - name: Prepare assets
-        if: startsWith(github.ref, 'refs/tags/')
+      # Zip all artifacts
+      - name: Zip Archives
         run: |
-          chmod +x bin/dungeon-revealer-linux bin/dungeon-revealer-macos bin/dungeon-revealer-linux-armv7
-          zip "dungeon-revealer-linux-$GH_TAG.zip" -j bin/dungeon-revealer-linux README.md
-          zip "dungeon-revealer-linux-armv7-$GH_TAG.zip" -j bin/dungeon-revealer-linux-armv7 README.md
-          zip "dungeon-revealer-macos-$GH_TAG.zip" -j bin/dungeon-revealer-macos README.md
-          zip "dungeon-revealer-win-$GH_TAG.zip" -j bin/dungeon-revealer-win.exe README.md
+          cd bin
+          chmod +x ./dungeon-revealer-macos/dungeon-revealer-macos
+          chmod +x ./dungeon-revealer-ubuntu/dungeon-revealer-linux
+          chmod +x ./dungeon-revealer-linux-armv7/dungeon-revealer-linux-armv7
+          for idir in */;
+          do
+            (cd "$idir"; rm dungeon-revealer || true; zip -r "../${idir%/}.zip" .);
+          done
 
       # We have to upload assets individually using upload-release-asset@v1
       # There isn't a matrix for steps.
@@ -101,7 +130,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./dungeon-revealer-linux-${{ env.GH_TAG }}.zip
+          asset_path: ./bin/dungeon-revealer-ubuntu.zip
           asset_name: dungeon-revealer-linux-${{ env.GH_TAG }}.zip
           asset_content_type: application/zip
 
@@ -111,7 +140,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./dungeon-revealer-macos-${{ env.GH_TAG }}.zip
+          asset_path: ./bin/dungeon-revealer-macos.zip
           asset_name: dungeon-revealer-macos-${{ env.GH_TAG }}.zip
           asset_content_type: application/zip
 
@@ -121,8 +150,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./dungeon-revealer-win-${{ env.GH_TAG }}.zip
-          asset_name: dungeon-revealer-win-${{ env.GH_TAG }}.zip
+          asset_path: ./bin/dungeon-revealer-windows.zip
+          asset_name: dungeon-revealer-windows-${{ env.GH_TAG }}.zip
           asset_content_type: application/zip
 
       - name: Upload Linux ARM Release
@@ -131,6 +160,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./dungeon-revealer-linux-armv7-${{ env.GH_TAG }}.zip
+          asset_path: ./bin/dungeon-revealer-linux-armv7.zip
           asset_name: dungeon-revealer-linux-armv7-${{ env.GH_TAG }}.zip
           asset_content_type: application/zip

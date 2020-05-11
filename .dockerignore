@@ -4,3 +4,4 @@ npm-debug.log
 data/
 build/
 bin/dungeon-revealer-*
+docker-cache
