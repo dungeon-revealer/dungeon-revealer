@@ -35,7 +35,7 @@ jobs:
           docker buildx build \
             --platform ${{ matrix.platform }} \
             --output "type=image,push=false" \
-            --cache-to=type=local,dest=docker-cache/${{ matrix.platform }} ./
+            --cache-to=type=local,dest=docker-cache/${{ matrix.platform }},mode=max ./
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
