@@ -6,9 +6,13 @@ on:
       - "v*"
 
 jobs:
-  job_build_win:
-    name: Windows Binaries
-    runs-on: windows-latest
+
+  job_build:
+    name: ${{ matrix.os }} Binaries
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      matrix:
+        os: [ubuntu, macos, windows]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -17,59 +21,6 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 10
-
-      - name: Set environment
-        run: |
-          node ./scripts/set-git-tag-env.js
-
-      - name: Install Dependencies
-        run: |
-          npm install
-
-      - name: Build Code
-        run: |
-          npm run build
-
-      - name: Compile x64 binary
-        id: compile
-        run: |
-          node .\scripts\copy-node-bindings-path.js
-          npm run compile
-
-      - name: Package binary
-        run: |
-          mkdir dungeon-revealer-win
-          mv ./bin/dungeon-revealer.exe ./dungeon-revealer-win/
-          mv ./node_sqlite3.node ./dungeon-revealer-win/
-          mv ./LICENSE ./dungeon-revealer-win/
-          mv ./README.md ./dungeon-revealer-win/
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: dungeon-revealer-win
-          path: "dungeon-revealer-win/"
-
-  job_build_linux:
-    name: Linux Binaries
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set environment
-        run: |
-          export TAG="${GITHUB_REF#'refs/tags/'}"
-          echo "::set-env name=GH_TAG::$TAG"
-
-      - name: Setup node
-        uses: actions/setup-node@v1
-        with:
-          node-version: 10
-
-      - name: Set environment
-        run: |
-          node ./scripts/set-git-tag-env.js
 
       - name: Install Dependencies
         run: |
@@ -87,63 +38,18 @@ jobs:
 
       - name: Package binary
         run: |
-          mkdir dungeon-revealer-linux
-          mv ./bin/dungeon-revealer-linux ./dungeon-revealer-linux/
-          chmod +x ./dungeon-revealer-linux/dungeon-revealer-linux
-          mv ./node_sqlite3.node ./dungeon-revealer-linux/
-          mv ./LICENSE ./dungeon-revealer-linux/
-          mv ./README.md ./dungeon-revealer-linux/
+          mkdir dungeon-revealer-${{ matrix.os }}
+          mv ./bin/dungeon-revealer* ./dungeon-revealer-${{ matrix.os }}/
+          mv ./node_sqlite3.node ./dungeon-revealer-${{ matrix.os }}/
+          mv ./LICENSE ./dungeon-revealer-${{ matrix.os }}/
+          mv ./README.md ./dungeon-revealer-${{ matrix.os }}/
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
-          name: dungeon-revealer-linux
-          path: "dungeon-revealer-linux/"
+          name: dungeon-revealer-${{ matrix.os }}
+          path: "dungeon-revealer-${{ matrix.os }}/"
 
-  job_build_macos:
-    name: MacOS Binaries
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Setup node
-        uses: actions/setup-node@v1
-        with:
-          node-version: 10
-
-      - name: Set environment
-        run: |
-          node ./scripts/set-git-tag-env.js
-
-      - name: Install Dependencies
-        run: |
-          npm install
-
-      - name: Build Code
-        run: |
-          npm run build
-
-      - name: Compile x64 binary
-        id: compile
-        run: |
-          node ./scripts/copy-node-bindings-path.js
-          npm run compile
-
-      - name: Package binary
-        run: |
-          mkdir dungeon-revealer-macos
-          mv ./bin/dungeon-revealer-macos ./dungeon-revealer-macos/
-          chmod +x ./dungeon-revealer-macos/dungeon-revealer-macos
-          mv ./node_sqlite3.node ./dungeon-revealer-macos/
-          mv ./LICENSE ./dungeon-revealer-macos/
-          mv ./README.md ./dungeon-revealer-macos/
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: dungeon-revealer-macos
-          path: "dungeon-revealer-macos/"
 
   job_build_arm:
     name: ARM Linux Binaries
@@ -152,42 +58,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Setup node
-        uses: actions/setup-node@v1
-        with:
-          node-version: 10
-
-      - name: Set environment
-        run: |
-          node ./scripts/set-git-tag-env.js
-
       - name: Build arm
         run: |
+          echo "unsafe-perm = true" > .npmrc
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          docker run --rm \
-            -v $(pwd):/usr/src/app/ \
-            --user $(id -u):$(id -g) \
-            --workdir /usr/src/app/ \
-            arm32v7/node:12 \
-            /bin/sh -c 'npm install; npm run build; node ./scripts/copy-node-bindings-path.js; npm run compile:armv7; chmod +x ./bin/dungeon-revealer-linux-armv7'
+          docker run --rm -v $(pwd):/usr/src/app/ arm32v7/node:12 /bin/sh -c 'cd /usr/src/app/ && npm install && npm run build && node ./scripts/copy-node-bindings-path.js && npm run compile:armv7 && cp node_sqlite3.node bin/'
 
       - name: Package binary
         run: |
           mkdir dungeon-revealer-linux-armv7
           mv ./bin/dungeon-revealer-linux-armv7 ./dungeon-revealer-linux-armv7/
-          mv ./node_sqlite3.node ./dungeon-revealer-linux-armv7/
+          mv ./bin/node_sqlite3.node ./dungeon-revealer-linux-armv7/
           mv ./LICENSE ./dungeon-revealer-linux-armv7/
           mv ./README.md ./dungeon-revealer-linux-armv7/
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: dungeon-revealer-linux-armv7
           path: "dungeon-revealer-linux-armv7/"
 
   job_upload:
     name: Upload Release Assets
-    needs: [job_build_macos, job_build_linux, job_build_win, job_build_arm]
+    needs: [job_build, job_build_arm]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -215,16 +108,18 @@ jobs:
 
       - uses: actions/download-artifact@v2
         with:
-          path: bin
+          path: bin/
 
       # Zip all artifacts
       - name: Zip Archives
         run: |
           cd bin
-          ls
+          chmod +x ./dungeon-revealer-macos/dungeon-revealer-macos
+          chmod +x ./dungeon-revealer-ubuntu/dungeon-revealer-linux
+          chmod +x ./dungeon-revealer-linux-armv7/dungeon-revealer-linux-armv7
           for idir in */;
           do
-            (cd "$idir"; zip -r "../${idir%/}.zip" .);
+            (cd "$idir"; rm dungeon-revealer || true; zip -r "../${idir%/}.zip" .);
           done
 
       # We have to upload assets individually using upload-release-asset@v1
@@ -235,7 +130,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./bin/dungeon-revealer-linux.zip
+          asset_path: ./bin/dungeon-revealer-ubuntu.zip
           asset_name: dungeon-revealer-linux-${{ env.GH_TAG }}.zip
           asset_content_type: application/zip
 
@@ -255,8 +150,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./bin/dungeon-revealer-win.zip
-          asset_name: dungeon-revealer-win-${{ env.GH_TAG }}.zip
+          asset_path: ./bin/dungeon-revealer-windows.zip
+          asset_name: dungeon-revealer-windows-${{ env.GH_TAG }}.zip
           asset_content_type: application/zip
 
       - name: Upload Linux ARM Release
