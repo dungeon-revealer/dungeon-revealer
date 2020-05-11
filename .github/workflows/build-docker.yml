@@ -7,6 +7,7 @@ on:
       - 'v*'
 
 jobs:
+
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -16,6 +17,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Set environment
+        run: |
+          export PLATFORM=${{ matrix.platform }}
+          echo "::set-env name=PLATFORM_DASH::${PLATFORM////-}"
+          echo "::set-env name=BUILD_FAIL::true"
+        # ${foo////-} replaces slashes with dashes
+        # foo='linux/arm/v7'
+        # ${foo////-} -> linux-arm-v7
 
       - name: Set up Docker Buildx
         id: buildx
@@ -30,21 +40,56 @@ jobs:
       - name: Login to DockerHub Registry
         run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-      - name: Run Buildx
+      - name: Run Buildx cache from registry
+        continue-on-error: true
         run: |
           docker buildx build \
             --platform ${{ matrix.platform }} \
             --output "type=image,push=false" \
-            --cache-to=type=local,dest=docker-cache/${{ matrix.platform }},mode=max ./
+            --cache-from=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH \
+            . && echo "::set-env name=BUILD_FAIL::false"
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v1
+      - name: Run Buildx local build cache
+        if: env.BUILD_FAIL == 'true'
+        continue-on-error: true
+        run: |
+          docker buildx build \
+            --platform ${{ matrix.platform }} \
+            --output "type=image,push=false" \
+            . && echo "::set-env name=BUILD_FAIL::false"
+
+      - name: Run Buildx no cache
+        if: env.BUILD_FAIL == 'true'
+        run: |
+          docker buildx build \
+            --platform ${{ matrix.platform }} \
+            --output "type=image,push=false" \
+            --no-cache .
+
+      - name: Cache to registry
+        continue-on-error: true
+        run: |
+          docker buildx build \
+            --platform ${{ matrix.platform }} \
+            --cache-from=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH \
+            --cache-to=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH,mode=max .
+
+      - name: Cache to local
+        run: |
+          docker buildx build \
+            --platform ${{ matrix.platform }} \
+            --cache-from=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH \
+            --cache-to=type=local,dest=docker-cache/${{ matrix.platform }},mode=max .
+
+      - name: Upload local cache to artifact
+        uses: actions/upload-artifact@v2
         with:
           name: docker-cache
           path: docker-cache
 
+
   deploy:
-    name: Deploy
+    name: Deploy Images
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -66,7 +111,8 @@ jobs:
       - name: Login to DockerHub Registry
         run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-      - uses: actions/download-artifact@v1
+      - name: Download local cache artifact
+        uses: actions/download-artifact@v2
         with:
           name: docker-cache
           path: docker-cache
@@ -77,12 +123,12 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64 \
             --output "type=image,push=true" \
-            -t ${{ secrets.DOCKER_REPO }}:dev \
             --cache-from=type=local,src=docker-cache/linux/amd64 \
             --cache-from=type=local,src=docker-cache/linux/386 \
             --cache-from=type=local,src=docker-cache/linux/arm/v6 \
             --cache-from=type=local,src=docker-cache/linux/arm/v7 \
-            --cache-from=type=local,src=docker-cache/linux/arm64 ./
+            --cache-from=type=local,src=docker-cache/linux/arm64 \
+            -t ${{ secrets.DOCKER_REPO }}:dev .
 
       - name: Run Buildx Release
         if: startsWith(github.ref, 'refs/tags/') # Just the tags
@@ -90,12 +136,12 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64 \
             --output "type=image,push=true" \
-            -t ${{ secrets.DOCKER_REPO }}:release \
-            -t ${{ secrets.DOCKER_REPO }}:$GH_TAG \
-            -t ${{ secrets.DOCKER_REPO }}:stable \
-            -t ${{ secrets.DOCKER_REPO }}:latest \
             --cache-from=type=local,src=docker-cache/linux/amd64 \
             --cache-from=type=local,src=docker-cache/linux/386 \
             --cache-from=type=local,src=docker-cache/linux/arm/v6 \
             --cache-from=type=local,src=docker-cache/linux/arm/v7 \
-            --cache-from=type=local,src=docker-cache/linux/arm64 ./
+            --cache-from=type=local,src=docker-cache/linux/arm64 \
+            -t ${{ secrets.DOCKER_REPO }}:release \
+            -t ${{ secrets.DOCKER_REPO }}:$GH_TAG \
+            -t ${{ secrets.DOCKER_REPO }}:stable \
+            -t ${{ secrets.DOCKER_REPO }}:latest .
