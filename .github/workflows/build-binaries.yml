@@ -89,6 +89,7 @@ jobs:
         run: |
           mkdir dungeon-revealer-linux
           mv ./bin/dungeon-revealer-linux ./dungeon-revealer-linux/
+          chmod +x ./dungeon-revealer-macos/dungeon-revealer-linux
           mv ./node_sqlite3.node ./dungeon-revealer-linux/
           mv ./LICENSE ./dungeon-revealer-linux/
           mv ./README.md ./dungeon-revealer-linux/
@@ -133,6 +134,7 @@ jobs:
         run: |
           mkdir dungeon-revealer-macos
           mv ./bin/dungeon-revealer-macos ./dungeon-revealer-macos/
+          chmod +x ./dungeon-revealer-macos/dungeon-revealer-macos
           mv ./node_sqlite3.node ./dungeon-revealer-macos/
           mv ./LICENSE ./dungeon-revealer-macos/
           mv ./README.md ./dungeon-revealer-macos/
@@ -162,7 +164,12 @@ jobs:
       - name: Build arm
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          docker run --rm -v $(pwd):/usr/src/app/ arm32v7/node:12 /bin/sh -c 'cd /usr/src/app/; npm install; npm run build; node ./scripts/copy-node-bindings-path.js; npm run compile:armv7;'
+          docker run --rm \
+            -v $(pwd):/usr/src/app/ \
+            --user $(id -u):$(id -g) \
+            --workdir /usr/src/app/ \
+            arm32v7/node:12 \
+            /bin/sh -c 'npm install; npm run build; node ./scripts/copy-node-bindings-path.js; npm run compile:armv7; chmod +x ./bin/dungeon-revealer-linux-armv7'
 
       - name: Package binary
         run: |
