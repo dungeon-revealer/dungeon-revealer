@@ -89,7 +89,7 @@ jobs:
         run: |
           mkdir dungeon-revealer-linux
           mv ./bin/dungeon-revealer-linux ./dungeon-revealer-linux/
-          chmod +x ./dungeon-revealer-macos/dungeon-revealer-linux
+          chmod +x ./dungeon-revealer-linux/dungeon-revealer-linux
           mv ./node_sqlite3.node ./dungeon-revealer-linux/
           mv ./LICENSE ./dungeon-revealer-linux/
           mv ./README.md ./dungeon-revealer-linux/
