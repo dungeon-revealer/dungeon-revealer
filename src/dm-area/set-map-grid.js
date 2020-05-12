@@ -641,8 +641,9 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
                     onClick={() => {
                       onAbort();
                     }}
+                    danger
                   >
-                    <Icons.XIcon /> <span>Abort</span>
+                    <Icons.XIcon height={20} /> <span>Abort</span>
                   </Button.Tertiary>
                 </div>
                 <div>
@@ -651,7 +652,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
                       setStep("SELECT_GRID");
                     }}
                   >
-                    <span>Next</span> <Icons.ChevronRightIcon />
+                    <span>Next</span> <Icons.ChevronRightIcon height={20} />
                   </Button.Primary>
                 </div>
               </InstructionBubbleActions>
@@ -666,19 +667,20 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
                     onClick={() => {
                       onAbort();
                     }}
+                    danger
                   >
-                    <Icons.XIcon /> <span>Abort</span>
+                    <Icons.XIcon height={20} /> <span>Abort</span>
                   </Button.Tertiary>
                 </div>
                 <div>
-                  <Button.Primary
+                  <Button.Tertiary
                     style={{ marginRight: 16 }}
                     onClick={() => {
                       setStep("SELECT_PARTIAL");
                     }}
                   >
-                    <Icons.ChevronLeftIcon /> <span>Back</span>
-                  </Button.Primary>
+                    <Icons.ChevronLeftIcon height={20} /> <span>Back</span>
+                  </Button.Tertiary>
                 </div>
                 <div>
                   <Button.Primary
@@ -686,7 +688,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
                       setStep("FINE_TUNE_GRID");
                     }}
                   >
-                    <span>Next</span> <Icons.ChevronRightIcon />
+                    <span>Next</span> <Icons.ChevronRightIcon height={20} />
                   </Button.Primary>
                 </div>
               </InstructionBubbleActions>
@@ -701,19 +703,20 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
                     onClick={() => {
                       onAbort();
                     }}
+                    danger
                   >
-                    <Icons.XIcon /> Abort
+                    <Icons.XIcon height={20} /> <span>Abort</span>
                   </Button.Tertiary>
                 </div>
                 <div>
-                  <Button.Primary
+                  <Button.Tertiary
                     style={{ marginRight: 16 }}
                     onClick={() => {
                       setStep("SELECT_GRID");
                     }}
                   >
-                    <Icons.ChevronLeftIcon /> <span>Back</span>
-                  </Button.Primary>
+                    <Icons.ChevronLeftIcon height={20} /> <span>Back</span>
+                  </Button.Tertiary>
                 </div>
                 <div>
                   <Button.Primary
@@ -726,7 +729,7 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
                     }}
                   >
                     <span>Done</span>
-                    <Icons.CheckIcon />
+                    <Icons.CheckIcon height={20} />
                   </Button.Primary>
                 </div>
               </InstructionBubbleActions>
