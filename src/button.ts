@@ -19,7 +19,7 @@ const ButtonBase = styled.button<ButtonBaseProps>`
   font-weight: 700;
   line-height: 1.25;
   padding: ${(p) =>
-    p.big ? `1.5rem 2rem` : p.small ? `0.5rem .75rem` : `1rem 1.5rem`};
+    p.big ? `1rem 2rem` : p.small ? `0.5rem .75rem` : `1rem 1.5rem`};
   width: ${(p) => (p.fullWidth ? "100%" : null)};
   height: ${(p) => (p.big ? `60px` : p.small ? `32px` : `54px`)};
   font-size: ${(p) => (p.small ? `12px` : undefined)};
