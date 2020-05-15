@@ -49,6 +49,7 @@
     "not op_mini all"
   ],
   "dependencies": {
+    "@airjp73/dice-notation": "1.1.0",
     "@types/use-persisted-state": "0.3.0",
     "body-parser": "1.19.0",
     "connect-busboy": "0.0.2",
@@ -57,7 +58,6 @@
     "fs-extra": "9.0.0",
     "gqtx": "0.6.0",
     "graphql": "14.6.0",
-    "graphql-live-subscriptions": "1.4.2",
     "graphql-subscriptions": "1.1.0",
     "junk": "3.1.0",
     "lodash": "4.17.15",
@@ -124,7 +124,6 @@
     "relay-compiler-language-typescript": "12.0.1",
     "relay-config": "9.1.0",
     "relay-runtime": "9.1.0",
-    "replacestream": "4.0.3",
     "sanitize-html": "1.25.0",
     "showdown": "1.9.1",
     "socket.io-client": "2.3.0",

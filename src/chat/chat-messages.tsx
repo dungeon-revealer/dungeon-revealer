@@ -1,5 +1,5 @@
 import React from "react";
-import { createFragmentContainer } from "react-relay";
+import { createPaginationContainer } from "react-relay";
 import graphql from "babel-plugin-relay/macro";
 import { chatMessages_chat } from "./__generated__/chatMessages_chat.graphql";
 import { ChatMessage } from "./chat-message";
@@ -12,16 +12,17 @@ const StyledChatMessages = styled.div`
 `;
 
 const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
-  chat,
+  chat: { chat },
 }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
   const [follow, setFollow] = React.useState(true);
+
   React.useEffect(() => {
     if (!ref.current) return;
     if (follow === true) {
       ref.current.scrollTop = ref.current.scrollHeight;
     }
-  }, [chat.messages, follow]);
+  }, [chat.edges, follow]);
 
   return (
     <StyledChatMessages
@@ -36,20 +37,40 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
         }
       }}
     >
-      {chat.messages.map((message) => (
-        <ChatMessage message={message} key={message.id} />
+      {chat.edges.map((edge) => (
+        <ChatMessage message={edge.node} key={edge.node.id} />
       ))}
     </StyledChatMessages>
   );
 };
 
-export const ChatMessages = createFragmentContainer(ChatMessagesRenderer, {
-  chat: graphql`
-    fragment chatMessages_chat on ChatMessageConnection {
-      messages {
-        ...chatMessage_message
-        id
+export const ChatMessages = createPaginationContainer(
+  ChatMessagesRenderer,
+  {
+    chat: graphql`
+      fragment chatMessages_chat on Query
+        @argumentDefinitions(
+          count: { type: "Int", defaultValue: 10 }
+          cursor: { type: "ID" }
+        ) {
+        chat(first: $count, after: $cursor)
+          @connection(key: "chatMessages_chat") {
+          edges {
+            node {
+              id
+              ...chatMessage_message
+            }
+          }
+        }
       }
-    }
-  `,
-});
+    `,
+  },
+  {
+    getVariables: () => ({ count: 0, cursor: "lel" }),
+    query: graphql`
+      query chatMessagesQuery($count: Int!, $cursor: ID) {
+        ...chatMessages_chat @arguments(count: $count, cursor: $cursor)
+      }
+    `,
+  }
+);

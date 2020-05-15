@@ -47,7 +47,17 @@ const ChatMessageRenderer: React.FC<{
         <AuthorName style={{ fontWeight: "bold" }}>
           {message.authorName}{" "}
         </AuthorName>
-        {message.rawContent}
+        {message.rawContent.map((node) =>
+          node.__typename === "ChatMessageTextNode"
+            ? node.textContent
+            : node.__typename === "ChatMessageDiceRollNode"
+            ? node.content.__typename === "DiceRoll"
+              ? `[${node.content.result}]`
+              : node.content.__typename === "InvalidDiceRoll"
+              ? `[${node.content.content}]`
+              : null
+            : null
+        )}
       </Column>
     </Container>
   );
@@ -59,7 +69,24 @@ export const ChatMessage = createFragmentContainer(ChatMessageRenderer, {
       id
       authorName
       createdAt
-      rawContent
+      rawContent {
+        __typename
+        ... on ChatMessageTextNode {
+          textContent
+        }
+        ... on ChatMessageDiceRollNode {
+          content {
+            ... on DiceRoll {
+              __typename
+              result
+            }
+            ... on InvalidDiceRoll {
+              __typename
+              content
+            }
+          }
+        }
+      }
     }
   `,
 });

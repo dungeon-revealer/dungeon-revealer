@@ -1,25 +1,21 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
 import { QueryRenderer, requestSubscription } from "react-relay";
+import { ConnectionHandler } from "relay-runtime";
 import { useEnvironment } from "../relay-environment";
 import { ChatMessages } from "./chat-messages";
 import { chatSubscription } from "./__generated__/chatSubscription.graphql";
 import { chatQuery } from "./__generated__/chatQuery.graphql";
-import { applyJSONPatchToRelayStore } from "../apply-json-patch-to-relay-store";
+
 import styled from "@emotion/styled/macro";
 import { ChatTextArea } from "./chat-textarea";
 
 const AppSubscription = graphql`
   subscription chatSubscription {
-    chat {
-      query {
-        ...chatMessages_chat
-      }
-      patch {
-        op
-        from
-        path
-        value
+    chatMessagesAdded {
+      messages {
+        id
+        ...chatMessage_message
       }
     }
   }
@@ -27,9 +23,7 @@ const AppSubscription = graphql`
 
 const ChatQuery = graphql`
   query chatQuery {
-    chat {
-      ...chatMessages_chat
-    }
+    ...chatMessages_chat
   }
 `;
 
@@ -46,10 +40,25 @@ export const Chat: React.FC<{}> = () => {
       subscription: AppSubscription,
       variables: {},
       updater: (store) => {
-        const rootField = store.getRootField("chat");
-        if (!rootField) return;
-        const patch = rootField.getLinkedRecords("patch");
-        if (patch) applyJSONPatchToRelayStore(store, "chat", patch);
+        const chat = ConnectionHandler.getConnection(
+          store.getRoot(),
+          "chatMessages_chat"
+        );
+
+        const records = store
+          .getRootField("chatMessagesAdded")
+          ?.getLinkedRecords("messages");
+        if (!chat || !records) return;
+
+        for (const chatMessage of records) {
+          const edge = ConnectionHandler.createEdge(
+            store,
+            chat,
+            chatMessage,
+            "ChatMessage"
+          );
+          ConnectionHandler.insertEdgeAfter(chat, edge);
+        }
       },
     });
   }, [environment]);
@@ -68,7 +77,7 @@ export const Chat: React.FC<{}> = () => {
         }
         return (
           <ChatWindow>
-            <ChatMessages chat={props.chat} />
+            <ChatMessages chat={props} />
             <ChatTextArea />
           </ChatWindow>
         );
