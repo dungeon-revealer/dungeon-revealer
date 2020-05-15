@@ -75,7 +75,7 @@
     "@types/react-toast-notifications": "2.4.0",
     "@types/sanitize-html": "1.23.0",
     "@types/showdown": "1.9.3",
-    "@types/socket.io-client": "1.4.32",
+    "@types/socket.io-client": "1.4.33",
     "@types/sqlite3": "3.1.6",
     "babel-eslint": "10.1.0",
     "body-scroll-lock": "3.0.2",
