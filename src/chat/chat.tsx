@@ -31,12 +31,13 @@ const ChatWindow = styled.div`
   padding: 12px;
   background-color: #fff;
   border-radius: 8px;
+  font-size: 12px;
 `;
 
-export const Chat: React.FC<{}> = () => {
+export const Chat: React.FC<{}> = React.memo(() => {
   const environment = useEnvironment();
   React.useEffect(() => {
-    requestSubscription<chatSubscription>(environment, {
+    const subscription = requestSubscription<chatSubscription>(environment, {
       subscription: AppSubscription,
       variables: {},
       updater: (store) => {
@@ -61,6 +62,7 @@ export const Chat: React.FC<{}> = () => {
         }
       },
     });
+    return () => subscription.dispose();
   }, [environment]);
 
   return (
@@ -76,7 +78,11 @@ export const Chat: React.FC<{}> = () => {
           return null;
         }
         return (
-          <ChatWindow>
+          <ChatWindow
+            onContextMenu={(ev) => {
+              ev.stopPropagation();
+            }}
+          >
             <ChatMessages chat={props} />
             <ChatTextArea />
           </ChatWindow>
@@ -84,4 +90,4 @@ export const Chat: React.FC<{}> = () => {
       }}
     />
   );
-};
+});

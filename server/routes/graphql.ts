@@ -15,13 +15,6 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
 
   const router = Router();
 
-  setInterval(() => {
-    chat.addMessage({
-      authorName: "pete",
-      rawContent: String(Math.random()),
-    });
-  }, 2000).unref();
-
   router.post("/graphql", (req, res) => {
     // TODO: proper validation
     const source = req.body.operation || req.body.query;

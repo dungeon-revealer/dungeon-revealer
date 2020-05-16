@@ -1,7 +1,9 @@
+import * as React from "react";
+
 /**
  * Utility for preloading an image as a promise
  */
-export const loadImage = (src) => {
+export const loadImage = (src: string) => {
   const image = new Image();
 
   const cancel = () => {
@@ -18,7 +20,7 @@ export const loadImage = (src) => {
       removeEventListeners();
       resolve(image);
     };
-    const errorListener = (err) => {
+    const errorListener = (err: unknown) => {
       removeEventListeners();
       reject(err);
     };
@@ -37,10 +39,10 @@ export const loadImage = (src) => {
  * @param {number} maxHeight
  */
 export const getOptimalDimensions = (
-  idealWidth,
-  idealHeight,
-  maxWidth,
-  maxHeight
+  idealWidth: number,
+  idealHeight: number,
+  maxWidth: number,
+  maxHeight: number
 ) => {
   const ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
 
@@ -51,5 +53,8 @@ export const getOptimalDimensions = (
   };
 };
 
-export const ConditionalWrap = ({ condition, wrap, children }) =>
-  condition ? wrap(children) : children;
+export const ConditionalWrap: React.FC<{
+  condition: boolean;
+  wrap: (children: React.ReactNode) => React.ReactElement;
+}> = ({ condition, wrap, children }) =>
+  condition ? wrap(children) : React.Fragment({ children });

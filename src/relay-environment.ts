@@ -25,7 +25,6 @@ export const createEnvironment = (socket: SocketIO.Socket) => {
 
   socket.on("graphql/update", ({ id, ...result }) => {
     const sink = subscriptionHandlers.get(id);
-    console.log("received update", result, sink);
     if (!sink) return;
     sink.next(result);
   });

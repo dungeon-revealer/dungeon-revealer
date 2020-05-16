@@ -1,5 +1,9 @@
 import { t } from "../..";
-import type { ChatMessageNode, ApplicationRecordSchema } from "../../../chat";
+import type {
+  DiceRollDetail,
+  ApplicationRecordSchema,
+  ChatMessageNode,
+} from "../../../chat";
 
 type ChatMessageType = ApplicationRecordSchema;
 
@@ -8,7 +12,7 @@ const GraphQLChatMessageTextNode = t.objectType<
 >({
   name: "ChatMessageTextNode",
   fields: () => [
-    t.field("textContent", {
+    t.field("content", {
       type: t.NonNull(t.String),
       resolve: (node) => node.content,
     }),
@@ -17,55 +21,131 @@ const GraphQLChatMessageTextNode = t.objectType<
 
 type ChatMessageDiceRollNode = Extract<ChatMessageNode, { type: "DICE_ROLL" }>;
 
-const GraphQLChatMessageInvalidDiceRoll = t.objectType<
-  Extract<ChatMessageDiceRollNode["content"], { type: "ERROR" }>
+const GraphQLDiceRollOperatorNode = t.objectType<
+  Extract<DiceRollDetail, { type: "Operator" }>
 >({
-  name: "InvalidDiceRoll",
+  name: "DiceRollOperatorNode",
   fields: () => [
     t.field("content", {
       type: t.NonNull(t.String),
-      resolve: (input) => input.notation,
+      resolve: (object) => object.content,
     }),
   ],
 });
 
+const GraphQLDiceRollConstantNode = t.objectType<
+  Extract<DiceRollDetail, { type: "Constant" }>
+>({
+  name: "DiceRollConstantNode",
+  fields: () => [
+    t.field("content", {
+      type: t.NonNull(t.String),
+      resolve: (object) => object.content,
+    }),
+  ],
+});
+
+const GraphQLDiceRollDiceRollNode = t.objectType<
+  Extract<DiceRollDetail, { type: "DiceRoll" }>
+>({
+  name: "DiceRollDiceRollNode",
+  fields: () => [
+    t.field("content", {
+      type: t.NonNull(t.String),
+      resolve: (object) => object.content,
+    }),
+    t.field("min", {
+      type: t.NonNull(t.Float),
+      resolve: (object) => object.detail.min,
+    }),
+    t.field("max", {
+      type: t.NonNull(t.Float),
+      resolve: (object) => object.detail.max,
+    }),
+    t.field("rollResults", {
+      type: t.NonNull(t.List(t.NonNull(t.Float))),
+      resolve: (object) => object.rolls,
+    }),
+  ],
+});
+
+const GraphQLDiceRollOpenParenNode = t.objectType<
+  Extract<DiceRollDetail, { type: "OpenParen" }>
+>({
+  name: "DiceRollOpenParenNode",
+  fields: () => [
+    t.field("content", {
+      type: t.NonNull(t.String),
+      resolve: (object) => object.content,
+    }),
+  ],
+});
+
+const GraphQLDiceRollCloseParenNode = t.objectType<
+  Extract<DiceRollDetail, { type: "CloseParen" }>
+>({
+  name: "DiceRollCloseParenNode",
+  fields: () => [
+    t.field("content", {
+      type: t.NonNull(t.String),
+      resolve: (object) => object.content,
+    }),
+  ],
+});
+
+// @TODO: Investigate whetehr we can simply use a union type instead.
+const GraphQLDiceRollDetailNode = t.unionType<DiceRollDetail>({
+  name: "DiceRollDetail",
+  types: [
+    GraphQLDiceRollOperatorNode,
+    GraphQLDiceRollConstantNode,
+    GraphQLDiceRollDiceRollNode,
+    GraphQLDiceRollOpenParenNode,
+    GraphQLDiceRollCloseParenNode,
+  ],
+  resolveType: (obj) => {
+    if (obj.type === "Operator") return GraphQLDiceRollOperatorNode;
+    else if (obj.type === "Constant") return GraphQLDiceRollConstantNode;
+    else if (obj.type === "DiceRoll") return GraphQLDiceRollDiceRollNode;
+    else if (obj.type === "OpenParen") return GraphQLDiceRollOpenParenNode;
+    else if (obj.type === "CloseParen") return GraphQLDiceRollCloseParenNode;
+    throw new Error("Invalid type");
+  },
+});
+
 const GraphQLChatMessageDiceRoll = t.objectType<
-  Extract<ChatMessageDiceRollNode["content"], { type: "SUCCESS" }>
+  ChatMessageDiceRollNode["content"]
 >({
   name: "DiceRoll",
   fields: () => [
     t.field("result", {
-      type: t.NonNull(t.Int),
-      resolve: (input) => input.result.result,
+      type: t.NonNull(t.Float),
+      resolve: (input) => input.result,
+    }),
+    t.field("detail", {
+      type: t.NonNull(t.List(t.NonNull(GraphQLDiceRollDetailNode))),
+      resolve: (input) => input.detail,
     }),
   ],
-});
-
-const GraphQLDiceRollResult = t.unionType<ChatMessageDiceRollNode["content"]>({
-  name: "DiceRollResult",
-  types: [GraphQLChatMessageInvalidDiceRoll, GraphQLChatMessageDiceRoll],
-  resolveType: (input) => {
-    if (input.type === "SUCCESS") return GraphQLChatMessageDiceRoll;
-    return GraphQLChatMessageInvalidDiceRoll;
-  },
 });
 
 const GraphQLChatMessageDiceRollNode = t.objectType<ChatMessageDiceRollNode>({
   name: "ChatMessageDiceRollNode",
   fields: () => [
     t.field("content", {
-      type: t.NonNull(GraphQLDiceRollResult),
+      type: t.NonNull(GraphQLChatMessageDiceRoll),
       resolve: (input) => input.content,
     }),
   ],
 });
 
-const GraphQLChatMessageNode = t.unionType<ChatMessageType["rawContent"][0]>({
+const GraphQLChatMessageNode = t.unionType<ChatMessageType["content"][0]>({
   name: "ChatMessageNode",
   types: [GraphQLChatMessageDiceRollNode, GraphQLChatMessageTextNode],
   resolveType: (input) => {
     if (input.type === "TEXT") return GraphQLChatMessageTextNode;
-    else return GraphQLChatMessageDiceRollNode;
+    else if (input.type === "DICE_ROLL") return GraphQLChatMessageDiceRollNode;
+    throw new Error("Invalid Case.");
   },
 });
 
@@ -81,9 +161,9 @@ const GraphQLChatMessageType = t.objectType<ChatMessageType>({
       type: t.NonNull(t.String),
       resolve: (message) => message.authorName,
     }),
-    t.field("rawContent", {
+    t.field("content", {
       type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageNode))),
-      resolve: (message) => message.rawContent,
+      resolve: (message) => message.content,
     }),
     t.field("createdAt", {
       type: t.NonNull(t.String),
@@ -141,10 +221,6 @@ const GraphQLChatMessageConnectionType = t.objectType<Array<ChatMessageType>>({
     }),
   ],
 });
-
-export const types = {
-  GraphQLChatMessageType,
-};
 
 const GraphQLChatMessagesAddedSubscriptionType = t.objectType<{
   messages: Array<ChatMessageType>;

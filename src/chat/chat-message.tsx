@@ -3,6 +3,7 @@ import { createFragmentContainer } from "react-relay";
 import graphql from "babel-plugin-relay/macro";
 import { chatMessage_message } from "./__generated__/chatMessage_message.graphql";
 import styled from "@emotion/styled";
+import { FormattedDiceRoll } from "./formatted-dice-roll";
 
 function formatTwoDigits(n: number) {
   return n < 10 ? "0" + n : n;
@@ -15,10 +16,10 @@ const formatTime = (t: string) => {
   return hours + ":" + minutes;
 };
 
-const Time = styled.span`
+const Time = styled.div`
   line-height: inherit;
   font-size: 10px;
-  padding-top: 4px;
+  margin-top: 6px;
   padding-right: 4px;
 `;
 
@@ -31,8 +32,15 @@ const Column = styled.div`
   padding-top: 4px;
 `;
 
-const AuthorName = styled.span`
+const AuthorName = styled.div`
+  display: inline-block;
+  padding: 4px;
   font-weight: bold;
+`;
+
+const NormalText = styled.span`
+  padding: 4px 0;
+  line-height: 18px;
 `;
 
 const ChatMessageRenderer: React.FC<{
@@ -44,19 +52,13 @@ const ChatMessageRenderer: React.FC<{
         <Time>{formatTime(message.createdAt)}</Time>
       </Column>
       <Column>
-        <AuthorName style={{ fontWeight: "bold" }}>
-          {message.authorName}{" "}
-        </AuthorName>
-        {message.rawContent.map((node) =>
-          node.__typename === "ChatMessageTextNode"
-            ? node.textContent
-            : node.__typename === "ChatMessageDiceRollNode"
-            ? node.content.__typename === "DiceRoll"
-              ? `[${node.content.result}]`
-              : node.content.__typename === "InvalidDiceRoll"
-              ? `[${node.content.content}]`
-              : null
-            : null
+        <AuthorName>{message.authorName} </AuthorName>
+        {message.content.map((node, index) =>
+          node.__typename === "ChatMessageTextNode" ? (
+            <NormalText key={index}>{node.textContent}</NormalText>
+          ) : node.__typename === "ChatMessageDiceRollNode" ? (
+            <FormattedDiceRoll diceRoll={node.diceRollContent} key={index} />
+          ) : null
         )}
       </Column>
     </Container>
@@ -69,21 +71,15 @@ export const ChatMessage = createFragmentContainer(ChatMessageRenderer, {
       id
       authorName
       createdAt
-      rawContent {
-        __typename
+      content {
         ... on ChatMessageTextNode {
-          textContent
+          __typename
+          textContent: content
         }
         ... on ChatMessageDiceRollNode {
-          content {
-            ... on DiceRoll {
-              __typename
-              result
-            }
-            ... on InvalidDiceRoll {
-              __typename
-              content
-            }
+          __typename
+          diceRollContent: content {
+            ...formattedDiceRoll_diceRoll
           }
         }
       }

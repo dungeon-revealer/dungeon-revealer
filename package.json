@@ -27,7 +27,8 @@
     "test": "react-scripts test",
     "start:frontend:dev": "cross-env PORT=3001 EXTEND_ESLINT=true react-scripts start",
     "start:server:dev": "ts-node-dev --project server/tsconfig.json server/index.js",
-    "relay-compiler": "relay-compiler"
+    "relay-compiler": "relay-compiler",
+    "write-schema": "ts-node --project ./server/tsconfig.json  ./scripts/write-graphql-schema.ts"
   },
   "husky": {
     "hooks": {

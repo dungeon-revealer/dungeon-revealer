@@ -57,7 +57,7 @@ export const ChatTextArea: React.FC<{}> = () => {
     if (value.trim() === "") return;
     messageAdd({
       rawContent: value,
-      authorName: "John Lenon",
+      authorName: "Someone",
     });
     setValue("");
     pushToHistory(value);
