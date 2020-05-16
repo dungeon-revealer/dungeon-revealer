@@ -6,7 +6,7 @@ import styled from "@emotion/styled";
 
 const StyledDiceRoll = styled.span`
   padding: 4px;
-  line-height: 18px;
+  line-height: 28px;
 `;
 
 const Wrapper = styled.span`

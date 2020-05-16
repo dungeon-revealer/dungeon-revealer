@@ -2,26 +2,20 @@ import React from "react";
 import { createPaginationContainer } from "react-relay";
 import styled from "@emotion/styled/macro";
 import graphql from "babel-plugin-relay/macro";
+import * as ReactVirtualized from "react-virtualized";
 import { chatMessages_chat } from "./__generated__/chatMessages_chat.graphql";
 import { ChatMessage } from "./chat-message";
+import { useStaticRef } from "../hooks/use-static-ref";
 
 const height = "400px";
 const width = "500px";
 
-const ChatMessageContainer = styled.div`
+const ChatMessageContainer = styled.div<{ disableScrollbar: boolean }>`
   position: relative;
   height: ${height};
   width: ${width};
-`;
 
-const StyledChatMessages = styled.div<{ disableScrollbar: boolean }>`
-  overflow-y: scroll;
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  max-height: ${height};
-
-  ::-webkit-scrollbar {
+  .react-virtualized-list::-webkit-scrollbar {
     width: ${(p) => (p.disableScrollbar ? "0 !important" : null)};
   }
 `;
@@ -29,35 +23,78 @@ const StyledChatMessages = styled.div<{ disableScrollbar: boolean }>`
 const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
   chat: { chat },
 }) => {
-  const ref = React.useRef<HTMLDivElement | null>(null);
   const [follow, setFollow] = React.useState(true);
+  const listRef = React.useRef<ReactVirtualized.List | null>(null);
 
   React.useEffect(() => {
-    if (!ref.current) return;
     if (follow === true) {
-      ref.current.scrollTop = ref.current.scrollHeight;
+      listRef.current?.scrollToRow(chat.edges.length - 1);
     }
   }, [chat.edges, follow]);
 
+  // TODO: Is there a better way to start the list at the end?
+  React.useEffect(() => {
+    setTimeout(() => listRef.current?.scrollToRow(chat.edges.length - 1));
+  }, []);
+
+  const cache = useStaticRef(
+    () =>
+      new ReactVirtualized.CellMeasurerCache({
+        fixedWidth: true,
+      })
+  );
+
   return (
-    <ChatMessageContainer>
-      <StyledChatMessages
-        ref={ref}
-        disableScrollbar={follow}
-        onScroll={() => {
-          if (!ref.current) return;
-          const target: HTMLElement = ref.current;
-          if (target.scrollTop !== target.scrollHeight - target.clientHeight) {
-            setFollow(false);
-          } else {
-            setFollow(true);
-          }
+    <ChatMessageContainer disableScrollbar={follow}>
+      {/* Virtualization based on https://github.com/bvaughn/react-virtualized/blob/master/playground/chat.js */}
+      <ReactVirtualized.AutoSizer>
+        {(autoSizerParams) => {
+          // TODO: Resize chat and stuff
+          // if (mostRecentWidth && mostRecentWidth !== autoSizerParams.width) {
+          //   cache.clearAll();
+          //   list.recomputeRowHeights();
+          // }
+
+          return (
+            <ReactVirtualized.List
+              className="react-virtualized-list"
+              ref={listRef}
+              deferredMeasurementCache={cache}
+              height={autoSizerParams.height}
+              rowCount={chat.edges.length}
+              rowHeight={cache.rowHeight}
+              width={autoSizerParams.width}
+              // TODO: Why do I need to add the type definition
+              onScroll={(target: ReactVirtualized.OnScrollParams) => {
+                if (
+                  target.scrollTop !==
+                  target.scrollHeight - target.clientHeight
+                ) {
+                  setFollow(false);
+                } else {
+                  setFollow(true);
+                }
+              }}
+              rowRenderer={(params) => {
+                return (
+                  <ReactVirtualized.CellMeasurer
+                    cache={cache}
+                    columnIndex={0}
+                    key={params.key}
+                    parent={params.parent}
+                    rowIndex={params.index}
+                    width={undefined}
+                  >
+                    <div style={params.style} key={params.key}>
+                      <ChatMessage message={chat.edges[params.index].node} />
+                    </div>
+                  </ReactVirtualized.CellMeasurer>
+                );
+              }}
+            />
+          );
         }}
-      >
-        {chat.edges.map((edge) => (
-          <ChatMessage message={edge.node} key={edge.node.id} />
-        ))}
-      </StyledChatMessages>
+      </ReactVirtualized.AutoSizer>
     </ChatMessageContainer>
   );
 };
