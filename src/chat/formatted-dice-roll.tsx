@@ -41,7 +41,7 @@ const DiceRollRenderer: React.FC<{
           switch (node.__typename) {
             case "DiceRollDiceRollNode":
               return node.rollResults.map((result, index) => (
-                <>
+                <span key={index}>
                   <RollResult
                     type={
                       result === node.max
@@ -55,7 +55,7 @@ const DiceRollRenderer: React.FC<{
                   </RollResult>{" "}
                   ({node.content})
                   {index + 1 === node.rollResults.length ? null : " + "}{" "}
-                </>
+                </span>
               ));
             case "%other":
               return null;

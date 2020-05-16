@@ -114,7 +114,6 @@ export const ChatMessages = createPaginationContainer(
           @connection(key: "chatMessages_chat") {
           edges {
             node {
-              id
               ...chatMessage_message
             }
           }
