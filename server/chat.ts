@@ -128,6 +128,8 @@ type NewMessagesPayload = {
   messages: Array<ApplicationRecordSchema>;
 };
 
+const MAXIMUM_CHAT_SIZE = 500;
+
 export const createChat = () => {
   let state: Array<ApplicationRecordSchema> = [];
   const pubSub = new PubSub({});
@@ -142,7 +144,7 @@ export const createChat = () => {
 
     state = produce(state, (state) => {
       state.push(message);
-      if (state.length > 30) {
+      if (state.length > MAXIMUM_CHAT_SIZE) {
         state.shift();
       }
     });
