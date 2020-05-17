@@ -1,0 +1,22 @@
+diff --git a/node_modules/@airjp73/dice-notation/dist/main/util/random.js b/node_modules/@airjp73/dice-notation/dist/main/util/random.js
+index 0c28301..49d46a0 100644
+--- a/node_modules/@airjp73/dice-notation/dist/main/util/random.js
++++ b/node_modules/@airjp73/dice-notation/dist/main/util/random.js
+@@ -1,6 +1,6 @@
+ "use strict";
+ Object.defineProperty(exports, "__esModule", { value: true });
+ function random(min, max) {
+-    return Math.floor(Math.random() * Math.floor(max - min)) + min;
++    return Math.floor(Math.random() * Math.floor(max - min + 1)) + min;
+ }
+ exports.default = random;
+diff --git a/node_modules/@airjp73/dice-notation/dist/module/util/random.js b/node_modules/@airjp73/dice-notation/dist/module/util/random.js
+index 2ad6a1b..f3f553c 100644
+--- a/node_modules/@airjp73/dice-notation/dist/module/util/random.js
++++ b/node_modules/@airjp73/dice-notation/dist/module/util/random.js
+@@ -1,4 +1,4 @@
+ function random(min, max) {
+-    return Math.floor(Math.random() * Math.floor(max - min)) + min;
++    return Math.floor(Math.random() * Math.floor(max - min + 1)) + min;
+ }
+ export default random;

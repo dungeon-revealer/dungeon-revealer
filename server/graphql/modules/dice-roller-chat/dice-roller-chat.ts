@@ -45,6 +45,43 @@ const GraphQLDiceRollConstantNode = t.objectType<
   ],
 });
 
+enum DiceRollType {
+  DEFAULT = "DEFAULT",
+  MAX = "MAX",
+  MIN = "MIN",
+}
+
+const GraphQLDiceRollCategory = t.enumType<DiceRollType>({
+  name: "DiceRollCategory",
+  values: [
+    { name: "DEFAULT", value: DiceRollType.DEFAULT },
+    { name: "MAX", value: DiceRollType.MAX },
+    { name: "MIN", value: DiceRollType.MIN },
+  ],
+});
+
+const GraphQLDiceRollResult = t.objectType<{
+  dice: string;
+  result: number;
+  category: DiceRollType;
+}>({
+  name: "DiceRollResult",
+  fields: () => [
+    t.field("dice", {
+      type: t.NonNull(t.String),
+      resolve: (obj) => obj.dice,
+    }),
+    t.field("result", {
+      type: t.NonNull(t.Float),
+      resolve: (obj) => obj.result,
+    }),
+    t.field("category", {
+      type: t.NonNull(GraphQLDiceRollCategory),
+      resolve: (obj) => obj.category,
+    }),
+  ],
+});
+
 const GraphQLDiceRollDiceRollNode = t.objectType<
   Extract<DiceRollDetail, { type: "DiceRoll" }>
 >({
@@ -63,8 +100,18 @@ const GraphQLDiceRollDiceRollNode = t.objectType<
       resolve: (object) => object.detail.max,
     }),
     t.field("rollResults", {
-      type: t.NonNull(t.List(t.NonNull(t.Float))),
-      resolve: (object) => object.rolls,
+      type: t.NonNull(t.List(t.NonNull(GraphQLDiceRollResult))),
+      resolve: (object) =>
+        object.rolls.map((result) => ({
+          dice: object.content.substring(1),
+          result,
+          category:
+            result === object.detail.min
+              ? DiceRollType.MIN
+              : result === object.detail.max
+              ? DiceRollType.MAX
+              : DiceRollType.DEFAULT,
+        })),
     }),
   ],
 });
@@ -93,7 +140,7 @@ const GraphQLDiceRollCloseParenNode = t.objectType<
   ],
 });
 
-// @TODO: Investigate whetehr we can simply use a union type instead.
+// @TODO: Investigate whetehr we can simply use a interface type instead.
 const GraphQLDiceRollDetailNode = t.unionType<DiceRollDetail>({
   name: "DiceRollDetail",
   types: [

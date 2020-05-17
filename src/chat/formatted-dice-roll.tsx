@@ -25,10 +25,10 @@ const colors = {
   crit: "#247305",
 };
 
-const RollResult = styled.span<{ type: "default" | "min" | "max" }>`
+const RollResult = styled.span<{ type: "DEFAULT" | "MIN" | "MAX" | unknown }>`
   color: ${(p) =>
-    p.type === "min" ? colors.fail : p.type === "max" ? colors.crit : null};
-  font-weight: ${(p) => (p.type !== "default" ? "bold" : null)};
+    p.type === "MIN" ? colors.fail : p.type === "MAX" ? colors.crit : null};
+  font-weight: ${(p) => (p.type !== "DEFAULT" ? "bold" : null)};
 `;
 
 const DiceRollRenderer: React.FC<{
@@ -42,18 +42,10 @@ const DiceRollRenderer: React.FC<{
             case "DiceRollDiceRollNode":
               return node.rollResults.map((result, index) => (
                 <span key={index}>
-                  <RollResult
-                    type={
-                      result === node.max
-                        ? "max"
-                        : result === node.min
-                        ? "min"
-                        : "default"
-                    }
-                  >
-                    {result}
+                  <RollResult type={result.category}>
+                    {result.result}
                   </RollResult>{" "}
-                  ({node.content})
+                  ({result.dice})
                   {index + 1 === node.rollResults.length ? null : " + "}{" "}
                 </span>
               ));
@@ -96,9 +88,11 @@ export const FormattedDiceRoll = createFragmentContainer(DiceRollRenderer, {
         ... on DiceRollDiceRollNode {
           __typename
           content
-          min
-          max
-          rollResults
+          rollResults {
+            dice
+            result
+            category
+          }
         }
       }
     }

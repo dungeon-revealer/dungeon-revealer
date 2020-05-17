@@ -41,6 +41,12 @@ type DiceRoll {
   detail: [DiceRollDetail!]!
 }
 
+enum DiceRollCategory {
+  DEFAULT
+  MAX
+  MIN
+}
+
 type DiceRollCloseParenNode {
   content: String!
 }
@@ -55,7 +61,7 @@ type DiceRollDiceRollNode {
   content: String!
   min: Float!
   max: Float!
-  rollResults: [Float!]!
+  rollResults: [DiceRollResult!]!
 }
 
 type DiceRollOpenParenNode {
@@ -64,6 +70,12 @@ type DiceRollOpenParenNode {
 
 type DiceRollOperatorNode {
   content: String!
+}
+
+type DiceRollResult {
+  dice: String!
+  result: Float!
+  category: DiceRollCategory!
 }
 
 type Mutation {
