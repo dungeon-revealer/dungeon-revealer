@@ -19,7 +19,7 @@ const formatTime = (t: string) => {
 const Time = styled.div`
   line-height: inherit;
   font-size: 10px;
-  margin-top: 6px;
+  margin-top: 8px;
   padding-right: 4px;
 `;
 
@@ -40,7 +40,7 @@ const AuthorName = styled.div`
 
 const NormalText = styled.span`
   padding: 4px 0;
-  line-height: 18px;
+  line-height: 28px;
 `;
 
 const ChatMessageRenderer: React.FC<{
