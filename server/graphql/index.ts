@@ -5,7 +5,7 @@ import type { createUser } from "../user";
 export type GraphQLContextType = {
   chat: ReturnType<typeof createChat>;
   user: ReturnType<typeof createUser>;
-  sessionId: string;
+  getSessionId: () => string;
   setSessionId: (id: string) => void;
 };
 

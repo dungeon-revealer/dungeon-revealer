@@ -295,7 +295,7 @@ export const mutationFields = [
       input: t.arg(t.NonNullInput(GraphQLChatMessageCreateInputType)),
     },
     resolve: (obj, args, context) => {
-      const user = context.user.get(context.sessionId);
+      const user = context.user.get(context.getSessionId());
       if (!user) return null;
       context.chat.addMessage({
         authorName: user.name,

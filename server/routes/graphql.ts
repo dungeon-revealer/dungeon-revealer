@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { graphql, subscribe as graphqlSubscribe, parse } from "graphql";
 import * as ia from "iterall";
-import { schema } from "../graphql";
+import { schema, GraphQLContextType } from "../graphql";
 import { handleUnexpectedError } from "../util";
 import { createChat } from "../chat";
 import { createUser } from "../user";
@@ -45,10 +45,10 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
     // however in case the user logs in with an existing id we replace the session id attached to this socket
     let sessionId = socket.id;
 
-    const createContext = () => ({
+    const createContext = (): GraphQLContextType => ({
       chat,
       user,
-      sessionId: sessionId,
+      getSessionId: () => sessionId,
       setSessionId: (id: string) => {
         sessionId = id;
       },
@@ -96,6 +96,9 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
             }
           };
           run();
+        } else {
+          console.log("Failed setting up subscription.");
+          console.error(result);
         }
       });
     });

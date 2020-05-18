@@ -125,10 +125,10 @@ export const mutationFields = [
         context.setSessionId(args.input.id);
         return user;
       } else {
-        let user = context.user.get(context.sessionId);
+        let user = context.user.get(context.getSessionId());
         if (user) return user;
         user = context.user.add({
-          id: context.sessionId,
+          id: context.getSessionId(),
           name: generateRandomName(),
         });
         return user;
