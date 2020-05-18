@@ -14,7 +14,6 @@ type ChatMessageConnection {
 
 input ChatMessageCreateInput {
   rawContent: String!
-  authorName: String!
 }
 
 type ChatMessageDiceRollNode {
@@ -34,6 +33,16 @@ type ChatMessagesAddedSubscription {
 
 type ChatMessageTextNode {
   content: String!
+}
+
+type ConnectedUserConnection {
+  edges: [ConnectedUserEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ConnectedUserEdge {
+  cursor: String!
+  node: User!
 }
 
 type DiceRoll {
@@ -78,7 +87,17 @@ type DiceRollResult {
   category: DiceRollCategory!
 }
 
+input LogInInput {
+  id: String!
+  name: String!
+}
+
+type LogInResult {
+  user: User!
+}
+
 type Mutation {
+  logIn(input: LogInInput): LogInResult!
   chatMessageCreate(input: ChatMessageCreateInput!): Boolean
 }
 
@@ -91,8 +110,25 @@ type PageInfo {
 
 type Query {
   chat(first: Int, after: ID): ChatMessageConnection!
+  users(first: Int, after: ID): ConnectedUserConnection!
 }
 
 type Subscription {
+  userUpdate: UserUpdateSubscription!
   chatMessagesAdded: ChatMessagesAddedSubscription!
 }
+
+type User {
+  id: ID!
+  name: String!
+}
+
+type UserAddUpdate {
+  user: User!
+}
+
+type UserRemoveUpdate {
+  userId: ID!
+}
+
+union UserUpdateSubscription = UserAddUpdate | UserRemoveUpdate

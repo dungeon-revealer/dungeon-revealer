@@ -9,6 +9,8 @@ import { chatQuery } from "./__generated__/chatQuery.graphql";
 
 import styled from "@emotion/styled/macro";
 import { ChatTextArea } from "./chat-textarea";
+import { useLogInMutation } from "./log-in-mutation";
+import { chatUserUpdateSubscription } from "./__generated__/chatUserUpdateSubscription.graphql";
 
 const AppSubscription = graphql`
   subscription chatSubscription {
@@ -21,9 +23,37 @@ const AppSubscription = graphql`
   }
 `;
 
+const UserUpdateSubscription = graphql`
+  subscription chatUserUpdateSubscription {
+    userUpdate {
+      ... on UserRemoveUpdate {
+        __typename
+        userId
+      }
+      ... on UserAddUpdate {
+        __typename
+        user {
+          id
+          name
+        }
+      }
+    }
+  }
+`;
+
 const ChatQuery = graphql`
   query chatQuery {
     ...chatMessages_chat
+    # TODO: move this stuff to own pagination/fragment container.
+    users(first: 10000, after: "") @connection(key: "chat_users") {
+      edges {
+        cursor
+        node {
+          id
+          name
+        }
+      }
+    }
   }
 `;
 
@@ -32,6 +62,15 @@ const ChatWindow = styled.div`
   background-color: #fff;
   border-radius: 8px;
   font-size: 12px;
+`;
+
+const UserList = styled.div`
+  padding: 12px;
+  background-color: #fff;
+  border-radius: 8px;
+  font-size: 12px;
+  width: 200px;
+  margin-right: 12px;
 `;
 
 export const Chat: React.FC<{}> = React.memo(() => {
@@ -65,6 +104,51 @@ export const Chat: React.FC<{}> = React.memo(() => {
     return () => subscription.dispose();
   }, [environment]);
 
+  React.useEffect(() => {
+    const subscription = requestSubscription<chatUserUpdateSubscription>(
+      environment,
+      {
+        subscription: UserUpdateSubscription,
+        variables: {},
+        updater: (store) => {
+          const users = ConnectionHandler.getConnection(
+            store.getRoot(),
+            "chat_users"
+          );
+
+          const updateRecord = store.getRootField("userUpdate");
+
+          if (!users || !updateRecord) return;
+
+          // TODO: typings could be better :)
+          // see https://github.com/relay-tools/relay-compiler-language-typescript/issues/186
+          if (updateRecord.getValue("__typename") === "UserAddUpdate") {
+            const edge = ConnectionHandler.createEdge(
+              store,
+              users,
+              updateRecord.getLinkedRecord("user"),
+              "User"
+            );
+            ConnectionHandler.insertEdgeAfter(users, edge);
+          } else if (
+            updateRecord.getValue("__typename") === "UserRemoveUpdate"
+          ) {
+            const userId = updateRecord.getValue("userId");
+            if (typeof userId !== "string") return;
+            ConnectionHandler.deleteNode(users, userId);
+          }
+        },
+      }
+    );
+    return () => subscription.dispose();
+  }, [environment]);
+
+  const logIn = useLogInMutation();
+
+  React.useEffect(() => {
+    logIn();
+  }, [logIn]);
+
   return (
     <QueryRenderer<chatQuery>
       query={ChatQuery}
@@ -77,15 +161,27 @@ export const Chat: React.FC<{}> = React.memo(() => {
         if (!props) {
           return null;
         }
+
         return (
-          <ChatWindow
-            onContextMenu={(ev) => {
-              ev.stopPropagation();
-            }}
-          >
-            <ChatMessages chat={props} />
-            <ChatTextArea />
-          </ChatWindow>
+          <div style={{ display: "flex" }}>
+            <UserList>
+              {props.users.edges.map((edge) => (
+                <div key={edge.node.id}>{edge.node.name}</div>
+              ))}
+            </UserList>
+            <ChatWindow
+              onContextMenu={(ev) => {
+                ev.stopPropagation();
+              }}
+            >
+              <ChatMessages chat={props} />
+              <ChatTextArea />
+              <div style={{ marginTop: 8 }}>
+                <strong style={{}}>{props.users.edges.length}</strong> Connected
+                User{props.users.edges.length === 1 ? "" : "s"}
+              </div>
+            </ChatWindow>
+          </div>
         );
       }}
     />

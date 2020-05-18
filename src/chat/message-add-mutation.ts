@@ -13,7 +13,7 @@ const MessageAddMutationDocument = graphql`
 export const useMessageAddMutation = () => {
   const environment = useEnvironment();
   return useCallback(
-    (input: { rawContent: string; authorName: string }) => {
+    (input: { rawContent: string }) => {
       commitMutation<messageAddMutation>(environment, {
         mutation: MessageAddMutationDocument,
         variables: { input },

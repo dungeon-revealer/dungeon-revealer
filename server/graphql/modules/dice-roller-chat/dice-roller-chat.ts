@@ -1,4 +1,5 @@
 import { t } from "../..";
+import { GraphQLPageInfoType } from "../relay-spec";
 import type {
   DiceRollDetail,
   ApplicationRecordSchema,
@@ -233,28 +234,6 @@ const GraphQLChatMessageEdgeType = t.objectType<ChatMessageType>({
   ],
 });
 
-const GraphQLPageInfoType = t.objectType<{}>({
-  name: "PageInfo",
-  fields: () => [
-    t.field("hasNextPage", {
-      type: t.NonNull(t.Boolean),
-      resolve: () => false,
-    }),
-    t.field("hasPreviousPage", {
-      type: t.NonNull(t.Boolean),
-      resolve: () => false,
-    }),
-    t.field("startCursor", {
-      type: t.NonNull(t.String),
-      resolve: () => "",
-    }),
-    t.field("endCursor", {
-      type: t.NonNull(t.String),
-      resolve: () => "",
-    }),
-  ],
-});
-
 const GraphQLChatMessageConnectionType = t.objectType<Array<ChatMessageType>>({
   name: "ChatMessageConnection",
   fields: () => [
@@ -306,9 +285,6 @@ const GraphQLChatMessageCreateInputType = t.inputObjectType({
     rawContent: {
       type: t.NonNullInput(t.String),
     },
-    authorName: {
-      type: t.NonNullInput(t.String),
-    },
   }),
 });
 
@@ -319,8 +295,10 @@ export const mutationFields = [
       input: t.arg(t.NonNullInput(GraphQLChatMessageCreateInputType)),
     },
     resolve: (obj, args, context) => {
+      const user = context.user.get(context.sessionId);
+      if (!user) return null;
       context.chat.addMessage({
-        authorName: args.input.authorName,
+        authorName: user.name,
         rawContent: args.input.rawContent,
       });
       return null;

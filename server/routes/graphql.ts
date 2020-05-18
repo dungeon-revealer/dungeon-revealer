@@ -4,6 +4,7 @@ import * as ia from "iterall";
 import { schema } from "../graphql";
 import { handleUnexpectedError } from "../util";
 import { createChat } from "../chat";
+import { createUser } from "../user";
 
 type Dependencies = {
   roleMiddleware: any;
@@ -12,31 +13,46 @@ type Dependencies = {
 
 export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
   const chat = createChat();
+  const user = createUser();
 
   const router = Router();
 
-  router.post("/graphql", (req, res) => {
-    // TODO: proper validation
-    const source = req.body.operation || req.body.query;
-    const variables = req.body.variables;
-    const operationName = req.body.operationName;
+  // currently we run everything trough the websocket connection - no http needed.
+  // router.post("/graphql", (req, res) => {
+  //   // TODO: proper validation
+  //   const source = req.body.operation || req.body.query;
+  //   const variables = req.body.variables;
+  //   const operationName = req.body.operationName;
 
-    graphql({
-      schema,
-      contextValue: { chat },
-      rootValue: {},
-      operationName,
-      source,
-      variableValues: variables,
-    })
-      .then((result) => {
-        res.json(result);
-      })
-      .catch(handleUnexpectedError(res));
-  });
+  //   graphql({
+  //     schema,
+  //     contextValue: createContext(),
+  //     rootValue: {},
+  //     operationName,
+  //     source,
+  //     variableValues: variables,
+  //   })
+  //     .then((result) => {
+  //       res.json(result);
+  //     })
+  //     .catch(handleUnexpectedError(res));
+  // });
 
   registerSocketCommand((socket) => {
     const subscriptions = new Map<string, () => void>();
+
+    // by default we use the socket.id
+    // however in case the user logs in with an existing id we replace the session id attached to this socket
+    let sessionId = socket.id;
+
+    const createContext = () => ({
+      chat,
+      user,
+      sessionId: sessionId,
+      setSessionId: (id: string) => {
+        sessionId = id;
+      },
+    });
 
     socket.on("graphql/execute", (message) => {
       // TODO: proper validation
@@ -47,7 +63,7 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
 
       graphql({
         schema,
-        contextValue: { chat },
+        contextValue: createContext(),
         rootValue: {},
         operationName,
         source,
@@ -66,7 +82,7 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
 
       graphqlSubscribe({
         schema,
-        contextValue: { chat },
+        contextValue: createContext(),
         rootValue: {},
         operationName,
         document: parse(document),
@@ -93,8 +109,11 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
     });
 
     socket.once("disconnect", () => {
-      // TODO: proper validation
+      // Unsubscribe all pending GraphQL Subscriptions
       subscriptions.forEach((unsubscribe) => unsubscribe());
+
+      // Automatically Log out
+      user.remove(sessionId);
     });
   });
 

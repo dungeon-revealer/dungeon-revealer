@@ -66,6 +66,8 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
               width={autoSizerParams.width}
               // TODO: Why do I need to add the type definition
               onScroll={(target: ReactVirtualized.OnScrollParams) => {
+                // we still want to follow in case the content is not scrollable yet.
+                if (target.scrollHeight < target.clientHeight) return;
                 if (
                   target.scrollTop !==
                   target.scrollHeight - target.clientHeight
