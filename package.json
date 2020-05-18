@@ -28,7 +28,8 @@
     "start:frontend:dev": "cross-env PORT=3001 EXTEND_ESLINT=true react-scripts start",
     "start:server:dev": "ts-node-dev --project server/tsconfig.json server/index.js",
     "relay-compiler": "relay-compiler",
-    "write-schema": "ts-node --project ./server/tsconfig.json  ./scripts/write-graphql-schema.ts"
+    "write-schema": "ts-node --project ./server/tsconfig.json  ./scripts/write-graphql-schema.ts",
+    "patch-package": "patch-package"
   },
   "husky": {
     "hooks": {
@@ -50,7 +51,7 @@
     "not op_mini all"
   ],
   "dependencies": {
-    "@airjp73/dice-notation": "1.1.0",
+    "@airjp73/dice-notation": "1.1.1",
     "@types/use-persisted-state": "0.3.0",
     "body-parser": "1.19.0",
     "connect-busboy": "0.0.2",
