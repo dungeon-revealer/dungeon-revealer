@@ -87,7 +87,7 @@
     "htmlparser2": "4.1.0",
     "husky": "4.2.5",
     "immer": "6.0.5",
-    "lint-staged": "10.2.2",
+    "lint-staged": "10.2.4",
     "monaco-editor-webpack-plugin": "1.9.0",
     "overmind": "23.0.0-1581786766054",
     "overmind-react": "24.0.0-1581786766054",
