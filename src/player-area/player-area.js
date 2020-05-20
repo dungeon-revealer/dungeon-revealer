@@ -247,8 +247,8 @@ const PlayerMap = ({ fetch, pcPassword }) => {
             const canvasDimensions = getOptimalDimensions(
               map.width,
               map.height,
-              Math.min(window.innerWidth * 3, 3000),
-              Math.min(window.innerHeight * 3, 9000)
+              9000,
+              9000
             );
 
             mapCanvas.width = canvasDimensions.width;
