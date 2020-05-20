@@ -1060,9 +1060,11 @@ export const DmMap = ({
         }}
         onClick={(ev) => {
           if (isAltPressed) return;
-          const ref = new Referentiel(panZoomRef.current.dragContainer.current);
-          const [x, y] = ref.global_to_local([ev.pageX, ev.pageY]);
-          const { ratio } = mapCanvasDimensions;
+          const { x, y } = getRelativePosition({
+            x: ev.pageX,
+            y: ev.pageY,
+          });
+
           switch (tool) {
             case "tokens": {
               fetch(buildApiUrl(`/map/${loadedMapId}/token`), {
@@ -1074,8 +1076,8 @@ export const DmMap = ({
                     : undefined,
                 },
                 body: JSON.stringify({
-                  x: x / ratio,
-                  y: y / ratio,
+                  x,
+                  y,
                   radius: tokenSize,
                   color: tokenColor,
                   label: "1",
@@ -1083,11 +1085,10 @@ export const DmMap = ({
               });
               break;
             }
-
             case "mark": {
               socket.emit("mark area", {
-                x: x / ratio,
-                y: y / ratio,
+                x,
+                y,
               });
               break;
             }
