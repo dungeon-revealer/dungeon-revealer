@@ -5,7 +5,8 @@ import { useMessageAddMutation } from "./message-add-mutation";
 
 const Container = styled.form`
   display: flex;
-  margin-top: 8px;
+  padding-top: 8px;
+  margin-top: auto;
 `;
 
 const TextArea = styled.textarea`

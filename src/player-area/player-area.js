@@ -399,7 +399,6 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
           cursor: "grab",
           background: "black",
           height: "100vh",
-          width: "100vw",
         }}
         ref={panZoomRef}
         {...longPressProps}
@@ -591,18 +590,26 @@ export const PlayerArea = () => {
       />
     );
   }
-  console.log(relayEnvironment);
+
   if (mode === "READY") {
     return (
       <Modal.Provider>
-        <PlayerMap fetch={localFetch} pcPassword={pcPassword} socket={socket} />
-        {relayEnvironment ? (
-          <RelayEnvironmentProvider value={relayEnvironment}>
-            <div style={{ position: "absolute", bottom: 10, right: 10 }}>
-              <Chat />
-            </div>
-          </RelayEnvironmentProvider>
-        ) : null}
+        <div style={{ display: "flex", height: "100vh" }}>
+          <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+            <PlayerMap
+              fetch={localFetch}
+              pcPassword={pcPassword}
+              socket={socket}
+            />
+          </div>
+          <div style={{ flex: 1, maxWidth: 400 }}>
+            {relayEnvironment ? (
+              <RelayEnvironmentProvider value={relayEnvironment}>
+                <Chat />
+              </RelayEnvironmentProvider>
+            ) : null}
+          </div>
+        </div>
       </Modal.Provider>
     );
   }

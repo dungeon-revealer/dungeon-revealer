@@ -75,6 +75,10 @@ export const queryFields = [
     },
     resolve: (_, args, ctx) => ctx.user.getUsers(),
   }),
+  t.field("usersCount", {
+    type: t.NonNull(t.Int),
+    resolve: (_, args, ctx) => ctx.user.getUsers().length,
+  }),
 ];
 
 const generateRandomName = (() => {

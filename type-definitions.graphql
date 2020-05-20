@@ -64,7 +64,12 @@ type DiceRollConstantNode {
   content: String!
 }
 
-union DiceRollDetail = DiceRollOperatorNode | DiceRollConstantNode | DiceRollDiceRollNode | DiceRollOpenParenNode | DiceRollCloseParenNode
+union DiceRollDetail =
+    DiceRollOperatorNode
+  | DiceRollConstantNode
+  | DiceRollDiceRollNode
+  | DiceRollOpenParenNode
+  | DiceRollCloseParenNode
 
 type DiceRollDiceRollNode {
   content: String!
@@ -111,6 +116,7 @@ type PageInfo {
 type Query {
   chat(first: Int, after: ID): ChatMessageConnection!
   users(first: Int, after: ID): ConnectedUserConnection!
+  usersCount: Int!
 }
 
 type Subscription {

@@ -7,13 +7,9 @@ import { chatMessages_chat } from "./__generated__/chatMessages_chat.graphql";
 import { ChatMessage } from "./chat-message";
 import { useStaticRef } from "../hooks/use-static-ref";
 
-const height = "400px";
-const width = "500px";
-
 const ChatMessageContainer = styled.div<{ disableScrollbar: boolean }>`
   position: relative;
-  height: ${height};
-  width: ${width};
+  height: 100%;
 
   .react-virtualized-list::-webkit-scrollbar {
     width: ${(p) => (p.disableScrollbar ? "0 !important" : null)};
@@ -67,7 +63,7 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
               // TODO: Why do I need to add the type definition
               onScroll={(target: ReactVirtualized.OnScrollParams) => {
                 // we still want to follow in case the content is not scrollable yet.
-                if (target.scrollHeight < target.clientHeight) return;
+                if (target.scrollHeight <= target.clientHeight) return;
                 if (
                   target.scrollTop !==
                   target.scrollHeight - target.clientHeight
