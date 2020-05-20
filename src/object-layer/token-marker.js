@@ -45,16 +45,19 @@ export const TokenMarker = React.memo(
             setTransform: (x, y) => {
               gRef.current.setAttribute(
                 "transform",
-                `translate(${x * ratio}, ${y * ratio})`
+                `translate(${x * ratioRef.current}, ${y * ratioRef.current})`
               );
             },
             setRadius: (radius) => {
-              circleRef.current.setAttribute("r", radius * ratio);
+              circleRef.current.setAttribute("r", radius * ratioRef.current);
               circleRef.current.setAttribute(
                 "stroke-width",
-                radius * ratio * 0.05
+                radius * ratioRef.current * 0.05
               );
-              textRef.current.setAttribute("font-size", radius * ratio);
+              textRef.current.setAttribute(
+                "font-size",
+                radius * ratioRef.current
+              );
             },
           };
         }
