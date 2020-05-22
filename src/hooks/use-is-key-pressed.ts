@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 
-export const useIsKeyPressed = (key) => {
+export const useIsKeyPressed = (key: string) => {
   const [isPressed, setIsPressed] = useState(false);
   const keyRef = useRef(key);
 
   useEffect(() => {
-    const onKeyDown = (ev) => {
+    const onKeyDown = (ev: KeyboardEvent) => {
       if (ev.key === keyRef.current) setIsPressed(true);
     };
-    const onKeyUp = (ev) => {
+    const onKeyUp = (ev: KeyboardEvent) => {
       if (ev.key === keyRef.current) setIsPressed(false);
     };
     const onBlur = () => {
