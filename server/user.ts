@@ -11,7 +11,7 @@ export type UserUpdate =
       data: { userId: string };
     }
   | {
-      type: "UPDATE";
+      type: "CHANGE";
       data: { userId: string };
     }
   | {
@@ -34,7 +34,7 @@ export const createUser = () => {
       const user = users.get(id);
       if (!user) return;
       user.name = name;
-      pubSub.publish("USER_UPDATE", { type: "UPDATE", data: { userId: id } });
+      pubSub.publish("USER_UPDATE", { type: "CHANGE", data: { userId: id } });
     },
     remove: (id: string) => {
       users.delete(id);

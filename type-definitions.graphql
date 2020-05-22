@@ -1,5 +1,13 @@
 ### THIS FILE IS AUTO GENERATED
 
+input ChangeNameInput {
+  name: String!
+}
+
+type ChangeNameResult {
+  me: User!
+}
+
 type ChatMessage {
   id: ID!
   authorName: String!
@@ -103,6 +111,7 @@ type LogInResult {
 
 type Mutation {
   logIn(input: LogInInput): LogInResult!
+  changeName(input: ChangeNameInput!): ChangeNameResult!
   chatMessageCreate(input: ChatMessageCreateInput!): Boolean
 }
 
@@ -117,6 +126,7 @@ type Query {
   chat(first: Int, after: ID): ChatMessageConnection!
   users(first: Int, after: ID): ConnectedUserConnection!
   usersCount: Int!
+  me: User!
 }
 
 type Subscription {
@@ -133,8 +143,15 @@ type UserAddUpdate {
   user: User!
 }
 
+type UserChangeUpdate {
+  user: User!
+}
+
 type UserRemoveUpdate {
   userId: ID!
 }
 
-union UserUpdateSubscription = UserAddUpdate | UserRemoveUpdate
+union UserUpdateSubscription =
+    UserAddUpdate
+  | UserRemoveUpdate
+  | UserChangeUpdate

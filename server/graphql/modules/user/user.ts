@@ -79,6 +79,16 @@ export const queryFields = [
     type: t.NonNull(t.Int),
     resolve: (_, args, ctx) => ctx.user.getUsers().length,
   }),
+  t.field("me", {
+    type: t.NonNull(GraphQLUserType),
+    resolve: (_, args, ctx) => {
+      const user = ctx.user.get(ctx.getSessionId());
+      if (!user) {
+        throw new Error("Invalid state.");
+      }
+      return user;
+    },
+  }),
 ];
 
 const generateRandomName = (() => {
@@ -111,6 +121,25 @@ const generateRandomName = (() => {
   return generateRandomName;
 })();
 
+const GraphQLChangeNameResultType = t.objectType<{ updatedUser: UserRecord }>({
+  name: "ChangeNameResult",
+  fields: () => [
+    t.field("me", {
+      type: t.NonNull(GraphQLUserType),
+      resolve: (obj) => obj.updatedUser,
+    }),
+  ],
+});
+
+const GraphQLChangeNameInputType = t.inputObjectType({
+  name: "ChangeNameInput",
+  fields: () => ({
+    name: {
+      type: t.NonNullInput(t.String),
+    },
+  }),
+});
+
 export const mutationFields = [
   t.field("logIn", {
     type: t.NonNull(GraphQLLogInResultType),
@@ -139,12 +168,49 @@ export const mutationFields = [
       }
     },
   }),
+  t.field("changeName", {
+    type: t.NonNull(GraphQLChangeNameResultType),
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLChangeNameInputType)),
+    },
+    resolve: (obj, args, context) => {
+      context.user.update({
+        id: context.getSessionId(),
+        name: args.input.name,
+      });
+      const updatedUser = context.user.get(context.getSessionId());
+      if (!updatedUser) {
+        throw new Error("Invalid State.");
+      }
+      return {
+        updatedUser,
+      };
+    },
+  }),
 ];
 
 const GraphQLUserAddUpdateType = t.objectType<
   Extract<UserUpdate, { type: "ADD" }>
 >({
   name: "UserAddUpdate",
+  fields: () => [
+    t.field("user", {
+      type: t.NonNull(GraphQLUserType),
+      resolve: (obj, args, context) => {
+        const user = context.user.get(obj.data.userId);
+        if (!user) {
+          throw new Error("Invalid state. Could not find user.");
+        }
+        return user;
+      },
+    }),
+  ],
+});
+
+const GraphQLUserChangeUpdateType = t.objectType<
+  Extract<UserUpdate, { type: "CHANGE" }>
+>({
+  name: "UserChangeUpdate",
   fields: () => [
     t.field("user", {
       type: t.NonNull(GraphQLUserType),
@@ -173,10 +239,15 @@ const GraphQLUserRemoveType = t.objectType<
 
 const GraphQLUserUpdateSubscriptionType = t.unionType<UserUpdate>({
   name: "UserUpdateSubscription",
-  types: [GraphQLUserAddUpdateType, GraphQLUserRemoveType],
+  types: [
+    GraphQLUserAddUpdateType,
+    GraphQLUserRemoveType,
+    GraphQLUserChangeUpdateType,
+  ],
   resolveType: (obj) => {
     if (obj.type === "ADD") return GraphQLUserAddUpdateType;
     else if (obj.type === "REMOVE") return GraphQLUserRemoveType;
+    else if (obj.type === "CHANGE") return GraphQLUserChangeUpdateType;
     throw new Error("Invalid state.");
   },
 });

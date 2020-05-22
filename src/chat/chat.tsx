@@ -5,6 +5,7 @@ import { ConnectionHandler } from "relay-runtime";
 import { useEnvironment } from "../relay-environment";
 import { ChatUserList } from "./chat-user-list";
 import { ChatMessages } from "./chat-messages";
+import { ChatSettings } from "./chat-settings";
 import { chatSubscription } from "./__generated__/chatSubscription.graphql";
 import { chatQuery } from "./__generated__/chatQuery.graphql";
 import * as Button from "../button";
@@ -41,6 +42,13 @@ const UserUpdateSubscription = graphql`
           name
         }
       }
+      ... on UserChangeUpdate {
+        __typename
+        user {
+          id
+          name
+        }
+      }
     }
   }
 `;
@@ -51,6 +59,10 @@ const ChatQuery = graphql`
     # TODO: move this stuff to own pagination/fragment container.
     ...chatUserList_data
     ...chatOnlineUserIndicator_data
+    me {
+      id
+      ...chatSettings_data
+    }
   }
 `;
 
@@ -150,8 +162,6 @@ export const Chat: React.FC<{}> = React.memo(() => {
 
           if (!users || !updateRecord) return;
 
-          console.log({ usersCountField });
-
           // TODO: typings could be better :)
           // see https://github.com/relay-tools/relay-compiler-language-typescript/issues/186
           if (updateRecord.getValue("__typename") === "UserAddUpdate") {
@@ -177,11 +187,15 @@ export const Chat: React.FC<{}> = React.memo(() => {
     return () => subscription.dispose();
   }, [environment]);
 
-  const logIn = useLogInMutation();
+  const [isLoggedIn, logIn] = useLogInMutation();
 
   React.useEffect(() => {
     logIn();
   }, [logIn]);
+
+  if (isLoggedIn === false) {
+    return null;
+  }
 
   return (
     <QueryRenderer<chatQuery>
@@ -243,7 +257,7 @@ export const Chat: React.FC<{}> = React.memo(() => {
                 <ChatUserList data={props} />
               </div>
             ) : mode === "settings" ? (
-              <div style={{ marginTop: 8 }}></div>
+              <ChatSettings data={props.me} />
             ) : null}
           </ChatWindow>
         );

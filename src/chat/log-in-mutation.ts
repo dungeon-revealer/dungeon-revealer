@@ -1,8 +1,13 @@
+import * as React from "react";
 import { commitMutation } from "react-relay";
-import { useCallback } from "react";
 import graphql from "babel-plugin-relay/macro";
 import { useEnvironment } from "../relay-environment";
 import { logInMutation } from "./__generated__/logInMutation.graphql";
+import { useGetIsMounted } from "../hooks/use-get-is-mounted";
+import {
+  readUserFromLocalStorage,
+  writeUserToLocalStorage,
+} from "./user-session";
 
 const LogInMutationDocument = graphql`
   mutation logInMutation($input: LogInInput) {
@@ -15,31 +20,17 @@ const LogInMutationDocument = graphql`
   }
 `;
 
-const readUserFromLocalStorage = () => {
-  const user = localStorage.getItem("user");
-  if (user == null) return null;
-  try {
-    const record = JSON.parse(user);
-    if (!record) return null;
-    if (typeof record.id === "string" && typeof record.name === "string") {
-      return record as { id: string; name: string };
-    }
-  } catch (err) {}
-  return null;
-};
-
-const writeUserToLocalStorage = (user: { id: string; name: string }) => {
-  localStorage.setItem("user", JSON.stringify(user));
-};
-
 /**
  * This mutation is used for logging in into the chat
  * In The future we can use a password/secret instead of the id/login for authentication.
  * The session is stored in the local storage.
  */
-export const useLogInMutation = () => {
+export const useLogInMutation = (): [boolean, () => void] => {
   const environment = useEnvironment();
-  return useCallback(() => {
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const getIsMounted = useGetIsMounted();
+
+  const logIn = React.useCallback(() => {
     const input = readUserFromLocalStorage();
 
     commitMutation<logInMutation>(environment, {
@@ -49,7 +40,12 @@ export const useLogInMutation = () => {
       },
       onCompleted: (result) => {
         writeUserToLocalStorage(result.logIn.user);
+        if (getIsMounted()) {
+          setIsLoggedIn(true);
+        }
       },
     });
   }, [environment]);
+
+  return [isLoggedIn, logIn];
 };
