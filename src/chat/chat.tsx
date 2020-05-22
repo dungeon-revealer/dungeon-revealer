@@ -72,6 +72,7 @@ const HorizontalNavigationButton = styled(Button.Tertiary)<
 >`
   border-right: none;
   border: 1px solid rgb(203, 210, 217);
+  white-space: nowrap;
 
   background-color: ${(p) => (p.isActive ? "#044e54" : null)};
   color: ${(p) => (p.isActive ? "#fff" : null)};
@@ -87,14 +88,20 @@ const HorizontalNavigationButton = styled(Button.Tertiary)<
     border-right: 0;
   }
 
+  &:not(:last-child):not(:first-child) {
+    border-radius: unset;
+    border-right: none;
+  }
+
   &:last-child {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
+    border-right: 1px solid rgb(203, 210, 217);
   }
 `;
 
 export const Chat: React.FC<{}> = React.memo(() => {
-  const [mode, setMode] = React.useState<"chat" | "user">("chat");
+  const [mode, setMode] = React.useState<"chat" | "user" | "settings">("chat");
   const environment = useEnvironment();
   React.useEffect(() => {
     const subscription = requestSubscription<chatSubscription>(environment, {
@@ -216,6 +223,15 @@ export const Chat: React.FC<{}> = React.memo(() => {
                   Users (<ChatOnlineUserIndicator data={props} />)
                 </span>
               </HorizontalNavigationButton>
+              <HorizontalNavigationButton
+                small
+                isActive={mode === "settings"}
+                fullWidth
+                onClick={() => setMode("settings")}
+              >
+                <Icon.SettingsIcon height={12} width={12} />
+                <span>Settings</span>
+              </HorizontalNavigationButton>
             </div>
             {mode === "chat" ? (
               <>
@@ -226,6 +242,8 @@ export const Chat: React.FC<{}> = React.memo(() => {
               <div style={{ marginTop: 8 }}>
                 <ChatUserList data={props} />
               </div>
+            ) : mode === "settings" ? (
+              <div style={{ marginTop: 8 }}></div>
             ) : null}
           </ChatWindow>
         );
