@@ -57,4 +57,6 @@ export const ConditionalWrap: React.FC<{
   condition: boolean;
   wrap: (children: React.ReactNode) => React.ReactElement;
 }> = ({ condition, wrap, children }) =>
-  condition ? wrap(children) : React.Fragment({ children });
+  condition
+    ? wrap(children)
+    : React.createElement(React.Fragment, { children });
