@@ -42,6 +42,23 @@ const AbsoluteFullscreenContainer = styled.div`
   height: 100%;
 `;
 
+const ChatToggleButton = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  height: 30px;
+  width: 30px;
+  background-color: white;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  border: none;
+`;
+
+const useShowChatState = createPersistedState("chat.state");
+
 const reduceOffsetToMinimum = (offset, sideLength) => {
   const newOffset = offset - sideLength;
   if (newOffset > 0) return reduceOffsetToMinimum(newOffset, sideLength);
@@ -576,6 +593,9 @@ export const PlayerArea = () => {
     };
   }, [socket, pcPassword]);
 
+  // "show" or "hidden"
+  const [chatState, setShowChatState] = useShowChatState("show");
+
   if (mode === "LOADING") {
     return <SplashScreen text="Loading..." />;
   }
@@ -601,14 +621,27 @@ export const PlayerArea = () => {
               pcPassword={pcPassword}
               socket={socket}
             />
+            <ChatToggleButton>
+              <Icons.MessageCircleIcon
+                heightt={20}
+                width={20}
+                onClick={() =>
+                  setShowChatState((showChat) =>
+                    showChat === "show" ? "hidden" : "show"
+                  )
+                }
+              />
+            </ChatToggleButton>
           </div>
-          <div style={{ flex: 1, maxWidth: 400 }}>
-            {relayEnvironment ? (
-              <RelayEnvironmentProvider value={relayEnvironment}>
-                <Chat />
-              </RelayEnvironmentProvider>
-            ) : null}
-          </div>
+          {chatState === "show" ? (
+            <div style={{ flex: 1, maxWidth: 400 }}>
+              {relayEnvironment ? (
+                <RelayEnvironmentProvider value={relayEnvironment}>
+                  <Chat />
+                </RelayEnvironmentProvider>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </Modal.Provider>
     );
