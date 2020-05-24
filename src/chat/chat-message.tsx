@@ -19,40 +19,37 @@ const formatTime = (t: string) => {
 const Time = styled.div`
   line-height: inherit;
   font-size: 10px;
-  margin-top: 8px;
-  padding-right: 4px;
 `;
 
 const Container = styled.div`
   display: flex;
+  margin-bottom: 8px;
 `;
 
 const Column = styled.div`
-  padding-bottom: 4px;
-  padding-top: 4px;
+  > * {
+    line-height: 24px;
+  }
 `;
 
 const AuthorName = styled.div`
   display: inline-block;
-  padding: 4px;
   font-weight: bold;
+  padding-right: 4px;
 `;
 
-const NormalText = styled.span`
-  padding: 4px 0;
-  line-height: 28px;
-`;
+const NormalText = styled.span``;
 
 const ChatMessageRenderer: React.FC<{
   message: chatMessage_message;
 }> = React.memo(({ message }) => {
   return (
     <Container>
-      <Column>
+      {/* <Column>
         <Time>{formatTime(message.createdAt)}</Time>
-      </Column>
+      </Column> */}
       <Column>
-        <AuthorName>{message.authorName} </AuthorName>
+        <AuthorName>{message.authorName}: </AuthorName>
         {message.content.map((node, index) =>
           node.__typename === "ChatMessageTextNode" ? (
             <NormalText key={index}>{node.textContent}</NormalText>

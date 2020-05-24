@@ -5,19 +5,27 @@ import { formattedDiceRoll_diceRoll } from "./__generated__/formattedDiceRoll_di
 import styled from "@emotion/styled";
 
 const StyledDiceRoll = styled.span`
-  padding: 4px;
-  line-height: 28px;
+  padding-right: 4px;
 `;
 
 const Wrapper = styled.span`
-  padding: 4px;
   background: white;
   border-radius: 3px;
   border: 1px solid #d1d1d1;
+  padding-left: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-right: 4px;
+`;
+
+const ResultWraper = styled(Wrapper)`
+  font-weight: bold;
 `;
 
 const EqualSign = styled.span`
-  padding: 4px;
+  padding-left: 2px;
+  padding-top: 2px;
+  padding-bottom: 2px;
 `;
 
 const colors = {
@@ -57,9 +65,9 @@ const DiceRollRenderer: React.FC<{
         })}
       </Wrapper>
       <EqualSign>{" = "}</EqualSign>
-      <Wrapper>
-        <strong>{diceRoll.result}</strong>
-      </Wrapper>
+      <ResultWraper style={{ fontWeight: "bold" }}>
+        {diceRoll.result}
+      </ResultWraper>
     </StyledDiceRoll>
   );
 };

@@ -253,11 +253,13 @@ export const Chat: React.FC<{}> = React.memo(() => {
                 <ChatTextArea />
               </>
             ) : mode === "user" ? (
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 16 }}>
                 <ChatUserList data={props} />
               </div>
             ) : mode === "settings" ? (
-              <ChatSettings data={props.me} />
+              <div style={{ marginTop: 16 }}>
+                <ChatSettings data={props.me} />
+              </div>
             ) : null}
           </ChatWindow>
         );
