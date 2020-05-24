@@ -6,6 +6,16 @@ import { Input } from "../input";
 import * as Button from "../button";
 import { useResetState } from "../hooks/use-reset-state";
 import { useChangeNameMutation } from "./change-name-mutation";
+import styled from "@emotion/styled/macro";
+import * as Icon from "../feather-icons";
+
+const LabelText = styled.div`
+  text-transform: uppercase;
+  font-weight: bold;
+  color: rgb(62, 76, 88);
+  letter-spacing: 1px;
+  padding-bottom: 8px;
+`;
 
 const ChatSettingsRenderer: React.FC<{ data: chatSettings_data }> = ({
   data,
@@ -14,13 +24,23 @@ const ChatSettingsRenderer: React.FC<{ data: chatSettings_data }> = ({
   const changeName = useChangeNameMutation();
   return (
     <>
-      <Input
-        value={name}
-        onChange={(ev) => {
-          setValue(ev.target.value);
-        }}
-      />
-      <Button.Primary onClick={() => changeName({ name })}>Save</Button.Primary>
+      <label>
+        <LabelText>Name</LabelText>
+        <Input
+          value={name}
+          onChange={(ev) => {
+            setValue(ev.target.value);
+          }}
+        />
+      </label>
+      <Button.Primary
+        onClick={() => changeName({ name })}
+        small
+        style={{ marginTop: 8, marginLeft: "auto" }}
+      >
+        <Icon.CheckIcon height={16} width={16} />
+        <span>Save</span>
+      </Button.Primary>
     </>
   );
 };
