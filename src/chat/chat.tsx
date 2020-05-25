@@ -10,6 +10,9 @@ import { chatSubscription } from "./__generated__/chatSubscription.graphql";
 import { chatQuery } from "./__generated__/chatQuery.graphql";
 import * as Button from "../button";
 import * as Icon from "../feather-icons";
+import useSound from "use-sound";
+import diceRollSound from "./dice-roll.mp3";
+import notificationSound from "./notification.mp3";
 
 import styled from "@emotion/styled/macro";
 import { ChatTextArea } from "./chat-textarea";
@@ -23,6 +26,7 @@ const AppSubscription = graphql`
       messages {
         id
         ...chatMessage_message
+        containsDiceRoll
       }
     }
   }
@@ -117,12 +121,21 @@ export const Chat: React.FC<{ socket: SocketIO.Socket }> = React.memo(
     const [mode, setMode] = React.useState<"chat" | "user" | "settings">(
       "chat"
     );
+    const [playDiceRollSound] = useSound(diceRollSound, {
+      volume: 0.5,
+    });
+    const [playNotificationSound] = useSound(notificationSound, {
+      volume: 0.5,
+    });
+    const soundRef = React.useRef({ playDiceRollSound, playNotificationSound });
+    soundRef.current = { playDiceRollSound, playNotificationSound };
+
     const environment = useEnvironment();
     React.useEffect(() => {
       const subscription = requestSubscription<chatSubscription>(environment, {
         subscription: AppSubscription,
         variables: {},
-        updater: (store) => {
+        updater: (store, data) => {
           const chat = ConnectionHandler.getConnection(
             store.getRoot(),
             "chatMessages_chat"
@@ -133,6 +146,16 @@ export const Chat: React.FC<{ socket: SocketIO.Socket }> = React.memo(
             ?.getLinkedRecords("messages");
           if (!chat || !records) return;
 
+          let mode: "dice-roll-message" | "text-message" = "text-message";
+
+          if (
+            data.chatMessagesAdded.messages.some(
+              (message) => message.containsDiceRoll === true
+            )
+          ) {
+            mode = "dice-roll-message";
+          }
+
           for (const chatMessage of records) {
             const edge = ConnectionHandler.createEdge(
               store,
@@ -141,6 +164,12 @@ export const Chat: React.FC<{ socket: SocketIO.Socket }> = React.memo(
               "ChatMessage"
             );
             ConnectionHandler.insertEdgeAfter(chat, edge);
+          }
+
+          if (mode === "text-message") {
+            soundRef.current.playNotificationSound();
+          } else if (mode === "dice-roll-message") {
+            soundRef.current.playDiceRollSound();
           }
         },
       });
@@ -227,7 +256,6 @@ export const Chat: React.FC<{ socket: SocketIO.Socket }> = React.memo(
           if (!props) {
             return null;
           }
-          console.log(retry);
           retryRef.current = retry;
 
           return (

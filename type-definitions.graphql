@@ -13,6 +13,7 @@ type ChatMessage {
   authorName: String!
   content: [ChatMessageNode!]!
   createdAt: String!
+  containsDiceRoll: Boolean!
 }
 
 type ChatMessageConnection {

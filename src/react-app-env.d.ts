@@ -3,3 +3,7 @@
 module "babel-plugin-relay/macro" {
   export default (str: TemplateStringsArray) => any;
 }
+
+module "*.mp3" {
+  export default string;
+}

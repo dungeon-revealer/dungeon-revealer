@@ -217,6 +217,11 @@ const GraphQLChatMessageType = t.objectType<ChatMessageType>({
       type: t.NonNull(t.String),
       resolve: (message) => new Date(message.createdAt).toISOString(),
     }),
+    t.field("containsDiceRoll", {
+      type: t.NonNull(t.Boolean),
+      resolve: (message) =>
+        message.content.some((node) => node.type === "DICE_ROLL"),
+    }),
   ],
 });
 
