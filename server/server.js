@@ -257,7 +257,7 @@ const bootstrapServer = async () => {
   io.on("connection", (socket) => {
     console.log(`WS client ${socket.handshake.address} ${socket.id} connected`);
 
-    socket.on("auth", ({ password }) => {
+    socket.on("authenticate", ({ password }) => {
       socket.removeAllListeners();
 
       ioHandler.forEach((handler) => {
@@ -277,6 +277,8 @@ const bootstrapServer = async () => {
       );
 
       authenticatedSockets.add(socket);
+
+      socket.emit("authenticated");
 
       socket.on("mark area", (data) => {
         Array.from(authenticatedSockets).forEach((socket) => {

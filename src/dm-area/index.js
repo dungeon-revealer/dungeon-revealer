@@ -98,7 +98,7 @@ export const DmArea = () => {
         return;
       }
 
-      socket.emit("auth", { password: dmPassword });
+      socket.emit("authenticate", { password: dmPassword });
 
       const { data } = yield localFetch("/map").then((res) => res.json());
       setData(data);

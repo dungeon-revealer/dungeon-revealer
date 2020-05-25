@@ -54,17 +54,25 @@ export const createEnvironment = (socket: SocketIO.Socket) => {
     return Observable.create((sink) => {
       const operationId = operationIdCounter;
       operationIdCounter = operationIdCounter + 1;
-      socket.emit("graphql/subscribe", {
-        id: operationId,
-        operation,
-        variables,
-      });
+
+      const subscribe = () => {
+        socket.emit("graphql/subscribe", {
+          id: operationId,
+          operation,
+          variables,
+        });
+      };
+
+      subscribe();
 
       subscriptionHandlers.set(operationId, sink);
+
+      socket.on("authenticated", subscribe);
 
       return () => {
         socket.emit("graphql/unsubscribe", { id: operationId });
         subscriptionHandlers.delete(operationId);
+        socket.off("authenticated", subscribe);
       };
     });
   };

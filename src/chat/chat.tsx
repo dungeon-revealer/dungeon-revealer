@@ -112,158 +112,179 @@ const HorizontalNavigationButton = styled(Button.Tertiary)<
   }
 `;
 
-export const Chat: React.FC<{}> = React.memo(() => {
-  const [mode, setMode] = React.useState<"chat" | "user" | "settings">("chat");
-  const environment = useEnvironment();
-  React.useEffect(() => {
-    const subscription = requestSubscription<chatSubscription>(environment, {
-      subscription: AppSubscription,
-      variables: {},
-      updater: (store) => {
-        const chat = ConnectionHandler.getConnection(
-          store.getRoot(),
-          "chatMessages_chat"
-        );
-
-        const records = store
-          .getRootField("chatMessagesAdded")
-          ?.getLinkedRecords("messages");
-        if (!chat || !records) return;
-
-        for (const chatMessage of records) {
-          const edge = ConnectionHandler.createEdge(
-            store,
-            chat,
-            chatMessage,
-            "ChatMessage"
-          );
-          ConnectionHandler.insertEdgeAfter(chat, edge);
-        }
-      },
-    });
-    return () => subscription.dispose();
-  }, [environment]);
-
-  React.useEffect(() => {
-    const subscription = requestSubscription<chatUserUpdateSubscription>(
-      environment,
-      {
-        subscription: UserUpdateSubscription,
+export const Chat: React.FC<{ socket: SocketIO.Socket }> = React.memo(
+  ({ socket }) => {
+    const [mode, setMode] = React.useState<"chat" | "user" | "settings">(
+      "chat"
+    );
+    const environment = useEnvironment();
+    React.useEffect(() => {
+      const subscription = requestSubscription<chatSubscription>(environment, {
+        subscription: AppSubscription,
         variables: {},
         updater: (store) => {
-          const users = ConnectionHandler.getConnection(
+          const chat = ConnectionHandler.getConnection(
             store.getRoot(),
-            "chatUserList_users"
+            "chatMessages_chat"
           );
 
-          const updateRecord = store.getRootField("userUpdate");
-          const root = store.getRoot();
-          const usersCountField = root.getValue("usersCount") as number;
+          const records = store
+            .getRootField("chatMessagesAdded")
+            ?.getLinkedRecords("messages");
+          if (!chat || !records) return;
 
-          if (!users || !updateRecord) return;
-
-          // TODO: typings could be better :)
-          // see https://github.com/relay-tools/relay-compiler-language-typescript/issues/186
-          if (updateRecord.getValue("__typename") === "UserAddUpdate") {
+          for (const chatMessage of records) {
             const edge = ConnectionHandler.createEdge(
               store,
-              users,
-              updateRecord.getLinkedRecord("user"),
-              "User"
+              chat,
+              chatMessage,
+              "ChatMessage"
             );
-            ConnectionHandler.insertEdgeAfter(users, edge);
-            root.setValue(usersCountField + 1, "usersCount");
-          } else if (
-            updateRecord.getValue("__typename") === "UserRemoveUpdate"
-          ) {
-            const userId = updateRecord.getValue("userId");
-            if (typeof userId !== "string") return;
-            ConnectionHandler.deleteNode(users, userId);
-            root.setValue(usersCountField - 1, "usersCount");
+            ConnectionHandler.insertEdgeAfter(chat, edge);
           }
         },
-      }
+      });
+      return () => subscription.dispose();
+    }, [environment]);
+
+    React.useEffect(() => {
+      const subscription = requestSubscription<chatUserUpdateSubscription>(
+        environment,
+        {
+          subscription: UserUpdateSubscription,
+          variables: {},
+          updater: (store) => {
+            const users = ConnectionHandler.getConnection(
+              store.getRoot(),
+              "chatUserList_users"
+            );
+
+            const updateRecord = store.getRootField("userUpdate");
+            const root = store.getRoot();
+            const usersCountField = root.getValue("usersCount") as number;
+
+            if (!users || !updateRecord) return;
+
+            // TODO: typings could be better :)
+            // see https://github.com/relay-tools/relay-compiler-language-typescript/issues/186
+            if (updateRecord.getValue("__typename") === "UserAddUpdate") {
+              const edge = ConnectionHandler.createEdge(
+                store,
+                users,
+                updateRecord.getLinkedRecord("user"),
+                "User"
+              );
+              ConnectionHandler.insertEdgeAfter(users, edge);
+              root.setValue(usersCountField + 1, "usersCount");
+            } else if (
+              updateRecord.getValue("__typename") === "UserRemoveUpdate"
+            ) {
+              const userId = updateRecord.getValue("userId");
+              if (typeof userId !== "string") return;
+              ConnectionHandler.deleteNode(users, userId);
+              root.setValue(usersCountField - 1, "usersCount");
+            }
+          },
+        }
+      );
+      return () => subscription.dispose();
+    }, [environment]);
+
+    const [isLoggedIn, logIn] = useLogInMutation();
+
+    const retryRef = React.useRef<null | (() => void)>(null);
+
+    React.useEffect(() => {
+      logIn();
+
+      const onReconnect = async () => {
+        // in case we disconnect we need to log in again
+        await logIn();
+        // the refetch the query so the chat is up2date :)
+        retryRef.current?.();
+      };
+
+      socket.on("authenticated", onReconnect);
+
+      return () => {
+        socket.off("authenticated", onReconnect);
+      };
+    }, [logIn]);
+
+    if (isLoggedIn === false) {
+      return null;
+    }
+
+    return (
+      <QueryRenderer<chatQuery>
+        query={ChatQuery}
+        environment={environment}
+        variables={{}}
+        render={({ error, props, retry }) => {
+          if (error) {
+            return null;
+          }
+          if (!props) {
+            return null;
+          }
+          console.log(retry);
+          retryRef.current = retry;
+
+          return (
+            <ChatWindow
+              onContextMenu={(ev) => {
+                ev.stopPropagation();
+              }}
+            >
+              <div style={{ display: "flex", marginBottom: 8 }}>
+                <HorizontalNavigationButton
+                  small
+                  isActive={mode === "chat"}
+                  fullWidth
+                  onClick={() => setMode("chat")}
+                >
+                  <Icon.MessageCircleIcon height={12} width={12} />
+                  <span>Chat</span>
+                </HorizontalNavigationButton>
+                <HorizontalNavigationButton
+                  small
+                  isActive={mode === "user"}
+                  fullWidth
+                  onClick={() => setMode("user")}
+                >
+                  <Icon.UsersIcon height={12} width={12} />
+                  <span>
+                    Users (<ChatOnlineUserIndicator data={props} />)
+                  </span>
+                </HorizontalNavigationButton>
+                <HorizontalNavigationButton
+                  small
+                  isActive={mode === "settings"}
+                  fullWidth
+                  onClick={() => setMode("settings")}
+                >
+                  <Icon.SettingsIcon height={12} width={12} />
+                  <span>Settings</span>
+                </HorizontalNavigationButton>
+              </div>
+              {mode === "chat" ? (
+                <>
+                  <ChatMessages chat={props} />
+                  <ChatTextArea />
+                </>
+              ) : mode === "user" ? (
+                <div style={{ marginTop: 16 }}>
+                  <ChatUserList data={props} />
+                </div>
+              ) : mode === "settings" ? (
+                <div style={{ marginTop: 16 }}>
+                  <ChatSettings data={props.me} />
+                </div>
+              ) : null}
+            </ChatWindow>
+          );
+        }}
+      />
     );
-    return () => subscription.dispose();
-  }, [environment]);
-
-  const [isLoggedIn, logIn] = useLogInMutation();
-
-  React.useEffect(() => {
-    logIn();
-  }, [logIn]);
-
-  if (isLoggedIn === false) {
-    return null;
   }
-
-  return (
-    <QueryRenderer<chatQuery>
-      query={ChatQuery}
-      environment={environment}
-      variables={{}}
-      render={({ error, props }) => {
-        if (error) {
-          return null;
-        }
-        if (!props) {
-          return null;
-        }
-
-        return (
-          <ChatWindow
-            onContextMenu={(ev) => {
-              ev.stopPropagation();
-            }}
-          >
-            <div style={{ display: "flex", marginBottom: 8 }}>
-              <HorizontalNavigationButton
-                small
-                isActive={mode === "chat"}
-                fullWidth
-                onClick={() => setMode("chat")}
-              >
-                <Icon.MessageCircleIcon height={12} width={12} />
-                <span>Chat</span>
-              </HorizontalNavigationButton>
-              <HorizontalNavigationButton
-                small
-                isActive={mode === "user"}
-                fullWidth
-                onClick={() => setMode("user")}
-              >
-                <Icon.UsersIcon height={12} width={12} />
-                <span>
-                  Users (<ChatOnlineUserIndicator data={props} />)
-                </span>
-              </HorizontalNavigationButton>
-              <HorizontalNavigationButton
-                small
-                isActive={mode === "settings"}
-                fullWidth
-                onClick={() => setMode("settings")}
-              >
-                <Icon.SettingsIcon height={12} width={12} />
-                <span>Settings</span>
-              </HorizontalNavigationButton>
-            </div>
-            {mode === "chat" ? (
-              <>
-                <ChatMessages chat={props} />
-                <ChatTextArea />
-              </>
-            ) : mode === "user" ? (
-              <div style={{ marginTop: 16 }}>
-                <ChatUserList data={props} />
-              </div>
-            ) : mode === "settings" ? (
-              <div style={{ marginTop: 16 }}>
-                <ChatSettings data={props.me} />
-              </div>
-            ) : null}
-          </ChatWindow>
-        );
-      }}
-    />
-  );
-});
+);

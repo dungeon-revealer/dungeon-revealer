@@ -25,7 +25,7 @@ const LogInMutationDocument = graphql`
  * In The future we can use a password/secret instead of the id/login for authentication.
  * The session is stored in the local storage.
  */
-export const useLogInMutation = (): [boolean, () => void] => {
+export const useLogInMutation = (): [boolean, () => Promise<void>] => {
   const environment = useEnvironment();
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
   const getIsMounted = useGetIsMounted();
@@ -33,17 +33,21 @@ export const useLogInMutation = (): [boolean, () => void] => {
   const logIn = React.useCallback(() => {
     const input = readUserFromLocalStorage();
 
-    commitMutation<logInMutation>(environment, {
-      mutation: LogInMutationDocument,
-      variables: {
-        input,
-      },
-      onCompleted: (result) => {
-        writeUserToLocalStorage(result.logIn.user);
-        if (getIsMounted()) {
-          setIsLoggedIn(true);
-        }
-      },
+    return new Promise<void>((resolve, reject) => {
+      commitMutation<logInMutation>(environment, {
+        mutation: LogInMutationDocument,
+        variables: {
+          input,
+        },
+        onError: () => reject(),
+        onCompleted: (result) => {
+          writeUserToLocalStorage(result.logIn.user);
+          if (getIsMounted()) {
+            setIsLoggedIn(true);
+          }
+          resolve();
+        },
+      });
     });
   }, [environment]);
 

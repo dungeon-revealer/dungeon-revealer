@@ -565,7 +565,7 @@ export const PlayerArea = () => {
   const [relayEnvironment, setRelayEnvironment] = React.useState(null);
 
   React.useEffect(() => {
-    socket.emit("auth", { password: pcPassword });
+    socket.emit("authenticate", { password: pcPassword });
     setRelayEnvironment(createEnvironment(socket));
 
     socket.on("reconnecting", function () {
@@ -574,6 +574,7 @@ export const PlayerArea = () => {
 
     socket.on("reconnect", function () {
       console.log("reconnected to server");
+      socket.emit("authenticate", { password: pcPassword });
     });
 
     socket.on("reconnect_failed", function () {
@@ -635,7 +636,7 @@ export const PlayerArea = () => {
             <div style={{ flex: 1, maxWidth: 400 }}>
               {relayEnvironment ? (
                 <RelayEnvironmentProvider value={relayEnvironment}>
-                  <Chat />
+                  <Chat socket={socket} />
                 </RelayEnvironmentProvider>
               ) : null}
             </div>

@@ -2,6 +2,13 @@ import * as React from "react";
 import { createPaginationContainer } from "react-relay";
 import graphql from "babel-plugin-relay/macro";
 import { chatUserList_data } from "./__generated__/chatUserList_data.graphql";
+import styled from "@emotion/styled";
+
+const ChatUser = styled.div`
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-weight: bold;
+`;
 
 export const ChatUserListRenderer: React.FC<{ data: chatUserList_data }> = ({
   data: { users },
@@ -9,7 +16,7 @@ export const ChatUserListRenderer: React.FC<{ data: chatUserList_data }> = ({
   return (
     <>
       {users.edges.map((edge) => (
-        <div key={edge.node.id}>{edge.node.name}</div>
+        <ChatUser key={edge.node.id}>{edge.node.name}</ChatUser>
       ))}
     </>
   );
