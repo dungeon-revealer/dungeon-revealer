@@ -23,6 +23,7 @@ import {
   RelayEnvironmentProvider,
   createEnvironment,
 } from "../relay-environment";
+import { ChatToggleButton } from "../chat-toggle-button";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -40,21 +41,6 @@ const AbsoluteFullscreenContainer = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-`;
-
-const ChatToggleButton = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  height: 30px;
-  width: 30px;
-  background-color: white;
-  z-index: 20;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 8px;
-  border: none;
 `;
 
 const useShowChatState = createPersistedState("chat.state");
@@ -628,12 +614,16 @@ export const PlayerArea = () => {
                   showChat === "show" ? "hidden" : "show"
                 )
               }
-            >
-              <Icons.MessageCircleIcon heightt={20} width={20} />
-            </ChatToggleButton>
+            />
           </div>
           {chatState === "show" ? (
-            <div style={{ flex: 1, maxWidth: 400 }}>
+            <div
+              style={{
+                flex: 1,
+                maxWidth: 400,
+                borderLeft: "1px solid lightgrey",
+              }}
+            >
               {relayEnvironment ? (
                 <RelayEnvironmentProvider value={relayEnvironment}>
                   <Chat socket={socket} />

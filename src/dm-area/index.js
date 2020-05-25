@@ -27,12 +27,19 @@ import { FetchContext } from "./fetch-context";
 import { Provider as OvermindProvider } from "overmind-react";
 import { ToastProvider } from "react-toast-notifications";
 import { createOvermind } from "overmind";
+import {
+  RelayEnvironmentProvider,
+  createEnvironment,
+} from "../relay-environment";
 
 import { config } from "./overmind";
 import { sendRequest } from "../http-request";
+import { Chat } from "../chat";
+import { ChatToggleButton } from "../chat-toggle-button";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 const useDmPassword = createPersistedState("dmPassword");
+const useShowChatState = createPersistedState("chat.state");
 
 const INITIAL_MODE = {
   title: "LOADING",
@@ -88,6 +95,12 @@ export const DmArea = () => {
   useEffect(() => {
     rootState.actions.sessionStore.setAccessToken(dmPassword);
   }, [dmPassword, rootState]);
+
+  const [relayEnvironment, setRelayEnvironment] = React.useState(null);
+
+  React.useEffect(() => {
+    setRelayEnvironment(createEnvironment(socket));
+  }, [socket]);
 
   // load initial state
   useAsyncEffect(
@@ -332,6 +345,9 @@ export const DmArea = () => {
     [setDroppedFile]
   );
 
+  // "show" or "hidden"
+  const [chatState, setShowChatState] = useShowChatState("show");
+
   if (mode.title === "LOADING") {
     return <SplashScreen text="Loading...." />;
   }
@@ -407,29 +423,63 @@ export const DmArea = () => {
                   dmPassword={dmPassword}
                 />
               ) : loadedMap ? (
-                <DmMap
-                  dmPassword={dmPassword}
-                  setAppData={setData}
-                  socket={socket}
-                  map={loadedMap}
-                  loadedMapId={loadedMap.id}
-                  liveMapId={liveMapId}
-                  sendLiveMap={sendLiveMap}
-                  hideMap={hideMap}
-                  showMapModal={showMapModal}
-                  openNotes={() => {
-                    setMode({ title: "SHOW_NOTES" });
-                  }}
-                  openMediaLibrary={() => {
-                    setMode({ title: "MEDIA_LIBRARY" });
-                  }}
-                  enterGridMode={enterGridMode}
-                  updateMap={updateMap}
-                  deleteToken={deleteToken}
-                  updateToken={updateToken}
-                  tokenInfoAsidetokenInfoAsideState={rootState.tokenInfoAside}
-                  onDropFile={onDropFile}
-                />
+                <div style={{ display: "flex", height: "100vh" }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      position: "relative",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <DmMap
+                      dmPassword={dmPassword}
+                      setAppData={setData}
+                      socket={socket}
+                      map={loadedMap}
+                      loadedMapId={loadedMap.id}
+                      liveMapId={liveMapId}
+                      sendLiveMap={sendLiveMap}
+                      hideMap={hideMap}
+                      showMapModal={showMapModal}
+                      openNotes={() => {
+                        setMode({ title: "SHOW_NOTES" });
+                      }}
+                      openMediaLibrary={() => {
+                        setMode({ title: "MEDIA_LIBRARY" });
+                      }}
+                      enterGridMode={enterGridMode}
+                      updateMap={updateMap}
+                      deleteToken={deleteToken}
+                      updateToken={updateToken}
+                      tokenInfoAsidetokenInfoAsideState={
+                        rootState.tokenInfoAside
+                      }
+                      onDropFile={onDropFile}
+                    />
+                    <ChatToggleButton
+                      onClick={() =>
+                        setShowChatState((showChat) =>
+                          showChat === "show" ? "hidden" : "show"
+                        )
+                      }
+                    />
+                  </div>
+                  {chatState === "show" ? (
+                    <div
+                      style={{
+                        flex: 1,
+                        maxWidth: 400,
+                        borderLeft: "1px solid lightgrey",
+                      }}
+                    >
+                      {relayEnvironment ? (
+                        <RelayEnvironmentProvider value={relayEnvironment}>
+                          <Chat socket={socket} />
+                        </RelayEnvironmentProvider>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
               {droppedFile ? (
                 <ImportFileModal
