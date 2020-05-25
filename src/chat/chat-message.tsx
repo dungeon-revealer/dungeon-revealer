@@ -5,28 +5,8 @@ import { chatMessage_message } from "./__generated__/chatMessage_message.graphql
 import styled from "@emotion/styled";
 import { FormattedDiceRoll } from "./formatted-dice-roll";
 
-function formatTwoDigits(n: number) {
-  return n < 10 ? "0" + n : n;
-}
-
-const formatTime = (t: string) => {
-  const d = new Date(t);
-  const hours = formatTwoDigits(d.getHours());
-  const minutes = formatTwoDigits(d.getMinutes());
-  return hours + ":" + minutes;
-};
-
-const Time = styled.div`
-  line-height: inherit;
-  font-size: 10px;
-`;
-
 const Container = styled.div`
-  display: flex;
-  margin-bottom: 8px;
-`;
-
-const Column = styled.div`
+  margin-bottom: 4px;
   > * {
     line-height: 24px;
   }
@@ -45,19 +25,14 @@ const ChatMessageRenderer: React.FC<{
 }> = React.memo(({ message }) => {
   return (
     <Container>
-      {/* <Column>
-        <Time>{formatTime(message.createdAt)}</Time>
-      </Column> */}
-      <Column>
-        <AuthorName>{message.authorName}: </AuthorName>
-        {message.content.map((node, index) =>
-          node.__typename === "ChatMessageTextNode" ? (
-            <NormalText key={index}>{node.textContent}</NormalText>
-          ) : node.__typename === "ChatMessageDiceRollNode" ? (
-            <FormattedDiceRoll diceRoll={node.diceRollContent} key={index} />
-          ) : null
-        )}
-      </Column>
+      <AuthorName>{message.authorName}: </AuthorName>
+      {message.content.map((node, index) =>
+        node.__typename === "ChatMessageTextNode" ? (
+          <NormalText key={index}>{node.textContent}</NormalText>
+        ) : node.__typename === "ChatMessageDiceRollNode" ? (
+          <FormattedDiceRoll diceRoll={node.diceRollContent} key={index} />
+        ) : null
+      )}
     </Container>
   );
 });
@@ -67,7 +42,6 @@ export const ChatMessage = createFragmentContainer(ChatMessageRenderer, {
     fragment chatMessage_message on ChatMessage {
       id
       authorName
-      createdAt
       content {
         ... on ChatMessageTextNode {
           __typename
