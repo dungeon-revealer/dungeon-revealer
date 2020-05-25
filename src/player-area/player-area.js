@@ -621,16 +621,14 @@ export const PlayerArea = () => {
               pcPassword={pcPassword}
               socket={socket}
             />
-            <ChatToggleButton>
-              <Icons.MessageCircleIcon
-                heightt={20}
-                width={20}
-                onClick={() =>
-                  setShowChatState((showChat) =>
-                    showChat === "show" ? "hidden" : "show"
-                  )
-                }
-              />
+            <ChatToggleButton
+              onClick={() =>
+                setShowChatState((showChat) =>
+                  showChat === "show" ? "hidden" : "show"
+                )
+              }
+            >
+              <Icons.MessageCircleIcon heightt={20} width={20} />
             </ChatToggleButton>
           </div>
           {chatState === "show" ? (
