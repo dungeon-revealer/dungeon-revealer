@@ -20,6 +20,14 @@ if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
   );
 }
 
+// Listen to tab events to enable outlines (accessibility improvement)
+document.body.addEventListener("keyup", (ev) => {
+  /* tab */
+  if (ev.keyCode === 9) {
+    document.body.classList.remove("no-focus-outline");
+  }
+});
+
 const pathname = window.location.pathname.replace(getUrlPrefix(), "");
 
 const main = async () => {
