@@ -365,133 +365,131 @@ export const DmArea = () => {
     );
   }
 
-  return (
-    <OvermindProvider value={rootState}>
-      <ToastProvider placement="bottom-right">
-        <Modal.Provider>
-          <FetchContext.Provider value={localFetch}>
-            <ShareImageActionProvider socket={socket}>
-              {mode.title === "SHOW_MAP_LIBRARY" ? (
-                <SelectMapModal
-                  canClose={loadedMap !== null}
-                  maps={data.maps}
-                  loadedMapId={loadedMapId}
-                  liveMapId={liveMapId}
-                  closeModal={() => {
-                    setMode({ title: "EDIT_MAP" });
-                  }}
-                  setLoadedMapId={(loadedMapId) => {
-                    setMode({ title: "EDIT_MAP" });
-                    setLoadedMapId(loadedMapId);
-                  }}
-                  updateMap={updateMap}
-                  deleteMap={deleteMap}
-                  createMap={createMap}
-                  enterGridMode={(mapId) =>
-                    setMode({ title: "SET_MAP_GRID", data: { mapId } })
-                  }
-                  dmPassword={dmPassword}
-                />
-              ) : null}
-              {mode.title === "SHOW_NOTES" ? (
-                <NoteEditor
-                  onClose={() => {
-                    setMode({ title: "EDIT_MAP" });
-                  }}
-                  state={rootState.noteEditor}
-                />
-              ) : null}
-              {mode.title === "MEDIA_LIBRARY" ? (
-                <MediaLibrary
-                  onClose={() => {
-                    setMode({ title: "EDIT_MAP" });
-                  }}
-                />
-              ) : null}
-              {setMapGridTargetMap ? (
-                <SetMapGrid
-                  map={setMapGridTargetMap}
-                  onSuccess={(mapId, grid) => {
-                    updateMap(mapId, {
-                      grid,
-                    });
-                    setMode({ title: "SHOW_MAP_LIBRARY" });
-                  }}
-                  onAbort={() => {
-                    setMode({ title: "SHOW_MAP_LIBRARY" });
-                  }}
-                  dmPassword={dmPassword}
-                />
-              ) : loadedMap ? (
-                <div style={{ display: "flex", height: "100vh" }}>
-                  <div
-                    style={{
-                      flex: 1,
-                      position: "relative",
-                      overflow: "hidden",
+  return relayEnvironment ? (
+    <RelayEnvironmentProvider value={relayEnvironment}>
+      <OvermindProvider value={rootState}>
+        <ToastProvider placement="bottom-right">
+          <Modal.Provider>
+            <FetchContext.Provider value={localFetch}>
+              <ShareImageActionProvider socket={socket}>
+                {mode.title === "SHOW_MAP_LIBRARY" ? (
+                  <SelectMapModal
+                    canClose={loadedMap !== null}
+                    maps={data.maps}
+                    loadedMapId={loadedMapId}
+                    liveMapId={liveMapId}
+                    closeModal={() => {
+                      setMode({ title: "EDIT_MAP" });
                     }}
-                  >
-                    <DmMap
-                      dmPassword={dmPassword}
-                      setAppData={setData}
-                      socket={socket}
-                      map={loadedMap}
-                      loadedMapId={loadedMap.id}
-                      liveMapId={liveMapId}
-                      sendLiveMap={sendLiveMap}
-                      hideMap={hideMap}
-                      showMapModal={showMapModal}
-                      openNotes={() => {
-                        setMode({ title: "SHOW_NOTES" });
-                      }}
-                      openMediaLibrary={() => {
-                        setMode({ title: "MEDIA_LIBRARY" });
-                      }}
-                      enterGridMode={enterGridMode}
-                      updateMap={updateMap}
-                      deleteToken={deleteToken}
-                      updateToken={updateToken}
-                      tokenInfoAsidetokenInfoAsideState={
-                        rootState.tokenInfoAside
-                      }
-                      onDropFile={onDropFile}
-                    />
-                    <ChatToggleButton
-                      onClick={() =>
-                        setShowChatState((showChat) =>
-                          showChat === "show" ? "hidden" : "show"
-                        )
-                      }
-                    />
-                  </div>
-                  {chatState === "show" ? (
+                    setLoadedMapId={(loadedMapId) => {
+                      setMode({ title: "EDIT_MAP" });
+                      setLoadedMapId(loadedMapId);
+                    }}
+                    updateMap={updateMap}
+                    deleteMap={deleteMap}
+                    createMap={createMap}
+                    enterGridMode={(mapId) =>
+                      setMode({ title: "SET_MAP_GRID", data: { mapId } })
+                    }
+                    dmPassword={dmPassword}
+                  />
+                ) : null}
+                {mode.title === "SHOW_NOTES" ? (
+                  <NoteEditor
+                    onClose={() => {
+                      setMode({ title: "EDIT_MAP" });
+                    }}
+                    state={rootState.noteEditor}
+                  />
+                ) : null}
+                {mode.title === "MEDIA_LIBRARY" ? (
+                  <MediaLibrary
+                    onClose={() => {
+                      setMode({ title: "EDIT_MAP" });
+                    }}
+                  />
+                ) : null}
+                {setMapGridTargetMap ? (
+                  <SetMapGrid
+                    map={setMapGridTargetMap}
+                    onSuccess={(mapId, grid) => {
+                      updateMap(mapId, {
+                        grid,
+                      });
+                      setMode({ title: "SHOW_MAP_LIBRARY" });
+                    }}
+                    onAbort={() => {
+                      setMode({ title: "SHOW_MAP_LIBRARY" });
+                    }}
+                    dmPassword={dmPassword}
+                  />
+                ) : loadedMap ? (
+                  <div style={{ display: "flex", height: "100vh" }}>
                     <div
                       style={{
                         flex: 1,
-                        maxWidth: 400,
-                        borderLeft: "1px solid lightgrey",
+                        position: "relative",
+                        overflow: "hidden",
                       }}
                     >
-                      {relayEnvironment ? (
-                        <RelayEnvironmentProvider value={relayEnvironment}>
-                          <Chat socket={socket} />
-                        </RelayEnvironmentProvider>
-                      ) : null}
+                      <DmMap
+                        dmPassword={dmPassword}
+                        setAppData={setData}
+                        socket={socket}
+                        map={loadedMap}
+                        loadedMapId={loadedMap.id}
+                        liveMapId={liveMapId}
+                        sendLiveMap={sendLiveMap}
+                        hideMap={hideMap}
+                        showMapModal={showMapModal}
+                        openNotes={() => {
+                          setMode({ title: "SHOW_NOTES" });
+                        }}
+                        openMediaLibrary={() => {
+                          setMode({ title: "MEDIA_LIBRARY" });
+                        }}
+                        enterGridMode={enterGridMode}
+                        updateMap={updateMap}
+                        deleteToken={deleteToken}
+                        updateToken={updateToken}
+                        tokenInfoAsidetokenInfoAsideState={
+                          rootState.tokenInfoAside
+                        }
+                        onDropFile={onDropFile}
+                      />
+                      <ChatToggleButton
+                        onClick={() =>
+                          setShowChatState((showChat) =>
+                            showChat === "show" ? "hidden" : "show"
+                          )
+                        }
+                      />
                     </div>
-                  ) : null}
-                </div>
-              ) : null}
-              {droppedFile ? (
-                <ImportFileModal
-                  file={droppedFile}
-                  close={() => setDroppedFile(null)}
-                  createMap={createMap}
-                />
-              ) : null}
-            </ShareImageActionProvider>
-          </FetchContext.Provider>
-        </Modal.Provider>
-      </ToastProvider>
-    </OvermindProvider>
-  );
+                    {chatState === "show" ? (
+                      <div
+                        style={{
+                          flex: 1,
+                          maxWidth: 400,
+                          borderLeft: "1px solid lightgrey",
+                        }}
+                      >
+                        <Chat socket={socket} />
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                {droppedFile ? (
+                  <ImportFileModal
+                    file={droppedFile}
+                    close={() => setDroppedFile(null)}
+                    createMap={createMap}
+                  />
+                ) : null}
+              </ShareImageActionProvider>
+            </FetchContext.Provider>
+          </Modal.Provider>
+        </ToastProvider>
+      </OvermindProvider>
+    </RelayEnvironmentProvider>
+  ) : null;
 };

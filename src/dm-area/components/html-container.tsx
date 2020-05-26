@@ -4,14 +4,23 @@ import { ShowdownExtension } from "showdown";
 import MarkdownView from "react-showdown";
 import { SharableImage } from "./sharable-image";
 import sanitizeHtml from "sanitize-html";
+import { ChatMessageButton } from "./chat-message-button";
+
+const components = {
+  Image: SharableImage,
+  ChatMessage: ChatMessageButton,
+};
+
+const allowedTags = Object.keys(components);
 
 const sanitizeHtmlExtension: ShowdownExtension = {
   type: "lang",
   filter: (text) => {
     const sanitizedHtml = sanitizeHtml(text, {
-      allowedTags: ["Image"],
+      allowedTags,
       allowedAttributes: {
         Image: ["id"],
+        ChatMessage: ["message"],
       },
       selfClosing: ["Image"],
       parser: {
@@ -38,10 +47,6 @@ const HtmlContainerStyled = styled.div`
 `;
 
 const extensions = [sanitizeHtmlExtension];
-
-const components = {
-  Image: SharableImage,
-};
 
 export const HtmlContainer: React.FC<{ markdown: string }> = React.memo(
   ({ markdown }) => {
