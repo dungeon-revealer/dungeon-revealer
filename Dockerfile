@@ -42,4 +42,6 @@ COPY --from=production-dependency-builder  /usr/src/build/package-lock.json /usr
 ARG NODE_ENV="production"
 ENV NODE_ENV="production"
 
+EXPOSE 3000
+
 CMD [ "node", "server-build/index.js" ]
