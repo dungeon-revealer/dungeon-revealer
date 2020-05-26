@@ -14,6 +14,9 @@ const TextArea = styled.textarea`
   width: 100%;
   resize: none;
   font-size: inherit;
+  font-family: inherit;
+  letter-spacing: 0.2px;
+  padding: 4px;
 `;
 
 const useRawChatHistory = createPersistedState("chat.history");
@@ -97,7 +100,7 @@ export const ChatTextArea: React.FC<{}> = () => {
       onKeyPress={onKeyPress}
       onKeyDown={onKeyDown}
     >
-      <TextArea value={value} onChange={onChange} rows={3} />
+      <TextArea value={value} onChange={onChange} rows={5} />
     </Container>
   );
 };
