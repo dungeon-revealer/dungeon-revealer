@@ -35,6 +35,9 @@ const HtmlContainerStyled = styled.div`
   flex-grow: 1;
   overflow-wrap: break-word;
 
+  font-size: 12px;
+  line-height: 1.5;
+
   blockquote {
     margin-left: 0;
     border-left: gray 12px solid;
@@ -43,6 +46,11 @@ const HtmlContainerStyled = styled.div`
 
   img {
     max-width: 100%;
+  }
+
+  p {
+    margin-top: 0;
+    margin-bottom: 4px;
   }
 `;
 

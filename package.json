@@ -122,6 +122,7 @@
     "react-showdown": "2.0.3",
     "react-spring": "9.0.0-rc.3",
     "react-toast-notifications": "2.4.0",
+    "react-use-gesture": "7.0.15",
     "react-virtualized": "9.21.2",
     "referentiel": "0.0.8",
     "relay-compiler": "9.1.0",

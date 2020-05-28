@@ -20,6 +20,7 @@ import { useLogInMutation } from "./log-in-mutation";
 import { chatUserUpdateSubscription } from "./__generated__/chatUserUpdateSubscription.graphql";
 import { ChatOnlineUserIndicator } from "./chat-online-user-indicator";
 import { isAbstractGraphQLMemberType } from "../relay-utilities";
+import { DiceRollNotes } from "./dice-roll-notes";
 
 const AppSubscription = graphql`
   subscription chatSubscription {
@@ -117,133 +118,134 @@ const HorizontalNavigationButton = styled(Button.Tertiary)<
   }
 `;
 
-export const Chat: React.FC<{ socket: SocketIO.Socket }> = React.memo(
-  ({ socket }) => {
-    const [mode, setMode] = React.useState<"chat" | "user" | "settings">(
-      "chat"
-    );
-    const [playDiceRollSound] = useSound(diceRollSound, {
-      volume: 0.5,
-    });
-    const [playNotificationSound] = useSound(notificationSound, {
-      volume: 0.5,
-    });
-    const soundRef = React.useRef({ playDiceRollSound, playNotificationSound });
-    soundRef.current = { playDiceRollSound, playNotificationSound };
+export const Chat: React.FC<{
+  socket: SocketIO.Socket;
+  toggleShowDiceRollNotes: () => void;
+}> = React.memo(({ socket, toggleShowDiceRollNotes }) => {
+  const [mode, setMode] = React.useState<"chat" | "user" | "settings">("chat");
+  const [playDiceRollSound] = useSound(diceRollSound, {
+    volume: 0.5,
+  });
+  const [playNotificationSound] = useSound(notificationSound, {
+    volume: 0.5,
+  });
+  const soundRef = React.useRef({ playDiceRollSound, playNotificationSound });
+  soundRef.current = { playDiceRollSound, playNotificationSound };
 
-    const environment = useEnvironment();
-    React.useEffect(() => {
-      const subscription = requestSubscription<chatSubscription>(environment, {
-        subscription: AppSubscription,
+  const environment = useEnvironment();
+  React.useEffect(() => {
+    const subscription = requestSubscription<chatSubscription>(environment, {
+      subscription: AppSubscription,
+      variables: {},
+      updater: (store, data) => {
+        const chat = ConnectionHandler.getConnection(
+          store.getRoot(),
+          "chatMessages_chat"
+        );
+
+        const records = store
+          .getRootField("chatMessagesAdded")
+          ?.getLinkedRecords("messages");
+        if (!chat || !records) return;
+
+        let mode: "dice-roll-message" | "text-message" = "text-message";
+
+        if (
+          data.chatMessagesAdded.messages.some(
+            (message) => message.containsDiceRoll === true
+          )
+        ) {
+          mode = "dice-roll-message";
+        }
+
+        for (const chatMessage of records) {
+          const edge = ConnectionHandler.createEdge(
+            store,
+            chat,
+            chatMessage,
+            "ChatMessage"
+          );
+          ConnectionHandler.insertEdgeAfter(chat, edge);
+        }
+
+        if (mode === "text-message") {
+          soundRef.current.playNotificationSound();
+        } else if (mode === "dice-roll-message") {
+          soundRef.current.playDiceRollSound();
+        }
+      },
+    });
+    return () => subscription.dispose();
+  }, [environment]);
+
+  React.useEffect(() => {
+    const subscription = requestSubscription<chatUserUpdateSubscription>(
+      environment,
+      {
+        subscription: UserUpdateSubscription,
         variables: {},
-        updater: (store, data) => {
-          const chat = ConnectionHandler.getConnection(
+        updater: (store) => {
+          const users = ConnectionHandler.getConnection(
             store.getRoot(),
-            "chatMessages_chat"
+            "chatUserList_users"
           );
 
-          const records = store
-            .getRootField("chatMessagesAdded")
-            ?.getLinkedRecords("messages");
-          if (!chat || !records) return;
+          const updateRecord = store.getRootField("userUpdate");
+          const root = store.getRoot();
+          const usersCountField = root.getValue("usersCount") as number;
 
-          let mode: "dice-roll-message" | "text-message" = "text-message";
+          if (!users || !updateRecord) return;
 
-          if (
-            data.chatMessagesAdded.messages.some(
-              (message) => message.containsDiceRoll === true
-            )
-          ) {
-            mode = "dice-roll-message";
-          }
-
-          for (const chatMessage of records) {
+          // see https://github.com/relay-tools/relay-compiler-language-typescript/issues/186
+          if (isAbstractGraphQLMemberType(updateRecord, "UserAddUpdate")) {
             const edge = ConnectionHandler.createEdge(
               store,
-              chat,
-              chatMessage,
-              "ChatMessage"
+              users,
+              updateRecord.getLinkedRecord("user"),
+              "User"
             );
-            ConnectionHandler.insertEdgeAfter(chat, edge);
-          }
-
-          if (mode === "text-message") {
-            soundRef.current.playNotificationSound();
-          } else if (mode === "dice-roll-message") {
-            soundRef.current.playDiceRollSound();
+            ConnectionHandler.insertEdgeAfter(users, edge);
+            root.setValue(usersCountField + 1, "usersCount");
+          } else if (
+            isAbstractGraphQLMemberType(updateRecord, "UserRemoveUpdate")
+          ) {
+            const userId = updateRecord.getValue("userId");
+            ConnectionHandler.deleteNode(users, userId);
+            root.setValue(usersCountField - 1, "usersCount");
           }
         },
-      });
-      return () => subscription.dispose();
-    }, [environment]);
+      }
+    );
+    return () => subscription.dispose();
+  }, [environment]);
 
-    React.useEffect(() => {
-      const subscription = requestSubscription<chatUserUpdateSubscription>(
-        environment,
-        {
-          subscription: UserUpdateSubscription,
-          variables: {},
-          updater: (store) => {
-            const users = ConnectionHandler.getConnection(
-              store.getRoot(),
-              "chatUserList_users"
-            );
+  const [isLoggedIn, logIn] = useLogInMutation();
 
-            const updateRecord = store.getRootField("userUpdate");
-            const root = store.getRoot();
-            const usersCountField = root.getValue("usersCount") as number;
+  const retryRef = React.useRef<null | (() => void)>(null);
 
-            if (!users || !updateRecord) return;
+  React.useEffect(() => {
+    logIn();
 
-            // see https://github.com/relay-tools/relay-compiler-language-typescript/issues/186
-            if (isAbstractGraphQLMemberType(updateRecord, "UserAddUpdate")) {
-              const edge = ConnectionHandler.createEdge(
-                store,
-                users,
-                updateRecord.getLinkedRecord("user"),
-                "User"
-              );
-              ConnectionHandler.insertEdgeAfter(users, edge);
-              root.setValue(usersCountField + 1, "usersCount");
-            } else if (
-              isAbstractGraphQLMemberType(updateRecord, "UserRemoveUpdate")
-            ) {
-              const userId = updateRecord.getValue("userId");
-              ConnectionHandler.deleteNode(users, userId);
-              root.setValue(usersCountField - 1, "usersCount");
-            }
-          },
-        }
-      );
-      return () => subscription.dispose();
-    }, [environment]);
+    const onReconnect = async () => {
+      // in case we disconnect we need to log in again
+      await logIn();
+      // the refetch the query so the chat is up2date :)
+      retryRef.current?.();
+    };
 
-    const [isLoggedIn, logIn] = useLogInMutation();
+    socket.on("authenticated", onReconnect);
 
-    const retryRef = React.useRef<null | (() => void)>(null);
+    return () => {
+      socket.off("authenticated", onReconnect);
+    };
+  }, [logIn]);
 
-    React.useEffect(() => {
-      logIn();
+  if (isLoggedIn === false) {
+    return null;
+  }
 
-      const onReconnect = async () => {
-        // in case we disconnect we need to log in again
-        await logIn();
-        // the refetch the query so the chat is up2date :)
-        retryRef.current?.();
-      };
-
-      socket.on("authenticated", onReconnect);
-
-      return () => {
-        socket.off("authenticated", onReconnect);
-      };
-    }, [logIn]);
-
-    if (isLoggedIn === false) {
-      return null;
-    }
-
-    return (
+  return (
+    <>
       <QueryRenderer<chatQuery>
         query={ChatQuery}
         environment={environment}
@@ -298,6 +300,13 @@ export const Chat: React.FC<{ socket: SocketIO.Socket }> = React.memo(
                 <>
                   <ChatMessages chat={props} />
                   <ChatTextArea />
+                  <Button.Tertiary
+                    small
+                    onClick={toggleShowDiceRollNotes}
+                    style={{ marginTop: 8 }}
+                  >
+                    <Icon.DiceIcon height={16} /> <span> Dice Roll Notes</span>
+                  </Button.Tertiary>
                 </>
               ) : mode === "user" ? (
                 <div style={{ marginTop: 16 }}>
@@ -312,6 +321,6 @@ export const Chat: React.FC<{ socket: SocketIO.Socket }> = React.memo(
           );
         }}
       />
-    );
-  }
-);
+    </>
+  );
+});

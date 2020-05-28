@@ -36,6 +36,7 @@ import { config } from "./overmind";
 import { sendRequest } from "../http-request";
 import { Chat } from "../chat";
 import { ChatToggleButton } from "../chat-toggle-button";
+import { DiceRollNotes } from "../chat/dice-roll-notes";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 const useDmPassword = createPersistedState("dmPassword");
@@ -347,6 +348,12 @@ export const DmArea = () => {
 
   // "show" or "hidden"
   const [chatState, setShowChatState] = useShowChatState("show");
+  // "show" or "hidden"
+  const [diceRollNotesState, setDiceRollNotesState] = React.useState("hidden");
+
+  const toggleShowDiceRollNotes = React.useCallback(() => {
+    setDiceRollNotesState((state) => (state === "show" ? "hidden" : "show"));
+  }, []);
 
   if (mode.title === "LOADING") {
     return <SplashScreen text="Loading...." />;
@@ -424,7 +431,10 @@ export const DmArea = () => {
                     dmPassword={dmPassword}
                   />
                 ) : loadedMap ? (
-                  <div style={{ display: "flex", height: "100vh" }}>
+                  <div
+                    style={{ display: "flex", height: "100vh" }}
+                    data-main-content
+                  >
                     <div
                       style={{
                         flex: 1,
@@ -473,7 +483,10 @@ export const DmArea = () => {
                           borderLeft: "1px solid lightgrey",
                         }}
                       >
-                        <Chat socket={socket} />
+                        <Chat
+                          socket={socket}
+                          toggleShowDiceRollNotes={toggleShowDiceRollNotes}
+                        />
                       </div>
                     ) : null}
                   </div>
@@ -484,6 +497,9 @@ export const DmArea = () => {
                     close={() => setDroppedFile(null)}
                     createMap={createMap}
                   />
+                ) : null}
+                {diceRollNotesState === "show" ? (
+                  <DiceRollNotes close={toggleShowDiceRollNotes} />
                 ) : null}
               </ShareImageActionProvider>
             </FetchContext.Provider>

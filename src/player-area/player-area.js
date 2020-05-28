@@ -24,6 +24,7 @@ import {
   createEnvironment,
 } from "../relay-environment";
 import { ChatToggleButton } from "../chat-toggle-button";
+import { DiceRollNotes } from "../chat/dice-roll-notes";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -554,20 +555,20 @@ export const PlayerArea = () => {
     socket.emit("authenticate", { password: pcPassword });
     setRelayEnvironment(createEnvironment(socket));
 
-    socket.on("reconnecting", function () {
+    socket.on("reconnecting", () => {
       console.log("reconnecting to server");
     });
 
-    socket.on("reconnect", function () {
+    socket.on("reconnect", () => {
       console.log("reconnected to server");
       socket.emit("authenticate", { password: pcPassword });
     });
 
-    socket.on("reconnect_failed", function () {
+    socket.on("reconnect_failed", () => {
       console.log("reconnect failed!");
     });
 
-    socket.on("disconnect", function () {
+    socket.on("disconnect", () => {
       console.log("disconnected from server");
     });
 
@@ -582,6 +583,12 @@ export const PlayerArea = () => {
 
   // "show" or "hidden"
   const [chatState, setShowChatState] = useShowChatState("show");
+  // "show" or "hidden"
+  const [diceRollNotesState, setDiceRollNotesState] = React.useState("hidden");
+
+  const toggleShowDiceRollNotes = React.useCallback(() => {
+    setDiceRollNotesState((state) => (state === "show" ? "hidden" : "show"));
+  }, []);
 
   if (mode === "LOADING") {
     return <SplashScreen text="Loading..." />;
@@ -599,41 +606,48 @@ export const PlayerArea = () => {
   }
 
   if (mode === "READY") {
-    return (
-      <Modal.Provider>
-        <div style={{ display: "flex", height: "100vh" }}>
-          <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-            <PlayerMap
-              fetch={localFetch}
-              pcPassword={pcPassword}
-              socket={socket}
-            />
-            <ChatToggleButton
-              onClick={() =>
-                setShowChatState((showChat) =>
-                  showChat === "show" ? "hidden" : "show"
-                )
-              }
-            />
-          </div>
-          {chatState === "show" ? (
+    return relayEnvironment ? (
+      <RelayEnvironmentProvider value={relayEnvironment}>
+        <Modal.Provider>
+          <div style={{ display: "flex", height: "100vh" }}>
             <div
-              style={{
-                flex: 1,
-                maxWidth: 400,
-                borderLeft: "1px solid lightgrey",
-              }}
+              style={{ flex: 1, position: "relative", overflow: "hidden" }}
+              data-main-content
             >
-              {relayEnvironment ? (
-                <RelayEnvironmentProvider value={relayEnvironment}>
-                  <Chat socket={socket} />
-                </RelayEnvironmentProvider>
-              ) : null}
+              <PlayerMap
+                fetch={localFetch}
+                pcPassword={pcPassword}
+                socket={socket}
+              />
+              <ChatToggleButton
+                onClick={() =>
+                  setShowChatState((showChat) =>
+                    showChat === "show" ? "hidden" : "show"
+                  )
+                }
+              />
             </div>
-          ) : null}
-        </div>
-      </Modal.Provider>
-    );
+            {chatState === "show" ? (
+              <div
+                style={{
+                  flex: 1,
+                  maxWidth: 400,
+                  borderLeft: "1px solid lightgrey",
+                }}
+              >
+                <Chat
+                  socket={socket}
+                  toggleShowDiceRollNotes={toggleShowDiceRollNotes}
+                />
+              </div>
+            ) : null}
+            {diceRollNotesState === "show" ? (
+              <DiceRollNotes close={toggleShowDiceRollNotes} />
+            ) : null}
+          </div>
+        </Modal.Provider>
+      </RelayEnvironmentProvider>
+    ) : null;
   }
 
   throw new Error("Invalid mode.");
