@@ -1,6 +1,7 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
 import * as Icon from "./feather-icons";
+import { darken } from "polished";
 
 const StyledChatToggleButton = styled.button`
   position: absolute;
@@ -15,6 +16,11 @@ const StyledChatToggleButton = styled.button`
   align-items: center;
   border-radius: 8px;
   border: none;
+  cursor: pointer;
+
+  &:hover {
+    background-color: ${darken(0.1, "white")};
+  }
 `;
 
 export const ChatToggleButton: React.FC<{
