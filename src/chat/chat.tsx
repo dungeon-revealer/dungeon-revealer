@@ -19,6 +19,7 @@ import { ChatTextArea } from "./chat-textarea";
 import { useLogInMutation } from "./log-in-mutation";
 import { chatUserUpdateSubscription } from "./__generated__/chatUserUpdateSubscription.graphql";
 import { ChatOnlineUserIndicator } from "./chat-online-user-indicator";
+import { isAbstractGraphQLMemberType } from "../relay-utilities";
 
 const AppSubscription = graphql`
   subscription chatSubscription {
@@ -194,9 +195,8 @@ export const Chat: React.FC<{ socket: SocketIO.Socket }> = React.memo(
 
             if (!users || !updateRecord) return;
 
-            // TODO: typings could be better :)
             // see https://github.com/relay-tools/relay-compiler-language-typescript/issues/186
-            if (updateRecord.getValue("__typename") === "UserAddUpdate") {
+            if (isAbstractGraphQLMemberType(updateRecord, "UserAddUpdate")) {
               const edge = ConnectionHandler.createEdge(
                 store,
                 users,
@@ -206,10 +206,9 @@ export const Chat: React.FC<{ socket: SocketIO.Socket }> = React.memo(
               ConnectionHandler.insertEdgeAfter(users, edge);
               root.setValue(usersCountField + 1, "usersCount");
             } else if (
-              updateRecord.getValue("__typename") === "UserRemoveUpdate"
+              isAbstractGraphQLMemberType(updateRecord, "UserRemoveUpdate")
             ) {
               const userId = updateRecord.getValue("userId");
-              if (typeof userId !== "string") return;
               ConnectionHandler.deleteNode(users, userId);
               root.setValue(usersCountField - 1, "usersCount");
             }
