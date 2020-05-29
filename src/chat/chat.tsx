@@ -40,6 +40,7 @@ const UserUpdateSubscription = graphql`
       ... on UserRemoveUpdate {
         __typename
         userId
+        usersCount
       }
       ... on UserAddUpdate {
         __typename
@@ -47,6 +48,7 @@ const UserUpdateSubscription = graphql`
           id
           name
         }
+        usersCount
       }
       ... on UserChangeUpdate {
         __typename
@@ -192,7 +194,6 @@ export const Chat: React.FC<{
 
           const updateRecord = store.getRootField("userUpdate");
           const root = store.getRoot();
-          const usersCountField = root.getValue("usersCount") as number;
 
           if (!users || !updateRecord) return;
 
@@ -205,13 +206,13 @@ export const Chat: React.FC<{
               "User"
             );
             ConnectionHandler.insertEdgeAfter(users, edge);
-            root.setValue(usersCountField + 1, "usersCount");
+            root.setValue(updateRecord.getValue("usersCount"), "usersCount");
           } else if (
             isAbstractGraphQLMemberType(updateRecord, "UserRemoveUpdate")
           ) {
             const userId = updateRecord.getValue("userId");
             ConnectionHandler.deleteNode(users, userId);
-            root.setValue(usersCountField - 1, "usersCount");
+            root.setValue(updateRecord.getValue("usersCount"), "usersCount");
           }
         },
       }

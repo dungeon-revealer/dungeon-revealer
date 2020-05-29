@@ -142,6 +142,7 @@ type User {
 
 type UserAddUpdate {
   user: User!
+  usersCount: Int!
 }
 
 type UserChangeUpdate {
@@ -150,6 +151,7 @@ type UserChangeUpdate {
 
 type UserRemoveUpdate {
   userId: ID!
+  usersCount: Int!
 }
 
 union UserUpdateSubscription =

@@ -204,6 +204,10 @@ const GraphQLUserAddUpdateType = t.objectType<
         return user;
       },
     }),
+    t.field("usersCount", {
+      type: t.NonNull(t.Int),
+      resolve: (obj, args, context) => context.user.getUsers().length,
+    }),
   ],
 });
 
@@ -233,6 +237,10 @@ const GraphQLUserRemoveType = t.objectType<
     t.field("userId", {
       type: t.NonNull(t.ID),
       resolve: (obj) => obj.data.userId,
+    }),
+    t.field("usersCount", {
+      type: t.NonNull(t.Int),
+      resolve: (obj, args, context) => context.user.getUsers().length,
     }),
   ],
 });
