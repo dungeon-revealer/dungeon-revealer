@@ -1,5 +1,4 @@
 import uuid from "uuid";
-import { produce } from "immer";
 import { PubSub } from "graphql-subscriptions";
 import { roll } from "@airjp73/dice-notation";
 
@@ -142,12 +141,10 @@ export const createChat = () => {
       content: processRawContent(args.rawContent),
     };
 
-    state = produce(state, (state) => {
-      state.push(message);
-      if (state.length > MAXIMUM_CHAT_SIZE) {
-        state.shift();
-      }
-    });
+    state.push(message);
+    if (state.length > MAXIMUM_CHAT_SIZE) {
+      state.shift();
+    }
 
     pubSub.publish("NEW_MESSAGES", {
       messages: [message],
