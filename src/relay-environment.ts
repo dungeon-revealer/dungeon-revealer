@@ -55,32 +55,27 @@ export const createEnvironment = (socket: SocketIO.Socket) => {
       const operationId = operationIdCounter;
       operationIdCounter = operationIdCounter + 1;
 
-      const subscribe = () => {
-        socket.emit("graphql/subscribe", {
-          id: operationId,
-          operation,
-          variables,
-        });
-      };
-
-      subscribe();
+      socket.emit("graphql/subscribe", {
+        id: operationId,
+        operation,
+        variables,
+      });
 
       subscriptionHandlers.set(operationId, sink);
-
-      socket.on("authenticated", subscribe);
 
       return () => {
         socket.emit("graphql/unsubscribe", { id: operationId });
         subscriptionHandlers.delete(operationId);
-        socket.off("authenticated", subscribe);
       };
     });
   };
 
-  return new Environment({
+  const environment = new Environment({
     network: Network.create(fetchQuery, setupSubscription),
     store: new Store(new RecordSource()),
   });
+
+  return environment;
 };
 
 export const EnvironmentContext = React.createContext<RelayModernEnvironment | null>(
