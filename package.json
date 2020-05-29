@@ -108,7 +108,7 @@
     "react-toast-notifications": "2.4.0",
     "referentiel": "0.0.8",
     "replacestream": "4.0.3",
-    "sanitize-html": "1.24.0",
+    "sanitize-html": "1.25.0",
     "showdown": "1.9.1",
     "socket.io-client": "2.3.0",
     "ts-jest": "26.0.0",
