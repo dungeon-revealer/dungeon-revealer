@@ -2,7 +2,7 @@ import * as React from "react";
 import { createPaginationContainer } from "react-relay";
 import graphql from "babel-plugin-relay/macro";
 import { chatUserList_data } from "./__generated__/chatUserList_data.graphql";
-import styled from "@emotion/styled";
+import styled from "@emotion/styled/macro";
 
 const ChatUser = styled.div`
   padding-top: 4px;

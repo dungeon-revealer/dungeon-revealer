@@ -1,5 +1,5 @@
 import * as React from "react";
-import styled from "@emotion/styled";
+import styled from "@emotion/styled/macro";
 import type { chatMessage_message } from "./__generated__/chatMessage_message.graphql";
 
 const StyledDiceRoll = styled.span`

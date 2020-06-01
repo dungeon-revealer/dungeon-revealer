@@ -11,14 +11,25 @@ import { Chat } from "./chat";
 import { DiceRollNotes } from "./chat/dice-roll-notes";
 import { useChatSoundsAndUnreadCount } from "./chat/chat";
 import { useLogInMutation } from "./chat/log-in-mutation";
+import styled from "@emotion/styled/macro";
 
 const useShowChatState = createPersistedState("chat.state");
+const useShowDiceRollNotesState = createPersistedState(
+  "chat.showDiceRollNotes"
+);
+
+const Container = styled.div`
+  display: flex;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+`;
 
 const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
   const [chatState, setShowChatState] = useShowChatState<"show" | "hidden">(
-    "show"
+    "hidden"
   );
-  const [diceRollNotesState, setDiceRollNotesState] = React.useState<
+  const [diceRollNotesState, setDiceRollNotesState] = useShowDiceRollNotesState<
     "show" | "hidden"
   >("hidden");
 
@@ -41,7 +52,7 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
   }
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <Container>
       <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
         {children}
         <ChatToggleButton
@@ -68,7 +79,7 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
       {diceRollNotesState === "show" ? (
         <DiceRollNotes close={toggleShowDiceRollNotes} />
       ) : null}
-    </div>
+    </Container>
   );
 };
 

@@ -36,7 +36,7 @@ const transformTemplateExtension = (
         startTagMatch.index + matchStringLength,
         endTagIndex
       );
-      templateMap.set(templateId, templateContents);
+      templateMap.set(templateId, templateContents.replace(/^\s*/gm, ""));
       finalText = finalText + text.substring(0, startTagMatch.index);
       text = text.substr(endTagIndex + END_TAG.length);
     }
@@ -108,6 +108,7 @@ export const HtmlContainer: React.FC<{ markdown: string }> = React.memo(
             options={{
               omitExtraWLInCodeBlocks: true,
               simpleLineBreaks: true,
+              backslashEscapesHTMLTags: true,
             }}
           />
         </HtmlContainerStyled>

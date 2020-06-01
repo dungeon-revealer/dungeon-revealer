@@ -1,7 +1,7 @@
 import styled from "@emotion/styled/macro";
 
 const Box = styled.div`
-  border: 1px solid grey;
+  border: 0.5px solid lightgrey;
   padding: 8px;
   border-radius: 2px;
 `;

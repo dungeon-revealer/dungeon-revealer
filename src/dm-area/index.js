@@ -63,7 +63,6 @@ const Content = ({ socket, password: dmPassword, rootState }) => {
 
   const localFetch = useCallback(
     (input, init = {}) => {
-      console.log({ dmPassword });
       return fetch(buildApiUrl(input), {
         ...init,
         headers: {

@@ -2,7 +2,7 @@ import React from "react";
 import { createFragmentContainer } from "react-relay";
 import graphql from "babel-plugin-relay/macro";
 import type { chatMessage_message } from "./__generated__/chatMessage_message.graphql";
-import styled from "@emotion/styled";
+import styled from "@emotion/styled/macro";
 import { ShowdownExtension } from "showdown";
 import MarkdownView from "react-showdown";
 import { FormattedDiceRoll } from "./formatted-dice-roll";

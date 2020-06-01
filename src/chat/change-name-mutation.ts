@@ -4,8 +4,7 @@ import { useCallback } from "react";
 import graphql from "babel-plugin-relay/macro";
 import { useEnvironment } from "../relay-environment";
 import { changeNameMutation } from "./__generated__/changeNameMutation.graphql";
-import { useGetIsMounted } from "../hooks/use-get-is-mounted";
-import { writeUserToLocalStorage } from "./user-session";
+import * as userSession from "./user-session";
 
 const ChangeNameMutationDocument = graphql`
   mutation changeNameMutation($input: ChangeNameInput!) {
@@ -29,7 +28,7 @@ export const useChangeNameMutation = () => {
           input: { name },
         },
         onCompleted: (result) => {
-          writeUserToLocalStorage(result.changeName.me);
+          userSession.saveUser(result.changeName.me);
         },
       });
     },

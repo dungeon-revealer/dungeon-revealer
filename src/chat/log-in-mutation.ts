@@ -4,10 +4,7 @@ import graphql from "babel-plugin-relay/macro";
 import { useEnvironment } from "../relay-environment";
 import { logInMutation } from "./__generated__/logInMutation.graphql";
 import { useGetIsMounted } from "../hooks/use-get-is-mounted";
-import {
-  readUserFromLocalStorage,
-  writeUserToLocalStorage,
-} from "./user-session";
+import * as userSession from "./user-session";
 
 const LogInMutationDocument = graphql`
   mutation logInMutation($input: LogInInput) {
@@ -31,7 +28,7 @@ export const useLogInMutation = (): [boolean, () => Promise<void>] => {
   const getIsMounted = useGetIsMounted();
 
   const logIn = React.useCallback(() => {
-    const input = readUserFromLocalStorage();
+    const input = userSession.getUser();
 
     return new Promise<void>((resolve, reject) => {
       commitMutation<logInMutation>(environment, {
@@ -41,7 +38,7 @@ export const useLogInMutation = (): [boolean, () => Promise<void>] => {
         },
         onError: () => reject(),
         onCompleted: (result) => {
-          writeUserToLocalStorage(result.logIn.user);
+          userSession.saveUser(result.logIn.user);
           if (getIsMounted()) {
             setIsLoggedIn(true);
           }
