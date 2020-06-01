@@ -98,13 +98,17 @@ const UserMessageRenderer: React.FC<{
         for (const part of parts) {
           if (part.startsWith("{") && part.endsWith("}")) {
             const index = parseInt(part.substr(1, part.length - 1), 10);
-            const content = (
-              <FormattedDiceRoll
-                diceRoll={diceRolls[index]}
-                key={`dice_roll_${index}`}
-              />
-            );
-            nodes.push(content);
+            if (diceRolls[index]) {
+              const content = (
+                <FormattedDiceRoll
+                  diceRoll={diceRolls[index]}
+                  key={`dice_roll_${index}`}
+                />
+              );
+              nodes.push(content);
+            } else {
+              nodes.push(part);
+            }
           } else {
             nodes.push(part);
           }

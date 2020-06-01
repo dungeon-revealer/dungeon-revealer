@@ -1,7 +1,7 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
 import { useMessageAddMutation } from "../../chat/message-add-mutation";
-import { ChatMessageReferenceContext } from "./html-container";
+import { TemplateContext } from "./html-container";
 
 const StyledChatMessageButton = styled.button`
   all: unset;
@@ -19,18 +19,34 @@ const StyledChatMessageButton = styled.button`
   }
 `;
 
+const getVariableProps = (props: { [key: string]: any }) => {
+  return Object.entries(props)
+    .filter(
+      ([key, value]) => key.startsWith("var-") && typeof value === "string"
+    )
+    .map(([name, value]) => ({
+      name: name.replace("var-", ""),
+      value: value as string,
+    }));
+};
+
 export const ChatMessageButton: React.FC<{
   message?: string;
-}> = ({ children, message }) => {
-  const map = React.useContext(ChatMessageReferenceContext);
+  templateId?: string;
+  [key: string]: any;
+}> = ({ children, message, templateId, ...props }) => {
+  const templateMap = React.useContext(TemplateContext);
+
   const messageAdd = useMessageAddMutation();
 
   let displayText: React.ReactNode = children;
-  if (message?.startsWith("$ref:")) {
-    const id = message.replace("$ref:", "");
-    message = map.get(id);
+  if (templateId) {
+    const variables = getVariableProps(props);
+    message = templateMap.get(templateId);
+    for (const { name, value } of variables) {
+      message = message?.replace(new RegExp(`{${name}}`, "g"), value);
+    }
   }
-
   return (
     <StyledChatMessageButton
       onClick={() => {
