@@ -77,7 +77,10 @@ const TextRenderer: React.FC<{ text: string }> = ({ text }) => {
 
 const UserMessageRenderer: React.FC<{
   content: string;
-  diceRolls: any[];
+  diceRolls: Extract<
+    chatMessage_message,
+    { __typename: "UserChatMessage" }
+  >["diceRolls"];
 }> = ({ content, diceRolls }) => {
   return (
     <MarkdownView
@@ -122,7 +125,7 @@ const ChatMessageRenderer: React.FC<{
           <AuthorName>{message.authorName}: </AuthorName>
           <UserMessageRenderer
             content={message.content}
-            diceRolls={message.diceRolls as any}
+            diceRolls={message.diceRolls}
           />
         </Container>
       );
