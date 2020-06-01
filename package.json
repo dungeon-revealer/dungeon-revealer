@@ -86,7 +86,7 @@
     "eslint-plugin-react-app": "6.2.2",
     "htmlparser2": "4.1.0",
     "husky": "4.2.5",
-    "immer": "6.0.8",
+    "immer": "6.0.9",
     "lint-staged": "10.2.7",
     "monaco-editor-webpack-plugin": "1.9.0",
     "overmind": "23.0.0-1581786766054",
