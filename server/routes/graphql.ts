@@ -2,7 +2,6 @@ import { Router } from "express";
 import { graphql, subscribe as graphqlSubscribe, parse } from "graphql";
 import * as ia from "iterall";
 import { schema, GraphQLContextType } from "../graphql";
-import { handleUnexpectedError } from "../util";
 import { createChat } from "../chat";
 import { createUser } from "../user";
 
@@ -21,27 +20,6 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
   });
 
   const router = Router();
-
-  // currently we run everything trough the websocket connection - no http needed.
-  // router.post("/graphql", (req, res) => {
-  //   // TODO: proper validation
-  //   const source = req.body.operation || req.body.query;
-  //   const variables = req.body.variables;
-  //   const operationName = req.body.operationName;
-
-  //   graphql({
-  //     schema,
-  //     contextValue: createContext(),
-  //     rootValue: {},
-  //     operationName,
-  //     source,
-  //     variableValues: variables,
-  //   })
-  //     .then((result) => {
-  //       res.json(result);
-  //     })
-  //     .catch(handleUnexpectedError(res));
-  // });
 
   registerSocketCommand((socket) => {
     const subscriptions = new Map<string, () => void>();
@@ -102,7 +80,7 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
           };
           run();
         } else {
-          console.log("Failed setting up subscription.");
+          console.log("Failed setting up GraphQL subscription.");
           console.error(result);
         }
       });
