@@ -1,4 +1,5 @@
 import { PubSub } from "graphql-subscriptions";
+import { setTimeout } from "timers";
 
 export type UserRecord = {
   id: string;
@@ -19,15 +20,41 @@ export type UserUpdate =
       data: { userId: string };
     };
 
-export const createUser = () => {
+export const createUser = ({
+  sendUserConnectedMessage,
+  sendUserDisconnectedMessage,
+}: {
+  sendUserConnectedMessage: ({ name }: { name: string }) => void;
+  sendUserDisconnectedMessage: ({ name }: { name: string }) => void;
+}) => {
   const users = new Map<string, UserRecord>();
   const pubSub = new PubSub();
 
+  const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
+
+  const remove = (id: string) => {
+    const user = users.get(id) || null;
+    users.delete(id);
+    pubSub.publish("USER_UPDATE", { type: "REMOVE", data: { userId: id } });
+    return user;
+  };
+
   return {
-    add: ({ id, name }: { id: string; name: string }) => {
+    userConnects: ({ id, name }: { id: string; name: string }) => {
+      // Check whether user has disconnected previously
+      let timeout = disconnectTimeouts.get(id);
+      if (timeout !== undefined) {
+        clearTimeout(timeout);
+        disconnectTimeouts.delete(id);
+      }
+
       const user = { id, name };
       users.set(id, user);
-      pubSub.publish("USER_UPDATE", { type: "ADD", data: { userId: id } });
+
+      if (timeout === undefined) {
+        pubSub.publish("USER_UPDATE", { type: "ADD", data: { userId: id } });
+        sendUserConnectedMessage({ name: user.name });
+      }
       return user;
     },
     update: ({ id, name }: { id: string; name: string }) => {
@@ -36,9 +63,16 @@ export const createUser = () => {
       user.name = name;
       pubSub.publish("USER_UPDATE", { type: "CHANGE", data: { userId: id } });
     },
-    remove: (id: string) => {
-      users.delete(id);
-      pubSub.publish("USER_UPDATE", { type: "REMOVE", data: { userId: id } });
+    userDisconnects: (id: string) => {
+      // When a user disconnects we wait a few seconds before removing him from the list of online users.
+      const timeout = setTimeout(() => {
+        disconnectTimeouts.delete(id);
+        const user = remove(id);
+        if (user) {
+          sendUserDisconnectedMessage({ name: user.name });
+        }
+      }, 3000).unref();
+      disconnectTimeouts.set(id, timeout);
     },
     get: (id: string) => users.get(id) || null,
     getUsers: () => Array.from(users.values()),

@@ -20,7 +20,6 @@ import { useLogInMutation } from "./log-in-mutation";
 import { chatUserUpdateSubscription } from "./__generated__/chatUserUpdateSubscription.graphql";
 import { ChatOnlineUserIndicator } from "./chat-online-user-indicator";
 import { isAbstractGraphQLMemberType } from "../relay-utilities";
-import { DiceRollNotes } from "./dice-roll-notes";
 
 const AppSubscription = graphql`
   subscription chatSubscription {

@@ -1,8 +1,6 @@
 import * as React from "react";
-import graphql from "babel-plugin-relay/macro";
-import { createFragmentContainer } from "react-relay";
-import { formattedDiceRoll_diceRoll } from "./__generated__/formattedDiceRoll_diceRoll.graphql";
 import styled from "@emotion/styled";
+import type { chatMessage_message } from "./__generated__/chatMessage_message.graphql";
 
 const StyledDiceRoll = styled.span`
   padding-right: 4px;
@@ -39,8 +37,11 @@ const RollResult = styled.span<{ type: "DEFAULT" | "MIN" | "MAX" | unknown }>`
   font-weight: ${(p) => (p.type !== "DEFAULT" ? "bold" : null)};
 `;
 
-const DiceRollRenderer: React.FC<{
-  diceRoll: formattedDiceRoll_diceRoll;
+export const FormattedDiceRoll: React.FC<{
+  diceRoll: Extract<
+    chatMessage_message,
+    { __typename: "UserChatMessage" }
+  >["diceRolls"][number];
 }> = ({ diceRoll }) => {
   return (
     <StyledDiceRoll>
@@ -71,38 +72,3 @@ const DiceRollRenderer: React.FC<{
     </StyledDiceRoll>
   );
 };
-
-export const FormattedDiceRoll = createFragmentContainer(DiceRollRenderer, {
-  diceRoll: graphql`
-    fragment formattedDiceRoll_diceRoll on DiceRoll {
-      result
-      detail {
-        ... on DiceRollOperatorNode {
-          __typename
-          content
-        }
-        ... on DiceRollConstantNode {
-          __typename
-          content
-        }
-        ... on DiceRollOpenParenNode {
-          __typename
-          content
-        }
-        ... on DiceRollCloseParenNode {
-          __typename
-          content
-        }
-        ... on DiceRollDiceRollNode {
-          __typename
-          content
-          rollResults {
-            dice
-            result
-            category
-          }
-        }
-      }
-    }
-  `,
-});

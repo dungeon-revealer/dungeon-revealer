@@ -3,48 +3,15 @@ import { GraphQLPageInfoType } from "../relay-spec";
 import type {
   DiceRollDetail,
   ApplicationRecordSchema,
-  ChatMessageNode,
+  DiceRollResult,
 } from "../../../chat";
 
 type ChatMessageType = ApplicationRecordSchema;
-
-const GraphQLChatMessageTextNode = t.objectType<
-  Extract<ChatMessageNode, { type: "TEXT" }>
->({
-  name: "ChatMessageTextNode",
-  fields: () => [
-    t.field("content", {
-      type: t.NonNull(t.String),
-      resolve: (node) => node.content,
-    }),
-  ],
-});
-
-type ChatMessageDiceRollNode = Extract<ChatMessageNode, { type: "DICE_ROLL" }>;
-
-const GraphQLDiceRollOperatorNode = t.objectType<
-  Extract<DiceRollDetail, { type: "Operator" }>
->({
-  name: "DiceRollOperatorNode",
-  fields: () => [
-    t.field("content", {
-      type: t.NonNull(t.String),
-      resolve: (object) => object.content,
-    }),
-  ],
-});
-
-const GraphQLDiceRollConstantNode = t.objectType<
-  Extract<DiceRollDetail, { type: "Constant" }>
->({
-  name: "DiceRollConstantNode",
-  fields: () => [
-    t.field("content", {
-      type: t.NonNull(t.String),
-      resolve: (object) => object.content,
-    }),
-  ],
-});
+type UserChatMessageType = Extract<ChatMessageType, { type: "USER_MESSAGE" }>;
+type OperationalChatMessageType = Extract<
+  ChatMessageType,
+  { type: "OPERATIONAL_MESSAGE" }
+>;
 
 enum DiceRollType {
   DEFAULT = "DEFAULT",
@@ -83,10 +50,45 @@ const GraphQLDiceRollResult = t.objectType<{
   ],
 });
 
+const GraphQLDiceRollDetailNode = t.interfaceType<DiceRollDetail>({
+  name: "DiceRollDetail",
+  fields: () => [t.abstractField("content", t.NonNull(t.String))],
+});
+
+const GraphQLDiceRollOperatorNode = t.objectType<
+  Extract<DiceRollDetail, { type: "Operator" }>
+>({
+  name: "DiceRollOperatorNode",
+  interfaces: [GraphQLDiceRollDetailNode],
+  isTypeOf: (src) => src?.type === "Operator",
+  fields: () => [
+    t.field("content", {
+      type: t.NonNull(t.String),
+      resolve: (object) => object.content,
+    }),
+  ],
+});
+
+const GraphQLDiceRollConstantNode = t.objectType<
+  Extract<DiceRollDetail, { type: "Constant" }>
+>({
+  name: "DiceRollConstantNode",
+  interfaces: [GraphQLDiceRollDetailNode],
+  isTypeOf: (src) => src?.type === "Constant",
+  fields: () => [
+    t.field("content", {
+      type: t.NonNull(t.String),
+      resolve: (object) => object.content,
+    }),
+  ],
+});
+
 const GraphQLDiceRollDiceRollNode = t.objectType<
   Extract<DiceRollDetail, { type: "DiceRoll" }>
 >({
   name: "DiceRollDiceRollNode",
+  interfaces: [GraphQLDiceRollDetailNode],
+  isTypeOf: (src) => src?.type === "DiceRoll",
   fields: () => [
     t.field("content", {
       type: t.NonNull(t.String),
@@ -121,6 +123,8 @@ const GraphQLDiceRollOpenParenNode = t.objectType<
   Extract<DiceRollDetail, { type: "OpenParen" }>
 >({
   name: "DiceRollOpenParenNode",
+  interfaces: [GraphQLDiceRollDetailNode],
+  isTypeOf: (src) => src?.type === "OpenParen",
   fields: () => [
     t.field("content", {
       type: t.NonNull(t.String),
@@ -133,6 +137,8 @@ const GraphQLDiceRollCloseParenNode = t.objectType<
   Extract<DiceRollDetail, { type: "CloseParen" }>
 >({
   name: "DiceRollCloseParenNode",
+  interfaces: [GraphQLDiceRollDetailNode],
+  isTypeOf: (src) => src?.type === "CloseParen",
   fields: () => [
     t.field("content", {
       type: t.NonNull(t.String),
@@ -141,29 +147,7 @@ const GraphQLDiceRollCloseParenNode = t.objectType<
   ],
 });
 
-// @TODO: Investigate whetehr we can simply use a interface type instead.
-const GraphQLDiceRollDetailNode = t.unionType<DiceRollDetail>({
-  name: "DiceRollDetail",
-  types: [
-    GraphQLDiceRollOperatorNode,
-    GraphQLDiceRollConstantNode,
-    GraphQLDiceRollDiceRollNode,
-    GraphQLDiceRollOpenParenNode,
-    GraphQLDiceRollCloseParenNode,
-  ],
-  resolveType: (obj) => {
-    if (obj.type === "Operator") return GraphQLDiceRollOperatorNode;
-    else if (obj.type === "Constant") return GraphQLDiceRollConstantNode;
-    else if (obj.type === "DiceRoll") return GraphQLDiceRollDiceRollNode;
-    else if (obj.type === "OpenParen") return GraphQLDiceRollOpenParenNode;
-    else if (obj.type === "CloseParen") return GraphQLDiceRollCloseParenNode;
-    throw new Error("Invalid type");
-  },
-});
-
-const GraphQLChatMessageDiceRoll = t.objectType<
-  ChatMessageDiceRollNode["content"]
->({
+const GraphQLChatMessageDiceRoll = t.objectType<DiceRollResult>({
   name: "DiceRoll",
   fields: () => [
     t.field("result", {
@@ -177,28 +161,45 @@ const GraphQLChatMessageDiceRoll = t.objectType<
   ],
 });
 
-const GraphQLChatMessageDiceRollNode = t.objectType<ChatMessageDiceRollNode>({
-  name: "ChatMessageDiceRollNode",
+const GraphQLChatMessageInterfaceType = t.interfaceType<ChatMessageType>({
+  name: "ChatMessage",
   fields: () => [
-    t.field("content", {
-      type: t.NonNull(GraphQLChatMessageDiceRoll),
-      resolve: (input) => input.content,
-    }),
+    t.abstractField("id", t.NonNull(t.ID)),
+    t.abstractField("content", t.NonNull(t.String)),
+    t.abstractField("createdAt", t.NonNull(t.String)),
+    t.abstractField("containsDiceRoll", t.NonNull(t.Boolean)),
   ],
 });
 
-const GraphQLChatMessageNode = t.unionType<ChatMessageType["content"][0]>({
-  name: "ChatMessageNode",
-  types: [GraphQLChatMessageDiceRollNode, GraphQLChatMessageTextNode],
-  resolveType: (input) => {
-    if (input.type === "TEXT") return GraphQLChatMessageTextNode;
-    else if (input.type === "DICE_ROLL") return GraphQLChatMessageDiceRollNode;
-    throw new Error("Invalid Case.");
-  },
+const GraphQLOperationalChatMessageType = t.objectType<
+  OperationalChatMessageType
+>({
+  interfaces: [GraphQLChatMessageInterfaceType],
+  name: "OperationalChatMessage",
+  fields: () => [
+    t.field("id", {
+      type: t.NonNull(t.ID),
+      resolve: (message) => message.id,
+    }),
+    t.field("content", {
+      type: t.NonNull(t.String),
+      resolve: (message) => message.content,
+    }),
+    t.field("createdAt", {
+      type: t.NonNull(t.String),
+      resolve: (message) => new Date(message.createdAt).toISOString(),
+    }),
+    t.field("containsDiceRoll", {
+      type: t.NonNull(t.Boolean),
+      resolve: () => false,
+    }),
+  ],
+  isTypeOf: (src) => src?.type === "OPERATIONAL_MESSAGE",
 });
 
-const GraphQLChatMessageType = t.objectType<ChatMessageType>({
-  name: "ChatMessage",
+const GraphQLUserChatMessageType = t.objectType<UserChatMessageType>({
+  interfaces: [GraphQLChatMessageInterfaceType],
+  name: "UserChatMessage",
   description: "A chat message",
   fields: () => [
     t.field("id", {
@@ -210,8 +211,12 @@ const GraphQLChatMessageType = t.objectType<ChatMessageType>({
       resolve: (message) => message.authorName,
     }),
     t.field("content", {
-      type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageNode))),
+      type: t.NonNull(t.String),
       resolve: (message) => message.content,
+    }),
+    t.field("diceRolls", {
+      type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageDiceRoll))),
+      resolve: (message) => message.diceRolls,
     }),
     t.field("createdAt", {
       type: t.NonNull(t.String),
@@ -219,10 +224,10 @@ const GraphQLChatMessageType = t.objectType<ChatMessageType>({
     }),
     t.field("containsDiceRoll", {
       type: t.NonNull(t.Boolean),
-      resolve: (message) =>
-        message.content.some((node) => node.type === "DICE_ROLL"),
+      resolve: (message) => message.diceRolls.length > 0,
     }),
   ],
+  isTypeOf: (src) => src?.type === "USER_MESSAGE",
 });
 
 const GraphQLChatMessageEdgeType = t.objectType<ChatMessageType>({
@@ -233,7 +238,7 @@ const GraphQLChatMessageEdgeType = t.objectType<ChatMessageType>({
       resolve: (input) => input.id,
     }),
     t.field("node", {
-      type: t.NonNull(GraphQLChatMessageType),
+      type: t.NonNull(GraphQLChatMessageInterfaceType),
       resolve: (input) => input,
     }),
   ],
@@ -254,12 +259,12 @@ const GraphQLChatMessageConnectionType = t.objectType<Array<ChatMessageType>>({
 });
 
 const GraphQLChatMessagesAddedSubscriptionType = t.objectType<{
-  messages: Array<ChatMessageType>;
+  messages: Array<UserChatMessageType>;
 }>({
   name: "ChatMessagesAddedSubscription",
   fields: () => [
     t.field("messages", {
-      type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageType))),
+      type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageInterfaceType))),
       resolve: (input) => input.messages,
     }),
   ],
@@ -302,11 +307,21 @@ export const mutationFields = [
     resolve: (obj, args, context) => {
       const user = context.user.get(context.getSessionId());
       if (!user) return null;
-      context.chat.addMessage({
+      context.chat.addUserMessage({
         authorName: user.name,
         rawContent: args.input.rawContent,
       });
       return null;
     },
   }),
+];
+
+export const objectTypesNotDirectlyExposedOnFields = [
+  GraphQLDiceRollOperatorNode,
+  GraphQLDiceRollConstantNode,
+  GraphQLDiceRollDiceRollNode,
+  GraphQLDiceRollOpenParenNode,
+  GraphQLDiceRollCloseParenNode,
+  GraphQLUserChatMessageType,
+  GraphQLOperationalChatMessageType,
 ];

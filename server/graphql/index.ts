@@ -38,4 +38,5 @@ export const schema = buildGraphQLSchema({
   query: Query,
   subscription: Subscription,
   mutation: Mutation,
+  types: [...DiceRollerChatModule.objectTypesNotDirectlyExposedOnFields],
 });

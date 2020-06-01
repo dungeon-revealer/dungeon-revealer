@@ -148,19 +148,16 @@ export const mutationFields = [
     },
     resolve: (obj, args, context) => {
       if (args.input) {
-        let user = context.user.get(args.input.id);
-        if (!user) {
-          user = context.user.add({
-            id: args.input.id,
-            name: args.input.name,
-          });
-        }
+        let user = context.user.userConnects({
+          id: args.input.id,
+          name: args.input.name,
+        });
         context.setSessionId(args.input.id);
         return user;
       } else {
         let user = context.user.get(context.getSessionId());
         if (user) return user;
-        user = context.user.add({
+        user = context.user.userConnects({
           id: context.getSessionId(),
           name: generateRandomName(),
         });

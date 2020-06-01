@@ -13,7 +13,12 @@ type Dependencies = {
 
 export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
   const chat = createChat();
-  const user = createUser();
+  const user = createUser({
+    sendUserConnectedMessage: ({ name }) =>
+      chat.addOperationalMessage({ content: `**${name}** connected.` }),
+    sendUserDisconnectedMessage: ({ name }) =>
+      chat.addOperationalMessage({ content: `**${name}** disconnected.` }),
+  });
 
   const router = Router();
 
@@ -116,7 +121,7 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
       subscriptions.forEach((unsubscribe) => unsubscribe());
 
       // Automatically Log out
-      user.remove(sessionId);
+      user.userDisconnects(sessionId);
     });
   });
 

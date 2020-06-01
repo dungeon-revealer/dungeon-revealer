@@ -34,21 +34,23 @@ export type DiceRollResult = {
   detail: Array<DiceRollDetail>;
 };
 
-export type ChatMessageNode =
-  | { type: "TEXT"; content: string }
-  | {
-      type: "DICE_ROLL";
-      content: DiceRollResult;
-    };
-
 export type DiceTokenType = ReturnType<typeof roll>["tokens"][0];
 
-export type ApplicationRecordSchema = {
-  id: string;
-  content: Array<ChatMessageNode>;
-  authorName: string;
-  createdAt: number;
-};
+export type ApplicationRecordSchema =
+  | {
+      type: "USER_MESSAGE";
+      id: string;
+      content: string;
+      diceRolls: DiceRollResult[];
+      authorName: string;
+      createdAt: number;
+    }
+  | {
+      type: "OPERATIONAL_MESSAGE";
+      id: string;
+      content: string;
+      createdAt: number;
+    };
 
 // We map the result to our own representation
 const tryRoll = (input: string): DiceRollResult | null => {
@@ -100,27 +102,31 @@ const tryRoll = (input: string): DiceRollResult | null => {
   }
 };
 
-const processRawContent = (message: string): Array<ChatMessageNode> => {
+const processRawContent = (
+  message: string
+): { content: string; diceRolls: DiceRollResult[] } => {
   const parts = message.split(/(\[[^\[]*\])/).filter(Boolean);
 
-  return parts.map((part) => {
+  const diceRolls: DiceRollResult[] = [];
+  let diceRollIndex = 0;
+  let content = "";
+
+  for (const part of parts) {
     if (part.startsWith("[") && part.endsWith("]")) {
       const notation = part.slice(1, part.length - 1);
       const rollResult = tryRoll(notation);
       if (rollResult) {
-        return {
-          type: "DICE_ROLL" as const,
-          content: rollResult,
-        };
+        diceRolls.push(rollResult);
+        content = content + `{${diceRollIndex}}`;
+        diceRollIndex = diceRollIndex + 1;
+        continue;
       }
       // in case the parsing fails we just return it as a basic text node
     }
+    content = content + part;
+  }
 
-    return {
-      type: "TEXT" as const,
-      content: part,
-    };
-  });
+  return { content, diceRolls };
 };
 
 type NewMessagesPayload = {
@@ -133,14 +139,7 @@ export const createChat = () => {
   let state: Array<ApplicationRecordSchema> = [];
   const pubSub = new PubSub({});
 
-  const addMessage = (args: { authorName: string; rawContent: string }) => {
-    const message: ApplicationRecordSchema = {
-      id: uuid.v4(),
-      createdAt: new Date().getTime(),
-      ...args,
-      content: processRawContent(args.rawContent),
-    };
-
+  const addMessageToStack = (message: ApplicationRecordSchema) => {
     state.push(message);
     if (state.length > MAXIMUM_CHAT_SIZE) {
       state.shift();
@@ -151,8 +150,32 @@ export const createChat = () => {
     } as NewMessagesPayload);
   };
 
+  const addUserMessage = (args: { authorName: string; rawContent: string }) => {
+    const { content, diceRolls } = processRawContent(args.rawContent);
+    const message: ApplicationRecordSchema = {
+      id: uuid.v4(),
+      type: "USER_MESSAGE",
+      createdAt: new Date().getTime(),
+      ...args,
+      content,
+      diceRolls,
+    };
+    addMessageToStack(message);
+  };
+
+  const addOperationalMessage = (args: { content: string }) => {
+    const message: ApplicationRecordSchema = {
+      id: uuid.v4(),
+      type: "OPERATIONAL_MESSAGE",
+      createdAt: new Date().getTime(),
+      content: args.content,
+    };
+    addMessageToStack(message);
+  };
+
   return {
-    addMessage,
+    addUserMessage,
+    addOperationalMessage,
     getMessages: () => state,
     subscribe: {
       newMessages: () =>

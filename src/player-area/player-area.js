@@ -25,6 +25,7 @@ import {
 } from "../relay-environment";
 import { ChatToggleButton } from "../chat-toggle-button";
 import { DiceRollNotes } from "../chat/dice-roll-notes";
+import { useStaticRef } from "../hooks/use-static-ref";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -512,64 +513,53 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
 
 const usePcPassword = createPersistedState("pcPassword");
 
-export const PlayerArea = () => {
+const AuthenticatedContent = ({ pcPassword, localFetch }) => {
   const socket = useSocket();
-  const [pcPassword, setPcPassword] = usePcPassword("");
+  const relayEnvironment = useStaticRef(() => createEnvironment(socket));
+  // WebSocket connection state
+  const [connectionMode, setConnectionMode] = React.useState("connecting");
 
-  const [mode, setMode] = useState("LOADING");
-
-  const localFetch = useCallback(
-    (input, init = {}) => {
-      return fetch(buildApiUrl(input), {
-        ...init,
-        headers: {
-          Authorization: pcPassword ? `Bearer ${pcPassword}` : undefined,
-          ...init.headers,
-        },
-      }).then((res) => {
-        if (res.status === 401) {
-          console.error("Unauthenticated access.");
-          throw new Error("Unauthenticated access.");
-        }
-        return res;
-      });
-    },
-    [pcPassword]
-  );
-
-  useAsyncEffect(
-    function* () {
-      const result = yield localFetch("/auth").then((res) => res.json());
-      if (!result.data.role) {
-        setMode("AUTHENTICATE");
-        return;
-      }
-      setMode("READY");
-    },
-    [localFetch]
-  );
-
-  const [relayEnvironment, setRelayEnvironment] = React.useState(null);
-
+  /**
+   * We only use one tab at a time. The others will be disconnected automatically upon opening dungeon-revealer in another tab.
+   * You can still use dungeon-revealer in two tabs by using the incognito mode of the browser.
+   * We do this in order to prevent message/user connect/music sound effect spamming.
+   */
   React.useEffect(() => {
-    socket.emit("authenticate", { password: pcPassword });
-    setRelayEnvironment(createEnvironment(socket));
-
-    socket.on("reconnecting", () => {
-      console.log("reconnecting to server");
-    });
-
-    socket.on("reconnect", () => {
-      console.log("reconnected to server");
+    socket.on("connect", () => {
+      setConnectionMode("connected");
       socket.emit("authenticate", { password: pcPassword });
     });
 
-    socket.on("reconnect_failed", () => {
-      console.log("reconnect failed!");
+    socket.on("authenticated", () => {
+      setConnectionMode("authenticated");
+    });
+
+    socket.on("reconnect", () => {
+      setConnectionMode("authenticating");
+      socket.emit("authenticate", { password: pcPassword });
     });
 
     socket.on("disconnect", () => {
-      console.log("disconnected from server");
+      setConnectionMode("disconnected");
+    });
+
+    const tabId = String(
+      parseInt(localStorage.getItem("app.tabId") || "0", 10) + 1
+    );
+    localStorage.setItem("app.tabId", tabId);
+    localStorage.setItem("app.activeTabId", tabId);
+
+    window.addEventListener("storage", (ev) => {
+      if (ev.key === "app.activeTabId" && ev.newValue !== tabId) {
+        socket.disconnect();
+      }
+    });
+
+    window.addEventListener("focus", () => {
+      localStorage.setItem("app.activeTabId", tabId);
+      if (!socket.connected) {
+        socket.connect();
+      }
     });
 
     return () => {
@@ -590,9 +580,94 @@ export const PlayerArea = () => {
     setDiceRollNotesState((state) => (state === "show" ? "hidden" : "show"));
   }, []);
 
+  if (connectionMode !== "authenticated") {
+    return <SplashScreen text={connectionMode} />;
+  }
+
+  return (
+    <RelayEnvironmentProvider value={relayEnvironment}>
+      <Modal.Provider>
+        <div style={{ display: "flex", height: "100vh" }}>
+          <div
+            style={{ flex: 1, position: "relative", overflow: "hidden" }}
+            data-main-content
+          >
+            <PlayerMap
+              fetch={localFetch}
+              pcPassword={pcPassword}
+              socket={socket}
+            />
+            <ChatToggleButton
+              onClick={() =>
+                setShowChatState((showChat) =>
+                  showChat === "show" ? "hidden" : "show"
+                )
+              }
+            />
+          </div>
+          {chatState === "show" ? (
+            <div
+              style={{
+                flex: 1,
+                maxWidth: 400,
+                borderLeft: "1px solid lightgrey",
+              }}
+            >
+              <Chat
+                socket={socket}
+                toggleShowDiceRollNotes={toggleShowDiceRollNotes}
+              />
+            </div>
+          ) : null}
+          {diceRollNotesState === "show" ? (
+            <DiceRollNotes close={toggleShowDiceRollNotes} />
+          ) : null}
+        </div>
+      </Modal.Provider>
+    </RelayEnvironmentProvider>
+  );
+};
+
+export const PlayerArea = () => {
+  const [pcPassword, setPcPassword] = usePcPassword("");
+
+  const [mode, setMode] = useState("LOADING");
+
+  const localFetch = useCallback(
+    (input, init = {}) => {
+      return fetch(buildApiUrl(input), {
+        ...init,
+        headers: {
+          Authorization: pcPassword ? `Bearer ${pcPassword}` : undefined,
+          ...init.headers,
+        },
+      }).then((res) => {
+        if (res.status === 401) {
+          console.error("Unauthenticated access.");
+          setMode("AUTHENTICATE");
+        }
+        return res;
+      });
+    },
+    [pcPassword]
+  );
+
+  useAsyncEffect(
+    function* () {
+      const result = yield localFetch("/auth").then((res) => res.json());
+      if (!result.data.role) {
+        setMode("AUTHENTICATE");
+        return;
+      }
+      setMode("READY");
+    },
+    [localFetch]
+  );
+
   if (mode === "LOADING") {
     return <SplashScreen text="Loading..." />;
   }
+
   if (mode === "AUTHENTICATE") {
     return (
       <AuthenticationScreen
@@ -606,48 +681,9 @@ export const PlayerArea = () => {
   }
 
   if (mode === "READY") {
-    return relayEnvironment ? (
-      <RelayEnvironmentProvider value={relayEnvironment}>
-        <Modal.Provider>
-          <div style={{ display: "flex", height: "100vh" }}>
-            <div
-              style={{ flex: 1, position: "relative", overflow: "hidden" }}
-              data-main-content
-            >
-              <PlayerMap
-                fetch={localFetch}
-                pcPassword={pcPassword}
-                socket={socket}
-              />
-              <ChatToggleButton
-                onClick={() =>
-                  setShowChatState((showChat) =>
-                    showChat === "show" ? "hidden" : "show"
-                  )
-                }
-              />
-            </div>
-            {chatState === "show" ? (
-              <div
-                style={{
-                  flex: 1,
-                  maxWidth: 400,
-                  borderLeft: "1px solid lightgrey",
-                }}
-              >
-                <Chat
-                  socket={socket}
-                  toggleShowDiceRollNotes={toggleShowDiceRollNotes}
-                />
-              </div>
-            ) : null}
-            {diceRollNotesState === "show" ? (
-              <DiceRollNotes close={toggleShowDiceRollNotes} />
-            ) : null}
-          </div>
-        </Modal.Provider>
-      </RelayEnvironmentProvider>
-    ) : null;
+    return (
+      <AuthenticatedContent localFetch={localFetch} pcPassword={pcPassword} />
+    );
   }
 
   throw new Error("Invalid mode.");

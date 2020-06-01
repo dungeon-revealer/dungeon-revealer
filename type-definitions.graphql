@@ -8,10 +8,9 @@ type ChangeNameResult {
   me: User!
 }
 
-type ChatMessage {
+interface ChatMessage {
   id: ID!
-  authorName: String!
-  content: [ChatMessageNode!]!
+  content: String!
   createdAt: String!
   containsDiceRoll: Boolean!
 }
@@ -25,23 +24,13 @@ input ChatMessageCreateInput {
   rawContent: String!
 }
 
-type ChatMessageDiceRollNode {
-  content: DiceRoll!
-}
-
 type ChatMessageEdge {
   cursor: String!
   node: ChatMessage!
 }
 
-union ChatMessageNode = ChatMessageDiceRollNode | ChatMessageTextNode
-
 type ChatMessagesAddedSubscription {
   messages: [ChatMessage!]!
-}
-
-type ChatMessageTextNode {
-  content: String!
 }
 
 type ConnectedUserConnection {
@@ -65,33 +54,30 @@ enum DiceRollCategory {
   MIN
 }
 
-type DiceRollCloseParenNode {
+type DiceRollCloseParenNode implements DiceRollDetail {
   content: String!
 }
 
-type DiceRollConstantNode {
+type DiceRollConstantNode implements DiceRollDetail {
   content: String!
 }
 
-union DiceRollDetail =
-    DiceRollOperatorNode
-  | DiceRollConstantNode
-  | DiceRollDiceRollNode
-  | DiceRollOpenParenNode
-  | DiceRollCloseParenNode
+interface DiceRollDetail {
+  content: String!
+}
 
-type DiceRollDiceRollNode {
+type DiceRollDiceRollNode implements DiceRollDetail {
   content: String!
   min: Float!
   max: Float!
   rollResults: [DiceRollResult!]!
 }
 
-type DiceRollOpenParenNode {
+type DiceRollOpenParenNode implements DiceRollDetail {
   content: String!
 }
 
-type DiceRollOperatorNode {
+type DiceRollOperatorNode implements DiceRollDetail {
   content: String!
 }
 
@@ -114,6 +100,13 @@ type Mutation {
   logIn(input: LogInInput): LogInResult!
   changeName(input: ChangeNameInput!): ChangeNameResult!
   chatMessageCreate(input: ChatMessageCreateInput!): Boolean
+}
+
+type OperationalChatMessage implements ChatMessage {
+  id: ID!
+  content: String!
+  createdAt: String!
+  containsDiceRoll: Boolean!
 }
 
 type PageInfo {
@@ -147,6 +140,15 @@ type UserAddUpdate {
 
 type UserChangeUpdate {
   user: User!
+}
+
+type UserChatMessage implements ChatMessage {
+  id: ID!
+  authorName: String!
+  content: String!
+  diceRolls: [DiceRoll!]!
+  createdAt: String!
+  containsDiceRoll: Boolean!
 }
 
 type UserRemoveUpdate {
