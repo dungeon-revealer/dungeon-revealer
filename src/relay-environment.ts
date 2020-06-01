@@ -12,18 +12,18 @@ import {
 import { RelayModernEnvironment } from "relay-runtime/lib/store/RelayModernEnvironment";
 import { Sink } from "relay-runtime/lib/network/RelayObservable";
 
-export const createEnvironment = (socket: SocketIO.Socket) => {
+export const createEnvironment = (socket: SocketIOClient.Socket) => {
   const responseHandlers = new Map<number, (result: GraphQLResponse) => void>();
   const subscriptionHandlers = new Map<number, Sink<GraphQLResponse>>();
   let operationIdCounter = 1;
 
-  socket.on("graphql/result", ({ id, ...result }) => {
+  socket.on("graphql/result", ({ id, ...result }: any) => {
     const handler = responseHandlers.get(id);
     handler?.(result);
     responseHandlers.delete(id);
   });
 
-  socket.on("graphql/update", ({ id, ...result }) => {
+  socket.on("graphql/update", ({ id, ...result }: any) => {
     const sink = subscriptionHandlers.get(id);
     if (!sink) return;
     sink.next(result);

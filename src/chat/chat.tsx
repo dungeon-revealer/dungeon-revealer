@@ -20,6 +20,7 @@ import { useLogInMutation } from "./log-in-mutation";
 import { chatUserUpdateSubscription } from "./__generated__/chatUserUpdateSubscription.graphql";
 import { ChatOnlineUserIndicator } from "./chat-online-user-indicator";
 import { isAbstractGraphQLMemberType } from "../relay-utilities";
+import { chatMessageSoundSubscription } from "./__generated__/chatMessageSoundSubscription.graphql";
 
 const AppSubscription = graphql`
   subscription chatSubscription {
@@ -27,6 +28,15 @@ const AppSubscription = graphql`
       messages {
         id
         ...chatMessage_message
+      }
+    }
+  }
+`;
+
+const ChatMessageSoundSubscription = graphql`
+  subscription chatMessageSoundSubscription {
+    chatMessagesAdded {
+      messages {
         containsDiceRoll
       }
     }
@@ -119,19 +129,67 @@ const HorizontalNavigationButton = styled(Button.Tertiary)<
   }
 `;
 
-export const Chat: React.FC<{
-  socket: SocketIO.Socket;
-  toggleShowDiceRollNotes: () => void;
-}> = React.memo(({ socket, toggleShowDiceRollNotes }) => {
-  const [mode, setMode] = React.useState<"chat" | "user" | "settings">("chat");
+export const useChatSoundsAndUnreadCount = (chatState: "hidden" | "show") => {
+  const [hasUnreadMessages, setHasUnreadMessages] = React.useState(false);
+  const environment = useEnvironment();
   const [playDiceRollSound] = useSound(diceRollSound, {
     volume: 0.5,
   });
   const [playNotificationSound] = useSound(notificationSound, {
     volume: 0.5,
   });
-  const soundRef = React.useRef({ playDiceRollSound, playNotificationSound });
-  soundRef.current = { playDiceRollSound, playNotificationSound };
+  const refs = React.useRef({
+    playDiceRollSound,
+    playNotificationSound,
+    chatState,
+  });
+  refs.current = { playDiceRollSound, playNotificationSound, chatState };
+
+  React.useEffect(() => {
+    const subscription = requestSubscription<chatMessageSoundSubscription>(
+      environment,
+      {
+        subscription: ChatMessageSoundSubscription,
+        variables: {},
+        onNext: (data) => {
+          if (data) {
+            let mode: "dice-roll-message" | "text-message" = "text-message";
+
+            if (
+              data.chatMessagesAdded.messages.some(
+                (message) => message.containsDiceRoll === true
+              )
+            ) {
+              mode = "dice-roll-message";
+            }
+
+            if (mode === "text-message") {
+              refs.current.playNotificationSound();
+            } else if (mode === "dice-roll-message") {
+              refs.current.playDiceRollSound();
+            }
+
+            if (refs.current.chatState === "hidden") {
+              setHasUnreadMessages(true);
+            }
+          }
+        },
+      }
+    );
+
+    return () => subscription.dispose();
+  }, [environment]);
+
+  return [hasUnreadMessages, () => setHasUnreadMessages(false)] as [
+    boolean,
+    () => void
+  ];
+};
+
+export const Chat: React.FC<{
+  toggleShowDiceRollNotes: () => void;
+}> = React.memo(({ toggleShowDiceRollNotes }) => {
+  const [mode, setMode] = React.useState<"chat" | "user" | "settings">("chat");
 
   const environment = useEnvironment();
   React.useEffect(() => {
@@ -149,16 +207,6 @@ export const Chat: React.FC<{
           ?.getLinkedRecords("messages");
         if (!chat || !records) return;
 
-        let mode: "dice-roll-message" | "text-message" = "text-message";
-
-        if (
-          data.chatMessagesAdded.messages.some(
-            (message) => message.containsDiceRoll === true
-          )
-        ) {
-          mode = "dice-roll-message";
-        }
-
         for (const chatMessage of records) {
           const edge = ConnectionHandler.createEdge(
             store,
@@ -167,12 +215,6 @@ export const Chat: React.FC<{
             "ChatMessage"
           );
           ConnectionHandler.insertEdgeAfter(chat, edge);
-        }
-
-        if (mode === "text-message") {
-          soundRef.current.playNotificationSound();
-        } else if (mode === "dice-roll-message") {
-          soundRef.current.playDiceRollSound();
         }
       },
     });
@@ -219,30 +261,7 @@ export const Chat: React.FC<{
     return () => subscription.dispose();
   }, [environment]);
 
-  const [isLoggedIn, logIn] = useLogInMutation();
-
   const retryRef = React.useRef<null | (() => void)>(null);
-
-  React.useEffect(() => {
-    logIn();
-
-    const onReconnect = async () => {
-      // in case we disconnect we need to log in again
-      await logIn();
-      // the refetch the query so the chat is up2date :)
-      retryRef.current?.();
-    };
-
-    socket.on("authenticated", onReconnect);
-
-    return () => {
-      socket.off("authenticated", onReconnect);
-    };
-  }, [logIn]);
-
-  if (isLoggedIn === false) {
-    return null;
-  }
 
   return (
     <>

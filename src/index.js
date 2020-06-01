@@ -3,6 +3,7 @@ import { Global } from "@emotion/core";
 import { render } from "react-dom";
 import { getUrlPrefix } from "./public-url";
 import { globalStyles } from "./global-styles";
+import { Modal } from "./modal";
 
 const element = document.querySelector("#root");
 
@@ -45,10 +46,10 @@ const main = async () => {
   }
   if (element) {
     render(
-      <>
+      <Modal.Provider>
         <Global styles={globalStyles}></Global>
         {component}
-      </>,
+      </Modal.Provider>,
       element
     );
   }

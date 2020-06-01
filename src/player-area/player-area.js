@@ -10,22 +10,14 @@ import { ObjectLayer } from "../object-layer";
 import { Toolbar } from "../toolbar";
 import styled from "@emotion/styled/macro";
 import * as Icons from "../feather-icons";
-import { useSocket } from "../socket";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { TokenRenderer } from "../object-layer/token-renderer";
 import { SplashScreen } from "../splash-screen";
 import { AuthenticationScreen } from "../authentication-screen";
 import { buildApiUrl } from "../public-url";
-import { Modal } from "../modal";
 import { ImageLightBoxModal } from "../image-lightbox-modal";
-import { Chat } from "../chat";
-import {
-  RelayEnvironmentProvider,
-  createEnvironment,
-} from "../relay-environment";
-import { ChatToggleButton } from "../chat-toggle-button";
-import { DiceRollNotes } from "../chat/dice-roll-notes";
-import { useStaticRef } from "../hooks/use-static-ref";
+import { AuthenticatedAppShell } from "../authenticated-app-shell";
+import { useSocket } from "../socket";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -44,8 +36,6 @@ const AbsoluteFullscreenContainer = styled.div`
   width: 100%;
   height: 100%;
 `;
-
-const useShowChatState = createPersistedState("chat.state");
 
 const reduceOffsetToMinimum = (offset, sideLength) => {
   const newOffset = offset - sideLength;
@@ -515,116 +505,11 @@ const usePcPassword = createPersistedState("pcPassword");
 
 const AuthenticatedContent = ({ pcPassword, localFetch }) => {
   const socket = useSocket();
-  const relayEnvironment = useStaticRef(() => createEnvironment(socket));
-  // WebSocket connection state
-  const [connectionMode, setConnectionMode] = React.useState("connecting");
-
-  /**
-   * We only use one tab at a time. The others will be disconnected automatically upon opening dungeon-revealer in another tab.
-   * You can still use dungeon-revealer in two tabs by using the incognito mode of the browser.
-   * We do this in order to prevent message/user connect/music sound effect spamming.
-   */
-  React.useEffect(() => {
-    socket.on("connect", () => {
-      setConnectionMode("connected");
-      socket.emit("authenticate", { password: pcPassword });
-    });
-
-    socket.on("authenticated", () => {
-      setConnectionMode("authenticated");
-    });
-
-    socket.on("reconnect", () => {
-      setConnectionMode("authenticating");
-      socket.emit("authenticate", { password: pcPassword });
-    });
-
-    socket.on("disconnect", () => {
-      setConnectionMode("disconnected");
-    });
-
-    const tabId = String(
-      parseInt(localStorage.getItem("app.tabId") || "0", 10) + 1
-    );
-    localStorage.setItem("app.tabId", tabId);
-    localStorage.setItem("app.activeTabId", tabId);
-
-    window.addEventListener("storage", (ev) => {
-      if (ev.key === "app.activeTabId" && ev.newValue !== tabId) {
-        socket.disconnect();
-      }
-    });
-
-    window.addEventListener("focus", () => {
-      localStorage.setItem("app.activeTabId", tabId);
-      if (!socket.connected) {
-        socket.connect();
-      }
-    });
-
-    return () => {
-      socket.off("connect");
-      socket.off("reconnecting");
-      socket.off("reconnect");
-      socket.off("reconnect_failed");
-      socket.off("disconnect");
-    };
-  }, [socket, pcPassword]);
-
-  // "show" or "hidden"
-  const [chatState, setShowChatState] = useShowChatState("show");
-  // "show" or "hidden"
-  const [diceRollNotesState, setDiceRollNotesState] = React.useState("hidden");
-
-  const toggleShowDiceRollNotes = React.useCallback(() => {
-    setDiceRollNotesState((state) => (state === "show" ? "hidden" : "show"));
-  }, []);
-
-  if (connectionMode !== "authenticated") {
-    return <SplashScreen text={connectionMode} />;
-  }
 
   return (
-    <RelayEnvironmentProvider value={relayEnvironment}>
-      <Modal.Provider>
-        <div style={{ display: "flex", height: "100vh" }}>
-          <div
-            style={{ flex: 1, position: "relative", overflow: "hidden" }}
-            data-main-content
-          >
-            <PlayerMap
-              fetch={localFetch}
-              pcPassword={pcPassword}
-              socket={socket}
-            />
-            <ChatToggleButton
-              onClick={() =>
-                setShowChatState((showChat) =>
-                  showChat === "show" ? "hidden" : "show"
-                )
-              }
-            />
-          </div>
-          {chatState === "show" ? (
-            <div
-              style={{
-                flex: 1,
-                maxWidth: 400,
-                borderLeft: "1px solid lightgrey",
-              }}
-            >
-              <Chat
-                socket={socket}
-                toggleShowDiceRollNotes={toggleShowDiceRollNotes}
-              />
-            </div>
-          ) : null}
-          {diceRollNotesState === "show" ? (
-            <DiceRollNotes close={toggleShowDiceRollNotes} />
-          ) : null}
-        </div>
-      </Modal.Provider>
-    </RelayEnvironmentProvider>
+    <AuthenticatedAppShell password={pcPassword} socket={socket}>
+      <PlayerMap fetch={localFetch} pcPassword={pcPassword} socket={socket} />
+    </AuthenticatedAppShell>
   );
 };
 
