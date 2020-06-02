@@ -60,9 +60,9 @@ const WindowsResizeHandle = styled.button`
 `;
 
 const INITIAL_CONTENT = `You can roll dice by typing in the dice notation in the Chat:
-<ChatMessage message="[1d20 + 5]">
+<ChatMacro message="[1d20 + 5]">
   **[1d20 + 5]**
-</ChatMessage>
+</ChatMacro>
 
 The formula a dice roll must be surrounded by square brackets.
 
@@ -73,17 +73,17 @@ You can simply edit this text and add macros that suit your game. They will be s
 
 Here are some more examples:
 
-<ChatMessage message="Magic Missle [(1d4 + 1) * 3]">Magic Missle</ChatMessage> 
- <ChatMessage message="Magic Missle [(1d4 + 1) * 4]">2nd level</ChatMessage> 
- <ChatMessage message="Magic Missle [(1d4 + 1) * 5]">3rd level</ChatMessage>
+<ChatMacro message="Magic Missle [(1d4 + 1) * 3]">Magic Missle</ChatMacro> 
+ <ChatMacro message="Magic Missle [(1d4 + 1) * 4]">2nd level</ChatMacro> 
+ <ChatMacro message="Magic Missle [(1d4 + 1) * 5]">3rd level</ChatMacro>
 
-<ChatMessage message="Roll Initiative [1d20 + 5]">Roll Initiative</ChatMessage>
+<ChatMacro message="Roll Initiative [1d20 + 5]">Roll Initiative</ChatMacro>
 
-<ChatMessage message="Climb [1d20 + 5][1d20 + 5][1d20 + 5]">Skill Check (DSA)</ChatMessage>
+<ChatMacro message="Climb [1d20 + 5][1d20 + 5][1d20 + 5]">Skill Check (DSA)</ChatMacro>
 
-<ChatMessage message="Attack Roll [1d20 + 5] with Sword does [1d8] slasing damage">Attack with sword</ChatMessage>
+<ChatMacro message="Attack Roll [1d20 + 5] with Sword does [1d8] slasing damage">Attack with sword</ChatMacro>
 
-<ChatMessage message="Stab the unarmed from behind!">Motivate players</ChatMessage>
+<ChatMacro message="Stab the unarmed from behind!">Motivate players</ChatMacro>
 
 It is also possible to declare re-usable templates.
 
@@ -111,23 +111,23 @@ It is also possible to declare re-usable templates.
   </Box>
 </Template>
 
-<ChatMessage
+<ChatMacro
   templateId="attackTemplate"
   var-weapon="Handaxe"
   var-attackRollFormula="[1d20 + 5]"
   var-damageRollFormula="[1d6 + 6]"
 >
   Attack with Handaxe
-</ChatMessage>
+</ChatMacro>
 
-<ChatMessage
+<ChatMacro
   templateId="attackTemplate"
   var-weapon="Axe"
   var-attackRollFormula="[1d20 + 5]"
   var-damageRollFormula="[1d4 + 4]"
 >
   Attack with Dagger
-</ChatMessage>
+</ChatMacro>
 `;
 
 const usePersitedDiceNotesValue = createPersistedState("peristedDiceNotes");

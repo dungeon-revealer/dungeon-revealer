@@ -12,9 +12,9 @@ The macros can be used for sending chat messages via the chat.
 ### Simple Macro
 
 ```md
-<ChatMessage message="Attack with Axe [1d20] makes [2d6] Damage">
+<ChatMacro message="Attack with Axe [1d20] makes [2d6] Damage">
   Attack with Axe
-</ChatMessage>
+</ChatMacro>
 ```
 
 You can embed dice rolls by using a dice notation formula surrounded by square brackets. Besides using them in macros, you can also simply type dice rolls into the chat.
@@ -58,18 +58,18 @@ For more complex templates it is encouraged to use a template. Templates can be 
   </Box>
 </Template>
 
-<ChatMessage
+<ChatMacro
   templateId="attackTemplate"
   var-weapon="Handaxe"
   var-attackRollFormula="[1d20 + 5]"
   var-damageRollFormula="[1d6 + 6]"
 >
   Attack with Handaxe
-</ChatMessage>
+</ChatMacro>
 
-<ChatMessage templateId="attackTemplate" var-weapon="Axe" var-attackRollFormula="[1d20 + 4]" var-damageRollFormula="[1d4 + 4]">
+<ChatMacro templateId="attackTemplate" var-weapon="Axe" var-attackRollFormula="[1d20 + 4]" var-damageRollFormula="[1d4 + 4]">
   Attack with Dagger
-</ChatMessage>
+</ChatMacro>
 ```
 
 A template can be declared by using the `Template` tag. Make sure to set a unique `id` attribute that can later be used for referencing the template.
@@ -87,7 +87,7 @@ As well as the following custom components for structuring content:
 
 Variables can bes set by using the variable name surrounded by curly brackets `{{myVariable}}`.
 
-The template can be used by setting the `templateId` attribute to the Template `id`. In addition variable values can be passed by setting them as attributes on the `ChatMessage` and prefixing them with `var-`.
+The template can be used by setting the `templateId` attribute to the Template `id`. In addition variable values can be passed by setting them as attributes on the `ChatMacro` and prefixing them with `var-`.
 
 E.g. the attribute for substituting the `myVariable` variable is `var-myVariable="My Custom Value"`.
 
@@ -119,7 +119,7 @@ This allows easily defining triggers for multiple skill checks or weapon attacks
   </div>
 </Template>
 
-<ChatMessage templateId="skillCheck" var-title="Schwimmen Probe" var-attribute1="Geschicklichkeit" var-attribute2="Konstitution" var-attribute3="Körperkraft">
+<ChatMacro templateId="skillCheck" var-title="Swim Skill Check" var-attribute1="Dexterity" var-attribute2="Constitution" var-attribute3="Strength">
  Schwimmen Probe
-</ChatMessage>
+</ChatMacro>
 ```

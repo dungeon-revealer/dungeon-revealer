@@ -61,8 +61,9 @@ const sanitizeHtml = (html: string) =>
     allowedTags,
     allowedAttributes: {
       Image: ["id"],
-      ChatMessage: ["message", "templateId", "var-*"],
       ChatMacro: ["message", "templateId", "var-*"],
+      // alias for ChatMessage
+      ChatMessage: ["message", "templateId", "var-*"],
       div: ["style"],
       span: ["style"],
     },
