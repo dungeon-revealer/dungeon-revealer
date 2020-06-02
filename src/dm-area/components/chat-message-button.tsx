@@ -44,7 +44,7 @@ export const ChatMessageButton: React.FC<{
     const variables = getVariableProps(props);
     message = templateMap.get(templateId);
     for (const { name, value } of variables) {
-      message = message?.replace(new RegExp(`{${name}}`, "g"), value);
+      message = message?.replace(new RegExp(`{{${name}}}`, "g"), value);
     }
   }
   return (

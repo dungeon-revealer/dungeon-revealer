@@ -90,14 +90,14 @@ It is also possible to declare re-usable templates.
 <Template id="attackTemplate">
   <Box>
     <BoxRow>
-      **<span style="color:red">Attack with {weapon}</span>**
+      **<span style="color:red">Attack with {{weapon}}</span>**
     </BoxRow>
     <BoxRow>
       <BoxColumn>
         Attack Roll
       </BoxColumn>
       <BoxColumn>
-        {attackRollFormula}
+        {{attackRollFormula}}
       </BoxColumn>
     </BoxRow>
     <BoxRow>
@@ -105,7 +105,7 @@ It is also possible to declare re-usable templates.
         Damage
       </BoxColumn>
       <BoxColumn>
-        {damageRollFormula}
+        {{damageRollFormula}}
       </BoxColumn>
     </BoxRow>
   </Box>

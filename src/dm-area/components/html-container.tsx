@@ -10,6 +10,7 @@ import { useStaticRef } from "../../hooks/use-static-ref";
 const components = {
   Image: SharableImage,
   ChatMessage: ChatMessageButton,
+  ChatMacro: ChatMessageButton,
 };
 
 const allowedTags = [...Object.keys(components), "div"];

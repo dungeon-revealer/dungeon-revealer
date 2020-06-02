@@ -37,14 +37,14 @@ For more complex templates it is encouraged to use a template. Templates can be 
 <Template id="attackTemplate">
   <Box>
     <BoxRow>
-      <span style="color:red;font-weight:bold">Attack with {weapon}</span>
+      <span style="color:red;font-weight:bold">Attack with {{weapon}}</span>
     </BoxRow>
     <BoxRow>
       <BoxColumn>
         Attack Roll
       </BoxColumn>
       <BoxColumn>
-        {attackRollFormula}
+        {{attackRollFormula}}
       </BoxColumn>
     </BoxRow>
     <BoxRow>
@@ -52,7 +52,7 @@ For more complex templates it is encouraged to use a template. Templates can be 
         Damage
       </BoxColumn>
       <BoxColumn>
-        {damageRollFormula}
+        {{damageRollFormula}}
       </BoxColumn>
     </BoxRow>
   </Box>
@@ -80,7 +80,7 @@ As well as the following custom components for structuring content:
 - BoxRow (Horizontal row)
 - BoxColumn (horizontal row column)
 
-Variables can bes set by using the variable name surrounded by curly brackets `{myVariable}`.
+Variables can bes set by using the variable name surrounded by curly brackets `{{myVariable}}`.
 
 The template can be used by setting the `templateId` attribute to the Template `id`. In addition variable values can be passed by setting them as attributes on the `ChatMessage` and prefixing them with `var-`.
 
@@ -99,15 +99,15 @@ This allows easily defining triggers for multiple skill checks or weapon attacks
         
       </BoxRow>
       <BoxRow>
-        <BoxColumn>{attribute1}</BoxColumn>
+        <BoxColumn>{{attribute1}}</BoxColumn>
         <BoxColumn>[1d20]</BoxColumn>
       </BoxRow>
       <BoxRow>
-        <BoxColumn>{attribute2}</BoxColumn>
+        <BoxColumn>{{attribute2}}</BoxColumn>
         <BoxColumn>[1d20]</BoxColumn>
       </BoxRow>
       <BoxRow>
-        <BoxColumn>{attribute3}</BoxColumn>
+        <BoxColumn>{{attribute3}}</BoxColumn>
         <BoxColumn>[1d20]</BoxColumn>
       </BoxRow>
     </Box>
