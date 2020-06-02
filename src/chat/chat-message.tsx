@@ -3,10 +3,9 @@ import { createFragmentContainer } from "react-relay";
 import graphql from "babel-plugin-relay/macro";
 import type { chatMessage_message } from "./__generated__/chatMessage_message.graphql";
 import styled from "@emotion/styled/macro";
-import { ShowdownExtension } from "showdown";
 import MarkdownView from "react-showdown";
 import { FormattedDiceRoll } from "./formatted-dice-roll";
-import sanitizeHtml from "sanitize-html";
+import _sanitizeHtml from "sanitize-html";
 import { chatMessageComponents } from "../user-content-components";
 
 const Container = styled.div`
@@ -21,58 +20,37 @@ const AuthorName = styled.div`
   font-weight: bold;
 `;
 
-const sanitizeHtmlExtension: ShowdownExtension = {
-  type: "lang",
-  filter: (text) => {
-    return text.replace(/<div/g, '<div markdown="1"');
-  },
-};
-
-const removePTags: ShowdownExtension = {
-  type: "output",
-  filter: function (text) {
-    text = text.replace(/<\/?p[^>]*>/g, "");
-    return text;
-  },
-};
-
-const filterValidTags: ShowdownExtension = {
-  type: "lang",
-  filter: (text) => {
-    // sanitizeHtml does escape > characters
-    // we simple replace them by some string nobody would ever use
-    // and replace it with a > after sanitizing
-    text = text.replace(/^>/gm, "--:-=BLOCK_QUOTE=-:--");
-    text = sanitizeHtml(text, {
-      allowedTags: [
-        "em",
-        "strong",
-        "span",
-        "div",
-        "blockquote",
-        ...Object.keys(chatMessageComponents),
-      ],
-      allowedAttributes: {
-        span: ["style"],
-        div: ["style"],
-      },
-      parser: {
-        lowerCaseTags: false,
-      },
-    });
-    text = text.replace(/--:-=BLOCK_QUOTE=-:--/g, ">");
-    return text;
-  },
-};
-
-const showdownExtensions = [
-  sanitizeHtmlExtension,
-  removePTags,
-  filterValidTags,
-] as ShowdownExtension[];
+const sanitizeHtml = (html: string) =>
+  _sanitizeHtml(html, {
+    allowedTags: [
+      "div",
+      "blockquote",
+      "span",
+      "em",
+      "strong",
+      "pre",
+      "code",
+      ...Object.keys(chatMessageComponents),
+    ],
+    allowedAttributes: {
+      span: ["style"],
+      div: ["style"],
+    },
+    transformTags: {
+      // since our p element could also contain div elements and that makes react/the browser go brrrt
+      // we simply convert them to div elements for now
+      // in the future we might have a better solution.
+      p: "div",
+    },
+    parser: {
+      lowerCaseTags: false,
+    },
+  });
 
 const TextRenderer: React.FC<{ text: string }> = ({ text }) => {
-  return <MarkdownView markdown={text} extensions={showdownExtensions} />;
+  return (
+    <MarkdownView markdown={text} MONKEY_PATCHED_sanitizeHtml={sanitizeHtml} />
+  );
 };
 
 const UserMessageRenderer: React.FC<{
@@ -84,9 +62,14 @@ const UserMessageRenderer: React.FC<{
 }> = ({ content, diceRolls }) => {
   return (
     <MarkdownView
-      extensions={showdownExtensions}
       markdown={content}
       components={chatMessageComponents}
+      /**
+       * There is no good way to sanitize HTML in Markdown pre-processing
+       * Because of that we monkey patched MarkdownView to accept a sanitize
+       * function that will be applied post converting the dom to html
+       */
+      MONKEY_PATCHED_sanitizeHtml={sanitizeHtml}
       /**
        * We monkey patched MarkdownView.
        * We replace the "{number}" placeholders with our actual dice roll components, so they are embedded nicely :)
@@ -114,6 +97,9 @@ const UserMessageRenderer: React.FC<{
           }
         }
         return nodes;
+      }}
+      options={{
+        simpleLineBreaks: true,
       }}
     />
   );

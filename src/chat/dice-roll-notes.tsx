@@ -111,10 +111,23 @@ It is also possible to declare re-usable templates.
   </Box>
 </Template>
 
-<ChatMessage templateId="attackTemplate" var-weapon="Handaxe" var-attackRollFormula="[1d20 + 5]" var-damageRollFormula="[1d6 + 6]">Attack with Handaxe</ChatMessage>
+<ChatMessage
+  templateId="attackTemplate"
+  var-weapon="Handaxe"
+  var-attackRollFormula="[1d20 + 5]"
+  var-damageRollFormula="[1d6 + 6]"
+>
+  Attack with Handaxe
+</ChatMessage>
 
-<ChatMessage templateId="attackTemplate" var-weapon="Axe" var-attackRollFormula="[1d20 + 5]" var-damageRollFormula="[1d4 + 4]">Attack with Dagger</ChatMessage>
-
+<ChatMessage
+  templateId="attackTemplate"
+  var-weapon="Axe"
+  var-attackRollFormula="[1d20 + 5]"
+  var-damageRollFormula="[1d4 + 4]"
+>
+  Attack with Dagger
+</ChatMessage>
 `;
 
 const usePersitedDiceNotesValue = createPersistedState("peristedDiceNotes");

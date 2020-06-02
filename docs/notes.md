@@ -33,8 +33,8 @@ Click that button for sending the contents of the `message` attribute (`Attack w
 
 For more complex templates it is encouraged to use a template. Templates can be declared once per note and re-used with different variables:
 
-```markdown
-<Template id="attackTemplate">
+```hbs
+<Templateid="attackTemplate">
   <Box>
     <BoxRow>
       <span style="color:red;font-weight:bold">Attack with {{weapon}}</span>
@@ -58,7 +58,12 @@ For more complex templates it is encouraged to use a template. Templates can be 
   </Box>
 </Template>
 
-<ChatMessage templateId="attackTemplate" var-weapon="Handaxe" var-attackRollFormula="[1d20 + 5]" var-damageRollFormula="[1d6 + 6]">
+<ChatMessage
+  templateId="attackTemplate"
+  var-weapon="Handaxe"
+  var-attackRollFormula="[1d20 + 5]"
+  var-damageRollFormula="[1d6 + 6]"
+>
   Attack with Handaxe
 </ChatMessage>
 

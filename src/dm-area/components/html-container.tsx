@@ -3,7 +3,7 @@ import styled from "@emotion/styled/macro";
 import { ShowdownExtension } from "showdown";
 import MarkdownView from "react-showdown";
 import { SharableImage } from "./sharable-image";
-import sanitizeHtml from "sanitize-html";
+import _sanitizeHtml from "sanitize-html";
 import { ChatMessageButton } from "./chat-message-button";
 import { useStaticRef } from "../../hooks/use-static-ref";
 
@@ -13,7 +13,17 @@ const components = {
   ChatMacro: ChatMessageButton,
 };
 
-const allowedTags = [...Object.keys(components), "div"];
+const allowedTags = [
+  "div",
+  "p",
+  "blockquote",
+  "span",
+  "em",
+  "strong",
+  "pre",
+  "code",
+  ...Object.keys(components),
+];
 
 const transformTemplateExtension = (
   templateMap: Map<string, string>
@@ -46,24 +56,22 @@ const transformTemplateExtension = (
   },
 });
 
-const sanitizeHtmlExtension: ShowdownExtension = {
-  type: "lang",
-  filter: (text) => {
-    const sanitizedHtml = sanitizeHtml(text, {
-      allowedTags,
-      allowedAttributes: {
-        Image: ["id"],
-        ChatMessage: ["message", "templateId", "var-*"],
-      },
-      selfClosing: ["Image"],
-      parser: {
-        lowerCaseTags: false,
-        lowerCaseAttributeNames: false,
-      },
-    });
-    return sanitizedHtml;
-  },
-};
+const sanitizeHtml = (html: string) =>
+  _sanitizeHtml(html, {
+    allowedTags,
+    allowedAttributes: {
+      Image: ["id"],
+      ChatMessage: ["message", "templateId", "var-*"],
+      ChatMacro: ["message", "templateId", "var-*"],
+      div: ["style"],
+      span: ["style"],
+    },
+    selfClosing: ["Image"],
+    parser: {
+      lowerCaseTags: false,
+      lowerCaseAttributeNames: false,
+    },
+  });
 
 const HtmlContainerStyled = styled.div`
   flex-grow: 1;
@@ -86,6 +94,13 @@ const HtmlContainerStyled = styled.div`
     margin-top: 0;
     margin-bottom: 4px;
   }
+
+  pre {
+    border: 0.5px solid lightgray;
+    border-radius: 2px;
+    padding: 4px;
+    background: #f8f8f8;
+  }
 `;
 
 export const TemplateContext = React.createContext<Map<string, string>>(
@@ -100,16 +115,17 @@ export const HtmlContainer: React.FC<{ markdown: string }> = React.memo(
       <TemplateContext.Provider value={templateMap}>
         <HtmlContainerStyled>
           <MarkdownView
+            /**
+             * There is no good way to sanitize HTML in Markdown pre-processing
+             * Because of that we monkey patched MarkdownView to accept a sanitize
+             * function that will be applied post converting the dom to html
+             */
+            MONKEY_PATCHED_sanitizeHtml={sanitizeHtml}
             markdown={markdown}
-            extensions={[
-              transformTemplateExtension(templateMap),
-              sanitizeHtmlExtension,
-            ]}
+            extensions={[transformTemplateExtension(templateMap)]}
             components={components}
             options={{
-              omitExtraWLInCodeBlocks: true,
               simpleLineBreaks: true,
-              backslashEscapesHTMLTags: true,
             }}
           />
         </HtmlContainerStyled>
