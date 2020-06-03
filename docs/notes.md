@@ -11,7 +11,7 @@ The macros can be used for sending chat messages via the chat.
 
 ### Simple Macro
 
-```md
+```hbs
 <ChatMacro message="Attack with Axe [1d20] makes [2d6] Damage">
   Attack with Axe
 </ChatMacro>
@@ -34,7 +34,7 @@ Click that button for sending the contents of the `message` attribute (`Attack w
 For more complex templates it is encouraged to use a template. Templates can be declared once per note and re-used with different variables:
 
 ```hbs
-<Templateid="attackTemplate">
+<Template id="attackTemplate">
   <Box>
     <BoxRow>
       <span style="color:red;font-weight:bold">Attack with {{weapon}}</span>
@@ -67,7 +67,12 @@ For more complex templates it is encouraged to use a template. Templates can be 
   Attack with Handaxe
 </ChatMacro>
 
-<ChatMacro templateId="attackTemplate" var-weapon="Axe" var-attackRollFormula="[1d20 + 4]" var-damageRollFormula="[1d4 + 4]">
+<ChatMacro
+  templateId="attackTemplate"
+  var-weapon="Axe"
+  var-attackRollFormula="[1d20 + 4]"
+  var-damageRollFormula="[1d4 + 4]"
+>
   Attack with Dagger
 </ChatMacro>
 ```
@@ -93,7 +98,7 @@ E.g. the attribute for substituting the `myVariable` variable is `var-myVariable
 
 This allows easily defining triggers for multiple skill checks or weapon attacks.
 
-```markdown
+```hbs
 <Template id="skillCheck">
   <div style="background-image:url('/api/images/04545c2f-6f7b-4fc6-a9d8-6d6580503031');background-position: 100% center;background-size:contain;background-repeat:no-repeat">
     <Box>
@@ -119,7 +124,13 @@ This allows easily defining triggers for multiple skill checks or weapon attacks
   </div>
 </Template>
 
-<ChatMacro templateId="skillCheck" var-title="Swim Skill Check" var-attribute1="Dexterity" var-attribute2="Constitution" var-attribute3="Strength">
+<ChatMacro
+  templateId="skillCheck"
+  var-title="Swim Skill Check"
+  var-attribute1="Dexterity"
+  var-attribute2="Constitution"
+  var-attribute3="Strength"
+>
  Schwimmen Probe
 </ChatMacro>
 ```
