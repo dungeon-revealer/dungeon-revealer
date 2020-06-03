@@ -26,7 +26,7 @@ The executables are located in the bin folder.
 ## TypeScript Migration
 
 We are currently in the process of migrating the code base partially to TypeScript.
-All new files under `src` should be written in TypeScript.
+All new files under `src` and `server` should be written in TypeScript.
 
 All new features should be built using TypeScript.
 Existing features can be ported over to TypeScript by adding changing the file extension from `.js` to `.ts`/`.tsx`.
