@@ -10,7 +10,6 @@ import produce from "immer";
 import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import createPersistedState from "use-persisted-state";
-import { Modal } from "../modal";
 import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
 import { ImportFileModal } from "./import-file-modal";
@@ -30,6 +29,7 @@ import { createOvermind } from "overmind";
 
 import { config } from "./overmind";
 import { sendRequest } from "../http-request";
+import { AuthenticatedAppShell } from "../authenticated-app-shell";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
 const useDmPassword = createPersistedState("dmPassword");
@@ -39,16 +39,13 @@ const INITIAL_MODE = {
   data: null,
 };
 
-export const DmArea = () => {
-  const socket = useSocket();
+const Content = ({ socket, password: dmPassword, rootState }) => {
   const [data, setData] = useState(null);
   const [loadedMapId, setLoadedMapId] = useLoadedMapId(null);
   const loadedMapIdRef = useRef(loadedMapId);
   const [liveMapId, setLiveMapId] = useState(null);
-  // LOADING, AUTHENTICATE, EDIT_MAP, SET_MAP_GRID, SHOW_MAP_LIBRARY
+  // EDIT_MAP, SET_MAP_GRID, SHOW_MAP_LIBRARY
   const [mode, setMode] = useState(INITIAL_MODE);
-
-  const [dmPassword, setDmPassword] = useDmPassword("");
 
   const setMapGridTargetMap = useMemo(
     () =>
@@ -83,23 +80,9 @@ export const DmArea = () => {
     [dmPassword]
   );
 
-  const rootState = useStaticRef(() => createOvermind(config));
-
-  useEffect(() => {
-    rootState.actions.sessionStore.setAccessToken(dmPassword);
-  }, [dmPassword, rootState]);
-
   // load initial state
   useAsyncEffect(
     function* () {
-      const result = yield localFetch("/auth").then((res) => res.json());
-      if (result.data.role !== "DM") {
-        setMode({ title: "AUTHENTICATE" });
-        return;
-      }
-
-      socket.emit("auth", { password: dmPassword });
-
       const { data } = yield localFetch("/map").then((res) => res.json());
       setData(data);
       const isLoadedMapAvailable = Boolean(
@@ -332,116 +315,181 @@ export const DmArea = () => {
     [setDroppedFile]
   );
 
-  if (mode.title === "LOADING") {
-    return <SplashScreen text="Loading...." />;
-  }
+  return (
+    <FetchContext.Provider value={localFetch}>
+      <ShareImageActionProvider socket={socket}>
+        {mode.title === "SHOW_MAP_LIBRARY" ? (
+          <SelectMapModal
+            canClose={loadedMap !== null}
+            maps={data.maps}
+            loadedMapId={loadedMapId}
+            liveMapId={liveMapId}
+            closeModal={() => {
+              setMode({ title: "EDIT_MAP" });
+            }}
+            setLoadedMapId={(loadedMapId) => {
+              setMode({ title: "EDIT_MAP" });
+              setLoadedMapId(loadedMapId);
+            }}
+            updateMap={updateMap}
+            deleteMap={deleteMap}
+            createMap={createMap}
+            enterGridMode={(mapId) =>
+              setMode({ title: "SET_MAP_GRID", data: { mapId } })
+            }
+            dmPassword={dmPassword}
+          />
+        ) : null}
+        {mode.title === "SHOW_NOTES" ? (
+          <NoteEditor
+            onClose={() => {
+              setMode({ title: "EDIT_MAP" });
+            }}
+            state={rootState.noteEditor}
+          />
+        ) : null}
+        {mode.title === "MEDIA_LIBRARY" ? (
+          <MediaLibrary
+            onClose={() => {
+              setMode({ title: "EDIT_MAP" });
+            }}
+          />
+        ) : null}
+        {setMapGridTargetMap ? (
+          <SetMapGrid
+            map={setMapGridTargetMap}
+            onSuccess={(mapId, grid) => {
+              updateMap(mapId, {
+                grid,
+              });
+              setMode({ title: "SHOW_MAP_LIBRARY" });
+            }}
+            onAbort={() => {
+              setMode({ title: "SHOW_MAP_LIBRARY" });
+            }}
+            dmPassword={dmPassword}
+          />
+        ) : loadedMap ? (
+          <div style={{ display: "flex", height: "100vh" }}>
+            <div
+              style={{
+                flex: 1,
+                position: "relative",
+                overflow: "hidden",
+              }}
+            >
+              <DmMap
+                dmPassword={dmPassword}
+                setAppData={setData}
+                socket={socket}
+                map={loadedMap}
+                loadedMapId={loadedMap.id}
+                liveMapId={liveMapId}
+                sendLiveMap={sendLiveMap}
+                hideMap={hideMap}
+                showMapModal={showMapModal}
+                openNotes={() => {
+                  setMode({ title: "SHOW_NOTES" });
+                }}
+                openMediaLibrary={() => {
+                  setMode({ title: "MEDIA_LIBRARY" });
+                }}
+                enterGridMode={enterGridMode}
+                updateMap={updateMap}
+                deleteToken={deleteToken}
+                updateToken={updateToken}
+                tokenInfoAsidetokenInfoAsideState={rootState.tokenInfoAside}
+                onDropFile={onDropFile}
+              />
+            </div>
+          </div>
+        ) : null}
+        {droppedFile ? (
+          <ImportFileModal
+            file={droppedFile}
+            close={() => setDroppedFile(null)}
+            createMap={createMap}
+          />
+        ) : null}
+      </ShareImageActionProvider>
+    </FetchContext.Provider>
+  );
+};
 
-  if (mode.title === "AUTHENTICATE") {
-    return (
-      <Modal.Provider>
-        <AuthenticationScreen
-          onAuthenticate={(password) => {
-            setDmPassword(password);
-          }}
-          fetch={localFetch}
-        />
-      </Modal.Provider>
-    );
-  }
+const DmAreaRenderer = ({ password }) => {
+  const socket = useSocket();
+
+  const rootState = useStaticRef(() => createOvermind(config));
+
+  useEffect(() => {
+    rootState.actions.sessionStore.setAccessToken(password);
+  }, [password, rootState]);
 
   return (
     <OvermindProvider value={rootState}>
       <ToastProvider placement="bottom-right">
-        <Modal.Provider>
-          <FetchContext.Provider value={localFetch}>
-            <ShareImageActionProvider socket={socket}>
-              {mode.title === "SHOW_MAP_LIBRARY" ? (
-                <SelectMapModal
-                  canClose={loadedMap !== null}
-                  maps={data.maps}
-                  loadedMapId={loadedMapId}
-                  liveMapId={liveMapId}
-                  closeModal={() => {
-                    setMode({ title: "EDIT_MAP" });
-                  }}
-                  setLoadedMapId={(loadedMapId) => {
-                    setMode({ title: "EDIT_MAP" });
-                    setLoadedMapId(loadedMapId);
-                  }}
-                  updateMap={updateMap}
-                  deleteMap={deleteMap}
-                  createMap={createMap}
-                  enterGridMode={(mapId) =>
-                    setMode({ title: "SET_MAP_GRID", data: { mapId } })
-                  }
-                  dmPassword={dmPassword}
-                />
-              ) : null}
-              {mode.title === "SHOW_NOTES" ? (
-                <NoteEditor
-                  onClose={() => {
-                    setMode({ title: "EDIT_MAP" });
-                  }}
-                  state={rootState.noteEditor}
-                />
-              ) : null}
-              {mode.title === "MEDIA_LIBRARY" ? (
-                <MediaLibrary
-                  onClose={() => {
-                    setMode({ title: "EDIT_MAP" });
-                  }}
-                />
-              ) : null}
-              {setMapGridTargetMap ? (
-                <SetMapGrid
-                  map={setMapGridTargetMap}
-                  onSuccess={(mapId, grid) => {
-                    updateMap(mapId, {
-                      grid,
-                    });
-                    setMode({ title: "SHOW_MAP_LIBRARY" });
-                  }}
-                  onAbort={() => {
-                    setMode({ title: "SHOW_MAP_LIBRARY" });
-                  }}
-                  dmPassword={dmPassword}
-                />
-              ) : loadedMap ? (
-                <DmMap
-                  dmPassword={dmPassword}
-                  setAppData={setData}
-                  socket={socket}
-                  map={loadedMap}
-                  loadedMapId={loadedMap.id}
-                  liveMapId={liveMapId}
-                  sendLiveMap={sendLiveMap}
-                  hideMap={hideMap}
-                  showMapModal={showMapModal}
-                  openNotes={() => {
-                    setMode({ title: "SHOW_NOTES" });
-                  }}
-                  openMediaLibrary={() => {
-                    setMode({ title: "MEDIA_LIBRARY" });
-                  }}
-                  enterGridMode={enterGridMode}
-                  updateMap={updateMap}
-                  deleteToken={deleteToken}
-                  updateToken={updateToken}
-                  tokenInfoAsidetokenInfoAsideState={rootState.tokenInfoAside}
-                  onDropFile={onDropFile}
-                />
-              ) : null}
-              {droppedFile ? (
-                <ImportFileModal
-                  file={droppedFile}
-                  close={() => setDroppedFile(null)}
-                  createMap={createMap}
-                />
-              ) : null}
-            </ShareImageActionProvider>
-          </FetchContext.Provider>
-        </Modal.Provider>
+        <AuthenticatedAppShell socket={socket} password={password}>
+          <Content
+            socket={socket}
+            rootState={{ rootState }}
+            password={password}
+          />
+        </AuthenticatedAppShell>
       </ToastProvider>
     </OvermindProvider>
   );
+};
+
+export const DmArea = () => {
+  const [dmPassword, setDmPassword] = useDmPassword("");
+  // "authenticate" | "authenticated"
+  const [mode, setMode] = React.useState("loading");
+
+  const localFetch = useCallback(
+    (input, init = {}) => {
+      return fetch(buildApiUrl(input), {
+        ...init,
+        headers: {
+          Authorization: dmPassword ? `Bearer ${dmPassword}` : undefined,
+          ...init.headers,
+        },
+      }).then((res) => {
+        if (res.status === 401) {
+          console.error("Unauthenticated access.");
+          throw new Error("Unauthenticated access.");
+        }
+        return res;
+      });
+    },
+    [dmPassword]
+  );
+
+  useAsyncEffect(
+    function* () {
+      const result = yield localFetch("/auth").then((res) => res.json());
+      if (!result.data.role || result.data.role !== "DM") {
+        setMode("authenticate");
+        return;
+      }
+      setMode("authenticated");
+    },
+    [localFetch]
+  );
+
+  if (mode === "loading") {
+    return <SplashScreen text="Loading...." />;
+  } else if (mode === "authenticate") {
+    return (
+      <AuthenticationScreen
+        onAuthenticate={(password) => {
+          setDmPassword(password);
+          setMode("authenticated");
+        }}
+        fetch={localFetch}
+      />
+    );
+  } else if (mode === "authenticated") {
+    return <DmAreaRenderer password={dmPassword} />;
+  }
+  return null;
 };

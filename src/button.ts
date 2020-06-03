@@ -24,11 +24,15 @@ const ButtonBase = styled.button<ButtonBaseProps>`
   height: ${(p) => (p.big ? `60px` : p.small ? `32px` : `54px`)};
   font-size: ${(p) => (p.small ? `12px` : undefined)};
 
+  > svg:first-child:not(:last-child) {
+    margin-left: ${(p) => (p.iconOnly ? null : p.small ? `-4px` : `-8px`)};
+  }
+
   > svg + span {
-    margin-left: ${(p) => (p.iconOnly ? null : p.small ? `.5rem` : `1rem`)};
+    margin-left: ${(p) => (p.iconOnly ? null : p.small ? `6px` : `12px`)};
   }
   > span + svg {
-    margin-left: ${(p) => (p.iconOnly ? null : p.small ? `.5rem` : `1rem`)};
+    margin-left: ${(p) => (p.iconOnly ? null : p.small ? `6px` : `12px`)};
   }
 `;
 

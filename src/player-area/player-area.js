@@ -10,14 +10,14 @@ import { ObjectLayer } from "../object-layer";
 import { Toolbar } from "../toolbar";
 import styled from "@emotion/styled/macro";
 import * as Icons from "../feather-icons";
-import { useSocket } from "../socket";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { TokenRenderer } from "../object-layer/token-renderer";
 import { SplashScreen } from "../splash-screen";
 import { AuthenticationScreen } from "../authentication-screen";
 import { buildApiUrl } from "../public-url";
-import { Modal } from "../modal";
 import { ImageLightBoxModal } from "../image-lightbox-modal";
+import { AuthenticatedAppShell } from "../authenticated-app-shell";
+import { useSocket } from "../socket";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -67,14 +67,13 @@ const drawGridToContext = (grid, dimensions, canvas, gridColor) => {
   }
 };
 
-const PlayerMap = ({ fetch, pcPassword }) => {
+const PlayerMap = ({ fetch, pcPassword, socket }) => {
   const panZoomRef = useRef(null);
   const currentMapRef = useRef(null);
   const [currentMap, setCurrentMap] = useState(null);
   const [sharedMediaId, setSharedMediaId] = useState(false);
 
   const mapId = currentMap ? currentMap.id : null;
-  const socket = useSocket();
   const [showSplashScreen, setShowSplashScreen] = useState(true);
 
   /**
@@ -107,27 +106,6 @@ const PlayerMap = ({ fetch, pcPassword }) => {
 
   useAsyncEffect(
     function* () {
-      socket.on("connect", function () {
-        console.log("connected to server");
-        socket.emit("auth", { password: pcPassword });
-      });
-
-      socket.on("reconnecting", function () {
-        console.log("reconnecting to server");
-      });
-
-      socket.on("reconnect", function () {
-        console.log("reconnected to server");
-      });
-
-      socket.on("reconnect_failed", function () {
-        console.log("reconnect failed!");
-      });
-
-      socket.on("disconnect", function () {
-        console.log("disconnected from server");
-      });
-
       const onReceiveMap = async (data) => {
         if (!data) {
           return;
@@ -327,11 +305,6 @@ const PlayerMap = ({ fetch, pcPassword }) => {
       window.addEventListener("contextmenu", contextmenuListener);
 
       return () => {
-        socket.off("connect");
-        socket.off("reconnecting");
-        socket.off("reconnect");
-        socket.off("reconnect_failed");
-        socket.off("disconnect");
         socket.off("mark area");
         socket.off("map update");
 
@@ -421,7 +394,6 @@ const PlayerMap = ({ fetch, pcPassword }) => {
           cursor: "grab",
           background: "black",
           height: "100vh",
-          width: "100vw",
         }}
         ref={panZoomRef}
         {...longPressProps}
@@ -531,6 +503,16 @@ const PlayerMap = ({ fetch, pcPassword }) => {
 
 const usePcPassword = createPersistedState("pcPassword");
 
+const AuthenticatedContent = ({ pcPassword, localFetch }) => {
+  const socket = useSocket();
+
+  return (
+    <AuthenticatedAppShell password={pcPassword} socket={socket}>
+      <PlayerMap fetch={localFetch} pcPassword={pcPassword} socket={socket} />
+    </AuthenticatedAppShell>
+  );
+};
+
 export const PlayerArea = () => {
   const [pcPassword, setPcPassword] = usePcPassword("");
 
@@ -547,7 +529,7 @@ export const PlayerArea = () => {
       }).then((res) => {
         if (res.status === 401) {
           console.error("Unauthenticated access.");
-          throw new Error("Unauthenticated access.");
+          setMode("AUTHENTICATE");
         }
         return res;
       });
@@ -570,6 +552,7 @@ export const PlayerArea = () => {
   if (mode === "LOADING") {
     return <SplashScreen text="Loading..." />;
   }
+
   if (mode === "AUTHENTICATE") {
     return (
       <AuthenticationScreen
@@ -581,11 +564,10 @@ export const PlayerArea = () => {
       />
     );
   }
+
   if (mode === "READY") {
     return (
-      <Modal.Provider>
-        <PlayerMap fetch={localFetch} pcPassword={pcPassword} />
-      </Modal.Provider>
+      <AuthenticatedContent localFetch={localFetch} pcPassword={pcPassword} />
     );
   }
 

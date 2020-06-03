@@ -3,28 +3,83 @@ import styled from "@emotion/styled/macro";
 import { ShowdownExtension } from "showdown";
 import MarkdownView from "react-showdown";
 import { SharableImage } from "./sharable-image";
-import sanitizeHtml from "sanitize-html";
+import _sanitizeHtml from "sanitize-html";
+import { ChatMessageButton } from "./chat-message-button";
+import { useStaticRef } from "../../hooks/use-static-ref";
 
-const sanitizeHtmlExtension: ShowdownExtension = {
+const components = {
+  Image: SharableImage,
+  ChatMessage: ChatMessageButton,
+  ChatMacro: ChatMessageButton,
+};
+
+const allowedTags = [
+  "div",
+  "p",
+  "blockquote",
+  "span",
+  "em",
+  "strong",
+  "pre",
+  "code",
+  ...Object.keys(components),
+];
+
+const transformTemplateExtension = (
+  templateMap: Map<string, string>
+): ShowdownExtension => ({
   type: "lang",
   filter: (text) => {
-    const sanitizedHtml = sanitizeHtml(text, {
-      allowedTags: ["Image"],
-      allowedAttributes: {
-        Image: ["id"],
-      },
-      selfClosing: ["Image"],
-      parser: {
-        lowerCaseTags: false,
-      },
-    });
-    return sanitizedHtml;
+    let finalText = "";
+    let startTagMatch: null | RegExpExecArray;
+
+    const START_TAG = /<Template(?:[^>]*)id="([\w_-]*)"(?:[^>]*)>/;
+    const END_TAG = "</Template>";
+
+    while ((startTagMatch = START_TAG.exec(text)) !== null) {
+      let endTagIndex = text.indexOf(END_TAG);
+      if (endTagIndex === -1) break;
+
+      const matchStringLength = startTagMatch[0].length;
+      const templateId = startTagMatch[1];
+
+      const templateContents = text.substring(
+        startTagMatch.index + matchStringLength,
+        endTagIndex
+      );
+      templateMap.set(templateId, templateContents.replace(/^\s*/gm, ""));
+      finalText = finalText + text.substring(0, startTagMatch.index);
+      text = text.substr(endTagIndex + END_TAG.length);
+    }
+    finalText = finalText + text;
+    return finalText;
   },
-};
+});
+
+const sanitizeHtml = (html: string) =>
+  _sanitizeHtml(html, {
+    allowedTags,
+    allowedAttributes: {
+      Image: ["id"],
+      ChatMacro: ["message", "templateId", "var-*"],
+      // alias for ChatMessage
+      ChatMessage: ["message", "templateId", "var-*"],
+      div: ["style"],
+      span: ["style"],
+    },
+    selfClosing: ["Image"],
+    parser: {
+      lowerCaseTags: false,
+      lowerCaseAttributeNames: false,
+    },
+  });
 
 const HtmlContainerStyled = styled.div`
   flex-grow: 1;
   overflow-wrap: break-word;
+
+  font-size: 12px;
+  line-height: 1.5;
 
   blockquote {
     margin-left: 0;
@@ -35,24 +90,47 @@ const HtmlContainerStyled = styled.div`
   img {
     max-width: 100%;
   }
+
+  p {
+    margin-top: 0;
+    margin-bottom: 4px;
+  }
+
+  pre {
+    border: 0.5px solid lightgray;
+    border-radius: 2px;
+    padding: 4px;
+    background: #f8f8f8;
+  }
 `;
 
-const extensions = [sanitizeHtmlExtension];
-
-const components = {
-  Image: SharableImage,
-};
+export const TemplateContext = React.createContext<Map<string, string>>(
+  new Map()
+);
 
 export const HtmlContainer: React.FC<{ markdown: string }> = React.memo(
   ({ markdown }) => {
+    const templateMap = useStaticRef(() => new Map<string, string>());
+
     return (
-      <HtmlContainerStyled>
-        <MarkdownView
-          markdown={markdown}
-          extensions={extensions}
-          components={components}
-        />
-      </HtmlContainerStyled>
+      <TemplateContext.Provider value={templateMap}>
+        <HtmlContainerStyled>
+          <MarkdownView
+            /**
+             * There is no good way to sanitize HTML in Markdown pre-processing
+             * Because of that we monkey patched MarkdownView to accept a sanitize
+             * function that will be applied post converting the dom to html
+             */
+            MONKEY_PATCHED_sanitizeHtml={sanitizeHtml}
+            markdown={markdown}
+            extensions={[transformTemplateExtension(templateMap)]}
+            components={components}
+            options={{
+              simpleLineBreaks: true,
+            }}
+          />
+        </HtmlContainerStyled>
+      </TemplateContext.Provider>
     );
   }
 );

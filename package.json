@@ -16,7 +16,7 @@
   "scripts": {
     "build:frontend": "cross-env EXTEND_ESLINT=true PUBLIC_URL=. react-scripts build",
     "build:backend": "tsc --project server/tsconfig.json",
-    "build": "npm run build:backend && npm run build:frontend",
+    "build": "npm run relay-compiler && npm run build:backend && npm run build:frontend",
     "compile:armv7": "pkg . --output ./bin/dungeon-revealer-linux-armv7 --targets node10-linux-armv7",
     "compile:x64": "pkg . --out-path ./bin/ --targets node10-win-x64,node10-macos-x64,node10-linux-x64",
     "compile": "pkg . --out-path ./bin/ --target host",
@@ -26,7 +26,10 @@
     "start": "node ./bin/dungeon-revealer",
     "test": "react-scripts test",
     "start:frontend:dev": "cross-env PORT=3001 EXTEND_ESLINT=true react-scripts start",
-    "start:server:dev": "ts-node-dev --project server/tsconfig.json server/index.js"
+    "start:server:dev": "ts-node-dev --project server/tsconfig.json server/index.js",
+    "relay-compiler": "relay-compiler",
+    "write-schema": "ts-node --project ./server/tsconfig.json  ./scripts/write-graphql-schema.ts",
+    "patch-package": "patch-package"
   },
   "husky": {
     "hooks": {
@@ -37,7 +40,7 @@
     "*.js": [
       "eslint --fix"
     ],
-    "*.{js,json,md,html,ts,tsx}": [
+    "*.{js,json,md,html,ts,tsx,graphql}": [
       "prettier --write"
     ]
   },
@@ -48,11 +51,16 @@
     "not op_mini all"
   ],
   "dependencies": {
+    "@airjp73/dice-notation": "1.1.1",
+    "@types/use-persisted-state": "0.3.0",
     "body-parser": "1.19.0",
     "connect-busboy": "0.0.2",
     "debug": "4.1.1",
     "express": "4.17.1",
     "fs-extra": "9.0.0",
+    "gqtx": "0.6.0",
+    "graphql": "14.6.0",
+    "graphql-subscriptions": "1.1.0",
     "junk": "3.1.0",
     "lodash": "4.17.15",
     "morgan": "1.10.0",
@@ -67,26 +75,35 @@
     "@emotion/styled": "10.0.27",
     "@n1ru4l/use-async-effect": "1.2.3",
     "@types/body-scroll-lock": "2.6.1",
+    "@types/express": "4.17.6",
     "@types/jest": "25.2.3",
     "@types/lodash": "4.14.154",
     "@types/node": "13.13.9",
     "@types/react": "16.9.35",
     "@types/react-dom": "16.9.8",
+    "@types/react-relay": "7.0.3",
     "@types/react-toast-notifications": "2.4.0",
+    "@types/react-virtualized": "9.21.10",
+    "@types/relay-runtime": "8.0.9",
     "@types/sanitize-html": "1.23.0",
     "@types/showdown": "1.9.3",
+    "@types/socket.io": "2.1.4",
     "@types/socket.io-client": "1.4.33",
     "@types/sqlite3": "3.1.6",
+    "@types/uuid": "3.4.6",
     "babel-eslint": "10.1.0",
+    "babel-plugin-relay": "^9.1.0",
     "body-scroll-lock": "3.0.2",
     "cross-env": "7.0.2",
     "downshift": "3.4.8",
     "eslint": "6.8.0",
     "eslint-config-prettier": "6.11.0",
     "eslint-plugin-react-app": "6.2.2",
+    "fp-ts": "^2.6.2",
     "htmlparser2": "4.1.0",
     "husky": "4.2.5",
     "immer": "6.0.9",
+    "io-ts": "^2.2.4",
     "lint-staged": "10.2.7",
     "monaco-editor-webpack-plugin": "1.9.0",
     "overmind": "23.0.0-1581786766054",
@@ -102,19 +119,26 @@
     "react-easy-panzoom": "0.4.4",
     "react-focus-lock": "2.3.1",
     "react-monaco-editor": "0.36.0",
+    "react-relay": "9.1.0",
     "react-scripts": "3.4.1",
     "react-showdown": "2.0.3",
     "react-spring": "9.0.0-rc.3",
     "react-toast-notifications": "2.4.0",
+    "react-use-gesture": "7.0.15",
+    "react-virtualized": "9.21.2",
     "referentiel": "0.0.8",
-    "replacestream": "4.0.3",
+    "relay-compiler": "9.1.0",
+    "relay-compiler-language-typescript": "12.0.1",
+    "relay-config": "9.1.0",
+    "relay-runtime": "9.1.0",
     "sanitize-html": "1.25.0",
     "showdown": "1.9.1",
     "socket.io-client": "2.3.0",
     "ts-jest": "26.1.0",
     "ts-node-dev": "1.0.0-pre.44",
     "typescript": "3.8.3",
-    "use-persisted-state": "0.3.0"
+    "use-persisted-state": "0.3.0",
+    "use-sound": "1.0.2"
   },
   "pkg": {
     "scripts": [

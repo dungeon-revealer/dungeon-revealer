@@ -9,7 +9,7 @@ const SplashScreenText = styled.div`
   font-weight: bold;
 `;
 
-export const SplashScreen = ({ text = null }) => {
+export const SplashScreen: React.FC<{ text?: string }> = ({ text = null }) => {
   return (
     <BackgroundImageContainer>
       <div>

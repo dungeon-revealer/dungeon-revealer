@@ -12,7 +12,7 @@ const InputInner = styled.input`
   padding-left: 12px;
   padding-right: 12px;
 
-  font-size: 20px;
+  font-size: 16px;
 
   border-radius: 8px;
 

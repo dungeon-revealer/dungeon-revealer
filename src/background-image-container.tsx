@@ -24,10 +24,10 @@ const Inner = styled.div`
   max-width: 500px;
 `;
 
-export const BackgroundImageContainer = ({ children, className }) => {
+export const BackgroundImageContainer: React.FC<{}> = ({ children }) => {
   return (
     <Container>
-      <Inner className={className}>{children}</Inner>
+      <Inner>{children}</Inner>
     </Container>
   );
 };

@@ -63,6 +63,10 @@ export const globalStyles = css`
     margin-top: -5px;
   }
 
+  .no-focus-outline *:focus {
+    outline: none !important;
+  }
+
   h1,
   h2,
   h3 {

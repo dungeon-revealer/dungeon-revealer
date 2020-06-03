@@ -1,0 +1,162 @@
+### THIS FILE IS AUTO GENERATED
+
+input ChangeNameInput {
+  name: String!
+}
+
+type ChangeNameResult {
+  me: User!
+}
+
+interface ChatMessage {
+  id: ID!
+  content: String!
+  createdAt: String!
+  containsDiceRoll: Boolean!
+}
+
+type ChatMessageConnection {
+  edges: [ChatMessageEdge!]!
+  pageInfo: PageInfo!
+}
+
+input ChatMessageCreateInput {
+  rawContent: String!
+}
+
+type ChatMessageEdge {
+  cursor: String!
+  node: ChatMessage!
+}
+
+type ChatMessagesAddedSubscription {
+  messages: [ChatMessage!]!
+}
+
+type ConnectedUserConnection {
+  edges: [ConnectedUserEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ConnectedUserEdge {
+  cursor: String!
+  node: User!
+}
+
+type DiceRoll {
+  result: Float!
+  detail: [DiceRollDetail!]!
+}
+
+enum DiceRollCategory {
+  DEFAULT
+  MAX
+  MIN
+}
+
+type DiceRollCloseParenNode implements DiceRollDetail {
+  content: String!
+}
+
+type DiceRollConstantNode implements DiceRollDetail {
+  content: String!
+}
+
+interface DiceRollDetail {
+  content: String!
+}
+
+type DiceRollDiceRollNode implements DiceRollDetail {
+  content: String!
+  min: Float!
+  max: Float!
+  rollResults: [DiceRollResult!]!
+}
+
+type DiceRollOpenParenNode implements DiceRollDetail {
+  content: String!
+}
+
+type DiceRollOperatorNode implements DiceRollDetail {
+  content: String!
+}
+
+type DiceRollResult {
+  dice: String!
+  result: Float!
+  category: DiceRollCategory!
+}
+
+input LogInInput {
+  id: String!
+  name: String!
+}
+
+type LogInResult {
+  user: User!
+}
+
+type Mutation {
+  logIn(input: LogInInput): LogInResult!
+  changeName(input: ChangeNameInput!): ChangeNameResult!
+  chatMessageCreate(input: ChatMessageCreateInput!): Boolean
+}
+
+type OperationalChatMessage implements ChatMessage {
+  id: ID!
+  content: String!
+  createdAt: String!
+  containsDiceRoll: Boolean!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String!
+  endCursor: String!
+}
+
+type Query {
+  chat(first: Int, after: ID): ChatMessageConnection!
+  users(first: Int, after: ID): ConnectedUserConnection!
+  usersCount: Int!
+  me: User!
+}
+
+type Subscription {
+  userUpdate: UserUpdateSubscription!
+  chatMessagesAdded: ChatMessagesAddedSubscription!
+}
+
+type User {
+  id: ID!
+  name: String!
+}
+
+type UserAddUpdate {
+  user: User!
+  usersCount: Int!
+}
+
+type UserChangeUpdate {
+  user: User!
+}
+
+type UserChatMessage implements ChatMessage {
+  id: ID!
+  authorName: String!
+  content: String!
+  diceRolls: [DiceRoll!]!
+  createdAt: String!
+  containsDiceRoll: Boolean!
+}
+
+type UserRemoveUpdate {
+  userId: ID!
+  usersCount: Int!
+}
+
+union UserUpdateSubscription =
+    UserAddUpdate
+  | UserRemoveUpdate
+  | UserChangeUpdate

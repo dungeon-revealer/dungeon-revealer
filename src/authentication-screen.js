@@ -63,9 +63,9 @@ export const AuthenticationScreen = ({
         </ButtonContainer>
         <div>
           {requiredRole === "DM" ? (
-            <Link href="/">Visit Player Section ></Link>
+            <Link href="/">Visit Player Section{" >"}</Link>
           ) : (
-            <Link href="/dm">Visit DM Section ></Link>
+            <Link href="/dm">Visit DM Section{" >"}</Link>
           )}
         </div>
       </form>

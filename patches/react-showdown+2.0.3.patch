@@ -1,8 +1,70 @@
+diff --git a/node_modules/react-showdown/dist/MarkdownView.d.ts b/node_modules/react-showdown/dist/MarkdownView.d.ts
+index 7d813b0..9c75ef2 100644
+--- a/node_modules/react-showdown/dist/MarkdownView.d.ts
++++ b/node_modules/react-showdown/dist/MarkdownView.d.ts
+@@ -8,5 +8,7 @@ export interface MarkdownViewProps {
+     options?: ConverterOptions;
+     extensions?: ShowdownExtension[];
+     components?: Record<string, ClassType<never, never, never> | FunctionComponent<any>>;
++    MONKEY_PATCHED_textMapper?: (textContent: string) => React.ReactNode;
++    MONKEY_PATCHED_sanitizeHtml?: (textContent: string) => string;
+ }
+ export default function MarkdownView(props: MarkdownViewProps): ReactElement;
+diff --git a/node_modules/react-showdown/dist/react-showdown.cjs.development.js b/node_modules/react-showdown/dist/react-showdown.cjs.development.js
+index 98069af..30b2632 100644
+--- a/node_modules/react-showdown/dist/react-showdown.cjs.development.js
++++ b/node_modules/react-showdown/dist/react-showdown.cjs.development.js
+@@ -88,7 +88,8 @@ function MarkdownView(props) {
+       options = props.options,
+       extensions = props.extensions,
+       components = props.components,
+-      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components"]);
++      MONKEY_PATCHED_textMapper = props.MONKEY_PATCHED_textWrapper,
++      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components", "MONKEY_PATCHED_textMapper"]);
+ 
+   var mapElement = React.useMemo(function () {
+     return function mapElement(node, index) {
+@@ -129,7 +130,7 @@ function MarkdownView(props) {
+         var children = skipAnyChildrenFor.includes(node.name) ? null : skipWhitespaceElementsFor.includes(node.name) ? node.children.filter(filterWhitespaceElements).map(mapElement) : node.children.map(mapElement);
+         return React.createElement(elementType, _props, children);
+       } else if (node.type === 'text' && node instanceof domhandler.DataNode) {
+-        return node.data;
++        return MONKEY_PATCHED_textMapper ? MONKEY_PATCHED_textMapper(node.data) : node.data;
+       } else if (node.type === 'comment') {
+         return null; // noop
+       } else if (node.type === 'style' && node instanceof domhandler.Element) {
 diff --git a/node_modules/react-showdown/dist/react-showdown.esm.js b/node_modules/react-showdown/dist/react-showdown.esm.js
-index ef5e9c6..1411b60 100644
+index ef5e9c6..4b1fa0f 100644
 --- a/node_modules/react-showdown/dist/react-showdown.esm.js
 +++ b/node_modules/react-showdown/dist/react-showdown.esm.js
-@@ -188,7 +188,8 @@ function MarkdownView(props) {
+@@ -81,7 +81,9 @@ function MarkdownView(props) {
+       options = props.options,
+       extensions = props.extensions,
+       components = props.components,
+-      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components"]);
++      MONKEY_PATCHED_textMapper = props.MONKEY_PATCHED_textMapper,
++      MONKEY_PATCHED_sanitizeHtml = props.MONKEY_PATCHED_sanitizeHtml,
++      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components", "MONKEY_PATCHED_textMapper", "MONKEY_PATCHED_sanitizeHtml"]);
+ 
+   var mapElement = useMemo(function () {
+     return function mapElement(node, index) {
+@@ -122,7 +124,7 @@ function MarkdownView(props) {
+         var children = skipAnyChildrenFor.includes(node.name) ? null : skipWhitespaceElementsFor.includes(node.name) ? node.children.filter(filterWhitespaceElements).map(mapElement) : node.children.map(mapElement);
+         return createElement(elementType, _props, children);
+       } else if (node.type === 'text' && node instanceof DataNode) {
+-        return node.data;
++        return MONKEY_PATCHED_textMapper ? MONKEY_PATCHED_textMapper(node.data) : node.data;
+       } else if (node.type === 'comment') {
+         return null; // noop
+       } else if (node.type === 'style' && node instanceof Element) {
+@@ -182,13 +184,14 @@ function MarkdownView(props) {
+     });
+   }
+ 
+-  var root = parseDOM(html, {
++  var root = parseDOM(MONKEY_PATCHED_sanitizeHtml ? MONKEY_PATCHED_sanitizeHtml(html) : html, {
+     // Don't change the case of parsed html tags to match inline components.
+     lowerCaseTags: false,
      // Don't change the attribute names so that stuff like `className` works correctly.
      lowerCaseAttributeNames: false,
      // Encode entities automatically, so that &copy; and &uuml; works correctly.
