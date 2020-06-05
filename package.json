@@ -52,7 +52,6 @@
   ],
   "dependencies": {
     "@airjp73/dice-notation": "1.1.1",
-    "@types/use-persisted-state": "0.3.0",
     "body-parser": "1.19.0",
     "connect-busboy": "0.0.2",
     "debug": "4.1.1",
@@ -90,6 +89,7 @@
     "@types/socket.io": "2.1.8",
     "@types/socket.io-client": "1.4.33",
     "@types/sqlite3": "3.1.6",
+    "@types/use-persisted-state": "0.3.0",
     "@types/uuid": "3.4.9",
     "babel-eslint": "10.1.0",
     "babel-plugin-relay": "9.1.0",
