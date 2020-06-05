@@ -26,7 +26,7 @@ import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
 import { useToasts } from "react-toast-notifications";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
-import { useConfirmDialog } from "../hooks/use-confirm-dialog";
+import { useConfirmationDialog } from "../hooks/use-confirmation-dialog";
 
 const ShapeButton = styled.button`
   border: none;
@@ -997,7 +997,7 @@ export const DmMap = ({
     )
   );
 
-  const [confirmDialogNode, showDialog] = useConfirmDialog();
+  const [confirmDialogNode, showDialog] = useConfirmationDialog();
 
   return (
     <div

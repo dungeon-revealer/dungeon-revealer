@@ -2,7 +2,7 @@ import * as React from "react";
 import { Modal, ModalDialogSize } from "../modal";
 import * as Button from "../button";
 
-export const useConfirmDialog = () => {
+export const useConfirmationDialog = () => {
   const [reactNode, setReactNode] = React.useState<React.ReactNode>(null);
 
   return [
@@ -53,5 +53,5 @@ export const useConfirmDialog = () => {
       },
       []
     ),
-  ];
+  ] as const;
 };
