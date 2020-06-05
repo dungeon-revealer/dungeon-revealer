@@ -11,7 +11,6 @@ import { Toolbar } from "./../toolbar";
 import styled from "@emotion/styled/macro";
 import { ObjectLayer } from "../object-layer";
 import * as Icons from "../feather-icons";
-import * as Button from "../button";
 import { ToggleSwitch } from "../toggle-switch";
 import { useResetState } from "../hooks/use-reset-state";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
@@ -27,8 +26,7 @@ import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
 import { useToasts } from "react-toast-notifications";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
-import { useGetIsMounted } from "../hooks/use-get-is-mounted";
-import { Modal, ModalDialogSize } from "../modal";
+import { useConfirmDialog } from "../hooks/use-confirm-dialog";
 
 const ShapeButton = styled.button`
   border: none;
@@ -396,49 +394,6 @@ const parseMapColor = (input) => {
 };
 
 const DEFAULT_TOKEN_COLOR = "#e91e63";
-
-const useConfirmDialog = () => {
-  const [reactNode, setReactNode] = React.useState(null);
-
-  return [
-    reactNode,
-    React.useCallback((headerText, bodyText, onConfirm) => {
-      const close = () => setReactNode(null);
-      setReactNode(
-        <Modal onClickOutside={close} onPressEscape={close}>
-          <Modal.Dialog size={ModalDialogSize.SMALL}>
-            <Modal.Header>
-              <Modal.Heading3>{headerText}</Modal.Heading3>
-            </Modal.Header>
-            <Modal.Body>{bodyText}</Modal.Body>
-            <Modal.Footer>
-              <Modal.Actions>
-                <Modal.ActionGroup>
-                  <div>
-                    <Button.Tertiary type="submit" onClick={close}>
-                      Abort
-                    </Button.Tertiary>
-                  </div>
-                  <div>
-                    <Button.Primary
-                      type="button"
-                      onClick={() => {
-                        close();
-                        onConfirm();
-                      }}
-                    >
-                      Confirm
-                    </Button.Primary>
-                  </div>
-                </Modal.ActionGroup>
-              </Modal.Actions>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal>
-      );
-    }, []),
-  ];
-};
 
 /**
  * loadedMapId = id of the map that is currently visible in the editor
@@ -1607,11 +1562,11 @@ export const DmMap = ({
             <Toolbar.Item isEnabled>
               <Toolbar.Button
                 onClick={() =>
-                  showDialog(
-                    "Shroud All",
-                    "Do you really want to shroud the whole map?",
-                    fillFog
-                  )
+                  showDialog({
+                    header: "Shroud All",
+                    body: "Do you really want to shroud the whole map?",
+                    onConfirm: fillFog,
+                  })
                 }
               >
                 <Icons.DropletIcon filled />
@@ -1621,11 +1576,11 @@ export const DmMap = ({
             <Toolbar.Item isEnabled>
               <Toolbar.Button
                 onClick={() =>
-                  showDialog(
-                    "Clear All",
-                    "Do you really want to clear the whole map?",
-                    clearFog
-                  )
+                  showDialog({
+                    header: "Clear All",
+                    body: "Do you really want to clear the whole map?",
+                    onConfirm: clearFog,
+                  })
                 }
               >
                 <Icons.DropletIcon fill="rgba(0, 0, 0, 1)" />
