@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-} from "react";
+import * as React from "react";
 
 import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
@@ -17,6 +11,7 @@ import { Toolbar } from "./../toolbar";
 import styled from "@emotion/styled/macro";
 import { ObjectLayer } from "../object-layer";
 import * as Icons from "../feather-icons";
+import * as Button from "../button";
 import { ToggleSwitch } from "../toggle-switch";
 import { useResetState } from "../hooks/use-reset-state";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
@@ -32,6 +27,8 @@ import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
 import { useToasts } from "react-toast-notifications";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
+import { useGetIsMounted } from "../hooks/use-get-is-mounted";
+import { Modal, ModalDialogSize } from "../modal";
 
 const ShapeButton = styled.button`
   border: none;
@@ -109,7 +106,7 @@ const findOptimalRhombus = (pointCurrent, pointPrevious, lineWidth) => {
   // Find midpoint between two points
   const midPoint = midPointBtw(pointPrevious, pointCurrent);
 
-  // Exten d points to coordinates
+  // Extend points to coordinates
   const pointCurrentCoordinates = constructCoordinates(pointCurrent, lineWidth);
   const pointPreviousCoordinates = constructCoordinates(
     pointPrevious,
@@ -400,6 +397,49 @@ const parseMapColor = (input) => {
 
 const DEFAULT_TOKEN_COLOR = "#e91e63";
 
+const useConfirmDialog = () => {
+  const [reactNode, setReactNode] = React.useState(null);
+
+  return [
+    reactNode,
+    React.useCallback((headerText, bodyText, onConfirm) => {
+      const close = () => setReactNode(null);
+      setReactNode(
+        <Modal onClickOutside={close} onPressEscape={close}>
+          <Modal.Dialog size={ModalDialogSize.SMALL}>
+            <Modal.Header>
+              <Modal.Heading3>{headerText}</Modal.Heading3>
+            </Modal.Header>
+            <Modal.Body>{bodyText}</Modal.Body>
+            <Modal.Footer>
+              <Modal.Actions>
+                <Modal.ActionGroup>
+                  <div>
+                    <Button.Tertiary type="submit" onClick={close}>
+                      Abort
+                    </Button.Tertiary>
+                  </div>
+                  <div>
+                    <Button.Primary
+                      type="button"
+                      onClick={() => {
+                        close();
+                        onConfirm();
+                      }}
+                    >
+                      Confirm
+                    </Button.Primary>
+                  </div>
+                </Modal.ActionGroup>
+              </Modal.Actions>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal>
+      );
+    }, []),
+  ];
+};
+
 /**
  * loadedMapId = id of the map that is currently visible in the editor
  * liveMapId = id of the map that is currently visible to the players
@@ -422,21 +462,21 @@ export const DmMap = ({
   onDropFile,
 }) => {
   const { actions } = useOvermind();
-  const mapContainerRef = useRef(null);
-  const mapCanvasRef = useRef(null);
-  const mapImageCanvasRef = useRef(null);
-  const fogCanvasRef = useRef(null);
-  const hasPreviousMap = useRef(false);
-  const panZoomRef = useRef(null);
-  const saveFogProgressTaskRef = useRef(null);
-  const [panZoomReferential, setPanZoomReferential] = useState(null);
-  const latestPanZoomReferentialRef = useRef(null);
-  const [cursorCoordinates, setCursorCoodinates] = useState(null);
+  const mapContainerRef = React.useRef(null);
+  const mapCanvasRef = React.useRef(null);
+  const mapImageCanvasRef = React.useRef(null);
+  const fogCanvasRef = React.useRef(null);
+  const hasPreviousMap = React.useRef(false);
+  const panZoomRef = React.useRef(null);
+  const saveFogProgressTaskRef = React.useRef(null);
+  const [panZoomReferential, setPanZoomReferential] = React.useState(null);
+  const latestPanZoomReferentialRef = React.useRef(null);
+  const [cursorCoordinates, setCursorCoordinates] = React.useState(null);
   const [
     areaSelectionStartCoordinates,
     setAreaSelectionStartCoordinates,
-  ] = useState(null);
-  const [showGridSettings, setShowGridSettings] = useState(false);
+  ] = React.useState(null);
+  const [showGridSettings, setShowGridSettings] = React.useState(false);
 
   const isAltPressed = useIsKeyPressed("Alt");
 
@@ -445,14 +485,14 @@ export const DmMap = ({
     [map.gridColor]
   );
 
-  const onGridColorChangeComplete = useCallback(() => {
+  const onGridColorChangeComplete = React.useCallback(() => {
     updateMap(map.id, { gridColor: buildRGBAColorString(gridColor) });
   }, [map, updateMap, gridColor]);
 
   /**
    * function for saving the fog to the server.
    */
-  const saveFogCanvasRef = useRef(null);
+  const saveFogCanvasRef = React.useRef(null);
 
   const [mode, setMode] = useModeState("clear");
   const [brushShape, setBrushShape] = useBrushShapeState("square");
@@ -460,26 +500,26 @@ export const DmMap = ({
   const [lineWidth, setLineWidth] = useLineWidthState(15);
 
   const tokenColor = DEFAULT_TOKEN_COLOR;
-  const tokens = useMemo(() => map.tokens || [], [map]);
+  const tokens = React.useMemo(() => map.tokens || [], [map]);
 
   // marker related stuff
-  const [mapCanvasDimensions, setMapCanvasDimensions] = useState({
+  const [mapCanvasDimensions, setMapCanvasDimensions] = React.useState({
     width: 0,
     height: 0,
     ratio: 1,
   });
-  const latestMapCanvasDimensions = useRef(null);
+  const latestMapCanvasDimensions = React.useRef(null);
   latestMapCanvasDimensions.current = mapCanvasDimensions;
 
-  const objectSvgRef = useRef(null);
-  const [markedAreas, setMarkedAreas] = useState(() => []);
+  const objectSvgRef = React.useRef(null);
+  const [markedAreas, setMarkedAreas] = React.useState(() => []);
   const tokenSize =
     map && map.grid
       ? (map.grid.sideLength / 2 - map.grid.sideLength * 0.05) *
         mapCanvasDimensions.ratio
       : 15;
 
-  const fillFog = useCallback(() => {
+  const fillFog = React.useCallback(() => {
     if (!fogCanvasRef.current) {
       return;
     }
@@ -500,7 +540,7 @@ export const DmMap = ({
     redrawCanvas();
   }, []);
 
-  const constructMask = useCallback(
+  const constructMask = React.useCallback(
     (coords) => {
       const maskDimensions = {
         x: coords.x,
@@ -528,7 +568,7 @@ export const DmMap = ({
     [brushShape, lineWidth]
   );
 
-  const clearFog = useCallback(() => {
+  const clearFog = React.useCallback(() => {
     if (!fogCanvasRef.current) {
       return;
     }
@@ -546,14 +586,14 @@ export const DmMap = ({
     redrawCanvas();
   }, []);
 
-  const getMapDisplayRatio = useCallback(() => {
+  const getMapDisplayRatio = React.useCallback(() => {
     return (
       parseFloat(mapCanvasRef.current.style.width, 10) /
       mapCanvasRef.current.width
     );
   }, []);
 
-  const getMouseCoordinates = useCallback(
+  const getMouseCoordinates = React.useCallback(
     (ev) => {
       const ratio = getMapDisplayRatio();
       if (!panZoomReferential) return { x: 0, y: 0 };
@@ -567,7 +607,7 @@ export const DmMap = ({
     [getMapDisplayRatio, panZoomReferential]
   );
 
-  const getTouchCoordinates = useCallback(
+  const getTouchCoordinates = React.useCallback(
     (touch) => {
       if (!panZoomReferential) {
         throw new TypeError("Invalid state");
@@ -582,7 +622,7 @@ export const DmMap = ({
     [getMapDisplayRatio, panZoomReferential]
   );
 
-  const drawInitial = useCallback(
+  const drawInitial = React.useCallback(
     (coords) => {
       const fogMask = constructMask(coords);
       const fogContext = fogCanvasRef.current.getContext("2d");
@@ -618,7 +658,7 @@ export const DmMap = ({
     [constructMask, brushShape, mode]
   );
 
-  const drawFog = useCallback(
+  const drawFog = React.useCallback(
     (lastCoords, coords) => {
       if (!lastCoords) {
         return drawInitial(coords);
@@ -690,7 +730,7 @@ export const DmMap = ({
     [brushShape, constructMask, drawInitial, lineWidth, mode]
   );
 
-  const handleAreaSelection = useCallback(
+  const handleAreaSelection = React.useCallback(
     (startCoords, endCoords) => {
       const context = fogCanvasRef.current.getContext("2d");
 
@@ -729,7 +769,7 @@ export const DmMap = ({
     mapContext.drawImage(fogCanvasRef.current, 0, 0, width, height);
   };
 
-  const sendMap = useCallback(async () => {
+  const sendMap = React.useCallback(async () => {
     if (!fogCanvasRef.current) {
       return;
     }
@@ -741,7 +781,7 @@ export const DmMap = ({
     });
   }, [sendLiveMap]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     socket.on("mark area", async (data) => {
       const { ratio } = latestMapCanvasDimensions.current;
       setMarkedAreas((markedAreas) => [
@@ -759,7 +799,7 @@ export const DmMap = ({
     };
   }, [socket]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!loadedMapId) {
       return () => {
         hasPreviousMap.current = false;
@@ -844,7 +884,7 @@ export const DmMap = ({
         redrawCanvas();
       })
       .catch((err) => {
-        // @TODO: distinguish between network error (rertry?) and cancel error
+        // @TODO: distinguish between network error (retry?) and cancel error
         console.error(err);
       });
 
@@ -905,7 +945,7 @@ export const DmMap = ({
     cursor = "pointer";
   }
 
-  const getRelativePosition = useCallback(
+  const getRelativePosition = React.useCallback(
     (pageCoordinates) => {
       if (!latestPanZoomReferentialRef.current) return { x: 0, y: 0 };
       const [x, y] = latestPanZoomReferentialRef.current.global_to_local([
@@ -918,7 +958,7 @@ export const DmMap = ({
     [mapCanvasDimensions]
   );
 
-  const onClickToken = useCallback(
+  const onClickToken = React.useCallback(
     (token) => {
       actions.tokenInfoAside.toggleActiveToken(token);
     },
@@ -935,12 +975,12 @@ export const DmMap = ({
     )
   );
 
-  useEffect(() => {
+  React.useEffect(() => {
     latestPanZoomReferentialRef.current = panZoomReferential;
   });
 
   const rootContainer = React.useRef(null);
-  useEffect(() => {
+  React.useEffect(() => {
     if (document.activeElement === document.body) {
       rootContainer.current && rootContainer.current.focus();
     }
@@ -977,7 +1017,7 @@ export const DmMap = ({
           .catch(console.error);
       });
     } else {
-      // In case we don't have the AsyncClilboard available we need to use a normal canvas in order to get the base64 string.
+      // In case we don't have the AsyncClipboard available we need to use a normal canvas in order to get the base64 string.
       // The OffscreenCanvas has no `toDataURL` method.
       const canvas = document.createElement("canvas");
       canvas.width = mapCanvas.width;
@@ -1001,6 +1041,8 @@ export const DmMap = ({
       [onDropFile]
     )
   );
+
+  const [confirmDialogNode, showDialog] = useConfirmDialog();
 
   return (
     <div
@@ -1114,7 +1156,7 @@ export const DmMap = ({
               }
 
               const coords = getMouseCoordinates(ev);
-              setCursorCoodinates(coords);
+              setCursorCoordinates(coords);
             }}
             onMouseDown={(ev) => {
               if (isAltPressed) return;
@@ -1177,7 +1219,7 @@ export const DmMap = ({
               }
 
               const coords = getTouchCoordinates(ev.touches[0]);
-              setCursorCoodinates(coords);
+              setCursorCoordinates(coords);
 
               if (tool === "brush") {
                 let lastCoords = coords;
@@ -1186,7 +1228,7 @@ export const DmMap = ({
                 const onTouchMove = (ev) => {
                   ev.preventDefault();
                   const currentCoords = getTouchCoordinates(ev.touches[0]);
-                  setCursorCoodinates(currentCoords);
+                  setCursorCoordinates(currentCoords);
 
                   drawFog(lastCoords, currentCoords);
                   lastCoords = currentCoords;
@@ -1210,7 +1252,7 @@ export const DmMap = ({
 
                 const onTouchMove = (ev) => {
                   lastTouchCoordinates = getTouchCoordinates(ev.touches[0]);
-                  setCursorCoodinates(lastTouchCoordinates);
+                  setCursorCoordinates(lastTouchCoordinates);
                 };
 
                 const onTouchEnd = () => {
@@ -1563,13 +1605,29 @@ export const DmMap = ({
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item isEnabled>
-              <Toolbar.Button onClick={() => fillFog()}>
+              <Toolbar.Button
+                onClick={() =>
+                  showDialog(
+                    "Shroud All",
+                    "Do you really want to shroud the whole map?",
+                    fillFog
+                  )
+                }
+              >
                 <Icons.DropletIcon filled />
                 <Icons.Label>Shroud All</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item isEnabled>
-              <Toolbar.Button onClick={() => clearFog()}>
+              <Toolbar.Button
+                onClick={() =>
+                  showDialog(
+                    "Clear All",
+                    "Do you really want to clear the whole map?",
+                    clearFog
+                  )
+                }
+              >
                 <Icons.DropletIcon fill="rgba(0, 0, 0, 1)" />
                 <Icons.Label>Clear All</Icons.Label>
               </Toolbar.Button>
@@ -1578,11 +1636,12 @@ export const DmMap = ({
         </Toolbar>
       </div>
       <TokenInfoAside />
+      {confirmDialogNode}
     </div>
   );
 };
 
-// rerendering this component has a huge impact on performance
+// re-rendering this component has a huge impact on performance
 const ShowGridSettingsPopup = React.memo(
   ({
     gridColor,
@@ -1595,13 +1654,13 @@ const ShowGridSettingsPopup = React.memo(
     onClickOutside,
   }) => {
     const popupRef = useOnClickOutside(onClickOutside);
-    const onGridColorChange = useCallback(
+    const onGridColorChange = React.useCallback(
       ({ rgb: { r, g, b } }) => {
         setGridColor(({ a }) => ({ r, g, b, a }));
       },
       [setGridColor]
     );
-    const onAlphaChange = useCallback(
+    const onAlphaChange = React.useCallback(
       ({ rgb: { r, g, b, a } }) => {
         setGridColor({ r, g, b, a });
       },
