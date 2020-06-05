@@ -78,7 +78,7 @@
     "@types/express": "4.17.6",
     "@types/jest": "25.2.3",
     "@types/lodash": "4.14.155",
-    "@types/node": "13.13.9",
+    "@types/node": "13.13.10",
     "@types/react": "16.9.35",
     "@types/react-dom": "16.9.8",
     "@types/react-relay": "7.0.8",
