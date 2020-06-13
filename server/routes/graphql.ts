@@ -4,13 +4,19 @@ import * as ia from "iterall";
 import { schema, GraphQLContextType } from "../graphql";
 import { createChat } from "../chat";
 import { createUser } from "../user";
+import type { Database } from "sqlite";
 
 type Dependencies = {
   roleMiddleware: any;
   registerSocketCommand: (handler: (socket: SocketIO.Socket) => void) => void;
+  db: Database;
 };
 
-export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
+export default ({
+  roleMiddleware,
+  registerSocketCommand,
+  db,
+}: Dependencies) => {
   const chat = createChat();
   const user = createUser({
     sendUserConnectedMessage: ({ name }) =>
@@ -35,6 +41,7 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
       setSessionId: (id: string) => {
         sessionId = id;
       },
+      db,
     });
 
     socket.on("graphql/execute", (message) => {

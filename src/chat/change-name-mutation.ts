@@ -1,8 +1,7 @@
 import * as React from "react";
 import { commitMutation } from "react-relay";
-import { useCallback } from "react";
 import graphql from "babel-plugin-relay/macro";
-import { useEnvironment } from "../relay-environment";
+import { useRelayEnvironment } from "react-relay/hooks";
 import { changeNameMutation } from "./__generated__/changeNameMutation.graphql";
 import * as userSession from "./user-session";
 
@@ -18,7 +17,7 @@ const ChangeNameMutationDocument = graphql`
 `;
 
 export const useChangeNameMutation = () => {
-  const environment = useEnvironment();
+  const environment = useRelayEnvironment();
 
   const changeName = React.useCallback(
     ({ name }: { name: string }) => {

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { commitMutation } from "react-relay";
 import graphql from "babel-plugin-relay/macro";
-import { useEnvironment } from "../relay-environment";
+import { useRelayEnvironment } from "react-relay/hooks";
 import { logInMutation } from "./__generated__/logInMutation.graphql";
 import { useGetIsMounted } from "../hooks/use-get-is-mounted";
 import * as userSession from "./user-session";
@@ -23,7 +23,7 @@ const LogInMutationDocument = graphql`
  * The session is stored in the local storage.
  */
 export const useLogInMutation = (): [boolean, () => Promise<void>] => {
-  const environment = useEnvironment();
+  const environment = useRelayEnvironment();
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
   const getIsMounted = useGetIsMounted();
 

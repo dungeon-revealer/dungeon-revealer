@@ -16,7 +16,6 @@ const createNotesRouter = require("./routes/notes");
 const createGraphQLRouter = require("./routes/graphql").default;
 
 const { Maps } = require("./maps");
-const { Notes } = require("./notes");
 const { Settings } = require("./settings");
 const { FileStorage } = require("./file-storage");
 const { createResourceTaskProcessor } = require("./util");
@@ -38,7 +37,6 @@ const bootstrapServer = async () => {
   const processTask = createResourceTaskProcessor();
 
   const maps = new Maps({ processTask, dataDirectory: env.DATA_DIRECTORY });
-  const notes = new Notes({ dataDirectory: env.DATA_DIRECTORY });
   const settings = new Settings({ dataDirectory: env.DATA_DIRECTORY });
   const fileStorage = new FileStorage({
     dataDirectory: env.DATA_DIRECTORY,
@@ -180,13 +178,13 @@ const bootstrapServer = async () => {
     settings,
     io,
   });
-  const { router: notesRouter } = createNotesRouter({
-    roleMiddleware,
-    settings,
-    notes,
-    maps,
-    io,
-  });
+  // const { router: notesRouter } = createNotesRouter({
+  //   roleMiddleware,
+  //   settings,
+  //   notes,
+  //   maps,
+  //   io,
+  // });
   const { router: fileRouter } = createFilesRouter({
     roleMiddleware,
     fileStorage,
@@ -195,10 +193,11 @@ const bootstrapServer = async () => {
   const { router: graphqlRouter } = createGraphQLRouter({
     roleMiddleware,
     registerSocketCommand: (handler) => ioHandler.push(handler),
+    db,
   });
 
   apiRouter.use(mapsRouter);
-  apiRouter.use(notesRouter);
+  // apiRouter.use(notesRouter);
   apiRouter.use(fileRouter);
   apiRouter.use(graphqlRouter);
 

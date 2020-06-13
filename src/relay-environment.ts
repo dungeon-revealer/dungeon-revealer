@@ -77,15 +77,3 @@ export const createEnvironment = (socket: SocketIOClient.Socket) => {
 
   return environment;
 };
-
-export const EnvironmentContext = React.createContext<RelayModernEnvironment | null>(
-  null
-);
-
-export const RelayEnvironmentProvider = EnvironmentContext.Provider;
-
-export const useEnvironment = (): RelayModernEnvironment => {
-  const environment = React.useContext(EnvironmentContext);
-  if (!environment) throw new Error("Missing Environment");
-  return environment;
-};

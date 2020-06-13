@@ -1,10 +1,12 @@
 import { createTypesFactory, buildGraphQLSchema } from "gqtx";
 import type { createChat } from "../chat";
 import type { createUser } from "../user";
+import type { Database } from "sqlite";
 
 export type GraphQLContextType = {
   chat: ReturnType<typeof createChat>;
   user: ReturnType<typeof createUser>;
+  db: Database;
   getSessionId: () => string;
   setSessionId: (id: string) => void;
 };
@@ -13,11 +15,48 @@ export type GraphQLSubscriptionRootType = {};
 
 export const t = createTypesFactory<GraphQLContextType>();
 
+import * as RelaySpecModule from "./modules/relay-spec";
 import * as DiceRollerChatModule from "./modules/dice-roller-chat";
 import * as UserModule from "./modules/user";
+import * as NotesModule from "./modules/notes";
+import { pipe } from "fp-ts/lib/pipeable";
+import * as E from "fp-ts/lib/Either";
+import * as RT from "fp-ts/lib/ReaderTask";
+
+const nodeField = t.field("node", {
+  type: RelaySpecModule.GraphQLNodeInterface,
+  args: {
+    // https://twitter.com/sseraphini/status/1271783862423732226
+    id: t.arg(t.ID),
+  },
+  resolve: (src, args, context) =>
+    RT.run(
+      pipe(
+        RelaySpecModule.decodeId(args.id),
+        E.fold(
+          () => RT.of(null),
+          ([version, type, id]) => {
+            if (version !== RelaySpecModule.API_VERSION) return RT.of(null);
+            switch (type) {
+              case NotesModule.NOTE_IDENTIFIER:
+                return NotesModule.resolveNote(id);
+            }
+
+            return RT.of(null);
+          }
+        )
+      ),
+      context
+    ),
+});
 
 const Query = t.queryType({
-  fields: [...DiceRollerChatModule.queryFields, ...UserModule.queryFields],
+  fields: [
+    ...DiceRollerChatModule.queryFields,
+    ...UserModule.queryFields,
+    ...NotesModule.queryFields,
+    nodeField,
+  ],
 });
 
 const Subscription = t.subscriptionType({
@@ -31,6 +70,7 @@ const Mutation = t.mutationType({
   fields: () => [
     ...UserModule.mutationFields,
     ...DiceRollerChatModule.mutationFields,
+    ...NotesModule.mutationFields,
   ],
 });
 

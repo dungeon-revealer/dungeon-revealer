@@ -341,12 +341,14 @@ const Content = ({ socket, password: dmPassword, rootState }) => {
           />
         ) : null}
         {mode.title === "SHOW_NOTES" ? (
-          <NoteEditor
-            onClose={() => {
-              setMode({ title: "EDIT_MAP" });
-            }}
-            state={rootState.noteEditor}
-          />
+          <React.Suspense fallback={null}>
+            <NoteEditor
+              onClose={() => {
+                setMode({ title: "EDIT_MAP" });
+              }}
+              state={rootState.noteEditor}
+            />
+          </React.Suspense>
         ) : null}
         {mode.title === "MEDIA_LIBRARY" ? (
           <MediaLibrary
