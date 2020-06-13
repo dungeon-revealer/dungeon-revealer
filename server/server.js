@@ -12,7 +12,6 @@ const createSocketIOServer = require("socket.io");
 const busboy = require("connect-busboy");
 const createFilesRouter = require("./routes/files");
 const createMapRouter = require("./routes/map");
-const createNotesRouter = require("./routes/notes");
 const createGraphQLRouter = require("./routes/graphql").default;
 
 const { Maps } = require("./maps");
@@ -178,13 +177,6 @@ const bootstrapServer = async () => {
     settings,
     io,
   });
-  // const { router: notesRouter } = createNotesRouter({
-  //   roleMiddleware,
-  //   settings,
-  //   notes,
-  //   maps,
-  //   io,
-  // });
   const { router: fileRouter } = createFilesRouter({
     roleMiddleware,
     fileStorage,
