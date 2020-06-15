@@ -9,9 +9,8 @@ interface IdRecordTarget {
 
 export const API_VERSION = "01" as const;
 
-const buildResourceIdentifier = (resourceIdentifier: string) => ({
-  id,
-}: IdRecordTarget) => `${API_VERSION}:${resourceIdentifier}:${id}`;
+const buildResourceIdentifier = (resourceIdentifier: string) => (id: string) =>
+  `${API_VERSION}:${resourceIdentifier}:${id}`;
 
 const base64Encode = (input: string) => Buffer.from(input).toString("base64");
 const base64Decode = (input: string) =>

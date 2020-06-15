@@ -26,10 +26,9 @@ import * as RT from "fp-ts/lib/ReaderTask";
 const nodeField = t.field("node", {
   type: RelaySpecModule.GraphQLNodeInterface,
   args: {
-    // https://twitter.com/sseraphini/status/1271783862423732226
-    id: t.arg(t.ID),
+    id: t.arg(t.NonNullInput(t.ID)),
   },
-  resolve: (src, args, context) =>
+  resolve: (_, args, context) =>
     RT.run(
       pipe(
         RelaySpecModule.decodeId(args.id),

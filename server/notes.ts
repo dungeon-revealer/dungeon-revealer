@@ -160,11 +160,9 @@ export const updateNote = ({
     TE.map(() => id)
   );
 
-export const deleteNote = ({
-  noteId,
-}: {
-  noteId: string;
-}): RTE.ReaderTaskEither<{ db: Database }, Error | t.Errors, string> => ({
+export const deleteNote = (
+  noteId: string
+): RTE.ReaderTaskEither<{ db: Database }, Error | t.Errors, string> => ({
   db,
 }) =>
   pipe(

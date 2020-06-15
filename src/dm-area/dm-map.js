@@ -21,7 +21,7 @@ import { useOvermind } from "../hooks/use-overmind";
 import { useDropZone } from "../hooks/use-drop-zone";
 import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
-import { TokenInfoAside } from "./token-info-aside";
+import { TokenInfoAside, SetActiveNoteIdContext } from "./token-info-aside";
 import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
 import { useToasts } from "react-toast-notifications";
@@ -913,11 +913,15 @@ export const DmMap = ({
     [mapCanvasDimensions]
   );
 
+  const setActiveTokenId = React.useContext(SetActiveNoteIdContext);
+
   const onClickToken = React.useCallback(
     (token) => {
-      actions.tokenInfoAside.toggleActiveToken(token);
+      if (token.reference) {
+        setActiveTokenId(token.reference.id);
+      }
     },
-    [actions]
+    [setActiveTokenId]
   );
 
   const onStateChange = useStaticRef(() =>

@@ -1,10 +1,10 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
 import debounce from "lodash/debounce";
+import isEqual from "lodash/isEqual";
 import { useMutation, useFragment } from "react-relay/hooks";
 import type { noteEditorActiveItem_nodeFragment$key } from "./__generated__/noteEditorActiveItem_nodeFragment.graphql";
 import { noteEditorActiveItemNoteUpdateMutation } from "./__generated__/noteEditorActiveItemNoteUpdateMutation.graphql";
-import { Modal } from "../../modal";
 import * as Button from "../../button";
 import * as Icons from "../../feather-icons";
 import styled from "@emotion/styled/macro";
@@ -34,11 +34,10 @@ const NoteEditorActiveItemNoteUpdateMutation = graphql`
 export const NoteEditorActiveItem: React.FC<{
   isEditMode: boolean;
   toggleIsEditMode: () => void;
-  deleteNote: () => void;
   nodeRef: noteEditorActiveItem_nodeFragment$key;
-}> = ({ isEditMode, toggleIsEditMode, deleteNote, nodeRef }) => {
+  sideBarRef: React.RefObject<HTMLDivElement>;
+}> = ({ isEditMode, toggleIsEditMode, nodeRef, sideBarRef }) => {
   const node = useFragment(NoteEditorActiveItem_NodeFragment, nodeRef);
-  const sideBarRef = React.useRef<HTMLDivElement>(null);
 
   const [mutate] = useMutation<noteEditorActiveItemNoteUpdateMutation>(
     NoteEditorActiveItemNoteUpdateMutation
@@ -65,12 +64,21 @@ export const NoteEditorActiveItem: React.FC<{
   const [title, setTitle] = React.useState(node.title || "");
   const [content, setContent] = React.useState(node.content || "");
 
+  // We wanna auto-save the node only after the content has changed
+  const previousNodeContent = useStaticRef(() => ({ title, content }));
+
   React.useEffect(() => {
-    update({ title, content });
-  }, [title, content]);
+    if (isEqual({ title, content }, previousNodeContent) === false) {
+      update({ title, content });
+    }
+    Object.assign(previousNodeContent, {
+      title,
+      content,
+    });
+  }, [title, content, previousNodeContent]);
 
   return (
-    <Modal.Content>
+    <>
       <HeaderContainer>
         {isEditMode ? (
           <>
@@ -119,15 +127,7 @@ export const NoteEditorActiveItem: React.FC<{
           <HtmlContainer markdown={content} />
         </HtmlContainerWrapper>
       )}
-      <div ref={sideBarRef} />
-
-      <Modal.Footer>
-        <Button.Tertiary onClick={deleteNote}>
-          <Icons.TrashIcon height={20} width={20} />
-          <span>Delete Note</span>
-        </Button.Tertiary>
-      </Modal.Footer>
-    </Modal.Content>
+    </>
   );
 };
 

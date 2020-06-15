@@ -6,7 +6,6 @@ import * as RT from "fp-ts/lib/ReaderTask";
 import * as E from "fp-ts/lib/Either";
 
 import * as notes from "../../notes";
-import { pipe } from "fp-ts/lib/pipeable";
 
 export const NOTE_IDENTIFIER = "Note" as const;
 
@@ -36,7 +35,7 @@ export const GraphQLNoteType = t.objectType<notes.NoteModelType>({
   fields: () => [
     t.field("id", {
       type: t.NonNull(t.ID),
-      resolve: encodeId,
+      resolve: ({ id }) => encodeId(id),
     }),
     t.field("title", {
       type: t.NonNull(t.String),
@@ -167,8 +166,10 @@ const resolveNoteCreate = flow(
 );
 
 const resolveNoteDelete = flow(
-  notes.deleteNote,
-  RTE.map((id) => encodeId({ id })),
+  decodeId,
+  RTE.fromEither,
+  RTE.chain(notes.deleteNote),
+  RTE.map((id) => encodeId(id)),
   RTE.fold(
     (err) => {
       throw err;
@@ -251,7 +252,8 @@ export const mutationFields = [
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteDeleteInputType)),
     },
-    resolve: (src, { input }, context) => resolveNoteDelete(input)(context)(),
+    resolve: (src, { input }, context) =>
+      resolveNoteDelete(input.noteId)(context)(),
   }),
   t.field("noteUpdate", {
     type: t.NonNull(GraphQLNoteUpdateResult),

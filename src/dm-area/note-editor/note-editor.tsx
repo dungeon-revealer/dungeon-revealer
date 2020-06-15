@@ -61,6 +61,8 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     {}
   );
 
+  const sideBarRef = React.useRef<HTMLDivElement>(null);
+
   return (
     <Modal onClickOutside={onClose} onPressEscape={onClose}>
       <Modal.Dialog
@@ -95,64 +97,80 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setActiveNoteId={setActiveNoteId}
             activeNoteId={activeNoteId}
           />
-          {activeNoteId ? (
-            <QueryRenderer<noteEditor_ActiveItemQuery>
-              environment={environment}
-              query={NoteEditor_ActiveItemQuery}
-              variables={{ activeNoteId }}
-              render={({ error, props }) => {
-                if (error) return null;
-                if (props?.node?.__typename !== "Note") return null;
+          <Modal.Content>
+            {activeNoteId ? (
+              <QueryRenderer<noteEditor_ActiveItemQuery>
+                environment={environment}
+                query={NoteEditor_ActiveItemQuery}
+                variables={{ activeNoteId }}
+                render={({ error, props }) => {
+                  if (error) return null;
+                  if (props?.node?.__typename !== "Note") return null;
 
-                return (
-                  <NoteEditorActiveItem
-                    key={props.node.id}
-                    isEditMode={isEditMode}
-                    toggleIsEditMode={() =>
-                      setIsEditMode((isEditMode) => !isEditMode)
-                    }
-                    nodeRef={props.node}
-                    deleteNote={() => {
-                      showConfirmationDialog({
-                        header: "Delete Note",
-                        body: "Do you really want to delete this note?",
-                        cancelButtonText: "Abort",
-                        confirmButtonText: "Delete",
-                        onConfirm: () => {
-                          if (!activeNoteId) return;
-                          setActiveNoteId(null);
-                          deleteNoteMutation({
-                            variables: {
-                              input: { noteId: activeNoteId },
-                            },
-                            configs: [
-                              {
-                                type: "RANGE_DELETE",
-                                parentID: "client:root",
-                                parentName: "client:root",
-                                connectionKeys: [
-                                  {
-                                    key: "noteEditorSideBar_notes",
+                  return (
+                    <>
+                      <NoteEditorActiveItem
+                        key={props.node.id}
+                        isEditMode={isEditMode}
+                        toggleIsEditMode={() =>
+                          setIsEditMode((isEditMode) => !isEditMode)
+                        }
+                        nodeRef={props.node}
+                        sideBarRef={sideBarRef}
+                      />
+                      <Modal.Footer>
+                        <Button.Tertiary
+                          onClick={() => {
+                            showConfirmationDialog({
+                              header: "Delete Note",
+                              body: "Do you really want to delete this note?",
+                              cancelButtonText: "Abort",
+                              confirmButtonText: "Delete",
+                              onConfirm: () => {
+                                if (!activeNoteId) return;
+                                setActiveNoteId(null);
+                                deleteNoteMutation({
+                                  variables: {
+                                    input: { noteId: activeNoteId },
                                   },
-                                ],
-                                pathToConnection: ["client:root", "notes"],
-                                deletedIDFieldName: "deletedNoteId",
+                                  configs: [
+                                    {
+                                      type: "RANGE_DELETE",
+                                      parentID: "client:root",
+                                      parentName: "client:root",
+                                      connectionKeys: [
+                                        {
+                                          key: "noteEditorSideBar_notes",
+                                        },
+                                      ],
+                                      pathToConnection: [
+                                        "client:root",
+                                        "notes",
+                                      ],
+                                      deletedIDFieldName: "deletedNoteId",
+                                    },
+                                  ],
+                                });
                               },
-                            ],
-                          });
-                        },
-                      });
-                    }}
-                  />
-                );
-              }}
-            />
-          ) : (
-            <EmptyContainer>
-              <Icons.Inbox height={75} width={75} fill="#D9E2EC" />
-              <h3>Please select a Note from the list on the left.</h3>
-            </EmptyContainer>
-          )}
+                            });
+                          }}
+                        >
+                          <Icons.TrashIcon height={20} width={20} />
+                          <span>Delete Note</span>
+                        </Button.Tertiary>
+                      </Modal.Footer>
+                      <div ref={sideBarRef} />
+                    </>
+                  );
+                }}
+              />
+            ) : (
+              <EmptyContainer>
+                <Icons.Inbox height={75} width={75} fill="#D9E2EC" />
+                <h3>Please select a Note from the list on the left.</h3>
+              </EmptyContainer>
+            )}
+          </Modal.Content>
         </Modal.Body>
       </Modal.Dialog>
       {confirmationDialog}
