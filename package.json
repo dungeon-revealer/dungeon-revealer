@@ -24,7 +24,7 @@
     "eslint": "eslint --ignore-path .gitignore --max-warnings 0 \"**/*.js\" \"bin/dungeon-revealer\"",
     "postinstall": "patch-package",
     "start": "node ./bin/dungeon-revealer",
-    "test": "react-scripts test",
+    "test": "react-scripts test --passWithNoTests",
     "start:frontend:dev": "cross-env PORT=3001 EXTEND_ESLINT=true react-scripts start",
     "start:server:dev": "ts-node-dev --project server/tsconfig.json server/index.js",
     "relay-compiler": "relay-compiler",
