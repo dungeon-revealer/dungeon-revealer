@@ -146,7 +146,7 @@ const GraphQLNoteCreateResult = t.objectType<{ note: notes.NoteModelType }>({
   name: "NoteCreateResult",
   fields: () => [
     t.field("note", {
-      type: GraphQLNoteType,
+      type: t.NonNull(GraphQLNoteType),
       resolve: (obj) => obj.note,
     }),
   ],

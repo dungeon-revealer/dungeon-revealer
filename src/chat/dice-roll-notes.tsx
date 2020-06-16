@@ -10,7 +10,6 @@ import * as E from "fp-ts/lib/Either";
 import { PathReporter } from "io-ts/lib/PathReporter";
 import { pipe } from "fp-ts/lib/pipeable";
 import { flow } from "fp-ts/lib/function";
-
 import * as Icon from "../feather-icons";
 import * as Button from "../button";
 import { HtmlContainer } from "../dm-area/components/html-container";
@@ -39,6 +38,8 @@ const WindowHeader = styled.div`
 const WindowBody = styled(animated.div)`
   height: 400px;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 `;
 
 const WindowContent = styled.div`

@@ -128,7 +128,7 @@ input NoteCreateInput {
 }
 
 type NoteCreateResult {
-  note: Note
+  note: Note!
 }
 
 input NoteDeleteInput {
@@ -175,7 +175,7 @@ type Query {
   usersCount: Int!
   me: User!
   notes(first: Int, after: String): NoteConnection!
-  node(id: ID): Node
+  node(id: ID!): Node
 }
 
 type Subscription {

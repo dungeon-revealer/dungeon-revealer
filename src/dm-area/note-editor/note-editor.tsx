@@ -17,6 +17,7 @@ import { NoteEditorActiveItem } from "./note-editor-active-item";
 import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
 import styled from "@emotion/styled/macro";
 import { QueryRenderer } from "react-relay";
+import { CreateNewNoteDialogModal } from "./create-new-note-dialog-modal";
 
 const NoteEditor_NoteDeleteMutation = graphql`
   mutation noteEditor_NoteDeleteMutation($input: NoteDeleteInput!) {
@@ -51,6 +52,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
 
   const [confirmationDialog, showConfirmationDialog] = useConfirmationDialog();
+  const [activeModal, setActiveModal] = React.useState<React.ReactNode>(null);
 
   const [deleteNoteMutation] = useMutation<noteEditor_NoteDeleteMutation>(
     NoteEditor_NoteDeleteMutation
@@ -92,11 +94,28 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </div>
         </Modal.Header>
         <Modal.Body style={{ display: "flex", height: "80vh" }} noPadding>
-          <NoteEditorSideBar
-            notesRef={sideBarData}
-            setActiveNoteId={setActiveNoteId}
-            activeNoteId={activeNoteId}
-          />
+          <Modal.Aside>
+            <NoteEditorSideBar
+              notesRef={sideBarData}
+              setActiveNoteId={setActiveNoteId}
+              activeNoteId={activeNoteId}
+            />
+            <Modal.Footer>
+              <Button.Primary
+                onClick={() =>
+                  setActiveModal(
+                    <CreateNewNoteDialogModal
+                      close={() => setActiveModal(null)}
+                    />
+                  )
+                }
+                fullWidth
+              >
+                <Icons.PlusIcon height={20} width={20} />
+                <span>Create New Note</span>
+              </Button.Primary>
+            </Modal.Footer>
+          </Modal.Aside>
           <Modal.Content>
             {activeNoteId ? (
               <QueryRenderer<noteEditor_ActiveItemQuery>
@@ -159,7 +178,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                           <span>Delete Note</span>
                         </Button.Tertiary>
                       </Modal.Footer>
-                      <div ref={sideBarRef} />
+                      <NoteEditorSideReference ref={sideBarRef} />
                     </>
                   );
                 }}
@@ -174,6 +193,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </Modal.Body>
       </Modal.Dialog>
       {confirmationDialog}
+      {activeModal}
     </Modal>
   );
 };
@@ -185,4 +205,15 @@ const EmptyContainer = styled.div`
   flex-direction: column;
   justify-content: center;
   width: 100%;
+`;
+
+const NoteEditorSideReference = styled.div`
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 0;
+  width: 300px;
+  background: white;
+  border-left: 1px solid lightgrey;
+  border-radius: 5px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
 `;

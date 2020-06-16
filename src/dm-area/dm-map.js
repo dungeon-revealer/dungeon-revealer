@@ -17,7 +17,6 @@ import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useSvgGrid } from "../hooks/use-svg-grid";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
-import { useOvermind } from "../hooks/use-overmind";
 import { useDropZone } from "../hooks/use-drop-zone";
 import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
@@ -416,7 +415,6 @@ export const DmMap = ({
   dmPassword,
   onDropFile,
 }) => {
-  const { actions } = useOvermind();
   const mapContainerRef = React.useRef(null);
   const mapCanvasRef = React.useRef(null);
   const mapImageCanvasRef = React.useRef(null);

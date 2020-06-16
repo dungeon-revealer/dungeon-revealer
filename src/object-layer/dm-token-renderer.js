@@ -1,15 +1,5 @@
 import React from "react";
 import { DmTokenMarker } from "./dm-token-marker";
-import { useOvermind } from "../hooks/use-overmind";
-import { SelectTokenMarkerReferenceModal } from "../dm-area/select-token-marker-reference-modal";
-
-const ModalRenderer = ({ updateToken }) => {
-  const { state } = useOvermind();
-
-  return state.selectTokenMarkerReferenceModal.mode === "ACTIVE" ? (
-    <SelectTokenMarkerReferenceModal updateToken={updateToken} />
-  ) : null;
-};
 
 export const DmTokenRenderer = React.memo(
   ({
@@ -36,7 +26,6 @@ export const DmTokenRenderer = React.memo(
             }}
           />
         ))}
-        <ModalRenderer updateToken={updateToken} />
       </g>
     );
   }
