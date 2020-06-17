@@ -120,7 +120,7 @@
     "react-monaco-editor": "0.36.0",
     "react-relay": "0.0.0-experimental-94e87455",
     "react-scripts": "3.4.1",
-    "react-showdown": "2.0.3",
+    "react-showdown": "2.1.0",
     "react-spring": "9.0.0-rc.3",
     "react-toast-notifications": "2.4.0",
     "react-use-gesture": "7.0.15",
