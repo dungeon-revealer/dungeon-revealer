@@ -107,7 +107,7 @@
     "lint-staged": "10.2.10",
     "monaco-editor-webpack-plugin": "1.9.0",
     "overmind": "23.0.0-1581786766054",
-    "overmind-react": "24.0.0-1581786766054",
+    "overmind-react": "25.1.1",
     "parse-color": "1.0.0",
     "patch-package": "6.2.2",
     "pkg": "4.3.8",
