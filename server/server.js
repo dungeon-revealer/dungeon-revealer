@@ -251,10 +251,6 @@ const bootstrapServer = async () => {
     socket.on("authenticate", ({ password }) => {
       socket.removeAllListeners();
 
-      ioHandler.forEach((handler) => {
-        handler(socket);
-      });
-
       const role = getRole(password);
       if (role === null) {
         console.log(
@@ -266,6 +262,10 @@ const bootstrapServer = async () => {
       console.log(
         `WS client ${socket.handshake.address} ${socket.id} authenticate ${role}`
       );
+
+      ioHandler.forEach((handler) => {
+        handler(socket, role);
+      });
 
       authenticatedSockets.add(socket);
 

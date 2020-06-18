@@ -9,6 +9,7 @@ export type GraphQLContextType = {
   db: Database;
   getSessionId: () => string;
   setSessionId: (id: string) => void;
+  viewerRole: "admin" | "user";
 };
 
 export type GraphQLSubscriptionRootType = {};
@@ -37,7 +38,7 @@ const nodeField = t.field("node", {
           ([version, type, id]) => {
             if (version !== RelaySpecModule.API_VERSION) return RT.of(null);
             switch (type) {
-              case NotesModule.NOTE_IDENTIFIER:
+              case NotesModule.URI:
                 return NotesModule.resolveNote(id);
             }
 

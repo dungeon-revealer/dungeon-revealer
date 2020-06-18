@@ -8,7 +8,9 @@ import type { Database } from "sqlite";
 
 type Dependencies = {
   roleMiddleware: any;
-  registerSocketCommand: (handler: (socket: SocketIO.Socket) => void) => void;
+  registerSocketCommand: (
+    handler: (socket: SocketIO.Socket, role: "DM" | "PC") => void
+  ) => void;
   db: Database;
 };
 
@@ -27,7 +29,7 @@ export default ({
 
   const router = Router();
 
-  registerSocketCommand((socket) => {
+  registerSocketCommand((socket, role) => {
     const subscriptions = new Map<string, () => void>();
 
     // by default we use the socket.id
@@ -42,6 +44,7 @@ export default ({
         sessionId = id;
       },
       db,
+      viewerRole: role === "DM" ? "admin" : "user",
     });
 
     socket.on("graphql/execute", (message) => {

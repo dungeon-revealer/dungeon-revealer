@@ -4,10 +4,9 @@ import { flow } from "fp-ts/lib/function";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as RT from "fp-ts/lib/ReaderTask";
 import * as E from "fp-ts/lib/Either";
+import * as notes from "../../notes-lib";
 
-import * as notes from "../../notes";
-
-export const NOTE_IDENTIFIER = "Note" as const;
+export const URI = "Note" as const;
 
 const isTypeOf = flow(
   notes.decodeNote,
@@ -17,14 +16,12 @@ const isTypeOf = flow(
   )
 );
 
-export const encodeId = Relay.encodeId(NOTE_IDENTIFIER);
+export const encodeId = Relay.encodeId(URI);
 
 const decodeId = flow(
   Relay.decodeId,
   E.chainW(([, type, id]) =>
-    type === NOTE_IDENTIFIER
-      ? E.right(id)
-      : E.left(new Error(`Invalid type '${type}'.`))
+    type === URI ? E.right(id) : E.left(new Error(`Invalid type '${type}'.`))
   )
 );
 
@@ -245,7 +242,8 @@ export const mutationFields = [
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteCreateInput)),
     },
-    resolve: (src, { input }, context) => resolveNoteCreate(input)(context)(),
+    resolve: (src, { input }, context) =>
+      RT.run(resolveNoteCreate(input), context),
   }),
   t.field("noteDelete", {
     type: t.NonNull(GraphQLNoteDeleteResult),
@@ -253,7 +251,7 @@ export const mutationFields = [
       input: t.arg(t.NonNullInput(GraphQLNoteDeleteInputType)),
     },
     resolve: (src, { input }, context) =>
-      resolveNoteDelete(input.noteId)(context)(),
+      RT.run(resolveNoteDelete(input.noteId), context),
   }),
   t.field("noteUpdate", {
     type: t.NonNull(GraphQLNoteUpdateResult),
