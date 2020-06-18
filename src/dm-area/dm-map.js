@@ -768,10 +768,12 @@ export const DmMap = ({
 
     let tasks = [
       loadImage(
-        buildApiUrl(`/map/${loadedMapId}/map?authorization=${dmPassword}`)
+        // prettier-ignore
+        buildApiUrl(`/map/${loadedMapId}/map?authorization=${encodeURIComponent(dmPassword)}`)
       ),
       loadImage(
-        buildApiUrl(`/map/${loadedMapId}/fog?authorization=${dmPassword}`)
+        // prettier-ignore
+        buildApiUrl(`/map/${loadedMapId}/fog?authorization=${encodeURIComponent(dmPassword)}`)
       ),
     ];
 

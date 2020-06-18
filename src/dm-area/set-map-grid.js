@@ -363,7 +363,10 @@ export const SetMapGrid = ({ map, onSuccess, onAbort, dmPassword }) => {
   useAsyncEffect(
     function* (onCancel) {
       const task = loadImage(
-        buildApiUrl(`/map/${map.id}/map?authorization=${dmPassword}`)
+        buildApiUrl(
+          // prettier-ignore
+          `/map/${map.id}/map?authorization=${encodeURIComponent(dmPassword)}`
+        )
       );
       onCancel(() => task.cancel());
       const image = yield task.promise;

@@ -240,7 +240,8 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                   {/* eslint-disable-next-line jsx-a11y/alt-text */}
                   <img
                     src={buildApiUrl(
-                      `/map/${activeMap.id}/map?authorization=${dmPassword}`
+                      // prettier-ignore
+                      `/map/${activeMap.id}/map?authorization=${encodeURIComponent(dmPassword)}`
                     )}
                     style={{ width: "100%" }}
                   />
