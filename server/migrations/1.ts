@@ -39,11 +39,12 @@ export const migrate = async ({
       const record = fs.readJSONSync(
         path.join(legacyNoteDirectory, noteFileName)
       );
+      const content = `# ${record.title}\n\n${record.content}`;
       await db.run(
         recordInsertQuery,
         record.id,
         record.title,
-        record.content,
+        content,
         new Date(record.createdAt).getTime(),
         new Date(record.updatedAt).getTime()
       );
