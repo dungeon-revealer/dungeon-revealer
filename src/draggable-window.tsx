@@ -133,7 +133,7 @@ export const DraggableWindow = ({
           {headerContent}
         </div>
         {options.map(({ title, onClick, Icon }) => (
-          <div style={{ marginRight: 4 }}>
+          <div style={{ marginRight: 4 }} key={title}>
             <Button.Tertiary small iconOnly onClick={onClick} title={title}>
               <Icon height={16} />
             </Button.Tertiary>
