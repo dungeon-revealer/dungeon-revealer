@@ -9,6 +9,34 @@ const {
   parseFileExtension,
 } = require("../util");
 
+let NoteModule;
+
+const mapToken = (token) => {
+  if (!NoteModule) {
+    NoteModule = require("../graphql/modules/notes");
+  }
+  if (!token.reference) return token;
+  return {
+    ...token,
+    reference: {
+      ...token.reference,
+      id: NoteModule.encodeId(token.reference.id),
+    },
+  };
+};
+
+const mapMap = (map) => {
+  if (!map) return map;
+  return {
+    ...map,
+    ...(map.tokens
+      ? {
+          tokens: map.tokens.map(mapToken),
+        }
+      : {}),
+  };
+};
+
 module.exports = ({ roleMiddleware, maps, settings, io }) => {
   const router = express.Router();
 
@@ -104,7 +132,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
       maps
         .updateMapImage(req.params.id, { filePath: tmpFile, fileExtension })
         .then((map) => {
-          res.status(200).json({ error: null, data: map });
+          res.status(200).json({ error: null, data: mapMap(map) });
         })
         .catch(handleUnexpectedError(res));
     });
@@ -131,7 +159,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         .then((map) => {
           res.status(200).json({
             error: null,
-            data: map,
+            data: mapMap(map),
           });
         })
         .catch(handleUnexpectedError(res));
@@ -159,9 +187,9 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         .updateFogLiveImage(req.params.id, tmpFile)
         .then((map) => {
           settings.set("currentMapId", map.id);
-          res.json({ error: null, data: map });
+          res.json({ error: null, data: mapMap(map) });
           io.emit("map update", {
-            map,
+            map: mapMap(map),
           });
         })
         .catch(handleUnexpectedError(res));
@@ -192,7 +220,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
       error: null,
       data: {
         currentMapId: settings.get("currentMapId"),
-        maps: maps.getAll(),
+        maps: maps.getAll().map(mapMap),
       },
     });
   });
@@ -226,7 +254,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
       maps
         .createMap({ title: mapTitle, filePath: tmpFile, fileExtension })
         .then((map) => {
-          res.status(200).json({ error: null, data: { map } });
+          res.status(200).json({ error: null, data: { map: mapMap(map) } });
         })
         .catch(handleUnexpectedError(res));
     });
@@ -270,7 +298,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         res.json({
           error: null,
           data: {
-            map,
+            map: mapMap(map),
           },
         });
       })
@@ -301,12 +329,12 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         res.json({
           error: null,
           data: {
-            token,
+            token: mapToken(token),
           },
         });
         io.emit(`token:mapId:${map.id}`, {
           type: "add",
-          data: { token },
+          data: { token: mapToken(token) },
         });
       })
       .catch(handleUnexpectedError(res));
@@ -330,7 +358,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         res.json({
           error: null,
           data: {
-            map,
+            map: mapMap(map),
           },
         });
         io.emit(`token:mapId:${map.id}`, {
@@ -371,12 +399,12 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         res.json({
           error: null,
           data: {
-            map,
+            map: mapMap(map),
           },
         });
         io.emit(`token:mapId:${map.id}`, {
           type: "update",
-          data: { token },
+          data: { token: mapToken(token) },
         });
       })
       .catch(handleUnexpectedError(res));

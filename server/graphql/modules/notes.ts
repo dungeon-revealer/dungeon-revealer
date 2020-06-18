@@ -17,7 +17,7 @@ const isTypeOf = flow(
   )
 );
 
-const encodeId = Relay.encodeId(NOTE_IDENTIFIER);
+export const encodeId = Relay.encodeId(NOTE_IDENTIFIER);
 
 const decodeId = flow(
   Relay.decodeId,
