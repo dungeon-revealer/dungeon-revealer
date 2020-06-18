@@ -128,6 +128,8 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
     };
 
     updateToken({ id: tokenId, reference });
+    setActiveReferenceId(activeNoteId);
+
     close();
   }, [updateToken, activeNoteId]);
 
