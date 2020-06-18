@@ -5,7 +5,11 @@ import {
   useLazyLoadQuery,
   useRelayEnvironment,
 } from "react-relay/hooks";
+import { ConnectionHandler } from "relay-runtime";
+
 import { noteEditor_NoteDeleteMutation } from "./__generated__/noteEditor_NoteDeleteMutation.graphql";
+import { noteEditor_NoteCreateMutation } from "./__generated__/noteEditor_NoteCreateMutation.graphql";
+
 import { noteEditor_SideBarQuery } from "./__generated__/noteEditor_SideBarQuery.graphql";
 import { noteEditor_ActiveItemQuery } from "./__generated__/noteEditor_ActiveItemQuery.graphql";
 
@@ -17,13 +21,24 @@ import { NoteEditorActiveItem } from "./note-editor-active-item";
 import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
 import styled from "@emotion/styled/macro";
 import { QueryRenderer } from "react-relay";
-import { CreateNewNoteDialogModal } from "./create-new-note-dialog-modal";
 
 const NoteEditor_NoteDeleteMutation = graphql`
   mutation noteEditor_NoteDeleteMutation($input: NoteDeleteInput!) {
     noteDelete(input: $input) {
       success
       deletedNoteId
+    }
+  }
+`;
+
+const NoteEditor_NoteCreateMutation = graphql`
+  mutation noteEditor_NoteCreateMutation($input: NoteCreateInput!) {
+    noteCreate(input: $input) {
+      note {
+        id
+        title
+        content
+      }
     }
   }
 `;
@@ -56,6 +71,9 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   const [deleteNoteMutation] = useMutation<noteEditor_NoteDeleteMutation>(
     NoteEditor_NoteDeleteMutation
+  );
+  const [createNoteMutation] = useMutation<noteEditor_NoteCreateMutation>(
+    NoteEditor_NoteCreateMutation
   );
 
   const sideBarData = useLazyLoadQuery<noteEditor_SideBarQuery>(
@@ -103,11 +121,36 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <Modal.Footer>
               <Button.Primary
                 onClick={() =>
-                  setActiveModal(
-                    <CreateNewNoteDialogModal
-                      close={() => setActiveModal(null)}
-                    />
-                  )
+                  createNoteMutation({
+                    variables: {
+                      input: {
+                        title: "<Untitled Note>",
+                        content: "",
+                      },
+                    },
+                    updater: (store) => {
+                      const notesConnection = ConnectionHandler.getConnection(
+                        store.getRoot(),
+                        "noteEditorSideBar_notes"
+                      );
+                      const note = store
+                        .getRootField("noteCreate")
+                        ?.getLinkedRecord("note");
+                      if (!notesConnection || !note) return;
+
+                      const edge = ConnectionHandler.createEdge(
+                        store,
+                        notesConnection,
+                        note,
+                        "Note"
+                      );
+                      ConnectionHandler.insertEdgeBefore(notesConnection, edge);
+                    },
+                    onCompleted: (data) => {
+                      setActiveNoteId(data.noteCreate.note.id);
+                      setIsEditMode(true);
+                    },
+                  })
                 }
                 fullWidth
               >
@@ -116,7 +159,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               </Button.Primary>
             </Modal.Footer>
           </Modal.Aside>
-          <Modal.Content>
+          <Modal.Content style={{ position: "relative" }}>
             {activeNoteId ? (
               <QueryRenderer<noteEditor_ActiveItemQuery>
                 environment={environment}
@@ -138,45 +181,65 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         sideBarRef={sideBarRef}
                       />
                       <Modal.Footer>
-                        <Button.Tertiary
-                          onClick={() => {
-                            showConfirmationDialog({
-                              header: "Delete Note",
-                              body: "Do you really want to delete this note?",
-                              cancelButtonText: "Abort",
-                              confirmButtonText: "Delete",
-                              onConfirm: () => {
-                                if (!activeNoteId) return;
-                                setActiveNoteId(null);
-                                deleteNoteMutation({
-                                  variables: {
-                                    input: { noteId: activeNoteId },
-                                  },
-                                  configs: [
-                                    {
-                                      type: "RANGE_DELETE",
-                                      parentID: "client:root",
-                                      parentName: "client:root",
-                                      connectionKeys: [
+                        <Modal.Actions>
+                          <Modal.ActionGroup>
+                            <Button.Tertiary
+                              onClick={() => {
+                                showConfirmationDialog({
+                                  header: "Delete Note",
+                                  body:
+                                    "Do you really want to delete this note?",
+                                  cancelButtonText: "Abort",
+                                  confirmButtonText: "Delete",
+                                  onConfirm: () => {
+                                    if (!activeNoteId) return;
+                                    setActiveNoteId(null);
+                                    deleteNoteMutation({
+                                      variables: {
+                                        input: { noteId: activeNoteId },
+                                      },
+                                      configs: [
                                         {
-                                          key: "noteEditorSideBar_notes",
+                                          type: "RANGE_DELETE",
+                                          parentID: "client:root",
+                                          parentName: "client:root",
+                                          connectionKeys: [
+                                            {
+                                              key: "noteEditorSideBar_notes",
+                                            },
+                                          ],
+                                          pathToConnection: [
+                                            "client:root",
+                                            "notes",
+                                          ],
+                                          deletedIDFieldName: "deletedNoteId",
                                         },
                                       ],
-                                      pathToConnection: [
-                                        "client:root",
-                                        "notes",
-                                      ],
-                                      deletedIDFieldName: "deletedNoteId",
-                                    },
-                                  ],
+                                    });
+                                  },
                                 });
-                              },
-                            });
-                          }}
-                        >
-                          <Icons.TrashIcon height={20} width={20} />
-                          <span>Delete Note</span>
-                        </Button.Tertiary>
+                              }}
+                            >
+                              <Icons.TrashIcon height={20} width={20} />
+                              <span>Delete Note</span>
+                            </Button.Tertiary>
+                            {isEditMode ? (
+                              <Button.Primary
+                                onClick={() => setIsEditMode(false)}
+                              >
+                                <Icons.SaveIcon height={20} width={20} />
+                                <span>Save</span>
+                              </Button.Primary>
+                            ) : (
+                              <Button.Primary
+                                onClick={() => setIsEditMode(true)}
+                              >
+                                <Icons.EditIcon height={20} width={20} />
+                                <span>Edit</span>
+                              </Button.Primary>
+                            )}
+                          </Modal.ActionGroup>
+                        </Modal.Actions>
                       </Modal.Footer>
                       <NoteEditorSideReference ref={sideBarRef} />
                     </>
