@@ -130,7 +130,7 @@
     "relay-compiler-language-typescript": "12.0.3",
     "relay-config": "9.1.0",
     "relay-runtime": "9.1.0",
-    "sanitize-html": "1.26.0",
+    "sanitize-html": "1.27.0",
     "showdown": "1.9.1",
     "socket.io-client": "2.3.0",
     "ts-jest": "26.1.0",
