@@ -3,9 +3,9 @@ import styled from "@emotion/styled/macro";
 import * as Button from "../button";
 import { Modal } from "../modal";
 import { useAsyncTask } from "../hooks/use-async-task";
-import { useOvermind } from "../hooks/use-overmind";
 import { sendRequest } from "../http-request";
 import { buildApiUrl } from "../public-url";
+import { useAccessToken } from "../hooks/use-access-token";
 
 const OrSeperator = styled.span`
   padding-left: 18px;
@@ -47,7 +47,7 @@ const ValidFileModal: React.FC<{
   createMap: CreateMapFunction;
 }> = ({ file, close, createMap }) => {
   const [objectUrl, setObjectUrl] = React.useState<string | null>(null);
-  const { state } = useOvermind();
+  const accessToken = useAccessToken();
 
   React.useEffect(() => {
     const objectUrl = URL.createObjectURL(file);
@@ -87,15 +87,13 @@ const ValidFileModal: React.FC<{
         method: "POST",
         body: formData,
         headers: {
-          Authorization: state.sessionStore.accessToken
-            ? `Bearer ${state.sessionStore.accessToken}`
-            : null,
+          Authorization: accessToken ? `Bearer ${accessToken}` : null,
         },
       });
 
       await task.done;
       close();
-    }, [file, close])
+    }, [file, close, accessToken])
   );
 
   const areButtonsDisabled = isImportingMediaLibraryItem || isCreatingMap;

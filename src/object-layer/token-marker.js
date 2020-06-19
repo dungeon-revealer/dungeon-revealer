@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from "react";
-import { darken } from "polished";
+import { darken, lighten } from "polished";
 import { useSpring, animated, to as interpolate } from "react-spring";
+import { useResetState } from "../hooks/use-reset-state";
 
 export const TokenMarker = React.memo(
   React.forwardRef(
@@ -28,13 +29,15 @@ export const TokenMarker = React.memo(
       const textRef = useRef(null);
       const ratioRef = useRef(ratio);
 
+      const [localColor, setLocalColor] = useResetState(color, [color]);
+
       const {
         x: animatedX,
         y: animatedY,
         radius: animatedRadius,
         color: animatedColor,
       } = useSpring({
-        to: { x, y, radius, color },
+        to: { x, y, radius, color: localColor },
         immediate: !isAnimated,
       });
 
@@ -76,6 +79,16 @@ export const TokenMarker = React.memo(
           {...props}
         >
           <animated.circle
+            onMouseEnter={() => {
+              if (onMouseDown) {
+                setLocalColor(lighten(0.1, color));
+              }
+            }}
+            onMouseLeave={() => {
+              if (onMouseDown) {
+                setLocalColor(color);
+              }
+            }}
             ref={circleRef}
             r={realRadius}
             strokeWidth={realRadius.to((val) => val * 0.05)}

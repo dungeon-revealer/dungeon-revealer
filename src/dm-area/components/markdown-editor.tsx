@@ -11,7 +11,6 @@ import MonacoEditor from "react-monaco-editor";
 import * as Button from "../../button";
 import { sendRequest, ISendRequestTask } from "../../http-request";
 import { buildApiUrl } from "../../public-url";
-import { useOvermind } from "../../hooks/use-overmind";
 import { SelectLibraryImageModal } from "./select-library-image-modal";
 
 import { transparentize } from "polished";
@@ -23,6 +22,7 @@ import {
   Link,
 } from "../../feather-icons";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
+import { useAccessToken } from "../../hooks/use-access-token";
 
 const insertImageIntoEditor = (
   editor: editor.IStandaloneCodeEditor,
@@ -264,11 +264,18 @@ const ToolBarButton = styled.button`
   border-radius: 5px;
   padding: 8px;
   display: flex;
+  background: white;
+  cursor: pointer;
+  border: none;
+  &:hover > svg {
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.3));
+  }
 `;
 
 const ToolBarButtonDropDown = styled.div`
   display: inline-block;
   position: relative;
+  background: white;
 
   &:hover [data-menu] {
     display: block;
@@ -293,7 +300,7 @@ const DropDownMenuInner = styled.div`
 `;
 
 const DropDownMenuItem = styled.button`
-  background-color: none;
+  background: white;
   border: none;
   display: block;
   width: 100%;
@@ -312,29 +319,30 @@ export const MarkdownEditor: React.FC<{
   sideBarRef: React.RefObject<HTMLElement>;
 }> = ({ value, onChange, sideBarRef }) => {
   const uploadTaskRef = React.useRef<ISendRequestTask | null>(null);
-  const { state } = useOvermind();
+  const accessToken = useAccessToken();
 
-  const uploadFile = React.useCallback((file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
+  const uploadFile = React.useCallback(
+    (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
 
-    const task = (uploadTaskRef.current = sendRequest({
-      url: buildApiUrl("/images"),
-      method: "POST",
-      body: formData,
-      headers: {
-        Authorization: state.sessionStore.accessToken
-          ? `Bearer ${state.sessionStore.accessToken}`
-          : null,
-      },
-    }));
+      const task = (uploadTaskRef.current = sendRequest({
+        url: buildApiUrl("/images"),
+        method: "POST",
+        body: formData,
+        headers: {
+          Authorization: accessToken ? `Bearer ${accessToken}` : null,
+        },
+      }));
 
-    return task.done.then((result) => {
-      if (result.type !== "success") return null;
-      const json = JSON.parse(result.data as string);
-      return json.data.item.id;
-    });
-  }, []);
+      return task.done.then((result) => {
+        if (result.type !== "success") return null;
+        const json = JSON.parse(result.data as string);
+        return json.data.item.id;
+      });
+    },
+    [accessToken]
+  );
 
   const ref = React.useRef<MonacoEditor | null>(null);
   const editorStateRef = React.useRef({

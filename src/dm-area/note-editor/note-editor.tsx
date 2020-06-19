@@ -1,170 +1,263 @@
-import React, { useEffect } from "react";
-import { useOvermind } from "../../hooks/use-overmind";
-import styled from "@emotion/styled/macro";
+import React from "react";
+import graphql from "babel-plugin-relay/macro";
+import {
+  useMutation,
+  useLazyLoadQuery,
+  useRelayEnvironment,
+} from "react-relay/hooks";
+import { ConnectionHandler } from "relay-runtime";
+
+import { noteEditor_NoteDeleteMutation } from "./__generated__/noteEditor_NoteDeleteMutation.graphql";
+import { noteEditor_NoteCreateMutation } from "./__generated__/noteEditor_NoteCreateMutation.graphql";
+
+import { noteEditor_SideBarQuery } from "./__generated__/noteEditor_SideBarQuery.graphql";
+import { noteEditor_ActiveItemQuery } from "./__generated__/noteEditor_ActiveItemQuery.graphql";
 
 import { Modal } from "../../modal";
 import * as Button from "../../button";
 import * as Icons from "../../feather-icons";
-import * as ScrollableList from "../components/scrollable-list";
-import { CreateNewNoteDialogModal } from "./create-new-note-dialog-modal";
-import { DeleteNoteConfirmationDialogModal } from "./delete-note-confirmation-dialog-modal";
-import { HtmlContainer } from "../components/html-container";
-import { Input } from "../../input";
-import { MarkdownEditor } from "../components/markdown-editor";
+import { NoteEditorSideBar } from "./note-editor-side-bar";
+import { NoteEditorActiveItem } from "./note-editor-active-item";
+import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
+import styled from "@emotion/styled/macro";
+import { QueryRenderer } from "react-relay";
 
-const Header = styled.div`
-  white-space: nowrap;
-  width: 100%;
-  display: flex;
-  align-items: center;
-`;
-
-const Heading = styled.h3`
-  text-overflow: ellipsis;
-  overflow: hidden;
-  margin-right: 16px;
-`;
-
-export const NoteEditor: React.FC<{ onClose: () => void }> = ({
-  onClose: _onClose,
-}) => {
-  const { state, actions } = useOvermind();
-  useEffect(() => {
-    actions.noteEditor.loadNotes();
-  }, [actions]);
-
-  const onClose = React.useCallback(() => {
-    actions.noteEditor.exitEditMode();
-    _onClose();
-  }, [_onClose]);
-
-  if (state.noteEditor.isLoading) return null;
-
-  let activeModalComponent: null | React.ReactElement = null;
-  // eslint-disable-next-line default-case
-  switch (state.noteEditor.activeModal) {
-    case "CREATE_NEW_NOTE":
-      activeModalComponent = (
-        <CreateNewNoteDialogModal
-          close={() => actions.noteEditor.setActiveModal(null)}
-          createNote={async ({ title }) => {
-            actions.noteEditor.createNewNote({ title });
-          }}
-        />
-      );
-      break;
-    case "DELETE_NOTE":
-      activeModalComponent = (
-        <DeleteNoteConfirmationDialogModal
-          close={() => actions.noteEditor.setActiveModal(null)}
-          confirm={async () => {
-            actions.noteEditor.deleteActiveNote();
-          }}
-        />
-      );
-      break;
+const NoteEditor_NoteDeleteMutation = graphql`
+  mutation noteEditor_NoteDeleteMutation($input: NoteDeleteInput!) {
+    noteDelete(input: $input) {
+      success
+      deletedNoteId
+    }
   }
+`;
+
+const NoteEditor_NoteCreateMutation = graphql`
+  mutation noteEditor_NoteCreateMutation($input: NoteCreateInput!) {
+    noteCreate(input: $input) {
+      note {
+        id
+        title
+        content
+      }
+    }
+  }
+`;
+
+const NoteEditor_ActiveItemQuery = graphql`
+  query noteEditor_ActiveItemQuery($activeNoteId: ID!) {
+    node(id: $activeNoteId) {
+      ... on Note {
+        __typename
+        id
+        ...noteEditorActiveItem_nodeFragment
+      }
+    }
+  }
+`;
+
+const NoteEditor_SideBarQuery = graphql`
+  query noteEditor_SideBarQuery {
+    ...noteEditorSideBar_notesFragment
+  }
+`;
+
+export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const environment = useRelayEnvironment();
+  const [isEditMode, setIsEditMode] = React.useState(false);
+  const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
+
+  const [confirmationDialog, showConfirmationDialog] = useConfirmationDialog();
+  const [activeModal, setActiveModal] = React.useState<React.ReactNode>(null);
+
+  const [deleteNoteMutation] = useMutation<noteEditor_NoteDeleteMutation>(
+    NoteEditor_NoteDeleteMutation
+  );
+  const [createNoteMutation] = useMutation<noteEditor_NoteCreateMutation>(
+    NoteEditor_NoteCreateMutation
+  );
+
+  const sideBarData = useLazyLoadQuery<noteEditor_SideBarQuery>(
+    NoteEditor_SideBarQuery,
+    {}
+  );
+
+  const sideBarRef = React.useRef<HTMLDivElement>(null);
 
   return (
-    <>
-      <Modal onClickOutside={onClose} onPressEscape={onClose}>
-        <Modal.Dialog
-          onKeyDown={(ev) => {
-            if (ev.key === "Escape" && state.noteEditor.isEditMode) {
-              ev.stopPropagation();
-            }
-          }}
-        >
-          <Modal.Header>
-            <Modal.Heading2>
-              <Icons.BookOpen
-                width={28}
-                height={28}
-                style={{ marginBottom: -2, marginRight: 16 }}
-              />{" "}
-              Notes
-            </Modal.Heading2>
-            <div style={{ flex: 1, textAlign: "right" }}>
-              <Button.Tertiary
-                tabIndex={3}
-                style={{ marginLeft: 8 }}
-                onClick={onClose}
+    <Modal onClickOutside={onClose} onPressEscape={onClose}>
+      <Modal.Dialog
+        onKeyDown={(ev) => {
+          if (ev.key === "Escape" && isEditMode) {
+            ev.stopPropagation();
+          }
+        }}
+      >
+        <Modal.Header>
+          <Modal.Heading2>
+            <Icons.BookOpen
+              width={28}
+              height={28}
+              style={{ marginBottom: -2, marginRight: 16 }}
+            />{" "}
+            Notes
+          </Modal.Heading2>
+          <div style={{ flex: 1, textAlign: "right" }}>
+            <Button.Tertiary
+              tabIndex={3}
+              style={{ marginLeft: 8 }}
+              onClick={onClose}
+            >
+              Close
+            </Button.Tertiary>
+          </div>
+        </Modal.Header>
+        <Modal.Body style={{ display: "flex", height: "80vh" }} noPadding>
+          <Modal.Aside>
+            <NoteEditorSideBar
+              notesRef={sideBarData}
+              setActiveNoteId={setActiveNoteId}
+              activeNoteId={activeNoteId}
+            />
+            <Modal.Footer>
+              <Button.Primary
+                onClick={() =>
+                  createNoteMutation({
+                    variables: {
+                      input: {
+                        title: "<Untitled Note>",
+                        content: "",
+                      },
+                    },
+                    updater: (store) => {
+                      const notesConnection = ConnectionHandler.getConnection(
+                        store.getRoot(),
+                        "noteEditorSideBar_notes"
+                      );
+                      const note = store
+                        .getRootField("noteCreate")
+                        ?.getLinkedRecord("note");
+                      if (!notesConnection || !note) return;
+
+                      const edge = ConnectionHandler.createEdge(
+                        store,
+                        notesConnection,
+                        note,
+                        "Note"
+                      );
+                      ConnectionHandler.insertEdgeBefore(notesConnection, edge);
+                    },
+                    onCompleted: (data) => {
+                      setActiveNoteId(data.noteCreate.note.id);
+                      setIsEditMode(true);
+                    },
+                  })
+                }
+                fullWidth
               >
-                Close
-              </Button.Tertiary>
-            </div>
-          </Modal.Header>
-          <Modal.Body style={{ display: "flex", height: "80vh" }} noPadding>
-            {state.noteEditor.notes.length === 0 ? (
-              <>
-                <EmptyContainer>
-                  <Icons.Inbox height={75} width={75} fill="#D9E2EC" />
-                  <h3 style={{ marginBottom: 20 }}>Your library seems empty</h3>
-                  <Button.Primary
-                    big
-                    onClick={() =>
-                      actions.noteEditor.setActiveModal("CREATE_NEW_NOTE")
-                    }
-                  >
-                    <Icons.PlusIcon height={24} width={24} />
-                    <span>Create your first note</span>
-                  </Button.Primary>
-                </EmptyContainer>
-              </>
+                <Icons.PlusIcon height={20} width={20} />
+                <span>Create New Note</span>
+              </Button.Primary>
+            </Modal.Footer>
+          </Modal.Aside>
+          <Modal.Content style={{ position: "relative" }}>
+            {activeNoteId ? (
+              <QueryRenderer<noteEditor_ActiveItemQuery>
+                environment={environment}
+                query={NoteEditor_ActiveItemQuery}
+                variables={{ activeNoteId }}
+                render={({ error, props }) => {
+                  if (error) return null;
+                  if (props?.node?.__typename !== "Note") return null;
+
+                  return (
+                    <>
+                      <NoteEditorActiveItem
+                        key={props.node.id}
+                        isEditMode={isEditMode}
+                        toggleIsEditMode={() =>
+                          setIsEditMode((isEditMode) => !isEditMode)
+                        }
+                        nodeRef={props.node}
+                        sideBarRef={sideBarRef}
+                      />
+                      <Modal.Footer>
+                        <Modal.Actions>
+                          <Modal.ActionGroup>
+                            <Button.Tertiary
+                              onClick={() => {
+                                showConfirmationDialog({
+                                  header: "Delete Note",
+                                  body:
+                                    "Do you really want to delete this note?",
+                                  cancelButtonText: "Abort",
+                                  confirmButtonText: "Delete",
+                                  onConfirm: () => {
+                                    if (!activeNoteId) return;
+                                    setActiveNoteId(null);
+                                    deleteNoteMutation({
+                                      variables: {
+                                        input: { noteId: activeNoteId },
+                                      },
+                                      configs: [
+                                        {
+                                          type: "RANGE_DELETE",
+                                          parentID: "client:root",
+                                          parentName: "client:root",
+                                          connectionKeys: [
+                                            {
+                                              key: "noteEditorSideBar_notes",
+                                            },
+                                          ],
+                                          pathToConnection: [
+                                            "client:root",
+                                            "notes",
+                                          ],
+                                          deletedIDFieldName: "deletedNoteId",
+                                        },
+                                      ],
+                                    });
+                                  },
+                                });
+                              }}
+                            >
+                              <Icons.TrashIcon height={20} width={20} />
+                              <span>Delete Note</span>
+                            </Button.Tertiary>
+                            {isEditMode ? (
+                              <Button.Primary
+                                onClick={() => setIsEditMode(false)}
+                              >
+                                <Icons.SaveIcon height={20} width={20} />
+                                <span>Save</span>
+                              </Button.Primary>
+                            ) : (
+                              <Button.Primary
+                                onClick={() => setIsEditMode(true)}
+                              >
+                                <Icons.EditIcon height={20} width={20} />
+                                <span>Edit</span>
+                              </Button.Primary>
+                            )}
+                          </Modal.ActionGroup>
+                        </Modal.Actions>
+                      </Modal.Footer>
+                      <NoteEditorSideReference ref={sideBarRef} />
+                    </>
+                  );
+                }}
+              />
             ) : (
-              <>
-                <Modal.Aside>
-                  <ScrollableList.List style={{ marginTop: 0 }}>
-                    {state.noteEditor.notes.map((note) => (
-                      <ScrollableList.ListItem key={note.id}>
-                        <ScrollableList.ListItemButton
-                          isActive={note === state.noteEditor.activeNote}
-                          onClick={() => {
-                            actions.noteEditor.setActiveNoteId(note.id);
-                          }}
-                        >
-                          {note.title || "<Untitled Note>"}
-                        </ScrollableList.ListItemButton>
-                      </ScrollableList.ListItem>
-                    ))}
-                  </ScrollableList.List>
-                  <Modal.Footer>
-                    <Button.Primary
-                      onClick={() =>
-                        actions.noteEditor.setActiveModal("CREATE_NEW_NOTE")
-                      }
-                      fullWidth
-                    >
-                      <Icons.PlusIcon height={20} width={20} />{" "}
-                      <span>Create New Note</span>
-                    </Button.Primary>
-                  </Modal.Footer>
-                </Modal.Aside>
-                <Modal.Content>
-                  <ContentRenderer
-                    state={state.noteEditor}
-                    actions={actions.noteEditor}
-                  />
-                  {state.noteEditor.activeNote ? (
-                    <Modal.Footer>
-                      <Button.Tertiary
-                        onClick={() => {
-                          actions.noteEditor.setActiveModal("DELETE_NOTE");
-                        }}
-                      >
-                        <Icons.TrashIcon height={20} width={20} />
-                        <span>Delete Note</span>
-                      </Button.Tertiary>
-                    </Modal.Footer>
-                  ) : null}
-                </Modal.Content>
-              </>
+              <EmptyContainer>
+                <Icons.Inbox height={75} width={75} fill="#D9E2EC" />
+                <h3>Please select a Note from the list on the left.</h3>
+              </EmptyContainer>
             )}
-          </Modal.Body>
-        </Modal.Dialog>
-      </Modal>
-      {activeModalComponent}
-    </>
+          </Modal.Content>
+        </Modal.Body>
+      </Modal.Dialog>
+      {confirmationDialog}
+      {activeModal}
+    </Modal>
   );
 };
 
@@ -177,21 +270,6 @@ const EmptyContainer = styled.div`
   width: 100%;
 `;
 
-const HeaderContainer = styled.div`
-  display: flex;
-  margin-left: 16px;
-  margin-right: 16px;
-  padding-top: 8px;
-  padding-bottom: 16px;
-`;
-
-const HtmlContainerWrapper = styled.div`
-  padding-left: 16px;
-  padding-right: 16px;
-  flex-grow: 1;
-  overflow-y: scroll;
-`;
-
 const NoteEditorSideReference = styled.div`
   position: absolute;
   left: calc(100% + 12px);
@@ -202,80 +280,3 @@ const NoteEditorSideReference = styled.div`
   border-radius: 5px;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
 `;
-
-const EditorContainer = styled.div`
-  position: relative;
-  flex: 1;
-`;
-
-const ContentRenderer: React.FC<{
-  state: ReturnType<typeof useOvermind>["state"]["noteEditor"];
-  actions: ReturnType<typeof useOvermind>["actions"]["noteEditor"];
-}> = ({ state, actions }) => {
-  useOvermind();
-  const sideBarRef = React.useRef<HTMLDivElement>(null);
-
-  if (!state.activeNote) {
-    return (
-      <EmptyContainer>
-        <Icons.Inbox height={75} width={75} fill="#D9E2EC" />
-        <h3>Please select a Note from the list on the left.</h3>
-      </EmptyContainer>
-    );
-  }
-
-  return (
-    <>
-      <HeaderContainer>
-        {state.isEditMode ? (
-          <>
-            <Input
-              autoFocus
-              placeholder="Note title"
-              value={state.activeNote.title}
-              onChange={(ev) => actions.updateActiveNoteTitle(ev.target.value)}
-            />
-            <Button.Tertiary
-              iconOnly
-              onClick={() => {
-                actions.toggleIsEditMode();
-              }}
-              style={{ marginLeft: 16 }}
-            >
-              <Icons.SaveIcon height={16} />
-            </Button.Tertiary>
-          </>
-        ) : (
-          <Header>
-            <Heading>{state.activeNote.title || "<Untitled Note>"}</Heading>
-            <div>
-              <Button.Tertiary
-                iconOnly
-                onClick={() => {
-                  actions.toggleIsEditMode();
-                }}
-              >
-                <Icons.EditIcon height={16} />
-              </Button.Tertiary>
-            </div>
-          </Header>
-        )}
-      </HeaderContainer>
-      {state.isEditMode ? (
-        <EditorContainer>
-          <MarkdownEditor
-            value={state.activeNote.content}
-            onChange={actions.updateActiveNoteContent}
-            sideBarRef={sideBarRef}
-          />
-          <NoteEditorSideReference ref={sideBarRef} />
-        </EditorContainer>
-      ) : (
-        <HtmlContainerWrapper>
-          <HtmlContainer markdown={state.activeNote.content} />
-        </HtmlContainerWrapper>
-      )}
-      <div ref={sideBarRef} />
-    </>
-  );
-};

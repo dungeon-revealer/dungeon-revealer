@@ -1,86 +1,30 @@
 import React from "react";
 import styled from "@emotion/styled/macro";
-import { MarkdownEditor } from "../components/markdown-editor";
-import * as Button from "../../button";
+import graphql from "babel-plugin-relay/macro";
+import { ActiveNoteIdContext, SetActiveNoteIdContext } from ".";
+import { NoteEditorActiveItem } from "../note-editor/note-editor-active-item";
+import { QueryRenderer } from "react-relay";
+import type { tokenInfoAside_nodeQuery } from "./__generated__/tokenInfoAside_nodeQuery.graphql";
+import { useRelayEnvironment } from "react-relay/hooks";
+import { DraggableWindow } from "../../draggable-window";
 import * as Icon from "../../feather-icons";
-import { Input } from "../../input";
-import { useOvermind } from "../../hooks/use-overmind";
-import { HtmlContainer } from "../components/html-container";
-import { ResolveState } from "overmind";
-import { NoteType } from "../overmind/note-store/note-store-state";
 
-const Container = styled.div`
-  display: flex;
-  align-items: center;
-  position: absolute;
-  height: 100%;
-  top: 0;
-  right: 0;
-  max-width: 500px;
-  width: 100%;
-  padding-right: 16px;
-  padding-left: 16px;
-  pointer-events: none;
-`;
-
-const Window = styled.div`
-  display: flex;
-  flex-direction: column;
-
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-  background-color: white;
-  border-radius: 5px;
-  width: 100%;
-  height: 60vh;
-  padding: 20px;
-  pointer-events: all;
-`;
-
-export const TokenInfoAside: React.FC<{}> = () => {
-  const { actions, state } = useOvermind();
-  if (!state.tokenInfoAside.isVisible) return null;
-
-  switch (state.tokenInfoAside.activeToken.mode) {
-    case "hasReference":
-      switch (state.tokenInfoAside.activeToken.reference.mode) {
-        case "CACHE_AND_LOADING":
-        case "LOADED":
-          return (
-            <NoteReference
-              note={state.tokenInfoAside.activeToken.reference.node}
-              isEditMode={state.tokenInfoAside.isEditMode}
-              enterEditMode={() => actions.tokenInfoAside.setEditMode(true)}
-              exitEditMode={() => actions.tokenInfoAside.setEditMode(false)}
-              close={actions.tokenInfoAside.close}
-              updateNoteTitle={actions.tokenInfoAside.updateActiveNoteTitle}
-              updateNoteContent={actions.tokenInfoAside.updateActiveNoteContent}
-            />
-          );
+const TokenInfoAside_nodeQuery = graphql`
+  query tokenInfoAside_nodeQuery($activeNoteId: ID!) {
+    node(id: $activeNoteId) {
+      ... on Note {
+        __typename
+        title
+        ...noteEditorActiveItem_nodeFragment
       }
+    }
   }
-  return null;
-};
-
-const EditorContainer = styled.div`
-  display: flex;
-  flex-direction: "column";
-  flex-grow: 1;
-  margin-left: -16px;
-  margin-right: -16px;
-`;
-
-const HtmlRendererContainer = styled.div`
-  overflow-y: scroll;
-  overflow-x: hidden;
-  margin-left: -16px;
-  margin-right: -16px;
-  padding-left: 16px;
-  padding-right: 16px;
 `;
 
 const NoteEditorSideReference = styled.div`
   position: absolute;
   right: calc(100% + 12px);
+  top: 25%;
   width: 300px;
   background: white;
   border-left: 1px solid lightgrey;
@@ -88,108 +32,65 @@ const NoteEditorSideReference = styled.div`
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
 `;
 
-const NoteReference: React.FC<{
-  close: () => void;
-  isEditMode: boolean;
-  enterEditMode: () => void;
-  exitEditMode: () => void;
-  note: ResolveState<NoteType>;
-  updateNoteTitle: (value: string) => void;
-  updateNoteContent: (value: string) => void;
-}> = ({
-  close,
-  isEditMode,
-  enterEditMode,
-  exitEditMode,
-  note,
-  updateNoteTitle,
-  updateNoteContent,
-}) => {
-  useOvermind();
+export const TokenInfoAside: React.FC<{}> = () => {
+  const environment = useRelayEnvironment();
+  const activeNoteId = React.useContext(ActiveNoteIdContext);
+  const setActiveNoteId = React.useContext(SetActiveNoteIdContext);
+  const [isEditMode, setIsEditMode] = React.useState(false);
   const sideBarRef = React.useRef<HTMLDivElement>(null);
 
+  if (!activeNoteId) return null;
+
   return (
-    <Container>
-      <Window
-        onKeyDown={(ev) => {
-          ev.stopPropagation();
-          if (ev.key !== "Escape") return;
-          if (!isEditMode) close();
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            marginBottom: 16,
-            width: "100%",
-          }}
-        >
-          {isEditMode ? (
-            <>
-              <Input
-                value={note.title}
-                onChange={(ev) => updateNoteTitle(ev.target.value)}
-                placeholder="Title"
-              />
-              <div style={{ paddingLeft: 8 }}>
-                <Button.Tertiary iconOnly small onClick={exitEditMode}>
-                  <Icon.SaveIcon height={16} />
-                </Button.Tertiary>
-              </div>
-              <div style={{ paddingLeft: 8 }}>
-                <Button.Tertiary iconOnly small onClick={close}>
-                  <Icon.XIcon height={16} />
-                </Button.Tertiary>
-              </div>
-            </>
-          ) : (
-            <>
-              <h3
-                style={{
-                  flexGrow: 1,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {note.title}
-              </h3>
-              <div style={{ flexShrink: 0, display: "flex" }}>
-                <div style={{ paddingLeft: 8, marginLeft: "auto" }}>
-                  <Button.Tertiary
-                    iconOnly
-                    small
-                    onClick={() => enterEditMode()}
-                  >
-                    <Icon.EditIcon height={16} />
-                  </Button.Tertiary>
-                </div>
-                <div style={{ paddingLeft: 8 }}>
-                  <Button.Tertiary iconOnly small onClick={close}>
-                    <Icon.XIcon height={16} />
-                  </Button.Tertiary>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-        {isEditMode ? (
-          <>
-            <EditorContainer>
-              <MarkdownEditor
-                value={note.content}
-                onChange={updateNoteContent}
-                sideBarRef={sideBarRef}
-              />
-            </EditorContainer>
-            <NoteEditorSideReference ref={sideBarRef} />
-          </>
-        ) : (
-          <HtmlRendererContainer>
-            <HtmlContainer markdown={note.content} />
-          </HtmlRendererContainer>
-        )}
-      </Window>
-    </Container>
+    <QueryRenderer<tokenInfoAside_nodeQuery>
+      environment={environment}
+      variables={{ activeNoteId: activeNoteId }}
+      query={TokenInfoAside_nodeQuery}
+      render={({ error, props }) => {
+        if (error) return null;
+        if (props?.node?.__typename !== "Note") return null;
+
+        return (
+          <DraggableWindow
+            onKeyDown={(ev) => {
+              ev.stopPropagation();
+              if (ev.key !== "Escape") return;
+              if (!isEditMode) setActiveNoteId(null);
+            }}
+            headerContent={props.node.title}
+            bodyContent={
+              <>
+                <NoteEditorActiveItem
+                  isEditMode={isEditMode}
+                  toggleIsEditMode={() =>
+                    setIsEditMode((isEditMode) => !isEditMode)
+                  }
+                  nodeRef={props.node}
+                  sideBarRef={sideBarRef}
+                />
+                <NoteEditorSideReference>
+                  <div ref={sideBarRef} />
+                </NoteEditorSideReference>
+              </>
+            }
+            close={() => setActiveNoteId(null)}
+            style={{
+              top: "calc(50vh - 25%)",
+              left: "calc(100% - 500px - 12px)",
+            }}
+            options={[
+              {
+                onClick: () => setIsEditMode((isEditMode) => !isEditMode),
+                title: isEditMode ? "Save" : "Edit",
+                //TODO: Make types more strict
+                Icon: isEditMode
+                  ? (Icon.SaveIcon as any)
+                  : (Icon.EditIcon as any),
+              },
+            ]}
+          />
+        );
+      }}
+    />
   );
 };

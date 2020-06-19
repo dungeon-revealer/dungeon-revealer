@@ -100,6 +100,59 @@ type Mutation {
   logIn(input: LogInInput): LogInResult!
   changeName(input: ChangeNameInput!): ChangeNameResult!
   chatMessageCreate(input: ChatMessageCreateInput!): Boolean
+  noteCreate(input: NoteCreateInput!): NoteCreateResult!
+  noteDelete(input: NoteDeleteInput!): NoteDeleteResult!
+  noteUpdate(input: NoteUpdateInput!): NoteUpdateResult!
+}
+
+interface Node {
+  id: ID!
+}
+
+type Note implements Node {
+  id: ID!
+  title: String!
+  content: String!
+  createdAt: Int!
+  updatedAt: Int!
+}
+
+type NoteConnection {
+  edges: [NoteEdge!]!
+  pageInfo: PageInfo!
+}
+
+input NoteCreateInput {
+  title: String!
+  content: String!
+}
+
+type NoteCreateResult {
+  note: Note!
+}
+
+input NoteDeleteInput {
+  noteId: String!
+}
+
+type NoteDeleteResult {
+  success: Boolean!
+  deletedNoteId: ID!
+}
+
+type NoteEdge {
+  cursor: String!
+  node: Note!
+}
+
+input NoteUpdateInput {
+  id: String!
+  title: String!
+  content: String!
+}
+
+type NoteUpdateResult {
+  note: Note
 }
 
 type OperationalChatMessage implements ChatMessage {
@@ -121,6 +174,8 @@ type Query {
   users(first: Int, after: ID): ConnectedUserConnection!
   usersCount: Int!
   me: User!
+  notes(first: Int, after: String): NoteConnection!
+  node(id: ID!): Node
 }
 
 type Subscription {

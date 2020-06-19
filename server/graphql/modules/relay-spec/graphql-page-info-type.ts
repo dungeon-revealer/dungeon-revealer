@@ -21,3 +21,8 @@ export const GraphQLPageInfoType = t.objectType<{}>({
     }),
   ],
 });
+
+export const GraphQLNodeInterface = t.interfaceType({
+  name: "Node",
+  fields: () => [t.abstractField("id", t.NonNull(t.ID))],
+});

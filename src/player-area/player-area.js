@@ -144,7 +144,8 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
         if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
           const task = loadImage(
             buildApiUrl(
-              `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${pcPassword}`
+              // prettier-ignore
+              `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
             )
           );
           cacheBusterRef.current = cacheBusterRef.current + 1;
@@ -200,12 +201,14 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
         const tasks = [
           loadImage(
             buildApiUrl(
-              `/map/${data.map.id}/map?cache_buster=${cacheBusterRef.current}&authorization=${pcPassword}`
+              // prettier-ignore
+              `/map/${data.map.id}/map?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
             )
           ),
           loadImage(
             buildApiUrl(
-              `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${pcPassword}`
+              // prettier-ignore
+              `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
             )
           ),
         ];

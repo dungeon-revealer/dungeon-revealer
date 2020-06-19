@@ -4,13 +4,21 @@ import * as ia from "iterall";
 import { schema, GraphQLContextType } from "../graphql";
 import { createChat } from "../chat";
 import { createUser } from "../user";
+import type { Database } from "sqlite";
 
 type Dependencies = {
   roleMiddleware: any;
-  registerSocketCommand: (handler: (socket: SocketIO.Socket) => void) => void;
+  registerSocketCommand: (
+    handler: (socket: SocketIO.Socket, role: "DM" | "PC") => void
+  ) => void;
+  db: Database;
 };
 
-export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
+export default ({
+  roleMiddleware,
+  registerSocketCommand,
+  db,
+}: Dependencies) => {
   const chat = createChat();
   const user = createUser({
     sendUserConnectedMessage: ({ name }) =>
@@ -21,7 +29,7 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
 
   const router = Router();
 
-  registerSocketCommand((socket) => {
+  registerSocketCommand((socket, role) => {
     const subscriptions = new Map<string, () => void>();
 
     // by default we use the socket.id
@@ -35,6 +43,8 @@ export default ({ roleMiddleware, registerSocketCommand }: Dependencies) => {
       setSessionId: (id: string) => {
         sessionId = id;
       },
+      db,
+      viewerRole: role === "DM" ? "admin" : "user",
     });
 
     socket.on("graphql/execute", (message) => {

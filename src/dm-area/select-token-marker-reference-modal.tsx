@@ -1,12 +1,52 @@
 import React, { useCallback } from "react";
 import { Modal } from "../modal";
 import * as Button from "../button";
-import * as ScrollableList from "./components/scrollable-list";
 import styled from "@emotion/styled/macro";
-import { useOvermind } from "../hooks/use-overmind";
-import { useFetch } from "./fetch-context";
 import { HtmlContainer } from "./components/html-container";
-import * as u from "./overmind/util";
+import { SetActiveNoteIdContext } from "./token-info-aside";
+import graphql from "babel-plugin-relay/macro";
+import { QueryRenderer } from "react-relay";
+import {
+  useLazyLoadQuery,
+  useRelayEnvironment,
+  useMutation,
+} from "react-relay/hooks";
+import { selectTokenMarkerReferenceModal_NotesQuery } from "./__generated__/selectTokenMarkerReferenceModal_NotesQuery.graphql";
+import { selectTokenMarkerReferenceModal_ActiveContentQuery } from "./__generated__/selectTokenMarkerReferenceModal_ActiveContentQuery.graphql";
+import { NoteEditorSideBar } from "./note-editor/note-editor-side-bar";
+import { selectTokenMarkerReferenceModal_NoteCreateMutation } from "./__generated__/selectTokenMarkerReferenceModal_NoteCreateMutation.graphql";
+
+const SelectTokenMarkerReferenceQuery = graphql`
+  query selectTokenMarkerReferenceModal_NotesQuery {
+    ...noteEditorSideBar_notesFragment
+  }
+`;
+
+const SelectTokenMarkerReference_ActiveContentQuery = graphql`
+  query selectTokenMarkerReferenceModal_ActiveContentQuery($activeNoteId: ID!) {
+    node(id: $activeNoteId) {
+      ... on Note {
+        __typename
+        id
+        content
+      }
+    }
+  }
+`;
+
+const NoteCreateMutation = graphql`
+  mutation selectTokenMarkerReferenceModal_NoteCreateMutation(
+    $input: NoteCreateInput!
+  ) {
+    noteCreate(input: $input) {
+      note {
+        id
+        title
+        content
+      }
+    }
+  }
+`;
 
 const OrSeperator = styled.span`
   padding-left: 18px;
@@ -17,116 +57,118 @@ const OrSeperator = styled.span`
   margin: 0;
 `;
 
+type UpdateTokenFunction = (
+  token: {
+    id: string;
+  } & Partial<{ reference: { type: "note"; id: string } }>
+) => Promise<void>;
+
+export const useShowSelectTokenMarkerReferenceModal = () => {
+  const [modalNode, setModalNode] = React.useState<React.ReactNode>(null);
+
+  return [
+    modalNode,
+    React.useCallback((tokenId: string, updateToken: UpdateTokenFunction) => {
+      setModalNode(
+        <React.Suspense fallback={null}>
+          <SelectTokenMarkerReferenceModal
+            tokenId={tokenId}
+            updateToken={updateToken}
+            close={() => setModalNode(null)}
+          />
+        </React.Suspense>
+      );
+    }, []),
+  ] as const;
+};
+
 export const SelectTokenMarkerReferenceModal: React.FC<{
-  updateToken: (
-    token: {
-      id: string;
-    } & Partial<{ reference: { type: "note"; id: string } }>
-  ) => Promise<void>;
-}> = ({ updateToken }) => {
-  const { actions, state } = useOvermind();
-  const localFetch = useFetch();
+  close: () => void;
+  tokenId: string;
+  updateToken: UpdateTokenFunction;
+}> = ({ close, tokenId, updateToken }) => {
+  const environment = useRelayEnvironment();
+  const sideBarData = useLazyLoadQuery<
+    selectTokenMarkerReferenceModal_NotesQuery
+  >(SelectTokenMarkerReferenceQuery, {});
+  const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
+  const [mutate] = useMutation<
+    selectTokenMarkerReferenceModal_NoteCreateMutation
+  >(NoteCreateMutation);
 
-  const attachNewNote = useCallback(async () => {
-    if (state.selectTokenMarkerReferenceModal.mode !== "ACTIVE") return;
-    const tokenId = state.selectTokenMarkerReferenceModal.tokenId;
+  const setActiveReferenceId = React.useContext(SetActiveNoteIdContext);
 
-    const response = await localFetch(`/notes`, {
-      method: "POST",
-      body: JSON.stringify({}),
-      headers: {
-        "Content-Type": "application/json",
+  const attachNewNote = useCallback(() => {
+    mutate({
+      variables: {
+        input: {
+          title: "New Note",
+          content: "",
+        },
+      },
+      onCompleted: (data) => {
+        const reference = {
+          type: "note" as "note",
+          id: data.noteCreate.note.id,
+        };
+
+        updateToken({ id: tokenId, reference });
+        setActiveReferenceId(data.noteCreate.note.id);
+        close();
       },
     });
-    const body = await response.json();
+  }, [updateToken, tokenId, close, mutate]);
+
+  const attachExistingNote = useCallback(() => {
+    if (!activeNoteId) return;
 
     const reference = {
       type: "note" as "note",
-      id: body.data.note.id as string,
+      id: activeNoteId,
     };
 
-    await updateToken({ id: tokenId, reference });
+    updateToken({ id: tokenId, reference });
+    setActiveReferenceId(activeNoteId);
 
-    await actions.tokenInfoAside.toggleActiveToken({
-      id: tokenId,
-      reference,
-    });
-    actions.tokenInfoAside.setEditMode(true);
-    actions.selectTokenMarkerReferenceModal.close();
-  }, [localFetch, updateToken]);
-
-  const attachExistingNote = useCallback(async () => {
-    if (
-      state.selectTokenMarkerReferenceModal.mode !== "ACTIVE" ||
-      u.isNone(state.selectTokenMarkerReferenceModal.activeNote)
-    ) {
-      return;
-    }
-    const tokenId = state.selectTokenMarkerReferenceModal.tokenId;
-
-    const reference = {
-      type: "note" as "note",
-      id: state.selectTokenMarkerReferenceModal.activeNote.id,
-    };
-
-    await updateToken({ id: tokenId, reference });
-    await actions.tokenInfoAside.toggleActiveToken({
-      id: tokenId,
-      reference,
-    });
-    actions.selectTokenMarkerReferenceModal.close();
-  }, [updateToken]);
-
-  const isActiveNote = useCallback((note) => {
-    if (state.selectTokenMarkerReferenceModal.mode !== "ACTIVE") return false;
-    return note === state.selectTokenMarkerReferenceModal.activeNote;
-  }, []);
-
-  if (state.selectTokenMarkerReferenceModal.mode === "NONE") return null;
+    close();
+  }, [updateToken, activeNoteId]);
 
   return (
-    <Modal
-      onPressEscape={actions.selectTokenMarkerReferenceModal.close}
-      onClickOutside={actions.selectTokenMarkerReferenceModal.close}
-    >
+    <Modal onPressEscape={close} onClickOutside={close}>
       <Modal.Dialog>
         <Modal.Header>
           <Modal.Heading3>Attach Note</Modal.Heading3>
         </Modal.Header>
         <Modal.Body style={{ display: "flex", height: "70vh" }} noPadding>
           <Modal.Aside>
-            <ScrollableList.List style={{ marginTop: 0 }}>
-              {state.selectTokenMarkerReferenceModal.notes.map((note) => (
-                <ScrollableList.ListItem key={note.id}>
-                  <ScrollableList.ListItemButton
-                    isActive={isActiveNote(note)}
-                    onClick={() => {
-                      actions.selectTokenMarkerReferenceModal.setActiveNote(
-                        note
-                      );
-                    }}
-                  >
-                    {note.title || "<Untitled Note>"}
-                  </ScrollableList.ListItemButton>
-                </ScrollableList.ListItem>
-              ))}
-            </ScrollableList.List>
+            <NoteEditorSideBar
+              notesRef={sideBarData}
+              setActiveNoteId={setActiveNoteId}
+              activeNoteId={activeNoteId}
+            />
           </Modal.Aside>
           <Modal.Content>
-            {state.selectTokenMarkerReferenceModal.activeNote ? (
-              <div
-                style={{
-                  paddingLeft: 16,
-                  paddingRight: 16,
-                  overflowY: "scroll",
+            {activeNoteId ? (
+              <QueryRenderer<selectTokenMarkerReferenceModal_ActiveContentQuery>
+                environment={environment}
+                query={SelectTokenMarkerReference_ActiveContentQuery}
+                variables={{ activeNoteId }}
+                render={({ error, props }) => {
+                  if (error) return null;
+                  if (props?.node?.__typename !== "Note") return null;
+                  return (
+                    <div
+                      style={{
+                        paddingLeft: 16,
+                        paddingRight: 16,
+                        overflowY: "scroll",
+                      }}
+                    >
+                      <HtmlContainer markdown={props.node.content} />
+                    </div>
+                  );
                 }}
-              >
-                <HtmlContainer
-                  markdown={
-                    state.selectTokenMarkerReferenceModal.activeNote.content
-                  }
-                />
-              </div>
+              />
             ) : null}
           </Modal.Content>
         </Modal.Body>
@@ -134,11 +176,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
           <Modal.Actions>
             <Modal.ActionGroup>
               <div>
-                <Button.Tertiary
-                  onClick={actions.selectTokenMarkerReferenceModal.close}
-                >
-                  Abort
-                </Button.Tertiary>
+                <Button.Tertiary onClick={close}>Abort</Button.Tertiary>
               </div>
               <div>
                 <Button.Primary tabIndex={1} onClick={attachNewNote}>
@@ -147,7 +185,11 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
               </div>
               <OrSeperator>or</OrSeperator>
               <div>
-                <Button.Primary tabIndex={1} onClick={attachExistingNote}>
+                <Button.Primary
+                  tabIndex={1}
+                  onClick={attachExistingNote}
+                  disabled={activeNoteId === null}
+                >
                   Link Note
                 </Button.Primary>
               </div>

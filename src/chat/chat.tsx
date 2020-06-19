@@ -1,8 +1,8 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
 import { QueryRenderer, requestSubscription } from "react-relay";
+import { useRelayEnvironment } from "react-relay/hooks";
 import { ConnectionHandler } from "relay-runtime";
-import { useEnvironment } from "../relay-environment";
 import { ChatUserList } from "./chat-user-list";
 import { ChatMessages } from "./chat-messages";
 import { ChatSettings } from "./chat-settings";
@@ -16,7 +16,6 @@ import notificationSound from "./notification.mp3";
 
 import styled from "@emotion/styled/macro";
 import { ChatTextArea } from "./chat-textarea";
-import { useLogInMutation } from "./log-in-mutation";
 import { chatUserUpdateSubscription } from "./__generated__/chatUserUpdateSubscription.graphql";
 import { ChatOnlineUserIndicator } from "./chat-online-user-indicator";
 import { isAbstractGraphQLMemberType } from "../relay-utilities";
@@ -131,7 +130,7 @@ const HorizontalNavigationButton = styled(Button.Tertiary)<
 
 export const useChatSoundsAndUnreadCount = (chatState: "hidden" | "show") => {
   const [hasUnreadMessages, setHasUnreadMessages] = React.useState(false);
-  const environment = useEnvironment();
+  const environment = useRelayEnvironment();
   const [playDiceRollSound] = useSound(diceRollSound, {
     volume: 0.5,
   });
@@ -191,7 +190,7 @@ export const Chat: React.FC<{
 }> = React.memo(({ toggleShowDiceRollNotes }) => {
   const [mode, setMode] = React.useState<"chat" | "user" | "settings">("chat");
 
-  const environment = useEnvironment();
+  const environment = useRelayEnvironment();
   React.useEffect(() => {
     const subscription = requestSubscription<chatSubscription>(environment, {
       subscription: AppSubscription,

@@ -7,7 +7,8 @@ import * as Button from "../button";
 import * as Icon from "../feather-icons";
 import { Modal } from "../modal";
 import { ToggleSwitch } from "../toggle-switch";
-import { useOvermind } from "../hooks/use-overmind";
+import { useShowSelectTokenMarkerReferenceModal } from "../dm-area/select-token-marker-reference-modal";
+import { SetActiveNoteIdContext } from "../dm-area/token-info-aside";
 
 const ColorPicker = React.memo(({ color, onChange, styles }) => {
   return (
@@ -34,8 +35,9 @@ const TokenContextMenu = ({
   updateToken,
   deleteToken,
   close,
+  showLinkReferenceModal,
 }) => {
-  const { actions } = useOvermind();
+  const setActiveNoteId = React.useContext(SetActiveNoteIdContext);
 
   const containerRef = useRef(null);
   const rangeSlideRef = useRef(null);
@@ -111,6 +113,7 @@ const TokenContextMenu = ({
       set({ to: { x, y }, immediate: true });
     }, 0);
   }, [set, position]);
+
   return (
     <animated.div
       ref={containerRef}
@@ -220,10 +223,7 @@ const TokenContextMenu = ({
                   <Button.Tertiary
                     small
                     onClick={() => {
-                      actions.tokenInfoAside.toggleActiveToken({
-                        id: tokenId,
-                        reference,
-                      });
+                      setActiveNoteId(reference.id);
                       close();
                     }}
                   >
@@ -234,13 +234,7 @@ const TokenContextMenu = ({
               </>
             ) : (
               <div>
-                <Button.Tertiary
-                  small
-                  onClick={() => {
-                    actions.selectTokenMarkerReferenceModal.open({ tokenId });
-                    close();
-                  }}
-                >
+                <Button.Tertiary small onClick={showLinkReferenceModal}>
                   <Icon.Link height={16} />
                   <span>Link</span>
                 </Button.Tertiary>
@@ -299,6 +293,11 @@ export const DmTokenMarker = React.memo(
     const [contextMenuCoordinates, setContextMenuCoordinates] = useState(null);
 
     const isDraggingRef = useRef(false);
+
+    const [
+      showSelectTokenMarkerModalNode,
+      showSelectTokenMarkerModal,
+    ] = useShowSelectTokenMarkerReferenceModal();
 
     return (
       <>
@@ -424,9 +423,14 @@ export const DmTokenMarker = React.memo(
               deleteToken={deleteToken}
               position={contextMenuCoordinates}
               close={() => setContextMenuCoordinates(null)}
+              showLinkReferenceModal={() => {
+                setContextMenuCoordinates(null);
+                showSelectTokenMarkerModal(token.id, updateToken);
+              }}
             />
           </Modal>
         ) : null}
+        {showSelectTokenMarkerModalNode}
       </>
     );
   }

@@ -16,6 +16,8 @@ export const useConfirmationDialog = () => {
         header: React.ReactNode;
         body: React.ReactNode;
         onConfirm: () => void;
+        cancelButtonText?: React.ReactNode;
+        confirmButtonText?: React.ReactNode;
       }) => {
         const close = () => setReactNode(null);
         setReactNode(

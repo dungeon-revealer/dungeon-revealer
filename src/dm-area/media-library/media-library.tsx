@@ -11,8 +11,8 @@ import styled from "@emotion/styled/macro";
 import { ImageLightBoxModal } from "../../image-lightbox-modal";
 import { useShareImageAction } from "../../hooks/use-share-image-action";
 import { InputGroup } from "../../input";
-import { useOvermind } from "../../hooks/use-overmind";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
+import { useAccessToken } from "../../hooks/use-access-token";
 
 type MediaLibraryProps = {
   onClose: () => void;
@@ -130,15 +130,13 @@ const initialState: MediaLibraryState = {
 export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
   const [state, dispatch] = React.useReducer(stateReducer, initialState);
   const getIsMounted = useGetIsMounted();
-  const overmind = useOvermind();
+  const accessToken = useAccessToken();
 
   useAsyncEffect(function* (onCancel, cast) {
     const task = sendRequest({
       method: "GET",
       headers: {
-        Authorization: overmind.state.sessionStore.accessToken
-          ? `Bearer ${overmind.state.sessionStore.accessToken}`
-          : null,
+        Authorization: accessToken ? `Bearer ${accessToken}` : null,
       },
       url: buildApiUrl("/images"),
     });
@@ -165,9 +163,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
     const task = sendRequest({
       method: "GET",
       headers: {
-        Authorization: overmind.state.sessionStore.accessToken
-          ? `Bearer ${overmind.state.sessionStore.accessToken}`
-          : null,
+        Authorization: accessToken ? `Bearer ${accessToken}` : null,
       },
       url: buildApiUrl(`/images?offset=${state.items.length}`),
     });
@@ -191,9 +187,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
     const task = sendRequest({
       method: "DELETE",
       headers: {
-        Authorization: overmind.state.sessionStore.accessToken
-          ? `Bearer ${overmind.state.sessionStore.accessToken}`
-          : null,
+        Authorization: accessToken ? `Bearer ${accessToken}` : null,
       },
       url: buildApiUrl(`/images/${id}`),
     });
@@ -218,9 +212,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: overmind.state.sessionStore.accessToken
-            ? `Bearer ${overmind.state.sessionStore.accessToken}`
-            : null,
+          Authorization: accessToken ? `Bearer ${accessToken}` : null,
         },
         url: buildApiUrl(`/images/${id}`),
         body: JSON.stringify({
@@ -262,9 +254,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
         method: "POST",
         body: formData,
         headers: {
-          Authorization: overmind.state.sessionStore.accessToken
-            ? `Bearer ${overmind.state.sessionStore.accessToken}`
-            : null,
+          Authorization: accessToken ? `Bearer ${accessToken}` : null,
         },
       });
 

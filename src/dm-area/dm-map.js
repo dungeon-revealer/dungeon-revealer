@@ -17,11 +17,10 @@ import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useSvgGrid } from "../hooks/use-svg-grid";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
-import { useOvermind } from "../hooks/use-overmind";
 import { useDropZone } from "../hooks/use-drop-zone";
 import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
-import { TokenInfoAside } from "./token-info-aside";
+import { TokenInfoAside, SetActiveNoteIdContext } from "./token-info-aside";
 import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
 import { useToasts } from "react-toast-notifications";
@@ -416,7 +415,6 @@ export const DmMap = ({
   dmPassword,
   onDropFile,
 }) => {
-  const { actions } = useOvermind();
   const mapContainerRef = React.useRef(null);
   const mapCanvasRef = React.useRef(null);
   const mapImageCanvasRef = React.useRef(null);
@@ -770,10 +768,12 @@ export const DmMap = ({
 
     let tasks = [
       loadImage(
-        buildApiUrl(`/map/${loadedMapId}/map?authorization=${dmPassword}`)
+        // prettier-ignore
+        buildApiUrl(`/map/${loadedMapId}/map?authorization=${encodeURIComponent(dmPassword)}`)
       ),
       loadImage(
-        buildApiUrl(`/map/${loadedMapId}/fog?authorization=${dmPassword}`)
+        // prettier-ignore
+        buildApiUrl(`/map/${loadedMapId}/fog?authorization=${encodeURIComponent(dmPassword)}`)
       ),
     ];
 
@@ -913,11 +913,15 @@ export const DmMap = ({
     [mapCanvasDimensions]
   );
 
+  const setActiveTokenId = React.useContext(SetActiveNoteIdContext);
+
   const onClickToken = React.useCallback(
     (token) => {
-      actions.tokenInfoAside.toggleActiveToken(token);
+      if (token.reference) {
+        setActiveTokenId(token.reference.id);
+      }
     },
-    [actions]
+    [setActiveTokenId]
   );
 
   const onStateChange = useStaticRef(() =>
