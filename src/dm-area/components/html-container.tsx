@@ -28,6 +28,15 @@ const allowedTags = [
   "h4",
   "h5",
   "h6",
+  "table",
+  "thead",
+  "tbody",
+  "tr",
+  "td",
+  "th",
+  "ul",
+  "ol",
+  "li",
   ...Object.keys(components),
 ];
 
@@ -108,6 +117,17 @@ const HtmlContainerStyled = styled.div`
     padding: 4px;
     background: #f8f8f8;
   }
+
+  table {
+    border-collapse: collapse;
+  }
+
+  td,
+  th {
+    border: 1px solid #999;
+    padding: 0.5rem;
+    text-align: left;
+  }
 `;
 
 export const TemplateContext = React.createContext<Map<string, string>>(
@@ -128,6 +148,7 @@ export const HtmlContainer: React.FC<{ markdown: string }> = React.memo(
             components={components}
             options={{
               simpleLineBreaks: true,
+              tables: true,
             }}
           />
         </HtmlContainerStyled>
