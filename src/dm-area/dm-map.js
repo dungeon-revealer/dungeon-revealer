@@ -20,7 +20,7 @@ import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useDropZone } from "../hooks/use-drop-zone";
 import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
-import { TokenInfoAside, SetActiveNoteIdContext } from "./token-info-aside";
+import { SetActiveNoteIdContext } from "./token-info-aside";
 import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
 import { useToasts } from "react-toast-notifications";
@@ -1594,7 +1594,7 @@ export const DmMap = ({
           </Toolbar.Group>
         </Toolbar>
       </div>
-      <TokenInfoAside />
+
       {confirmDialogNode}
     </div>
   );

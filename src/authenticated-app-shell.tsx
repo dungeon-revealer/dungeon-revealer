@@ -10,6 +10,12 @@ import { DiceRollNotes } from "./chat/dice-roll-notes";
 import { useChatSoundsAndUnreadCount } from "./chat/chat";
 import { useLogInMutation } from "./chat/log-in-mutation";
 import styled from "@emotion/styled/macro";
+import { NoteSearch } from "./note-search/note-search";
+import {
+  ActiveNoteIdContext,
+  SetActiveNoteIdContext,
+  TokenInfoAside,
+} from "./dm-area/token-info-aside";
 
 const useShowChatState = createPersistedState("chat.state");
 const useShowDiceRollNotesState = createPersistedState(
@@ -45,39 +51,53 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
     logIn();
   }, [logIn]);
 
+  const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
+
   if (isLoggedIn === false) {
     return null;
   }
 
   return (
-    <Container>
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-        {children}
-        <ChatToggleButton
-          hasUnreadMessages={hasUnreadMessages}
-          onClick={() => {
-            resetUnreadMessages();
-            setShowChatState((showChat) =>
-              showChat === "show" ? "hidden" : "show"
-            );
-          }}
-        />
-      </div>
-      {chatState === "show" ? (
-        <div
-          style={{
-            flex: 1,
-            maxWidth: 400,
-            borderLeft: "1px solid lightgrey",
-          }}
-        >
-          <Chat toggleShowDiceRollNotes={toggleShowDiceRollNotes} />
-        </div>
-      ) : null}
-      {diceRollNotesState === "show" ? (
-        <DiceRollNotes close={toggleShowDiceRollNotes} />
-      ) : null}
-    </Container>
+    <ActiveNoteIdContext.Provider value={activeNoteId}>
+      <SetActiveNoteIdContext.Provider
+        value={(value) => {
+          setActiveNoteId((currentValue) =>
+            value === currentValue ? null : value
+          );
+        }}
+      >
+        <Container>
+          <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+            {children}
+            <ChatToggleButton
+              hasUnreadMessages={hasUnreadMessages}
+              onClick={() => {
+                resetUnreadMessages();
+                setShowChatState((showChat) =>
+                  showChat === "show" ? "hidden" : "show"
+                );
+              }}
+            />
+            <NoteSearch />
+          </div>
+          {chatState === "show" ? (
+            <div
+              style={{
+                flex: 1,
+                maxWidth: 400,
+                borderLeft: "1px solid lightgrey",
+              }}
+            >
+              <Chat toggleShowDiceRollNotes={toggleShowDiceRollNotes} />
+            </div>
+          ) : null}
+          {diceRollNotesState === "show" ? (
+            <DiceRollNotes close={toggleShowDiceRollNotes} />
+          ) : null}
+        </Container>
+        <TokenInfoAside />
+      </SetActiveNoteIdContext.Provider>
+    </ActiveNoteIdContext.Provider>
   );
 };
 

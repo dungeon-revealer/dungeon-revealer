@@ -8,6 +8,8 @@ type ViewerRole = "admin" | "user";
 export type NoteModelType = db.NoteModelType;
 export const decodeNote = db.decodeNote;
 
+export type NoteSearchMatchType = db.NoteSearchMatchType;
+
 const isAdmin = (viewerRole: ViewerRole) => viewerRole === "admin";
 
 const checkAdmin = (): RTE.ReaderTaskEither<
@@ -62,3 +64,5 @@ export const deleteNote = (noteId: string) =>
     checkAdmin(),
     RTE.chainW(() => db.deleteNote(noteId))
   );
+
+export const findPublicNotes = db.findPublicNotes;

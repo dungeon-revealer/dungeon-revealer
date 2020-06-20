@@ -15,6 +15,7 @@ const TokenInfoAside_nodeQuery = graphql`
       ... on Note {
         __typename
         title
+        viewerCanEdit
         ...noteEditorActiveItem_nodeFragment
       }
     }
@@ -50,6 +51,19 @@ export const TokenInfoAside: React.FC<{}> = () => {
         if (error) return null;
         if (props?.node?.__typename !== "Note") return null;
 
+        const options = props.node.viewerCanEdit
+          ? [
+              {
+                onClick: () => setIsEditMode((isEditMode) => !isEditMode),
+                title: isEditMode ? "Save" : "Edit",
+                //TODO: Make types more strict
+                Icon: isEditMode
+                  ? (Icon.SaveIcon as any)
+                  : (Icon.EditIcon as any),
+              },
+            ]
+          : [];
+
         return (
           <DraggableWindow
             onKeyDown={(ev) => {
@@ -78,16 +92,7 @@ export const TokenInfoAside: React.FC<{}> = () => {
               top: "calc(50vh - 25%)",
               left: "calc(100% - 500px - 12px)",
             }}
-            options={[
-              {
-                onClick: () => setIsEditMode((isEditMode) => !isEditMode),
-                title: isEditMode ? "Save" : "Edit",
-                //TODO: Make types more strict
-                Icon: isEditMode
-                  ? (Icon.SaveIcon as any)
-                  : (Icon.EditIcon as any),
-              },
-            ]}
+            options={options}
           />
         );
       }}

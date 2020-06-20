@@ -114,6 +114,7 @@ type Note implements Node {
   title: String!
   content: String!
   createdAt: Int!
+  viewerCanEdit: Boolean!
   updatedAt: Int!
 }
 
@@ -143,6 +144,22 @@ type NoteDeleteResult {
 type NoteEdge {
   cursor: String!
   node: Note!
+}
+
+type NoteSearchConnection {
+  pageInfo: PageInfo
+  edges: [NoteSearchEdgeType!]!
+}
+
+type NoteSearchEdgeType {
+  cursor: String!
+  node: NoteSearchResultType!
+}
+
+type NoteSearchResultType {
+  noteId: ID!
+  title: String!
+  preview: String!
 }
 
 input NoteUpdateInput {
@@ -175,6 +192,7 @@ type Query {
   usersCount: Int!
   me: User!
   notes(first: Int, after: String): NoteConnection!
+  notesSearch(first: Int, after: String, query: String): NoteSearchConnection!
   node(id: ID!): Node
 }
 

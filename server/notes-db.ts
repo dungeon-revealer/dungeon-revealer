@@ -13,6 +13,7 @@ const NoteModel = t.type({
   id: t.string,
   title: t.string,
   content: t.string,
+  type: t.union([t.literal("admin"), t.literal("public")]),
   createdAt: t.number,
   updatedAt: t.number,
 });
@@ -56,10 +57,12 @@ export const getNoteById = (
           "id",
           "title",
           "content",
+          "type",
           "created_at",
           "updated_at"
         FROM "notes"
-        WHERE "id" = ?;
+        WHERE
+          "id" = ?;
       `,
           id
         ),
@@ -81,9 +84,12 @@ export const getPaginatedNotes = (): RTE.ReaderTaskEither<
             "id",
             "title",
             "content",
+            "type",
             "created_at",
             "updated_at"
           FROM "notes"
+          WHERE
+            "type" = 'admin'
           ORDER BY
             "created_at" DESC
           ;
@@ -171,11 +177,128 @@ export const deleteNote = (
         db.run(
           /* SQL */ `
           DELETE FROM "notes"
-          WHERE "id" = ?;
+          WHERE
+            "id" = ?
+          ;
         `,
           noteId
         ),
       E.toError
     ),
     TE.map(() => noteId)
+  );
+
+// TODO: How should people import public notes?
+// Ideally, they could drag and drop a zip into dungeon-revealer
+export const updateOrInsertPublicNote = (record: {
+  id: string;
+  title: string;
+  content: string;
+  sanitizedContent: string;
+}): RTE.ReaderTaskEither<{ db: Database }, Error | t.Errors, string> => ({
+  db,
+}) =>
+  pipe(
+    TE.tryCatch(async () => {
+      await db.run(
+        /* SQL */ `
+          INSERT OR REPLACE INTO "notes" (
+            "id",
+            "title",
+            "content",
+            "type",
+            "created_at",
+            "updated_at"
+          ) VALUES (
+              ?,
+              ?,
+              ?,
+              'public',
+              COALESCE((SELECT "created_at" FROM "notes" WHERE id = ?), ?),
+              ?
+          );
+        `,
+        record.id,
+        record.title,
+        record.content,
+        record.id,
+        getTimestamp(),
+        getTimestamp()
+      );
+
+      await db.run(
+        /* SQL */ `
+          INSERT OR REPLACE INTO "notes_search_public" (
+            "rowid",
+            "id",
+            "title",
+            "content"
+          ) VALUES (
+            COALESCE((SELECT "rowid" FROM "notes_search_public" WHERE id = ?), NULL),
+            ?,
+            ?,
+            ?
+          );
+        `,
+        record.id,
+        record.id,
+        record.title,
+        record.sanitizedContent
+      );
+    }, E.toError),
+    TE.map(() => record.id)
+  );
+
+export const NoteSearchMatch = t.type(
+  {
+    noteId: t.string,
+    title: t.string,
+    preview: t.string,
+  },
+  "SearchMatch"
+);
+
+export type NoteSearchMatchType = t.TypeOf<typeof NoteSearchMatch>;
+
+export const NoteSearchMatchList = t.array(NoteSearchMatch);
+
+type NoteSearchMatchListType = t.TypeOf<typeof NoteSearchMatchList>;
+
+export const decodeNoteSearchMatchList = flow(
+  (obj) =>
+    Array.isArray(obj)
+      ? obj.map((obj) => (isObject(obj) ? camelCaseKeys(obj) : obj))
+      : obj,
+  NoteSearchMatchList.decode
+);
+
+export const findPublicNotes = (
+  query: string
+): RTE.ReaderTaskEither<
+  { db: Database },
+  Error | t.Errors,
+  NoteSearchMatchListType
+> => ({ db }) =>
+  pipe(
+    TE.tryCatch(
+      () =>
+        db.all(
+          /* SQL */ `
+          SELECT
+            "id" as "note_id",
+            "title",
+            snippet("notes_search_public", 2, '!', '!', "...", 16) as "preview"
+          FROM "notes_search_public"
+          WHERE
+            "title" MATCH ? OR
+            "content" MATCH ?
+          LIMIT 10
+          ;
+        `,
+          `"${query}"*`,
+          `"query"*`
+        ),
+      E.toError
+    ),
+    TE.chainW(flow(decodeNoteSearchMatchList, TE.fromEither))
   );

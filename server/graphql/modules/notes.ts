@@ -5,10 +5,11 @@ import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as RT from "fp-ts/lib/ReaderTask";
 import * as E from "fp-ts/lib/Either";
 import * as notes from "../../notes-lib";
+import { pipe } from "fp-ts/lib/pipeable";
 
-export const URI = "Note" as const;
+export const NOTE_URI = "Note" as const;
 
-const isTypeOf = flow(
+const isTypeOfNote = flow(
   notes.decodeNote,
   E.fold(
     () => false,
@@ -16,23 +17,25 @@ const isTypeOf = flow(
   )
 );
 
-export const encodeId = Relay.encodeId(URI);
+export const encodeNoteId = Relay.encodeId(NOTE_URI);
 
-const decodeId = flow(
+const decodeNoteId = flow(
   Relay.decodeId,
   E.chainW(([, type, id]) =>
-    type === URI ? E.right(id) : E.left(new Error(`Invalid type '${type}'.`))
+    type === NOTE_URI
+      ? E.right(id)
+      : E.left(new Error(`Invalid type '${type}'.`))
   )
 );
 
 export const GraphQLNoteType = t.objectType<notes.NoteModelType>({
   name: "Note",
   interfaces: [Relay.GraphQLNodeInterface],
-  isTypeOf,
+  isTypeOf: isTypeOfNote,
   fields: () => [
     t.field("id", {
       type: t.NonNull(t.ID),
-      resolve: ({ id }) => encodeId(id),
+      resolve: ({ id }) => encodeNoteId(id),
     }),
     t.field("title", {
       type: t.NonNull(t.String),
@@ -45,6 +48,10 @@ export const GraphQLNoteType = t.objectType<notes.NoteModelType>({
     t.field("createdAt", {
       type: t.NonNull(t.Int),
       resolve: (obj) => obj.createdAt,
+    }),
+    t.field("viewerCanEdit", {
+      type: t.NonNull(t.Boolean),
+      resolve: (obj, args, context) => context.viewerRole === "admin",
     }),
     t.field("updatedAt", {
       type: t.NonNull(t.Int),
@@ -116,6 +123,70 @@ export const resolveNote = flow(
   )
 );
 
+const GraphQLNoteSearchResultType = t.objectType<notes.NoteSearchMatchType>({
+  name: "NoteSearchResultType",
+  fields: () => [
+    t.field("noteId", {
+      type: t.NonNull(t.ID),
+      resolve: (obj) => obj.noteId,
+    }),
+    t.field("title", {
+      type: t.NonNull(t.String),
+      resolve: (obj) => obj.title,
+    }),
+    t.field("preview", {
+      type: t.NonNull(t.String),
+      resolve: (obj) => obj.preview,
+    }),
+  ],
+});
+
+const GraphQLNoteSearchEdgeType = t.objectType<notes.NoteSearchMatchType>({
+  name: "NoteSearchEdgeType",
+  fields: () => [
+    t.field("cursor", {
+      type: t.NonNull(t.String),
+      resolve: (obj) => obj.noteId,
+    }),
+    t.field("node", {
+      type: t.NonNull(GraphQLNoteSearchResultType),
+      resolve: (obj) => obj,
+    }),
+  ],
+});
+
+type NoteSearchConnectionType = {
+  edges: notes.NoteSearchMatchType[];
+};
+
+const GraphQLNoteSearchConnectionType = t.objectType<NoteSearchConnectionType>({
+  name: "NoteSearchConnection",
+  fields: () => [
+    t.field("pageInfo", {
+      type: Relay.GraphQLPageInfoType,
+      resolve: () => ({}),
+    }),
+    t.field("edges", {
+      type: t.NonNull(t.List(t.NonNull(GraphQLNoteSearchEdgeType))),
+      resolve: (obj) => obj.edges,
+    }),
+  ],
+});
+
+const resolveNotesSearch = (query: string) =>
+  pipe(
+    notes.findPublicNotes(query),
+    RTE.fold(
+      (err) => {
+        console.log(JSON.stringify(err, null, 2));
+        throw err;
+      },
+      (edges) => {
+        return RT.of({ edges });
+      }
+    )
+  );
+
 export const queryFields = [
   t.field("notes", {
     type: t.NonNull(GraphQLNoteConnectionType),
@@ -123,7 +194,17 @@ export const queryFields = [
       first: t.arg(t.Int),
       after: t.arg(t.String),
     },
-    resolve: (obj, args, context) => resolveNotes()(context)(),
+    resolve: (obj, args, context) => RT.run(resolveNotes(), context),
+  }),
+  t.field("notesSearch", {
+    type: t.NonNull(GraphQLNoteSearchConnectionType),
+    args: {
+      first: t.arg(t.Int),
+      after: t.arg(t.String),
+      query: t.arg(t.String),
+    },
+    resolve: (obj, args, context) =>
+      RT.run(resolveNotesSearch(args.query || ""), context),
   }),
 ];
 
@@ -163,10 +244,10 @@ const resolveNoteCreate = flow(
 );
 
 const resolveNoteDelete = flow(
-  decodeId,
+  decodeNoteId,
   RTE.fromEither,
   RTE.chain(notes.deleteNote),
-  RTE.map((id) => encodeId(id)),
+  RTE.map((id) => encodeNoteId(id)),
   RTE.fold(
     (err) => {
       throw err;
@@ -227,7 +308,7 @@ const resolveNoteUpdate = flow(
 );
 
 const tryDecodeId = flow(
-  decodeId,
+  decodeNoteId,
   E.fold(
     (err) => {
       throw err;

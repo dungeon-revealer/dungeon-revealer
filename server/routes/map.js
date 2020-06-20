@@ -20,7 +20,7 @@ const mapToken = (token) => {
     ...token,
     reference: {
       ...token.reference,
-      id: NoteModule.encodeId(token.reference.id),
+      id: NoteModule.encodeNoteId(token.reference.id),
     },
   };
 };

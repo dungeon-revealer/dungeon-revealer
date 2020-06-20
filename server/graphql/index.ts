@@ -38,7 +38,7 @@ const nodeField = t.field("node", {
           ([version, type, id]) => {
             if (version !== RelaySpecModule.API_VERSION) return RT.of(null);
             switch (type) {
-              case NotesModule.URI:
+              case NotesModule.NOTE_URI:
                 return NotesModule.resolveNote(id);
             }
 
