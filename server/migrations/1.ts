@@ -11,6 +11,7 @@ export const migrate = async ({
 }) => {
   await db.exec(/* SQL */ `
     BEGIN;
+    PRAGMA "user_version" = 2;
     CREATE TABLE "notes" (
       "id" TEXT PRIMARY KEY NOT NULL,
       "title" TEXT NOT NULL,
