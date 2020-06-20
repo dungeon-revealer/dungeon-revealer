@@ -122,12 +122,7 @@ export const HtmlContainer: React.FC<{ markdown: string }> = React.memo(
       <TemplateContext.Provider value={templateMap}>
         <HtmlContainerStyled>
           <MarkdownView
-            /**
-             * There is no good way to sanitize HTML in Markdown pre-processing
-             * Because of that we monkey patched MarkdownView to accept a sanitize
-             * function that will be applied post converting the dom to html
-             */
-            MONKEY_PATCHED_sanitizeHtml={sanitizeHtml}
+            sanitizeHtml={sanitizeHtml}
             markdown={markdown}
             extensions={[transformTemplateExtension(templateMap)]}
             components={components}
