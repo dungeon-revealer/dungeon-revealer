@@ -26,10 +26,6 @@ import { FetchContext } from "./fetch-context";
 import { ToastProvider } from "react-toast-notifications";
 import { sendRequest } from "../http-request";
 import { AuthenticatedAppShell } from "../authenticated-app-shell";
-import {
-  ActiveNoteIdContext,
-  SetActiveNoteIdContext,
-} from "./token-info-aside";
 import { AccessTokenProvider } from "../hooks/use-access-token";
 
 const useLoadedMapId = createPersistedState("loadedMapId");
