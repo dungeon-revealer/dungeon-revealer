@@ -36,7 +36,10 @@ const ChatMessageSoundSubscription = graphql`
   subscription chatMessageSoundSubscription {
     chatMessagesAdded {
       messages {
-        containsDiceRoll
+        __typename
+        ... on TextChatMessage {
+          containsDiceRoll
+        }
       }
     }
   }

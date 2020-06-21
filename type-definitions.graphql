@@ -1,18 +1,106 @@
 ### THIS FILE IS AUTO GENERATED
 
-input ChangeNameInput {
-  name: String!
+type DiceRollOperatorNode implements DiceRollDetail {
+  content: String!
 }
 
-type ChangeNameResult {
-  me: User!
+interface DiceRollDetail {
+  content: String!
+}
+
+type DiceRollConstantNode implements DiceRollDetail {
+  content: String!
+}
+
+type DiceRollDiceRollNode implements DiceRollDetail {
+  content: String!
+  min: Float!
+  max: Float!
+  rollResults: [DiceRollResult!]!
+}
+
+type DiceRollResult {
+  dice: String!
+  result: Float!
+  category: DiceRollCategory!
+}
+
+enum DiceRollCategory {
+  DEFAULT
+  MAX
+  MIN
+}
+
+type DiceRollOpenParenNode implements DiceRollDetail {
+  content: String!
+}
+
+type DiceRollCloseParenNode implements DiceRollDetail {
+  content: String!
+}
+
+type UserChatMessage implements ChatMessage & TextChatMessage {
+  id: ID!
+  authorName: String!
+  content: String!
+  diceRolls: [DiceRoll!]!
+  createdAt: String!
+  containsDiceRoll: Boolean!
 }
 
 interface ChatMessage {
   id: ID!
+}
+
+interface TextChatMessage {
+  id: ID!
   content: String!
   createdAt: String!
   containsDiceRoll: Boolean!
+}
+
+type DiceRoll {
+  result: Float!
+  detail: [DiceRollDetail!]!
+}
+
+type OperationalChatMessage implements ChatMessage & TextChatMessage {
+  id: ID!
+  content: String!
+  createdAt: String!
+  containsDiceRoll: Boolean!
+}
+
+type SharedResourceChatMessage implements ChatMessage {
+  id: ID!
+  authorName: String!
+  resource: SharedResource
+}
+
+union SharedResource = Note
+
+type Note implements Node {
+  id: ID!
+  title: String!
+  content: String!
+  contentPreview: String!
+  createdAt: Int!
+  viewerCanEdit: Boolean!
+  updatedAt: Int!
+}
+
+interface Node {
+  id: ID!
+}
+
+type Query {
+  chat(first: Int, after: ID): ChatMessageConnection!
+  users(first: Int, after: ID): ConnectedUserConnection!
+  usersCount: Int!
+  me: User!
+  notes(first: Int, after: String): NoteConnection!
+  notesSearch(first: Int, after: String, query: String): NoteSearchConnection!
+  node(id: ID!): Node
 }
 
 type ChatMessageConnection {
@@ -20,17 +108,16 @@ type ChatMessageConnection {
   pageInfo: PageInfo!
 }
 
-input ChatMessageCreateInput {
-  rawContent: String!
-}
-
 type ChatMessageEdge {
   cursor: String!
   node: ChatMessage!
 }
 
-type ChatMessagesAddedSubscription {
-  messages: [ChatMessage!]!
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String!
+  endCursor: String!
 }
 
 type ConnectedUserConnection {
@@ -43,102 +130,14 @@ type ConnectedUserEdge {
   node: User!
 }
 
-type DiceRoll {
-  result: Float!
-  detail: [DiceRollDetail!]!
-}
-
-enum DiceRollCategory {
-  DEFAULT
-  MAX
-  MIN
-}
-
-type DiceRollCloseParenNode implements DiceRollDetail {
-  content: String!
-}
-
-type DiceRollConstantNode implements DiceRollDetail {
-  content: String!
-}
-
-interface DiceRollDetail {
-  content: String!
-}
-
-type DiceRollDiceRollNode implements DiceRollDetail {
-  content: String!
-  min: Float!
-  max: Float!
-  rollResults: [DiceRollResult!]!
-}
-
-type DiceRollOpenParenNode implements DiceRollDetail {
-  content: String!
-}
-
-type DiceRollOperatorNode implements DiceRollDetail {
-  content: String!
-}
-
-type DiceRollResult {
-  dice: String!
-  result: Float!
-  category: DiceRollCategory!
-}
-
-input LogInInput {
-  id: String!
+type User {
+  id: ID!
   name: String!
-}
-
-type LogInResult {
-  user: User!
-}
-
-type Mutation {
-  logIn(input: LogInInput): LogInResult!
-  changeName(input: ChangeNameInput!): ChangeNameResult!
-  chatMessageCreate(input: ChatMessageCreateInput!): Boolean
-  noteCreate(input: NoteCreateInput!): NoteCreateResult!
-  noteDelete(input: NoteDeleteInput!): NoteDeleteResult!
-  noteUpdate(input: NoteUpdateInput!): NoteUpdateResult!
-}
-
-interface Node {
-  id: ID!
-}
-
-type Note implements Node {
-  id: ID!
-  title: String!
-  content: String!
-  createdAt: Int!
-  viewerCanEdit: Boolean!
-  updatedAt: Int!
 }
 
 type NoteConnection {
   edges: [NoteEdge!]!
   pageInfo: PageInfo!
-}
-
-input NoteCreateInput {
-  title: String!
-  content: String!
-}
-
-type NoteCreateResult {
-  note: Note!
-}
-
-input NoteDeleteInput {
-  noteId: String!
-}
-
-type NoteDeleteResult {
-  success: Boolean!
-  deletedNoteId: ID!
 }
 
 type NoteEdge {
@@ -162,38 +161,67 @@ type NoteSearchResultType {
   preview: String!
 }
 
-input NoteUpdateInput {
+type Mutation {
+  logIn(input: LogInInput): LogInResult!
+  changeName(input: ChangeNameInput!): ChangeNameResult!
+  chatMessageCreate(input: ChatMessageCreateInput!): Boolean
+  shareResource(input: ShareResourceInput!): Boolean
+  noteCreate(input: NoteCreateInput!): NoteCreateResult!
+  noteDelete(input: NoteDeleteInput!): NoteDeleteResult!
+  noteUpdate(input: NoteUpdateInput!): NoteUpdateResult!
+}
+
+type LogInResult {
+  user: User!
+}
+
+input LogInInput {
   id: String!
+  name: String!
+}
+
+type ChangeNameResult {
+  me: User!
+}
+
+input ChangeNameInput {
+  name: String!
+}
+
+input ChatMessageCreateInput {
+  rawContent: String!
+}
+
+input ShareResourceInput {
+  contentId: ID!
+}
+
+type NoteCreateResult {
+  note: Note!
+}
+
+input NoteCreateInput {
   title: String!
   content: String!
+}
+
+type NoteDeleteResult {
+  success: Boolean!
+  deletedNoteId: ID!
+}
+
+input NoteDeleteInput {
+  noteId: String!
 }
 
 type NoteUpdateResult {
   note: Note
 }
 
-type OperationalChatMessage implements ChatMessage {
-  id: ID!
+input NoteUpdateInput {
+  id: String!
+  title: String!
   content: String!
-  createdAt: String!
-  containsDiceRoll: Boolean!
-}
-
-type PageInfo {
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-  startCursor: String!
-  endCursor: String!
-}
-
-type Query {
-  chat(first: Int, after: ID): ChatMessageConnection!
-  users(first: Int, after: ID): ConnectedUserConnection!
-  usersCount: Int!
-  me: User!
-  notes(first: Int, after: String): NoteConnection!
-  notesSearch(first: Int, after: String, query: String): NoteSearchConnection!
-  node(id: ID!): Node
 }
 
 type Subscription {
@@ -201,27 +229,14 @@ type Subscription {
   chatMessagesAdded: ChatMessagesAddedSubscription!
 }
 
-type User {
-  id: ID!
-  name: String!
-}
+union UserUpdateSubscription =
+    UserAddUpdate
+  | UserRemoveUpdate
+  | UserChangeUpdate
 
 type UserAddUpdate {
   user: User!
   usersCount: Int!
-}
-
-type UserChangeUpdate {
-  user: User!
-}
-
-type UserChatMessage implements ChatMessage {
-  id: ID!
-  authorName: String!
-  content: String!
-  diceRolls: [DiceRoll!]!
-  createdAt: String!
-  containsDiceRoll: Boolean!
 }
 
 type UserRemoveUpdate {
@@ -229,7 +244,10 @@ type UserRemoveUpdate {
   usersCount: Int!
 }
 
-union UserUpdateSubscription =
-    UserAddUpdate
-  | UserRemoveUpdate
-  | UserChangeUpdate
+type UserChangeUpdate {
+  user: User!
+}
+
+type ChatMessagesAddedSubscription {
+  messages: [ChatMessage!]!
+}

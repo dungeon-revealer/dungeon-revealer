@@ -6,10 +6,11 @@ import * as RT from "fp-ts/lib/ReaderTask";
 import * as E from "fp-ts/lib/Either";
 import * as notes from "../../notes-lib";
 import { pipe } from "fp-ts/lib/pipeable";
+import * as util from "../../markdown-to-plain-text";
 
 export const NOTE_URI = "Note" as const;
 
-const isTypeOfNote = flow(
+export const isTypeOfNote = flow(
   notes.decodeNote,
   E.fold(
     () => false,
@@ -17,9 +18,11 @@ const isTypeOfNote = flow(
   )
 );
 
+export type NoteModelType = notes.NoteModelType;
+
 export const encodeNoteId = Relay.encodeId(NOTE_URI);
 
-const decodeNoteId = flow(
+export const decodeNoteId = flow(
   Relay.decodeId,
   E.chainW(([, type, id]) =>
     type === NOTE_URI
@@ -44,6 +47,11 @@ export const GraphQLNoteType = t.objectType<notes.NoteModelType>({
     t.field("content", {
       type: t.NonNull(t.String),
       resolve: (obj) => obj.content,
+    }),
+    t.field("contentPreview", {
+      type: t.NonNull(t.String),
+      resolve: (obj) =>
+        pipe(util.markdownToPlainText(obj.content), util.shortenText(100)),
     }),
     t.field("createdAt", {
       type: t.NonNull(t.Int),
@@ -128,7 +136,7 @@ const GraphQLNoteSearchResultType = t.objectType<notes.NoteSearchMatchType>({
   fields: () => [
     t.field("noteId", {
       type: t.NonNull(t.ID),
-      resolve: (obj) => obj.noteId,
+      resolve: (obj) => encodeNoteId(obj.noteId),
     }),
     t.field("title", {
       type: t.NonNull(t.String),

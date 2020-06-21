@@ -5,20 +5,28 @@ import { ActiveNoteIdContext, SetActiveNoteIdContext } from ".";
 import { NoteEditorActiveItem } from "../note-editor/note-editor-active-item";
 import { QueryRenderer } from "react-relay";
 import type { tokenInfoAside_nodeQuery } from "./__generated__/tokenInfoAside_nodeQuery.graphql";
-import { useRelayEnvironment } from "react-relay/hooks";
+import { useRelayEnvironment, useMutation } from "react-relay/hooks";
 import { DraggableWindow } from "../../draggable-window";
 import * as Icon from "../../feather-icons";
+import { tokenInfoAside_shareNoteMutation } from "./__generated__/tokenInfoAside_shareNoteMutation.graphql";
 
 const TokenInfoAside_nodeQuery = graphql`
   query tokenInfoAside_nodeQuery($activeNoteId: ID!) {
     node(id: $activeNoteId) {
       ... on Note {
         __typename
+        id
         title
         viewerCanEdit
         ...noteEditorActiveItem_nodeFragment
       }
     }
+  }
+`;
+
+const TokenInfoAside_shareResourceMutation = graphql`
+  mutation tokenInfoAside_shareNoteMutation($input: ShareResourceInput!) {
+    shareResource(input: $input)
   }
 `;
 
@@ -40,6 +48,10 @@ export const TokenInfoAside: React.FC<{}> = () => {
   const [isEditMode, setIsEditMode] = React.useState(false);
   const sideBarRef = React.useRef<HTMLDivElement>(null);
 
+  const [mutate] = useMutation<tokenInfoAside_shareNoteMutation>(
+    TokenInfoAside_shareResourceMutation
+  );
+
   if (!activeNoteId) return null;
 
   return (
@@ -50,8 +62,9 @@ export const TokenInfoAside: React.FC<{}> = () => {
       render={({ error, props }) => {
         if (error) return null;
         if (props?.node?.__typename !== "Note") return null;
+        const { node } = props;
 
-        const options = props.node.viewerCanEdit
+        const canEditOptions = props.node.viewerCanEdit
           ? [
               {
                 onClick: () => setIsEditMode((isEditMode) => !isEditMode),
@@ -63,6 +76,17 @@ export const TokenInfoAside: React.FC<{}> = () => {
               },
             ]
           : [];
+
+        const options = [
+          {
+            onClick: () =>
+              mutate({ variables: { input: { contentId: node.id } } }),
+            title: "Share",
+            //TODO: Make types more strict
+            Icon: Icon.Share as any,
+          },
+          ...canEditOptions,
+        ];
 
         return (
           <DraggableWindow

@@ -62,6 +62,9 @@ export default ({
         source,
         variableValues: variables,
       }).then((result) => {
+        result.errors?.forEach((error) => {
+          console.error(error.originalError);
+        });
         socket.emit("graphql/result", { id, ...result });
       });
     });

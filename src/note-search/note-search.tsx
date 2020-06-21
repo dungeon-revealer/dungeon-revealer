@@ -83,8 +83,7 @@ const SearchResult: React.FC<{ query: string; clearQuery: () => void }> = ({
           <Result
             onClick={() => {
               clearQuery();
-              console.log(btoa(`01:Note:${edge.node.noteId}`));
-              setActiveNoteId(btoa(`01:Note:${edge.node.noteId}`));
+              setActiveNoteId(edge.node.noteId);
             }}
           >
             <ResultTitle>{edge.node.title}</ResultTitle>
