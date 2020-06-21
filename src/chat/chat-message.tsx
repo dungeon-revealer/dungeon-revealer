@@ -119,8 +119,22 @@ const ChatMessage_SharedResourceChatMessageFragment = graphql`
 
 const NoteCard = styled.div`
   border: 0.5px solid lightgrey;
-  padding: 8px;
   border-radius: 2px;
+`;
+
+const NoteTitle = styled.div`
+  font-weight: bold;
+  padding: 8px;
+  padding-bottom: 4px;
+`;
+
+const NoteBody = styled.div`
+  padding: 8px;
+  padding-top: 0;
+`;
+
+const NoteFooter = styled.div`
+  padding: 8px;
 `;
 
 const NotePreview: React.FC<{
@@ -131,11 +145,13 @@ const NotePreview: React.FC<{
   const setActiveNoteId = React.useContext(SetActiveNoteIdContext);
   return (
     <NoteCard>
-      <div>{title}</div>
-      <div>{contentPreview}</div>
-      <Button.Primary small onClick={() => setActiveNoteId(id)}>
-        Show
-      </Button.Primary>
+      <NoteTitle>{title}</NoteTitle>
+      <NoteBody>{contentPreview}</NoteBody>
+      <NoteFooter>
+        <Button.Primary small onClick={() => setActiveNoteId(id)}>
+          Show
+        </Button.Primary>
+      </NoteFooter>
     </NoteCard>
   );
 };
