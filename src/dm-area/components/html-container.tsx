@@ -6,11 +6,13 @@ import { SharableImage } from "./sharable-image";
 import _sanitizeHtml from "sanitize-html";
 import { ChatMessageButton } from "./chat-message-button";
 import { useStaticRef } from "../../hooks/use-static-ref";
+import { NoteLink } from "./note-link";
 
 const components = {
   Image: SharableImage,
   ChatMessage: ChatMessageButton,
   ChatMacro: ChatMessageButton,
+  Link: NoteLink,
 };
 
 const allowedTags = [
@@ -79,6 +81,7 @@ const sanitizeHtml = (html: string) =>
       ChatMacro: ["message", "templateId", "var-*"],
       // alias for ChatMessage
       ChatMessage: ["message", "templateId", "var-*"],
+      Link: ["id"],
       div: ["style"],
       span: ["style"],
     },
