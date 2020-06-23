@@ -58,6 +58,7 @@ export const DraggableWindow = ({
   headerContent,
   bodyContent,
   onKeyDown,
+  onMouseDown,
   close,
   style,
   options = [],
@@ -65,6 +66,7 @@ export const DraggableWindow = ({
   headerContent: React.ReactNode;
   bodyContent: React.ReactNode;
   onKeyDown: React.ComponentProps<"div">["onKeyDown"];
+  onMouseDown: React.ComponentProps<"div">["onMouseDown"];
   close: () => void;
   style?: Pick<React.CSSProperties, "top" | "left" | "right">;
   options?: {
@@ -94,7 +96,7 @@ export const DraggableWindow = ({
   );
 
   const dimensionDragBind = useDrag(
-    ({ movement: [mx, my], down }) => {
+    ({ movement: [mx, my] }) => {
       set({
         width: mx,
         height: my,
@@ -109,6 +111,7 @@ export const DraggableWindow = ({
   return (
     <WindowContainer
       onKeyDown={onKeyDown}
+      onMouseDown={onMouseDown}
       onContextMenu={(ev) => {
         ev.stopPropagation();
       }}

@@ -8,7 +8,7 @@ import * as Icon from "../feather-icons";
 import { Modal } from "../modal";
 import { ToggleSwitch } from "../toggle-switch";
 import { useShowSelectTokenMarkerReferenceModal } from "../dm-area/select-token-marker-reference-modal";
-import { SetActiveNoteIdContext } from "../dm-area/token-info-aside";
+import { useNoteWindow } from "../dm-area/token-info-aside";
 
 const ColorPicker = React.memo(({ color, onChange, styles }) => {
   return (
@@ -37,7 +37,7 @@ const TokenContextMenu = ({
   close,
   showLinkReferenceModal,
 }) => {
-  const setActiveNoteId = React.useContext(SetActiveNoteIdContext);
+  const noteWindowContext = useNoteWindow();
 
   const containerRef = useRef(null);
   const rangeSlideRef = useRef(null);
@@ -223,7 +223,9 @@ const TokenContextMenu = ({
                   <Button.Tertiary
                     small
                     onClick={() => {
-                      setActiveNoteId(reference.id);
+                      noteWindowContext.focusOrShowNoteInNewWindow(
+                        reference.id
+                      );
                       close();
                     }}
                   >

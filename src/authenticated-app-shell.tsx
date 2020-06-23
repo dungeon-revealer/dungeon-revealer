@@ -12,9 +12,8 @@ import { useLogInMutation } from "./chat/log-in-mutation";
 import styled from "@emotion/styled/macro";
 import { NoteSearch } from "./note-search/note-search";
 import {
-  ActiveNoteIdContext,
-  SetActiveNoteIdContext,
   TokenInfoAside,
+  NoteWindowContextProvider,
 } from "./dm-area/token-info-aside";
 import * as Icon from "./feather-icons";
 
@@ -68,54 +67,46 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
   }
 
   return (
-    <ActiveNoteIdContext.Provider value={activeNoteId}>
-      <SetActiveNoteIdContext.Provider
-        value={(value) => {
-          setActiveNoteId((currentValue) =>
-            value === currentValue ? null : value
-          );
-        }}
-      >
-        <Container>
-          <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-            {children}
-            <IconContainer>
-              <IconButton
-                onClick={() => setShowSearch(true)}
-                style={{ marginRight: 8 }}
-              >
-                <Icon.SearchIcon height={20} width={20} />
-              </IconButton>
-              <ChatToggleButton
-                hasUnreadMessages={hasUnreadMessages}
-                onClick={() => {
-                  resetUnreadMessages();
-                  setShowChatState((showChat) =>
-                    showChat === "show" ? "hidden" : "show"
-                  );
-                }}
-              />
-            </IconContainer>
-          </div>
-          {chatState === "show" ? (
-            <div
-              style={{
-                flex: 1,
-                maxWidth: 400,
-                borderLeft: "1px solid lightgrey",
-              }}
+    <NoteWindowContextProvider>
+      <Container>
+        <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+          {children}
+          <IconContainer>
+            <IconButton
+              onClick={() => setShowSearch(true)}
+              style={{ marginRight: 8 }}
             >
-              <Chat toggleShowDiceRollNotes={toggleShowDiceRollNotes} />
-            </div>
-          ) : null}
-          {diceRollNotesState === "show" ? (
-            <DiceRollNotes close={toggleShowDiceRollNotes} />
-          ) : null}
-        </Container>
-        <TokenInfoAside />
-        {showSearch ? <NoteSearch close={() => setShowSearch(false)} /> : null}
-      </SetActiveNoteIdContext.Provider>
-    </ActiveNoteIdContext.Provider>
+              <Icon.SearchIcon height={20} width={20} />
+            </IconButton>
+            <ChatToggleButton
+              hasUnreadMessages={hasUnreadMessages}
+              onClick={() => {
+                resetUnreadMessages();
+                setShowChatState((showChat) =>
+                  showChat === "show" ? "hidden" : "show"
+                );
+              }}
+            />
+          </IconContainer>
+        </div>
+        {chatState === "show" ? (
+          <div
+            style={{
+              flex: 1,
+              maxWidth: 400,
+              borderLeft: "1px solid lightgrey",
+            }}
+          >
+            <Chat toggleShowDiceRollNotes={toggleShowDiceRollNotes} />
+          </div>
+        ) : null}
+        {diceRollNotesState === "show" ? (
+          <DiceRollNotes close={toggleShowDiceRollNotes} />
+        ) : null}
+      </Container>
+      <TokenInfoAside />
+      {showSearch ? <NoteSearch close={() => setShowSearch(false)} /> : null}
+    </NoteWindowContextProvider>
   );
 };
 

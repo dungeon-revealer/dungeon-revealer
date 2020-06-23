@@ -20,12 +20,12 @@ import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useDropZone } from "../hooks/use-drop-zone";
 import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
-import { SetActiveNoteIdContext } from "./token-info-aside";
 import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
 import { useToasts } from "react-toast-notifications";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
 import { useConfirmationDialog } from "../hooks/use-confirmation-dialog";
+import { useNoteWindow } from "./token-info-aside";
 
 const ShapeButton = styled.button`
   border: none;
@@ -913,15 +913,15 @@ export const DmMap = ({
     [mapCanvasDimensions]
   );
 
-  const setActiveTokenId = React.useContext(SetActiveNoteIdContext);
+  const noteWindowContext = useNoteWindow();
 
   const onClickToken = React.useCallback(
     (token) => {
       if (token.reference) {
-        setActiveTokenId(token.reference.id);
+        noteWindowContext.focusOrShowNoteInNewWindow(token.reference.id);
       }
     },
-    [setActiveTokenId]
+    [noteWindowContext]
   );
 
   const onStateChange = useStaticRef(() =>

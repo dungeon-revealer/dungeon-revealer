@@ -3,7 +3,6 @@ import { Modal } from "../modal";
 import * as Button from "../button";
 import styled from "@emotion/styled/macro";
 import { HtmlContainer } from "./components/html-container";
-import { SetActiveNoteIdContext } from "./token-info-aside";
 import graphql from "babel-plugin-relay/macro";
 import { QueryRenderer } from "react-relay";
 import {
@@ -15,6 +14,7 @@ import { selectTokenMarkerReferenceModal_NotesQuery } from "./__generated__/sele
 import { selectTokenMarkerReferenceModal_ActiveContentQuery } from "./__generated__/selectTokenMarkerReferenceModal_ActiveContentQuery.graphql";
 import { NoteEditorSideBar } from "./note-editor/note-editor-side-bar";
 import { selectTokenMarkerReferenceModal_NoteCreateMutation } from "./__generated__/selectTokenMarkerReferenceModal_NoteCreateMutation.graphql";
+import { useNoteWindow } from "./token-info-aside";
 
 const SelectTokenMarkerReferenceQuery = graphql`
   query selectTokenMarkerReferenceModal_NotesQuery {
@@ -96,7 +96,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
     selectTokenMarkerReferenceModal_NoteCreateMutation
   >(NoteCreateMutation);
 
-  const setActiveReferenceId = React.useContext(SetActiveNoteIdContext);
+  const noteWindowContext = useNoteWindow();
 
   const attachNewNote = useCallback(() => {
     mutate({
@@ -113,7 +113,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
         };
 
         updateToken({ id: tokenId, reference });
-        setActiveReferenceId(data.noteCreate.note.id);
+        noteWindowContext.focusOrShowNoteInNewWindow(data.noteCreate.note.id);
         close();
       },
     });
@@ -128,7 +128,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
     };
 
     updateToken({ id: tokenId, reference });
-    setActiveReferenceId(activeNoteId);
+    noteWindowContext.focusOrShowNoteInNewWindow(activeNoteId);
 
     close();
   }, [updateToken, activeNoteId]);

@@ -3,7 +3,7 @@ import styled from "@emotion/styled/macro";
 import graphql from "babel-plugin-relay/macro";
 import { useLazyLoadQuery } from "react-relay/hooks";
 import { noteSearch_SearchQuery } from "./__generated__/noteSearch_SearchQuery.graphql";
-import { SetActiveNoteIdContext } from "../dm-area/token-info-aside";
+import { useNoteWindow } from "../dm-area/token-info-aside";
 import * as Icon from "../feather-icons";
 import { darken } from "polished";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
@@ -112,7 +112,7 @@ const SearchResult: React.FC<{
   query: string;
   close: () => void;
 }> = ({ query, close }) => {
-  const setActiveNoteId = React.useContext(SetActiveNoteIdContext);
+  const state = useNoteWindow();
 
   const data = useLazyLoadQuery<noteSearch_SearchQuery>(
     NoteSearch_SearchQuery,
@@ -126,7 +126,7 @@ const SearchResult: React.FC<{
       {data.notesSearch.edges.map((edge) => (
         <Result
           onClick={() => {
-            setActiveNoteId(edge.node.noteId);
+            state.focusOrShowNoteInNewWindow(edge.node.noteId);
             close();
           }}
         >
