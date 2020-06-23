@@ -4,7 +4,7 @@ import { RelayEnvironmentProvider } from "react-relay/hooks";
 import createPersistedState from "use-persisted-state";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { SplashScreen } from "./splash-screen";
-import { ChatToggleButton } from "./chat-toggle-button";
+import { ChatToggleButton, IconButton } from "./chat-toggle-button";
 import { Chat } from "./chat";
 import { DiceRollNotes } from "./chat/dice-roll-notes";
 import { useChatSoundsAndUnreadCount } from "./chat/chat";
@@ -16,6 +16,7 @@ import {
   SetActiveNoteIdContext,
   TokenInfoAside,
 } from "./dm-area/token-info-aside";
+import * as Icon from "./feather-icons";
 
 const useShowChatState = createPersistedState("chat.state");
 const useShowDiceRollNotesState = createPersistedState(
@@ -27,6 +28,14 @@ const Container = styled.div`
   height: 100vh;
   position: relative;
   overflow: hidden;
+`;
+
+const IconContainer = styled.div`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  pointer-events: all;
+  display: flex;
 `;
 
 const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
@@ -52,6 +61,7 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
   }, [logIn]);
 
   const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
+  const [showSearch, setShowSearch] = React.useState(false);
 
   if (isLoggedIn === false) {
     return null;
@@ -69,16 +79,23 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
         <Container>
           <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
             {children}
-            <ChatToggleButton
-              hasUnreadMessages={hasUnreadMessages}
-              onClick={() => {
-                resetUnreadMessages();
-                setShowChatState((showChat) =>
-                  showChat === "show" ? "hidden" : "show"
-                );
-              }}
-            />
-            <NoteSearch />
+            <IconContainer>
+              <IconButton
+                onClick={() => setShowSearch(true)}
+                style={{ marginRight: 8 }}
+              >
+                <Icon.SearchIcon height={20} width={20} />
+              </IconButton>
+              <ChatToggleButton
+                hasUnreadMessages={hasUnreadMessages}
+                onClick={() => {
+                  resetUnreadMessages();
+                  setShowChatState((showChat) =>
+                    showChat === "show" ? "hidden" : "show"
+                  );
+                }}
+              />
+            </IconContainer>
           </div>
           {chatState === "show" ? (
             <div
@@ -96,6 +113,7 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
           ) : null}
         </Container>
         <TokenInfoAside />
+        {showSearch ? <NoteSearch close={() => setShowSearch(false)} /> : null}
       </SetActiveNoteIdContext.Provider>
     </ActiveNoteIdContext.Provider>
   );

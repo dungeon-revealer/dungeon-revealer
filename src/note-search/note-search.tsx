@@ -4,16 +4,51 @@ import graphql from "babel-plugin-relay/macro";
 import { useLazyLoadQuery } from "react-relay/hooks";
 import { noteSearch_SearchQuery } from "./__generated__/noteSearch_SearchQuery.graphql";
 import { SetActiveNoteIdContext } from "../dm-area/token-info-aside";
+import * as Icon from "../feather-icons";
+import { darken } from "polished";
+import { useOnClickOutside } from "../hooks/use-on-click-outside";
 
 const Container = styled.div`
   position: absolute;
   left: 50%;
-  top: 0;
+  top: 10%;
   padding-top: 12px;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   justify-content: center;
+  max-width: 600px;
+  width: 100%;
+  margin-left: 24px;
+  margin-right: 24px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+`;
+
+const InputLabel = styled.label`
+  display: flex;
+  font-size: 24px;
+  margin-bottom: 12px;
+`;
+
+const IconContainer = styled.div`
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  pointer-events: default;
+  font-size: inherit;
+`;
+
+const NoteSearchInput = styled.input`
+  font-size: inherit;
+  padding: 12px;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+  border: none;
+  width: 100%;
 `;
 
 const NoteSearch_SearchQuery = graphql`
@@ -37,25 +72,34 @@ const ResultContainer = styled.div`
   flex-wrap: wrap;
 `;
 
-const ResultWrapper = styled.div`
-  margin-bottom: 8px;
-  width: 100%;
-  padding-left: 8px;
-  padding-right: 8px;
-  width: 50%;
-  margin-bottom: 8px;
-  display: flex;
-`;
-
 const Result = styled.button`
-  all: unset;
   display: block;
+  text-align: left;
   cursor: pointer;
   border: none;
   background: #fff;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  padding: 8px;
+  padding-bottom: 4px;
+  padding-top: 4px;
+  border-bottom: 1px solid lightgray;
+  width: 100%;
+  padding-left: 12px;
+  padding-right: 12px;
+
+  &:hover,
+  &:focus {
+    background-color: ${darken(0.1, "white")};
+  }
+
+  &:first-child {
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+  }
+
+  &:last-child {
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+  }
 `;
 
 const ResultTitle = styled.div`
@@ -64,11 +108,12 @@ const ResultTitle = styled.div`
 
 const ResultContent = styled.div``;
 
-const SearchResult: React.FC<{ query: string; clearQuery: () => void }> = ({
-  query,
-  clearQuery,
-}) => {
+const SearchResult: React.FC<{
+  query: string;
+  close: () => void;
+}> = ({ query, close }) => {
   const setActiveNoteId = React.useContext(SetActiveNoteIdContext);
+
   const data = useLazyLoadQuery<noteSearch_SearchQuery>(
     NoteSearch_SearchQuery,
     {
@@ -79,38 +124,47 @@ const SearchResult: React.FC<{ query: string; clearQuery: () => void }> = ({
   return (
     <ResultContainer>
       {data.notesSearch.edges.map((edge) => (
-        <ResultWrapper style={{ marginBottom: 6 }}>
-          <Result
-            onClick={() => {
-              clearQuery();
-              setActiveNoteId(edge.node.noteId);
-            }}
-          >
-            <ResultTitle>{edge.node.title}</ResultTitle>
-            <ResultContent>{edge.node.preview}</ResultContent>
-          </Result>
-        </ResultWrapper>
+        <Result
+          onClick={() => {
+            setActiveNoteId(edge.node.noteId);
+            close();
+          }}
+        >
+          <ResultTitle>{edge.node.title}</ResultTitle>
+          <ResultContent>{edge.node.preview}</ResultContent>
+        </Result>
       ))}
     </ResultContainer>
   );
 };
 
-export const NoteSearch: React.FC<{}> = () => {
+export const NoteSearch: React.FC<{ close: () => void }> = ({ close }) => {
   const [query, setQuery] = React.useState("");
+  const ref = useOnClickOutside<HTMLDivElement>(close);
+
   return (
-    <Container>
-      {/* TODO: BETTER STYLES :) */}
-      <div>
-        <input
+    <Container
+      onContextMenu={(ev) => ev.stopPropagation()}
+      onKeyDown={(ev) => {
+        if (ev.keyCode === 27) {
+          close();
+        }
+      }}
+      ref={ref}
+    >
+      <InputLabel>
+        <IconContainer>
+          <Icon.SearchIcon height={25} width={25} />
+        </IconContainer>
+        <NoteSearchInput
+          autoFocus
           onChange={(ev) => setQuery(ev.target.value)}
           value={query}
-          style={{ display: "block", marginLeft: "auto", marginRight: "auto" }}
+          placeholder="What are you looking for?"
         />
-      </div>
+      </InputLabel>
       <React.Suspense fallback={null}>
-        {query.trim() ? (
-          <SearchResult query={query} clearQuery={() => setQuery("")} />
-        ) : null}
+        {query.trim() ? <SearchResult query={query} close={close} /> : null}
       </React.Suspense>
     </Container>
   );

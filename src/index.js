@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { Global } from "@emotion/core";
 import { render } from "react-dom";
 import { getUrlPrefix } from "./public-url";
