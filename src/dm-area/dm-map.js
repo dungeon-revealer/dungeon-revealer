@@ -25,7 +25,7 @@ import { sendRequest } from "../http-request";
 import { useToasts } from "react-toast-notifications";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
 import { useConfirmationDialog } from "../hooks/use-confirmation-dialog";
-import { useNoteWindow } from "./token-info-aside";
+import { useNoteWindowActions } from "./token-info-aside";
 
 const ShapeButton = styled.button`
   border: none;
@@ -913,15 +913,15 @@ export const DmMap = ({
     [mapCanvasDimensions]
   );
 
-  const noteWindowContext = useNoteWindow();
+  const noteWindowActions = useNoteWindowActions();
 
   const onClickToken = React.useCallback(
     (token) => {
       if (token.reference) {
-        noteWindowContext.focusOrShowNoteInNewWindow(token.reference.id);
+        noteWindowActions.focusOrShowNoteInNewWindow(token.reference.id);
       }
     },
-    [noteWindowContext]
+    [noteWindowActions]
   );
 
   const onStateChange = useStaticRef(() =>

@@ -10,7 +10,7 @@ import _sanitizeHtml from "sanitize-html";
 import { chatMessageComponents } from "../user-content-components";
 import { useFragment } from "react-relay/hooks";
 import { chatMessage_SharedResourceChatMessageFragment$key } from "./__generated__/chatMessage_SharedResourceChatMessageFragment.graphql";
-import { useNoteWindow } from "../dm-area/token-info-aside";
+import { useNoteWindowActions } from "../dm-area/token-info-aside";
 
 const Container = styled.div`
   margin-bottom: 4px;
@@ -142,7 +142,7 @@ const NotePreview: React.FC<{
   title: string;
   contentPreview: string;
 }> = ({ id, title, contentPreview }) => {
-  const state = useNoteWindow();
+  const noteWindowActions = useNoteWindowActions();
   return (
     <NoteCard>
       <NoteTitle>{title}</NoteTitle>
@@ -150,7 +150,7 @@ const NotePreview: React.FC<{
       <NoteFooter>
         <Button.Primary
           small
-          onClick={() => state.focusOrShowNoteInNewWindow(id)}
+          onClick={() => noteWindowActions.focusOrShowNoteInNewWindow(id)}
         >
           Show
         </Button.Primary>

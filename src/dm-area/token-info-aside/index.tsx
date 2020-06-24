@@ -9,13 +9,19 @@ type NoteWindow = {
 
 type NoteWindowInterface = {
   windows: NoteWindow[];
+};
+
+type NoteWindowActions = {
   showNoteInWindow: (noteId: string, windowId: string) => void;
   showNoteInNewWindow: (noteId: string) => void;
   destroyWindow: (windowId: string) => void;
   focusOrShowNoteInNewWindow: (noteId: string) => void;
 };
 
-const NoteViewContext = React.createContext<NoteWindowInterface | null>(null);
+const NoteWindowContext = React.createContext<NoteWindowInterface | null>(null);
+const NoteWindowActionsContext = React.createContext<NoteWindowActions | null>(
+  null
+);
 
 export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
   const [windows, setWindows] = React.useState([] as NoteWindow[]);
@@ -57,14 +63,12 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
 
   const value = React.useMemo(() => {
     return {
-      windows,
       showNoteInNewWindow,
       showNoteInWindow,
       destroyWindow,
       focusOrShowNoteInNewWindow,
     };
   }, [
-    windows,
     showNoteInNewWindow,
     showNoteInNewWindow,
     destroyWindow,
@@ -72,14 +76,22 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
   ]);
 
   return (
-    <NoteViewContext.Provider value={value}>
-      {children}
-    </NoteViewContext.Provider>
+    <NoteWindowActionsContext.Provider value={value}>
+      <NoteWindowContext.Provider value={{ windows }}>
+        {children}
+      </NoteWindowContext.Provider>
+    </NoteWindowActionsContext.Provider>
   );
 };
 
-export const useNoteWindow = () => {
-  const value = React.useContext(NoteViewContext);
+export const useNoteWindows = () => {
+  const value = React.useContext(NoteWindowContext);
+  if (!value) throw new Error("Outside Context.");
+  return value;
+};
+
+export const useNoteWindowActions = () => {
+  const value = React.useContext(NoteWindowActionsContext);
   if (!value) throw new Error("Outside Context.");
   return value;
 };

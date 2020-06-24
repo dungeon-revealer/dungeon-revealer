@@ -14,7 +14,7 @@ import { selectTokenMarkerReferenceModal_NotesQuery } from "./__generated__/sele
 import { selectTokenMarkerReferenceModal_ActiveContentQuery } from "./__generated__/selectTokenMarkerReferenceModal_ActiveContentQuery.graphql";
 import { NoteEditorSideBar } from "./note-editor/note-editor-side-bar";
 import { selectTokenMarkerReferenceModal_NoteCreateMutation } from "./__generated__/selectTokenMarkerReferenceModal_NoteCreateMutation.graphql";
-import { useNoteWindow } from "./token-info-aside";
+import { useNoteWindowActions } from "./token-info-aside";
 
 const SelectTokenMarkerReferenceQuery = graphql`
   query selectTokenMarkerReferenceModal_NotesQuery {
@@ -96,7 +96,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
     selectTokenMarkerReferenceModal_NoteCreateMutation
   >(NoteCreateMutation);
 
-  const noteWindowContext = useNoteWindow();
+  const noteWindowActions = useNoteWindowActions();
 
   const attachNewNote = useCallback(() => {
     mutate({
@@ -113,7 +113,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
         };
 
         updateToken({ id: tokenId, reference });
-        noteWindowContext.focusOrShowNoteInNewWindow(data.noteCreate.note.id);
+        noteWindowActions.focusOrShowNoteInNewWindow(data.noteCreate.note.id);
         close();
       },
     });
@@ -128,7 +128,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
     };
 
     updateToken({ id: tokenId, reference });
-    noteWindowContext.focusOrShowNoteInNewWindow(activeNoteId);
+    noteWindowActions.focusOrShowNoteInNewWindow(activeNoteId);
 
     close();
   }, [updateToken, activeNoteId]);

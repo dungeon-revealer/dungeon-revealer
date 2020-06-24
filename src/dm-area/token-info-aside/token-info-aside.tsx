@@ -1,10 +1,13 @@
 import React from "react";
 import styled from "@emotion/styled/macro";
 import graphql from "babel-plugin-relay/macro";
-import { useNoteWindow } from ".";
+import { useNoteWindows, useNoteWindowActions } from ".";
 import { NoteEditorActiveItem } from "../note-editor/note-editor-active-item";
 import { QueryRenderer } from "react-relay";
-import type { tokenInfoAside_nodeQuery } from "./__generated__/tokenInfoAside_nodeQuery.graphql";
+import type {
+  tokenInfoAside_nodeQuery,
+  tokenInfoAside_nodeQueryResponse,
+} from "./__generated__/tokenInfoAside_nodeQuery.graphql";
 import { useRelayEnvironment, useMutation } from "react-relay/hooks";
 import { DraggableWindow } from "../../draggable-window";
 import * as Icon from "../../feather-icons";
@@ -44,6 +47,12 @@ const NoteEditorSideReference = styled.div`
 const WindowContext = React.createContext("NON_EXISTING_WINDOW");
 export const useWindowContext = () => React.useContext(WindowContext);
 
+const extractNode = (input: tokenInfoAside_nodeQueryResponse | null) => {
+  if (!input?.node) return null;
+  if (input.node.__typename !== "Note") return null;
+  return input.node;
+};
+
 const WindowRenderer: React.FC<{
   windowId: string;
   noteId: string;
@@ -69,10 +78,9 @@ const WindowRenderer: React.FC<{
         query={TokenInfoAside_nodeQuery}
         render={({ error, props }) => {
           if (error) return null;
-          if (props?.node?.__typename !== "Note") return null;
-          const { node } = props;
+          const node = extractNode(props);
 
-          const canEditOptions = props.node.viewerCanEdit
+          const canEditOptions = node?.viewerCanEdit
             ? [
                 {
                   onClick: () => setIsEditMode((isEditMode) => !isEditMode),
@@ -88,7 +96,9 @@ const WindowRenderer: React.FC<{
           const options = [
             {
               onClick: () =>
-                mutate({ variables: { input: { contentId: node.id } } }),
+                node
+                  ? mutate({ variables: { input: { contentId: node.id } } })
+                  : () => undefined,
               title: "Share",
               //TODO: Make types more strict
               Icon: Icon.Share as any,
@@ -104,26 +114,28 @@ const WindowRenderer: React.FC<{
                 if (ev.key !== "Escape") return;
                 if (!isEditMode) close();
               }}
-              headerContent={props.node.title}
+              headerContent={node?.title}
               bodyContent={
-                <>
-                  <NoteEditorActiveItem
-                    isEditMode={isEditMode}
-                    toggleIsEditMode={() =>
-                      setIsEditMode((isEditMode) => !isEditMode)
-                    }
-                    nodeRef={props.node}
-                    sideBarRef={sideBarRef}
-                  />
-                  <NoteEditorSideReference>
-                    <div ref={sideBarRef} />
-                  </NoteEditorSideReference>
-                </>
+                node ? (
+                  <>
+                    <NoteEditorActiveItem
+                      isEditMode={isEditMode}
+                      toggleIsEditMode={() =>
+                        setIsEditMode((isEditMode) => !isEditMode)
+                      }
+                      nodeRef={node}
+                      sideBarRef={sideBarRef}
+                    />
+                    <NoteEditorSideReference>
+                      <div ref={sideBarRef} />
+                    </NoteEditorSideReference>
+                  </>
+                ) : null
               }
               close={close}
               style={{
-                top: "calc(50vh - 25%)",
-                left: "calc(100% - 500px - 12px)",
+                top: window.innerHeight / 2 - window.innerHeight / 4,
+                left: window.innerWidth / 2 - 500 / 2,
               }}
               options={options}
             />
@@ -135,17 +147,20 @@ const WindowRenderer: React.FC<{
 };
 
 export const TokenInfoAside: React.FC<{}> = () => {
-  const state = useNoteWindow();
+  const noteWindowActions = useNoteWindowActions();
+  const noteWindows = useNoteWindows();
 
   return (
     <>
-      {state.windows.map((window) => (
+      {noteWindows.windows.map((window) => (
         <WindowRenderer
           key={window.id}
           windowId={window.id}
           noteId={window.noteId}
-          close={() => state.destroyWindow(window.id)}
-          focus={() => state.focusOrShowNoteInNewWindow(window.noteId)}
+          close={() => noteWindowActions.destroyWindow(window.id)}
+          focus={() =>
+            noteWindowActions.focusOrShowNoteInNewWindow(window.noteId)
+          }
         />
       ))}
     </>
