@@ -61,6 +61,7 @@ export const DraggableWindow = ({
   onMouseDown,
   close,
   style,
+  headerLeftContent = null,
   options = [],
 }: {
   headerContent: React.ReactNode;
@@ -69,6 +70,7 @@ export const DraggableWindow = ({
   onMouseDown: React.ComponentProps<"div">["onMouseDown"];
   close: () => void;
   style?: Pick<React.CSSProperties, "top" | "left" | "right">;
+  headerLeftContent?: React.ReactNode;
   options?: {
     title: string;
     onClick: () => void;
@@ -123,6 +125,7 @@ export const DraggableWindow = ({
       }}
     >
       <WindowHeader {...bind()} data-draggable>
+        {headerLeftContent ? <div>{headerLeftContent}</div> : null}
         <div
           style={{
             fontWeight: "bold",

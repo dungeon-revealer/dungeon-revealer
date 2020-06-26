@@ -6,9 +6,9 @@ import { HtmlContainer } from "./components/html-container";
 import graphql from "babel-plugin-relay/macro";
 import { QueryRenderer } from "react-relay";
 import {
-  useLazyLoadQuery,
   useRelayEnvironment,
   useMutation,
+  useLazyLoadQuery,
 } from "react-relay/hooks";
 import { selectTokenMarkerReferenceModal_NotesQuery } from "./__generated__/selectTokenMarkerReferenceModal_NotesQuery.graphql";
 import { selectTokenMarkerReferenceModal_ActiveContentQuery } from "./__generated__/selectTokenMarkerReferenceModal_ActiveContentQuery.graphql";

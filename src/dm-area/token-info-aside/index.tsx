@@ -4,7 +4,8 @@ export { TokenInfoAside } from "./token-info-aside";
 
 type NoteWindow = {
   id: string;
-  noteId: string;
+  currentIndex: number;
+  history: string[];
 };
 
 type NoteWindowInterface = {
@@ -16,6 +17,9 @@ type NoteWindowActions = {
   showNoteInNewWindow: (noteId: string) => void;
   destroyWindow: (windowId: string) => void;
   focusOrShowNoteInNewWindow: (noteId: string) => void;
+  focusWindow: (windowId: string) => void;
+  navigateNext: (windowId: string) => void;
+  navigateBack: (windowId: string) => void;
 };
 
 const NoteWindowContext = React.createContext<NoteWindowInterface | null>(null);
@@ -27,7 +31,10 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
   const [windows, setWindows] = React.useState([] as NoteWindow[]);
 
   const showNoteInNewWindow = React.useCallback((noteId: string) => {
-    setWindows((windows) => [...windows, { id: uuid(), noteId }]);
+    setWindows((windows) => [
+      ...windows,
+      { id: uuid(), currentIndex: 0, history: [noteId] },
+    ]);
   }, []);
 
   const showNoteInWindow = React.useCallback(
@@ -35,10 +42,20 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
       setWindows((windows) => {
         const record = windows.find((window) => window.id === windowId);
         if (!record) {
-          return [...windows, { id: windowId, noteId }];
+          return [
+            ...windows,
+            { id: windowId, currentIndex: 0, history: [noteId] },
+          ];
         }
         const newWindows = windows.filter((window) => window.id !== windowId);
-        newWindows.push({ ...record, noteId });
+        newWindows.push({
+          id: record.id,
+          currentIndex: record.currentIndex + 1,
+          history: [
+            ...record.history.slice(0, record.currentIndex + 1),
+            noteId,
+          ],
+        });
         return newWindows;
       });
     },
@@ -51,12 +68,60 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
 
   const focusOrShowNoteInNewWindow = React.useCallback((noteId: string) => {
     setWindows((windows) => {
-      const record = windows.find((window) => window.noteId === noteId);
+      const record = windows.find(
+        (window) => window.history[window.currentIndex] === noteId
+      );
       if (!record) {
-        return [...windows, { id: uuid(), noteId }];
+        return [...windows, { id: uuid(), currentIndex: 0, history: [noteId] }];
       }
-      const newWindows = windows.filter((window) => window.noteId !== noteId);
+      const newWindows = windows.filter(
+        (window) => window.history[window.currentIndex] !== noteId
+      );
       newWindows.push(record);
+      return newWindows;
+    });
+  }, []);
+
+  const focusWindow = React.useCallback((windowId: string) => {
+    setWindows((windows) => {
+      const record = windows.find((window) => window.id === windowId);
+      if (!record) {
+        return windows;
+      }
+      const newWindows = windows.filter((window) => window.id !== windowId);
+      newWindows.push(record);
+      return newWindows;
+    });
+  }, []);
+
+  const navigateBack = React.useCallback((windowId: string) => {
+    setWindows((windows) => {
+      const record = windows.find((window) => window.id === windowId);
+      if (!record || record.currentIndex === 0) {
+        return windows;
+      }
+      const newWindows = windows.filter((window) => window.id !== windowId);
+      newWindows.push({
+        id: record.id,
+        currentIndex: record.currentIndex - 1,
+        history: record.history,
+      });
+      return newWindows;
+    });
+  }, []);
+
+  const navigateNext = React.useCallback((windowId: string) => {
+    setWindows((windows) => {
+      const record = windows.find((window) => window.id === windowId);
+      if (!record || record.currentIndex === record.history.length - 1) {
+        return windows;
+      }
+      const newWindows = windows.filter((window) => window.id !== windowId);
+      newWindows.push({
+        id: record.id,
+        currentIndex: record.currentIndex + 1,
+        history: record.history,
+      });
       return newWindows;
     });
   }, []);
@@ -67,12 +132,18 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
       showNoteInWindow,
       destroyWindow,
       focusOrShowNoteInNewWindow,
+      focusWindow,
+      navigateNext,
+      navigateBack,
     };
   }, [
     showNoteInNewWindow,
     showNoteInNewWindow,
     destroyWindow,
     focusOrShowNoteInNewWindow,
+    focusWindow,
+    navigateNext,
+    navigateBack,
   ]);
 
   return (

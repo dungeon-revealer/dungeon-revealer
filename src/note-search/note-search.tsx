@@ -1,12 +1,13 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
 import graphql from "babel-plugin-relay/macro";
-import { useLazyLoadQuery } from "react-relay/hooks";
+import { useQuery } from "relay-hooks";
 import { noteSearch_SearchQuery } from "./__generated__/noteSearch_SearchQuery.graphql";
 import { useNoteWindowActions } from "../dm-area/token-info-aside";
 import * as Icon from "../feather-icons";
 import { darken } from "polished";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
+import { useCurrent } from "../hooks/use-current";
 
 const Container = styled.div`
   position: absolute;
@@ -109,39 +110,17 @@ const ResultTitle = styled.div`
 
 const ResultContent = styled.div``;
 
-const SearchResult: React.FC<{
-  query: string;
-  close: () => void;
-}> = ({ query, close }) => {
-  const noteWindowActions = useNoteWindowActions();
-
-  const data = useLazyLoadQuery<noteSearch_SearchQuery>(
-    NoteSearch_SearchQuery,
-    {
-      query,
-    }
-  );
-
-  return (
-    <ResultContainer>
-      {data.notesSearch.edges.map((edge) => (
-        <Result
-          onClick={() => {
-            noteWindowActions.focusOrShowNoteInNewWindow(edge.node.noteId);
-            close();
-          }}
-        >
-          <ResultTitle>{edge.node.title}</ResultTitle>
-          <ResultContent>{edge.node.preview}</ResultContent>
-        </Result>
-      ))}
-    </ResultContainer>
-  );
-};
-
 export const NoteSearch: React.FC<{ close: () => void }> = ({ close }) => {
   const [query, setQuery] = React.useState("");
   const ref = useOnClickOutside<HTMLDivElement>(close);
+  const noteWindowActions = useNoteWindowActions();
+
+  const _data = useQuery<noteSearch_SearchQuery>(NoteSearch_SearchQuery, {
+    query,
+  });
+  const isLoading = !_data.props && !_data.error;
+
+  const [, notesSearch] = useCurrent(_data.props?.notesSearch, isLoading, 300);
 
   return (
     <Container
@@ -164,9 +143,23 @@ export const NoteSearch: React.FC<{ close: () => void }> = ({ close }) => {
           placeholder="What are you looking for?"
         />
       </InputLabel>
-      <React.Suspense fallback={null}>
-        {query.trim() ? <SearchResult query={query} close={close} /> : null}
-      </React.Suspense>
+      <ResultContainer>
+        {notesSearch
+          ? notesSearch.edges.map((edge) => (
+              <Result
+                onClick={() => {
+                  noteWindowActions.focusOrShowNoteInNewWindow(
+                    edge.node.noteId
+                  );
+                  close();
+                }}
+              >
+                <ResultTitle>{edge.node.title}</ResultTitle>
+                <ResultContent>{edge.node.preview}</ResultContent>
+              </Result>
+            ))
+          : null}
+      </ResultContainer>
     </Container>
   );
 };

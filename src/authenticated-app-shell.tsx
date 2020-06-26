@@ -1,6 +1,7 @@
 import * as React from "react";
 import { createEnvironment } from "./relay-environment";
 import { RelayEnvironmentProvider } from "react-relay/hooks";
+import { RelayEnvironmentProvider as RelayHooksRelayEnvironmentProvider } from "relay-hooks";
 import createPersistedState from "use-persisted-state";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { SplashScreen } from "./splash-screen";
@@ -59,8 +60,21 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
     logIn();
   }, [logIn]);
 
-  const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
   const [showSearch, setShowSearch] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const listener = (ev: KeyboardEvent) => {
+      if ((ev.ctrlKey || ev.metaKey) && ev.shiftKey && ev.keyCode === 70) {
+        ev.preventDefault();
+        setShowSearch(true);
+      }
+    };
+
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, [isLoggedIn]);
 
   if (isLoggedIn === false) {
     return null;
@@ -184,8 +198,12 @@ export const AuthenticatedAppShell: React.FC<{
   }
 
   return (
-    <RelayEnvironmentProvider environment={relayEnvironment}>
-      <AuthenticatedAppShellRenderer>{children}</AuthenticatedAppShellRenderer>
-    </RelayEnvironmentProvider>
+    <RelayHooksRelayEnvironmentProvider environment={relayEnvironment}>
+      <RelayEnvironmentProvider environment={relayEnvironment}>
+        <AuthenticatedAppShellRenderer>
+          {children}
+        </AuthenticatedAppShellRenderer>
+      </RelayEnvironmentProvider>
+    </RelayHooksRelayEnvironmentProvider>
   );
 };

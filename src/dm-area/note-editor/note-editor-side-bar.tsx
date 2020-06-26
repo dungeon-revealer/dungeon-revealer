@@ -1,6 +1,6 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
-import { useFragment } from "react-relay/hooks";
+import { useFragment } from "relay-hooks";
 import type { noteEditorSideBar_notesFragment$key } from "./__generated__/noteEditorSideBar_notesFragment.graphql";
 import * as ScrollableList from "../components/scrollable-list";
 
