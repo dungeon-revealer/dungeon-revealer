@@ -1,30 +1,29 @@
 diff --git a/node_modules/react-showdown/dist/MarkdownView.d.ts b/node_modules/react-showdown/dist/MarkdownView.d.ts
-index 7d813b0..9c75ef2 100644
+index b916c5f..a910e13 100644
 --- a/node_modules/react-showdown/dist/MarkdownView.d.ts
 +++ b/node_modules/react-showdown/dist/MarkdownView.d.ts
-@@ -8,5 +8,7 @@ export interface MarkdownViewProps {
+@@ -9,5 +9,6 @@ export interface MarkdownViewProps {
      options?: ConverterOptions;
      extensions?: ShowdownExtension[];
      components?: Record<string, ClassType<never, never, never> | FunctionComponent<any>>;
 +    MONKEY_PATCHED_textMapper?: (textContent: string) => React.ReactNode;
-+    MONKEY_PATCHED_sanitizeHtml?: (textContent: string) => string;
  }
  export default function MarkdownView(props: MarkdownViewProps): ReactElement;
 diff --git a/node_modules/react-showdown/dist/react-showdown.cjs.development.js b/node_modules/react-showdown/dist/react-showdown.cjs.development.js
-index 98069af..30b2632 100644
+index cfe1a2e..20f4af3 100644
 --- a/node_modules/react-showdown/dist/react-showdown.cjs.development.js
 +++ b/node_modules/react-showdown/dist/react-showdown.cjs.development.js
-@@ -88,7 +88,8 @@ function MarkdownView(props) {
-       options = props.options,
+@@ -89,7 +89,8 @@ function MarkdownView(props) {
        extensions = props.extensions,
        components = props.components,
--      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components"]);
+       sanitizeHtml = props.sanitizeHtml,
+-      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components", "sanitizeHtml"]);
 +      MONKEY_PATCHED_textMapper = props.MONKEY_PATCHED_textWrapper,
-+      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components", "MONKEY_PATCHED_textMapper"]);
++      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components", "sanitizeHtml", "MONKEY_PATCHED_textWrapper"]);
  
    var mapElement = React.useMemo(function () {
      return function mapElement(node, index) {
-@@ -129,7 +130,7 @@ function MarkdownView(props) {
+@@ -130,7 +131,7 @@ function MarkdownView(props) {
          var children = skipAnyChildrenFor.includes(node.name) ? null : skipWhitespaceElementsFor.includes(node.name) ? node.children.filter(filterWhitespaceElements).map(mapElement) : node.children.map(mapElement);
          return React.createElement(elementType, _props, children);
        } else if (node.type === 'text' && node instanceof domhandler.DataNode) {
@@ -34,21 +33,20 @@ index 98069af..30b2632 100644
          return null; // noop
        } else if (node.type === 'style' && node instanceof domhandler.Element) {
 diff --git a/node_modules/react-showdown/dist/react-showdown.esm.js b/node_modules/react-showdown/dist/react-showdown.esm.js
-index ef5e9c6..4b1fa0f 100644
+index 3bc6916..a82eaa9 100644
 --- a/node_modules/react-showdown/dist/react-showdown.esm.js
 +++ b/node_modules/react-showdown/dist/react-showdown.esm.js
-@@ -81,7 +81,9 @@ function MarkdownView(props) {
-       options = props.options,
+@@ -82,7 +82,8 @@ function MarkdownView(props) {
        extensions = props.extensions,
        components = props.components,
--      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components"]);
+       sanitizeHtml = props.sanitizeHtml,
+-      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components", "sanitizeHtml"]);
 +      MONKEY_PATCHED_textMapper = props.MONKEY_PATCHED_textMapper,
-+      MONKEY_PATCHED_sanitizeHtml = props.MONKEY_PATCHED_sanitizeHtml,
-+      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components", "MONKEY_PATCHED_textMapper", "MONKEY_PATCHED_sanitizeHtml"]);
++      otherProps = _objectWithoutPropertiesLoose(props, ["dangerouslySetInnerHTML", "flavor", "markdown", "markup", "options", "extensions", "components", "sanitizeHtml", "MONKEY_PATCHED_textMapper"]);
  
    var mapElement = useMemo(function () {
      return function mapElement(node, index) {
-@@ -122,7 +124,7 @@ function MarkdownView(props) {
+@@ -123,7 +124,7 @@ function MarkdownView(props) {
          var children = skipAnyChildrenFor.includes(node.name) ? null : skipWhitespaceElementsFor.includes(node.name) ? node.children.filter(filterWhitespaceElements).map(mapElement) : node.children.map(mapElement);
          return createElement(elementType, _props, children);
        } else if (node.type === 'text' && node instanceof DataNode) {
@@ -57,20 +55,3 @@ index ef5e9c6..4b1fa0f 100644
        } else if (node.type === 'comment') {
          return null; // noop
        } else if (node.type === 'style' && node instanceof Element) {
-@@ -182,13 +184,14 @@ function MarkdownView(props) {
-     });
-   }
- 
--  var root = parseDOM(html, {
-+  var root = parseDOM(MONKEY_PATCHED_sanitizeHtml ? MONKEY_PATCHED_sanitizeHtml(html) : html, {
-     // Don't change the case of parsed html tags to match inline components.
-     lowerCaseTags: false,
-     // Don't change the attribute names so that stuff like `className` works correctly.
-     lowerCaseAttributeNames: false,
-     // Encode entities automatically, so that &copy; and &uuml; works correctly.
--    decodeEntities: true
-+    decodeEntities: true,
-+    recognizeSelfClosing: true
-   });
-   return createElement('div', otherProps, root.map(mapElement));
- } // Match react-dom omittedCloseTags. See also:

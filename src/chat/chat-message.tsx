@@ -48,9 +48,7 @@ const sanitizeHtml = (html: string) =>
   });
 
 const TextRenderer: React.FC<{ text: string }> = ({ text }) => {
-  return (
-    <MarkdownView markdown={text} MONKEY_PATCHED_sanitizeHtml={sanitizeHtml} />
-  );
+  return <MarkdownView markdown={text} sanitizeHtml={sanitizeHtml} />;
 };
 
 const UserMessageRenderer: React.FC<{
@@ -64,12 +62,7 @@ const UserMessageRenderer: React.FC<{
     <MarkdownView
       markdown={content}
       components={chatMessageComponents}
-      /**
-       * There is no good way to sanitize HTML in Markdown pre-processing
-       * Because of that we monkey patched MarkdownView to accept a sanitize
-       * function that will be applied post converting the dom to html
-       */
-      MONKEY_PATCHED_sanitizeHtml={sanitizeHtml}
+      sanitizeHtml={sanitizeHtml}
       /**
        * We monkey patched MarkdownView.
        * We replace the "{number}" placeholders with our actual dice roll components, so they are embedded nicely :)
