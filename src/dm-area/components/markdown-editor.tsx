@@ -434,8 +434,8 @@ const AsideSelectNote: React.FC<{
     {
       variables: {
         input: {
-          title: "",
-          content: "",
+          title: "New Note",
+          content: "# New Note",
           isEntryPoint: false,
         },
       },

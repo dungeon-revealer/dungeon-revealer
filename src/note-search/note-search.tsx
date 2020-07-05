@@ -58,7 +58,7 @@ const NoteSearch_SearchQuery = graphql`
     notesSearch(query: $query) {
       edges {
         node {
-          noteId
+          documentId
           title
           preview
         }
@@ -149,7 +149,7 @@ export const NoteSearch: React.FC<{ close: () => void }> = ({ close }) => {
               <Result
                 onClick={() => {
                   noteWindowActions.focusOrShowNoteInNewWindow(
-                    edge.node.noteId
+                    edge.node.documentId
                   );
                   close();
                 }}

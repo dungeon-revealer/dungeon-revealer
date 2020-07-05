@@ -107,7 +107,7 @@ const WindowRenderer: React.FC<{
   // Ref with callback for resizing the editor.
   const editorOnResizeRef = React.useRef(() => undefined);
 
-  if (!node) return null;
+  if (!node && isLoading) return null;
 
   return (
     <WindowContext.Provider value={windowId}>

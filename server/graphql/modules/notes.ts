@@ -200,9 +200,9 @@ export const resolveNote = flow(
 const GraphQLNoteSearchResultType = t.objectType<notes.NoteSearchMatchType>({
   name: "NoteSearchResultType",
   fields: () => [
-    t.field("noteId", {
+    t.field("documentId", {
       type: t.NonNull(t.ID),
-      resolve: (obj) => encodeNoteId(obj.noteId),
+      resolve: (obj) => obj.noteId,
     }),
     t.field("title", {
       type: t.NonNull(t.String),
