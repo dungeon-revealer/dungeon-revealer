@@ -1,7 +1,7 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
 import debounce from "lodash/debounce";
-import { useMutation, useFragment } from "react-relay/hooks";
+import { useMutation, useFragment } from "relay-hooks";
 import type { noteEditorActiveItem_nodeFragment$key } from "./__generated__/noteEditorActiveItem_nodeFragment.graphql";
 import { noteEditorActiveItemNoteUpdateMutation } from "./__generated__/noteEditorActiveItemNoteUpdateMutation.graphql";
 import styled from "@emotion/styled/macro";

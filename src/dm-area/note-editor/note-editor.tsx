@@ -1,10 +1,6 @@
 import React from "react";
 import graphql from "babel-plugin-relay/macro";
-import {
-  useMutation,
-  useLazyLoadQuery,
-  useRelayEnvironment,
-} from "react-relay/hooks";
+import { useMutation, useRelayEnvironment, useQuery } from "relay-hooks";
 import { ConnectionHandler } from "relay-runtime";
 
 import { noteEditor_NoteDeleteMutation } from "./__generated__/noteEditor_NoteDeleteMutation.graphql";
@@ -67,7 +63,6 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
 
   const [confirmationDialog, showConfirmationDialog] = useConfirmationDialog();
-  const [activeModal, setActiveModal] = React.useState<React.ReactNode>(null);
 
   const [deleteNoteMutation] = useMutation<noteEditor_NoteDeleteMutation>(
     NoteEditor_NoteDeleteMutation
@@ -76,12 +71,16 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     NoteEditor_NoteCreateMutation
   );
 
-  const sideBarData = useLazyLoadQuery<noteEditor_SideBarQuery>(
+  const sideBarData = useQuery<noteEditor_SideBarQuery>(
     NoteEditor_SideBarQuery,
     {}
   );
 
   const sideBarRef = React.useRef<HTMLDivElement>(null);
+
+  // @TODO: Handle unexpected Error state
+  // if (!sideBarData.error)
+  if (!sideBarData.props) return null;
 
   return (
     <Modal onClickOutside={onClose} onPressEscape={onClose}>
@@ -114,7 +113,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <Modal.Body style={{ display: "flex", height: "80vh" }} noPadding>
           <Modal.Aside>
             <NoteEditorSideBar
-              notesRef={sideBarData}
+              notesRef={sideBarData.props}
               setActiveNoteId={setActiveNoteId}
               activeNoteId={activeNoteId}
             />
@@ -256,7 +255,6 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </Modal.Body>
       </Modal.Dialog>
       {confirmationDialog}
-      {activeModal}
     </Modal>
   );
 };

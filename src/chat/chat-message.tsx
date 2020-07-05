@@ -8,7 +8,7 @@ import * as Button from "../button";
 import { FormattedDiceRoll } from "./formatted-dice-roll";
 import _sanitizeHtml from "sanitize-html";
 import { chatMessageComponents } from "../user-content-components";
-import { useFragment } from "react-relay/hooks";
+import { useFragment } from "relay-hooks";
 import { chatMessage_SharedResourceChatMessageFragment$key } from "./__generated__/chatMessage_SharedResourceChatMessageFragment.graphql";
 import { useNoteWindowActions } from "../dm-area/token-info-aside";
 

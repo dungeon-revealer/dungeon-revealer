@@ -210,12 +210,12 @@ export const updateOrInsertPublicNote = (record: {
             "created_at",
             "updated_at"
           ) VALUES (
-              ?,
-              ?,
-              ?,
-              'public',
-              COALESCE((SELECT "created_at" FROM "notes" WHERE id = ?), ?),
-              ?
+            ?,
+            ?,
+            ?,
+            'public',
+            COALESCE((SELECT "created_at" FROM "notes" WHERE id = ?), ?),
+            ?
           );
         `,
         record.id,

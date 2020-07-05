@@ -1,7 +1,6 @@
 import * as React from "react";
 import { createEnvironment } from "./relay-environment";
-import { RelayEnvironmentProvider } from "react-relay/hooks";
-import { RelayEnvironmentProvider as RelayHooksRelayEnvironmentProvider } from "relay-hooks";
+import { RelayEnvironmentProvider } from "relay-hooks";
 import createPersistedState from "use-persisted-state";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { SplashScreen } from "./splash-screen";
@@ -198,12 +197,8 @@ export const AuthenticatedAppShell: React.FC<{
   }
 
   return (
-    <RelayHooksRelayEnvironmentProvider environment={relayEnvironment}>
-      <RelayEnvironmentProvider environment={relayEnvironment}>
-        <AuthenticatedAppShellRenderer>
-          {children}
-        </AuthenticatedAppShellRenderer>
-      </RelayEnvironmentProvider>
-    </RelayHooksRelayEnvironmentProvider>
+    <RelayEnvironmentProvider environment={relayEnvironment}>
+      <AuthenticatedAppShellRenderer>{children}</AuthenticatedAppShellRenderer>
+    </RelayEnvironmentProvider>
   );
 };

@@ -1,7 +1,7 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
 import { QueryRenderer, requestSubscription } from "react-relay";
-import { useRelayEnvironment } from "react-relay/hooks";
+import { useRelayEnvironment } from "relay-hooks";
 import { ConnectionHandler } from "relay-runtime";
 import { ChatUserList } from "./chat-user-list";
 import { ChatMessages } from "./chat-messages";

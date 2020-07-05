@@ -5,11 +5,7 @@ import styled from "@emotion/styled/macro";
 import { HtmlContainer } from "./components/html-container";
 import graphql from "babel-plugin-relay/macro";
 import { QueryRenderer } from "react-relay";
-import {
-  useRelayEnvironment,
-  useMutation,
-  useLazyLoadQuery,
-} from "react-relay/hooks";
+import { useRelayEnvironment, useMutation, useQuery } from "relay-hooks";
 import { selectTokenMarkerReferenceModal_NotesQuery } from "./__generated__/selectTokenMarkerReferenceModal_NotesQuery.graphql";
 import { selectTokenMarkerReferenceModal_ActiveContentQuery } from "./__generated__/selectTokenMarkerReferenceModal_ActiveContentQuery.graphql";
 import { NoteEditorSideBar } from "./note-editor/note-editor-side-bar";
@@ -88,9 +84,10 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
   updateToken: UpdateTokenFunction;
 }> = ({ close, tokenId, updateToken }) => {
   const environment = useRelayEnvironment();
-  const sideBarData = useLazyLoadQuery<
-    selectTokenMarkerReferenceModal_NotesQuery
-  >(SelectTokenMarkerReferenceQuery, {});
+  const sideBarData = useQuery<selectTokenMarkerReferenceModal_NotesQuery>(
+    SelectTokenMarkerReferenceQuery,
+    {}
+  );
   const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
   const [mutate] = useMutation<
     selectTokenMarkerReferenceModal_NoteCreateMutation
@@ -133,6 +130,8 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
     close();
   }, [updateToken, activeNoteId]);
 
+  if (!sideBarData.props) return null;
+
   return (
     <Modal onPressEscape={close} onClickOutside={close}>
       <Modal.Dialog>
@@ -142,7 +141,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
         <Modal.Body style={{ display: "flex", height: "70vh" }} noPadding>
           <Modal.Aside>
             <NoteEditorSideBar
-              notesRef={sideBarData}
+              notesRef={sideBarData.props}
               setActiveNoteId={setActiveNoteId}
               activeNoteId={activeNoteId}
             />
