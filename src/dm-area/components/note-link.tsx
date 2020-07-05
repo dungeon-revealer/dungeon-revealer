@@ -22,13 +22,7 @@ export const NoteLink: React.FC<{ id?: string }> = (props) => {
   const noteWindowActions = useNoteWindowActions();
   const id = props.id ?? null;
 
-  const noteId = React.useMemo(() => {
-    if (!id) return null;
-    // TODO: We should not do the encoding on the frontend 🤔
-    return btoa(encodeURIComponent(`01:Note:${id}`));
-  }, [id]);
-
-  if (noteId === null) {
+  if (id === null) {
     return <>{props.children ?? null}</>;
   }
 
@@ -36,9 +30,9 @@ export const NoteLink: React.FC<{ id?: string }> = (props) => {
     <StyledNoteLink
       onClick={(ev) => {
         if (ev.ctrlKey || ev.metaKey) {
-          noteWindowActions.showNoteInNewWindow(noteId);
+          noteWindowActions.showNoteInNewWindow(id);
         } else {
-          noteWindowActions.showNoteInWindow(noteId, windowId);
+          noteWindowActions.showNoteInWindow(id, windowId);
         }
       }}
     >

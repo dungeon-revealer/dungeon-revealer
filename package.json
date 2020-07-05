@@ -131,7 +131,7 @@
     "relay-compiler": "9.1.0",
     "relay-compiler-language-typescript": "12.0.3",
     "relay-config": "9.1.0",
-    "relay-hooks": "3.5.0",
+    "relay-hooks": "3.5.1",
     "relay-runtime": "9.1.0",
     "showdown": "1.9.1",
     "socket.io-client": "2.3.0",

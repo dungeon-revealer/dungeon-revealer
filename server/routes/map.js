@@ -9,18 +9,13 @@ const {
   parseFileExtension,
 } = require("../util");
 
-let NoteModule;
-
 const mapToken = (token) => {
-  if (!NoteModule) {
-    NoteModule = require("../graphql/modules/notes");
-  }
   if (!token.reference) return token;
   return {
     ...token,
     reference: {
       ...token.reference,
-      id: NoteModule.encodeNoteId(token.reference.id),
+      id: token.reference.id,
     },
   };
 };

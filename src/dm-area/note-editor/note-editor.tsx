@@ -40,13 +40,10 @@ const NoteEditor_NoteCreateMutation = graphql`
 `;
 
 const NoteEditor_ActiveItemQuery = graphql`
-  query noteEditor_ActiveItemQuery($activeNoteId: ID!) {
-    node(id: $activeNoteId) {
-      ... on Note {
-        __typename
-        id
-        ...noteEditorActiveItem_nodeFragment
-      }
+  query noteEditor_ActiveItemQuery($documentId: ID!) {
+    note(documentId: $documentId) {
+      id
+      ...noteEditorActiveItem_nodeFragment
     }
   }
 `;
@@ -125,6 +122,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       input: {
                         title: "<Untitled Note>",
                         content: "",
+                        isEntryPoint: true,
                       },
                     },
                     updater: (store) => {
@@ -163,20 +161,20 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <QueryRenderer<noteEditor_ActiveItemQuery>
                 environment={environment}
                 query={NoteEditor_ActiveItemQuery}
-                variables={{ activeNoteId }}
+                variables={{ documentId: activeNoteId }}
                 render={({ error, props }) => {
                   if (error) return null;
-                  if (props?.node?.__typename !== "Note") return null;
+                  if (!props?.note) return null;
 
                   return (
                     <>
                       <NoteEditorActiveItem
-                        key={props.node.id}
+                        key={props.note.id}
                         isEditMode={isEditMode}
                         toggleIsEditMode={() =>
                           setIsEditMode((isEditMode) => !isEditMode)
                         }
-                        nodeRef={props.node}
+                        nodeRef={props.note}
                         sideBarRef={sideBarRef}
                       />
                       <Modal.Footer>

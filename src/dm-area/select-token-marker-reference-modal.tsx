@@ -37,6 +37,7 @@ const NoteCreateMutation = graphql`
     noteCreate(input: $input) {
       note {
         id
+        documentId
         title
         content
       }
@@ -101,16 +102,19 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
         input: {
           title: "New Note",
           content: "",
+          isEntryPoint: false,
         },
       },
       onCompleted: (data) => {
         const reference = {
           type: "note" as "note",
-          id: data.noteCreate.note.id,
+          id: data.noteCreate.note.documentId,
         };
 
         updateToken({ id: tokenId, reference });
-        noteWindowActions.focusOrShowNoteInNewWindow(data.noteCreate.note.id);
+        noteWindowActions.focusOrShowNoteInNewWindow(
+          data.noteCreate.note.documentId
+        );
         close();
       },
     });

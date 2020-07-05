@@ -81,6 +81,7 @@ union SharedResource = Note
 
 type Note implements Node {
   id: ID!
+  documentId: ID!
   title: String!
   content: String!
   contentPreview: String!
@@ -101,6 +102,7 @@ type Query {
   me: User!
   notes(first: Int, after: String): NoteConnection!
   notesSearch(first: Int, after: String, query: String): NoteSearchConnection!
+  note(documentId: ID!): Note
   node(id: ID!): Node
 }
 
@@ -204,6 +206,7 @@ type NoteCreateResult {
 input NoteCreateInput {
   title: String!
   content: String!
+  isEntryPoint: Boolean!
 }
 
 type NoteDeleteResult {

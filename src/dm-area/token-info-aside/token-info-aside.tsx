@@ -15,16 +15,13 @@ import { tokenInfoAside_shareNoteMutation } from "./__generated__/tokenInfoAside
 import { useCurrent } from "../../hooks/use-current";
 
 const TokenInfoAside_nodeQuery = graphql`
-  query tokenInfoAside_nodeQuery($activeNoteId: ID!) {
-    node(id: $activeNoteId) {
-      ... on Note {
-        __typename
-        id
-        title
-        viewerCanEdit
-        viewerCanShare
-        ...noteEditorActiveItem_nodeFragment
-      }
+  query tokenInfoAside_nodeQuery($documentId: ID!) {
+    note(documentId: $documentId) {
+      id
+      title
+      viewerCanEdit
+      viewerCanShare
+      ...noteEditorActiveItem_nodeFragment
     }
   }
 `;
@@ -52,9 +49,8 @@ export const useWindowContext = () => React.useContext(WindowContext);
 const extractNode = (
   input: tokenInfoAside_nodeQueryResponse | null | undefined
 ) => {
-  if (!input?.node) return null;
-  if (input.node.__typename !== "Note") return null;
-  return input.node;
+  if (!input?.note) return null;
+  return input.note;
 };
 
 const WindowRenderer: React.FC<{
@@ -67,7 +63,7 @@ const WindowRenderer: React.FC<{
 }> = ({ windowId, noteId, close, focus, navigateNext, navigateBack }) => {
   const data = useQuery<tokenInfoAside_nodeQuery>(
     TokenInfoAside_nodeQuery,
-    React.useMemo(() => ({ activeNoteId: noteId }), [noteId])
+    React.useMemo(() => ({ documentId: noteId }), [noteId])
   );
 
   const isLoading = !data.props && !data.error;
@@ -110,6 +106,8 @@ const WindowRenderer: React.FC<{
 
   // Ref with callback for resizing the editor.
   const editorOnResizeRef = React.useRef(() => undefined);
+
+  if (!node) return null;
 
   return (
     <WindowContext.Provider value={windowId}>

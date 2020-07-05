@@ -8,9 +8,9 @@ export const API_VERSION = "01" as const;
 const buildResourceIdentifier = (resourceIdentifier: string) => (id: string) =>
   `${API_VERSION}:${resourceIdentifier}:${id}`;
 
-const base64Encode = (input: string) =>
+export const base64Encode = (input: string) =>
   Buffer.from(encodeURIComponent(input)).toString("base64");
-const base64Decode = (input: string) =>
+export const base64Decode = (input: string) =>
   decodeURIComponent(Buffer.from(input, "base64").toString("utf-8"));
 
 export const encodeId = (resourceIdentifier: string) =>

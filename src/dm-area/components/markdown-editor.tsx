@@ -12,7 +12,6 @@ import * as Button from "../../button";
 import { sendRequest, ISendRequestTask } from "../../http-request";
 import { buildApiUrl } from "../../public-url";
 import { SelectLibraryImageModal } from "./select-library-image-modal";
-
 import { transparentize } from "polished";
 import {
   BoldIcon,
@@ -23,6 +22,12 @@ import {
 } from "../../feather-icons";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
 import { useAccessToken } from "../../hooks/use-access-token";
+import graphql from "babel-plugin-relay/macro";
+import { useMutation, useQuery } from "relay-hooks";
+import { markdownEditor_noteCreateMutation } from "./__generated__/markdownEditor_noteCreateMutation.graphql";
+import { markdownEditor_asideNoteQuery } from "./__generated__/markdownEditor_asideNoteQuery.graphql";
+import { useNoteWindowActions } from "../token-info-aside";
+import { useWindowContext } from "../token-info-aside/token-info-aside";
 
 const insertImageIntoEditor = (
   editor: editor.IStandaloneCodeEditor,
@@ -167,10 +172,92 @@ const parseTagAstFromHtmlTagString = (input: string) => {
   return result.length ? result[0] : null;
 };
 
+// @TODO: optimize this function
+const getMarkdownLinkSelectionRange = (
+  column: number,
+  text: string
+): {
+  type: "link";
+  id: string;
+  position: { start: number; end: number };
+} | null => {
+  const LINK_START_TAG = "<Link";
+  const LINK_END_TAG = "</Link>";
+
+  // check whether cursor is inside a link definition
+  let characterBeforeCounter = 0;
+  let startIndex = -1;
+  let endIndex = -1;
+
+  while (characterBeforeCounter <= 300) {
+    const index = column - characterBeforeCounter;
+    if (text[index] === "<") {
+      if (text.substr(index, LINK_START_TAG.length) === LINK_START_TAG) {
+        startIndex = index;
+        break;
+      } else if (text.substr(index, LINK_END_TAG.length) === LINK_END_TAG) {
+        // in case the selection starts inside the end tag
+        endIndex = index + LINK_END_TAG.length;
+
+        // but not before the end tag
+        if (endIndex < column) {
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+
+    characterBeforeCounter = characterBeforeCounter + 1;
+  }
+
+  if (startIndex === -1) {
+    return null;
+  }
+
+  let characterAfterCounter = 0;
+
+  if (endIndex === -1) {
+    while (characterAfterCounter <= 300) {
+      const index = column + characterAfterCounter;
+
+      if (
+        text[index] === "<" &&
+        text.substr(index, LINK_END_TAG.length) === LINK_END_TAG
+      ) {
+        endIndex = index + LINK_END_TAG.length;
+        break;
+      }
+
+      characterAfterCounter = characterAfterCounter + 1;
+    }
+  }
+
+  if (endIndex === -1) {
+    return null;
+  }
+
+  const part = text.substring(startIndex, endIndex);
+
+  const node = parseTagAstFromHtmlTagString(part);
+  if (!node) return null;
+
+  return {
+    type: "link" as const,
+    // @ts-ignore
+    id: node.attribs.id || "",
+    position: { start: startIndex, end: endIndex },
+  };
+};
+
 const getMarkdownImageSelectionRange = (
   column: number,
   text: string
-): { id: string; position: { start: number; end: number } } | null => {
+): {
+  type: "image";
+  id: string;
+  position: { start: number; end: number };
+} | null => {
   const IMAGE_START_TAG = "<Image";
 
   // check whether cursor is inside a image definition
@@ -219,6 +306,7 @@ const getMarkdownImageSelectionRange = (
   if (!node) return null;
 
   return {
+    type: "image" as const,
     // @ts-ignore
     id: node.attribs.id,
     position: { start: startIndex, end: endIndex },
@@ -313,6 +401,109 @@ const DropDownMenuItem = styled.button`
   }
 `;
 
+const MarkdownEditor_NoteCreateMutation = graphql`
+  mutation markdownEditor_noteCreateMutation($input: NoteCreateInput!) {
+    noteCreate(input: $input) {
+      note {
+        id
+        documentId
+      }
+    }
+  }
+`;
+
+const MarkdownEditor_AsideNoteQuery = graphql`
+  query markdownEditor_asideNoteQuery($documentId: ID!) {
+    asideNote: note(documentId: $documentId) {
+      id
+      documentId
+      title
+      contentPreview
+    }
+  }
+`;
+
+const AsideSelectNote: React.FC<{
+  noteId: string;
+  onSelect: (id: string) => void;
+}> = (props) => {
+  const actions = useNoteWindowActions();
+  const windowId = useWindowContext();
+  const [mutate, state] = useMutation<markdownEditor_noteCreateMutation>(
+    MarkdownEditor_NoteCreateMutation,
+    {
+      variables: {
+        input: {
+          title: "",
+          content: "",
+          isEntryPoint: false,
+        },
+      },
+    }
+  );
+
+  const data = useQuery<markdownEditor_asideNoteQuery>(
+    MarkdownEditor_AsideNoteQuery,
+    {
+      documentId: props.noteId,
+    },
+    {
+      skip: !props.noteId,
+    }
+  );
+
+  const isValidNoteIdWithoutResult = props.noteId && !data.props?.asideNote;
+
+  return (
+    <>
+      <SideMenuTitle>
+        <Link height={16} style={{ marginBottom: "-2px" }} /> Linked Note
+      </SideMenuTitle>
+      {!props.noteId || isValidNoteIdWithoutResult ? (
+        <>
+          No Note selected.
+          <br />
+          <Button.Primary small>Link Note</Button.Primary>
+          or{" "}
+          <Button.Primary
+            small
+            onClick={() => {
+              if (state.loading) {
+                return;
+              }
+              mutate({
+                onCompleted: (result) => {
+                  props.onSelect(result.noteCreate.note.documentId);
+                },
+              });
+            }}
+          >
+            Create Note
+          </Button.Primary>
+        </>
+      ) : data?.props?.asideNote ? (
+        <>
+          <div>
+            <b>Title:</b> {data.props.asideNote.title}
+          </div>
+          <div>{data.props.asideNote.contentPreview}</div>
+          <div>
+            <Button.Primary small>Change linked Note</Button.Primary>
+            <Button.Primary
+              small
+              onClick={() => {
+                actions.showNoteInWindow(props.noteId, windowId);
+              }}
+            >
+              Open
+            </Button.Primary>
+          </div>
+        </>
+      ) : null}
+    </>
+  );
+};
+
 export const MarkdownEditor: React.FC<{
   value: string;
   onChange: (input: string) => void;
@@ -365,16 +556,30 @@ export const MarkdownEditor: React.FC<{
     []
   );
 
-  const [menu, setMenu] = React.useState<{
-    type: "image";
-    data: {
-      id: string;
-      textPosition: {
-        start: number;
-        end: number;
-      };
-    };
-  } | null>(null);
+  const [menu, setMenu] = React.useState<
+    | {
+        type: "image";
+        data: {
+          id: string;
+          textPosition: {
+            start: number;
+            end: number;
+          };
+        };
+      }
+    | {
+        type: "link";
+        data: {
+          id: string;
+          innerContent: string;
+          textPosition: {
+            start: number;
+            end: number;
+          };
+        };
+      }
+    | null
+  >(null);
 
   // TODO: Ideally we only have one showMediaLibrary state that is more complex
 
@@ -543,48 +748,71 @@ export const MarkdownEditor: React.FC<{
             const model = editor.getModel();
             if (!model) return;
             const positionOffset = model.getOffsetAt(event.position);
-            const imageSelectionRange = getMarkdownImageSelectionRange(
-              positionOffset,
-              text
-            );
 
-            if (imageSelectionRange) {
-              const startPosition = model.getPositionAt(
-                imageSelectionRange.position.start
-              );
-              const endPosition = model.getPositionAt(
-                imageSelectionRange.position.end
-              );
-              editorStateRef.current.decorations = editor.deltaDecorations(
-                editorStateRef.current.decorations,
-                [
-                  {
-                    range: new MonacoRange(
-                      startPosition.lineNumber,
-                      startPosition.column,
-                      endPosition.lineNumber,
-                      endPosition.column
-                    ),
-                    options: { inlineClassName: ".active-image-component" },
-                  },
-                ]
-              );
+            let selectionRange =
+              getMarkdownImageSelectionRange(positionOffset, text) ||
+              getMarkdownLinkSelectionRange(positionOffset, text);
 
-              setMenu({
-                type: "image",
-                data: {
-                  id: imageSelectionRange.id,
-                  textPosition: {
-                    ...imageSelectionRange.position,
-                  },
-                },
-              });
-            } else {
+            if (!selectionRange) {
               editorStateRef.current.decorations = editor.deltaDecorations(
                 editorStateRef.current.decorations,
                 []
               );
               setMenu(null);
+              return;
+            }
+
+            const startPosition = model.getPositionAt(
+              selectionRange.position.start
+            );
+            const endPosition = model.getPositionAt(
+              selectionRange.position.end
+            );
+            editorStateRef.current.decorations = editor.deltaDecorations(
+              editorStateRef.current.decorations,
+              [
+                {
+                  range: new MonacoRange(
+                    startPosition.lineNumber,
+                    startPosition.column,
+                    endPosition.lineNumber,
+                    endPosition.column
+                  ),
+                  options: { inlineClassName: ".active-image-component" },
+                },
+              ]
+            );
+
+            if (selectionRange.type === "image") {
+              setMenu({
+                type: selectionRange.type,
+                data: {
+                  id: selectionRange.id,
+                  textPosition: {
+                    ...selectionRange.position,
+                  },
+                },
+              });
+            } else {
+              const parseInnerContentResult = text
+                .substring(
+                  selectionRange.position.start,
+                  selectionRange.position.end
+                )
+                .match(/<Link\s*(?:id=".*")?\s*>(.*)<\s*\/\s*Link\s*>/);
+
+              if (!parseInnerContentResult) return;
+              const [, innerContent] = parseInnerContentResult;
+              setMenu({
+                type: selectionRange.type,
+                data: {
+                  id: selectionRange.id,
+                  innerContent,
+                  textPosition: {
+                    ...selectionRange.position,
+                  },
+                },
+              });
             }
           });
         }}
@@ -593,17 +821,86 @@ export const MarkdownEditor: React.FC<{
       {menu && sideBarRef.current
         ? ReactDom.createPortal(
             <SideMenu>
-              <SideMenuTitle>
-                <Link height={16} style={{ marginBottom: "-2px" }} /> Linked
-                Image
-              </SideMenuTitle>
-              <SideMenuImage src={buildApiUrl(`/images/${menu.data.id}`)} />
-              <Button.Primary small onClick={() => setShowMediaLibrary(true)}>
-                Change
-              </Button.Primary>
-              {showMediaLibrary ? (
-                <SelectLibraryImageModal
-                  close={() => setShowMediaLibrary(false)}
+              {menu.type === "image" ? (
+                <>
+                  <SideMenuTitle>
+                    <Link height={16} style={{ marginBottom: "-2px" }} /> Linked
+                    Image
+                  </SideMenuTitle>
+                  <SideMenuImage src={buildApiUrl(`/images/${menu.data.id}`)} />
+                  <Button.Primary
+                    small
+                    onClick={() => setShowMediaLibrary(true)}
+                  >
+                    Change
+                  </Button.Primary>
+                  {showMediaLibrary ? (
+                    <SelectLibraryImageModal
+                      close={() => setShowMediaLibrary(false)}
+                      onSelect={(id) => {
+                        if (!ref.current?.editor) return;
+                        const editor = ref.current.editor;
+                        const model = editor.getModel();
+                        if (!model) return;
+                        const value = editor.getValue();
+
+                        const newTag = `<Image id="${id}" />`;
+                        const newValue = replaceRange(
+                          value,
+                          menu.data.textPosition.start,
+                          menu.data.textPosition.end,
+                          newTag
+                        );
+
+                        editor.setValue(newValue);
+                        const position = model.getPositionAt(
+                          menu.data.textPosition.start
+                        );
+                        editor.setPosition(position);
+
+                        setMenu({
+                          type: "image",
+                          data: {
+                            id,
+                            textPosition: {
+                              start: menu.data.textPosition.start,
+                              end: menu.data.textPosition.start + newTag.length,
+                            },
+                          },
+                        });
+
+                        const startPosition = model.getPositionAt(
+                          menu.data.textPosition.start
+                        );
+                        const endPosition = model.getPositionAt(
+                          menu.data.textPosition.start + newTag.length
+                        );
+
+                        editorStateRef.current.decorations = editor.deltaDecorations(
+                          editorStateRef.current.decorations,
+                          [
+                            {
+                              range: new MonacoRange(
+                                startPosition.lineNumber,
+                                startPosition.column,
+                                endPosition.lineNumber,
+                                endPosition.column
+                              ),
+                              options: {
+                                inlineClassName: ".active-image-component",
+                              },
+                            },
+                          ]
+                        );
+                        setShowMediaLibrary(false);
+                        setTimeout(() => editor.focus());
+                      }}
+                    />
+                  ) : null}
+                </>
+              ) : menu.type === "link" ? (
+                <AsideSelectNote
+                  noteId={menu.data.id}
                   onSelect={(id) => {
                     if (!ref.current?.editor) return;
                     const editor = ref.current.editor;
@@ -611,7 +908,7 @@ export const MarkdownEditor: React.FC<{
                     if (!model) return;
                     const value = editor.getValue();
 
-                    const newTag = `<Image id="${id}" />`;
+                    const newTag = `<Link id="${id}">${menu.data.innerContent}</Link>`;
                     const newValue = replaceRange(
                       value,
                       menu.data.textPosition.start,
@@ -626,9 +923,10 @@ export const MarkdownEditor: React.FC<{
                     editor.setPosition(position);
 
                     setMenu({
-                      type: "image",
+                      type: "link",
                       data: {
                         id,
+                        innerContent: menu.data.innerContent,
                         textPosition: {
                           start: menu.data.textPosition.start,
                           end: menu.data.textPosition.start + newTag.length,
@@ -659,8 +957,6 @@ export const MarkdownEditor: React.FC<{
                         },
                       ]
                     );
-                    setShowMediaLibrary(false);
-                    setTimeout(() => editor.focus());
                   }}
                 />
               ) : null}
