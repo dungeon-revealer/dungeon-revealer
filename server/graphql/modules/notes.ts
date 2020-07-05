@@ -61,6 +61,10 @@ export const GraphQLNoteType = t.objectType<notes.NoteModelType>({
       type: t.NonNull(t.Boolean),
       resolve: (obj, args, context) => context.viewerRole === "admin",
     }),
+    t.field("viewerCanShare", {
+      type: t.NonNull(t.Boolean),
+      resolve: (obj, args, context) => obj.type === "public",
+    }),
     t.field("updatedAt", {
       type: t.NonNull(t.Int),
       resolve: (obj) => obj.updatedAt,
@@ -202,7 +206,7 @@ export const queryFields = [
       first: t.arg(t.Int),
       after: t.arg(t.String),
     },
-    resolve: (obj, args, context) => RT.run(resolveNotes(), context),
+    resolve: (obj, args, context) => RT.run(resolveNotes(null), context),
   }),
   t.field("notesSearch", {
     type: t.NonNull(GraphQLNoteSearchConnectionType),

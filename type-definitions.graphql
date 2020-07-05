@@ -86,6 +86,7 @@ type Note implements Node {
   contentPreview: String!
   createdAt: Int!
   viewerCanEdit: Boolean!
+  viewerCanShare: Boolean!
   updatedAt: Int!
 }
 

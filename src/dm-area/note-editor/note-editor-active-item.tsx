@@ -43,7 +43,8 @@ export const NoteEditorActiveItem: React.FC<{
   toggleIsEditMode: () => void;
   nodeRef: noteEditorActiveItem_nodeFragment$key;
   sideBarRef: React.RefObject<HTMLDivElement>;
-}> = ({ isEditMode, nodeRef, sideBarRef }) => {
+  editorOnResizeRef?: React.MutableRefObject<() => void>;
+}> = ({ isEditMode, nodeRef, sideBarRef, editorOnResizeRef }) => {
   const node = useFragment(NoteEditorActiveItem_NodeFragment, nodeRef);
 
   const [mutate] = useMutation<noteEditorActiveItemNoteUpdateMutation>(
@@ -91,6 +92,7 @@ export const NoteEditorActiveItem: React.FC<{
             value={content}
             onChange={setContent}
             sideBarRef={sideBarRef}
+            editorOnResizeRef={editorOnResizeRef}
           />
         </EditorContainer>
       ) : (

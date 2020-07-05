@@ -22,6 +22,7 @@ const TokenInfoAside_nodeQuery = graphql`
         id
         title
         viewerCanEdit
+        viewerCanShare
         ...noteEditorActiveItem_nodeFragment
       }
     }
@@ -91,18 +92,24 @@ const WindowRenderer: React.FC<{
       ]
     : [];
 
-  const options = [
-    {
-      onClick: () =>
-        node
-          ? mutate({ variables: { input: { contentId: node.id } } })
-          : () => undefined,
-      title: "Share",
-      //TODO: Make types more strict
-      Icon: Icon.Share as any,
-    },
-    ...canEditOptions,
-  ];
+  const canShareOptions = node?.viewerCanShare
+    ? [
+        {
+          onClick: () =>
+            node
+              ? mutate({ variables: { input: { contentId: node.id } } })
+              : () => undefined,
+          title: "Share",
+          //TODO: Make types more strict
+          Icon: Icon.Share as any,
+        },
+      ]
+    : [];
+
+  const options = [...canShareOptions, ...canEditOptions];
+
+  // Ref with callback for resizing the editor.
+  const editorOnResizeRef = React.useRef(() => undefined);
 
   return (
     <WindowContext.Provider value={windowId}>
@@ -135,7 +142,9 @@ const WindowRenderer: React.FC<{
             </Button.Tertiary>
           </>
         }
-        headerContent={node?.title}
+        headerContent={
+          node ? node.title : isLoading ? "Loading..." : "NOT FOUND"
+        }
         bodyContent={
           node ? (
             <>
@@ -147,12 +156,24 @@ const WindowRenderer: React.FC<{
                 }
                 nodeRef={node}
                 sideBarRef={sideBarRef}
+                editorOnResizeRef={editorOnResizeRef}
               />
               <NoteEditorSideReference>
                 <div ref={sideBarRef} />
               </NoteEditorSideReference>
             </>
-          ) : null
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100%",
+              }}
+            >
+              {isLoading ? "Loading..." : "This note does no longer exist."}
+            </div>
+          )
         }
         close={close}
         style={{
@@ -160,6 +181,9 @@ const WindowRenderer: React.FC<{
           left: window.innerWidth / 2 - 500 / 2,
         }}
         options={options}
+        onDidResize={() => {
+          editorOnResizeRef.current?.();
+        }}
       />
     </WindowContext.Provider>
   );

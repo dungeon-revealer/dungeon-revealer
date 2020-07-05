@@ -2,6 +2,7 @@ import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as db from "./notes-db";
 import { pipe } from "fp-ts/lib/pipeable";
+import { flow } from "lodash";
 
 type ViewerRole = "admin" | "user";
 
@@ -12,26 +13,34 @@ export type NoteSearchMatchType = db.NoteSearchMatchType;
 
 const isAdmin = (viewerRole: ViewerRole) => viewerRole === "admin";
 
-const checkAdmin = (): RTE.ReaderTaskEither<
-  { viewerRole: ViewerRole },
-  Error,
-  void
-> => ({ viewerRole }) =>
+const checkAdmin = <T>(
+  input: T
+): RTE.ReaderTaskEither<{ viewerRole: ViewerRole }, Error, T> => ({
+  viewerRole,
+}) =>
   isAdmin(viewerRole)
-    ? TE.right(undefined)
+    ? TE.right(input)
     : TE.left(new Error("Insufficient permissions."));
 
 export const getNoteById = (id: string) =>
   pipe(
-    checkAdmin(),
-    RTE.chainW(() => db.getNoteById(id))
+    db.getNoteById(id),
+    RTE.chainW((note) => {
+      switch (note.type) {
+        case "admin":
+          return checkAdmin(note);
+        case "public":
+          return RTE.right(note);
+        default:
+          return RTE.left(new Error("Insufficient permissions."));
+      }
+    })
   );
 
-export const getPaginatedNotes = () =>
-  pipe(
-    checkAdmin(),
-    RTE.chainW(() => db.getPaginatedNotes())
-  );
+export const getPaginatedNotes = flow(
+  checkAdmin,
+  RTE.chainW(() => db.getPaginatedNotes())
+);
 
 export const createNote = ({
   title,
@@ -39,11 +48,7 @@ export const createNote = ({
 }: {
   title: string;
   content: string;
-}) =>
-  pipe(
-    checkAdmin(),
-    RTE.chainW(() => db.createNote({ title, content }))
-  );
+}) => pipe(checkAdmin({ title, content }), RTE.chainW(db.createNote));
 
 export const updateNote = ({
   id,
@@ -53,16 +58,9 @@ export const updateNote = ({
   id: string;
   title: string;
   content: string;
-}) =>
-  pipe(
-    checkAdmin(),
-    RTE.chainW(() => db.updateNote({ id, title, content }))
-  );
+}) => pipe(checkAdmin({ id, title, content }), RTE.chainW(db.updateNote));
 
 export const deleteNote = (noteId: string) =>
-  pipe(
-    checkAdmin(),
-    RTE.chainW(() => db.deleteNote(noteId))
-  );
+  pipe(checkAdmin(noteId), RTE.chainW(db.deleteNote));
 
 export const findPublicNotes = db.findPublicNotes;

@@ -317,7 +317,8 @@ export const MarkdownEditor: React.FC<{
   value: string;
   onChange: (input: string) => void;
   sideBarRef: React.RefObject<HTMLElement>;
-}> = ({ value, onChange, sideBarRef }) => {
+  editorOnResizeRef?: React.MutableRefObject<() => void>;
+}> = ({ value, onChange, sideBarRef, editorOnResizeRef }) => {
   const uploadTaskRef = React.useRef<ISendRequestTask | null>(null);
   const accessToken = useAccessToken();
 
@@ -354,7 +355,15 @@ export const MarkdownEditor: React.FC<{
     editorReference: ref,
   });
 
-  React.useEffect(() => () => uploadTaskRef.current?.abort(), []);
+  React.useEffect(
+    () => () => {
+      uploadTaskRef.current?.abort();
+      if (editorOnResizeRef) {
+        editorOnResizeRef.current = () => undefined;
+      }
+    },
+    []
+  );
 
   const [menu, setMenu] = React.useState<{
     type: "image";
@@ -516,9 +525,19 @@ export const MarkdownEditor: React.FC<{
         value={value}
         onChange={onChange}
         language="markdown"
-        options={{ minimap: { enabled: false }, lineNumbers: "off" }}
+        options={{
+          minimap: { enabled: false },
+          lineNumbers: "off",
+          wordWrap: "on",
+        }}
         ref={ref}
         editorDidMount={(editor) => {
+          if (editorOnResizeRef) {
+            editorOnResizeRef.current = () => {
+              editor.layout();
+            };
+          }
+
           editor.onDidChangeCursorPosition((event) => {
             const text = editor.getValue();
             const model = editor.getModel();

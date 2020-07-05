@@ -63,6 +63,7 @@ export const DraggableWindow = ({
   style,
   headerLeftContent = null,
   options = [],
+  onDidResize,
 }: {
   headerContent: React.ReactNode;
   bodyContent: React.ReactNode;
@@ -76,6 +77,7 @@ export const DraggableWindow = ({
     onClick: () => void;
     Icon: (p: { height?: number }) => React.ReactElement;
   }[];
+  onDidResize?: () => void;
 }): JSX.Element => {
   const [props, set] = useSpring(() => ({
     x: 0,
@@ -98,12 +100,15 @@ export const DraggableWindow = ({
   );
 
   const dimensionDragBind = useDrag(
-    ({ movement: [mx, my] }) => {
+    ({ movement: [mx, my], down }) => {
       set({
         width: mx,
         height: my,
         immediate: true,
       });
+      if (down === false) {
+        onDidResize?.();
+      }
     },
     {
       initial: () => [props.width.get(), props.height.get()],
