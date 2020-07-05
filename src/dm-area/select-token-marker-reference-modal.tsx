@@ -19,13 +19,11 @@ const SelectTokenMarkerReferenceQuery = graphql`
 `;
 
 const SelectTokenMarkerReference_ActiveContentQuery = graphql`
-  query selectTokenMarkerReferenceModal_ActiveContentQuery($activeNoteId: ID!) {
-    node(id: $activeNoteId) {
-      ... on Note {
-        __typename
-        id
-        content
-      }
+  query selectTokenMarkerReferenceModal_ActiveContentQuery($documentId: ID!) {
+    note(documentId: $documentId) {
+      id
+      documentId
+      content
     }
   }
 `;
@@ -67,13 +65,11 @@ export const useShowSelectTokenMarkerReferenceModal = () => {
     modalNode,
     React.useCallback((tokenId: string, updateToken: UpdateTokenFunction) => {
       setModalNode(
-        <React.Suspense fallback={null}>
-          <SelectTokenMarkerReferenceModal
-            tokenId={tokenId}
-            updateToken={updateToken}
-            close={() => setModalNode(null)}
-          />
-        </React.Suspense>
+        <SelectTokenMarkerReferenceModal
+          tokenId={tokenId}
+          updateToken={updateToken}
+          close={() => setModalNode(null)}
+        />
       );
     }, []),
   ] as const;
@@ -134,7 +130,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
     close();
   }, [updateToken, activeNoteId]);
 
-  if (!sideBarData.props) return null;
+  if (!sideBarData?.props) return null;
 
   return (
     <Modal onPressEscape={close} onClickOutside={close}>
@@ -155,10 +151,10 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
               <QueryRenderer<selectTokenMarkerReferenceModal_ActiveContentQuery>
                 environment={environment}
                 query={SelectTokenMarkerReference_ActiveContentQuery}
-                variables={{ activeNoteId }}
+                variables={{ documentId: activeNoteId }}
                 render={({ error, props }) => {
                   if (error) return null;
-                  if (props?.node?.__typename !== "Note") return null;
+                  if (!props?.note) return null;
                   return (
                     <div
                       style={{
@@ -167,7 +163,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
                         overflowY: "scroll",
                       }}
                     >
-                      <HtmlContainer markdown={props.node.content} />
+                      <HtmlContainer markdown={props.note.content} />
                     </div>
                   );
                 }}

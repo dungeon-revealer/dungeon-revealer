@@ -32,6 +32,7 @@ const NoteEditor_NoteCreateMutation = graphql`
     noteCreate(input: $input) {
       note {
         id
+        documentId
         title
         content
       }
@@ -75,9 +76,9 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   const sideBarRef = React.useRef<HTMLDivElement>(null);
 
-  // @TODO: Handle unexpected Error state
-  // if (!sideBarData.error)
-  if (!sideBarData.props) return null;
+  const isLoadingSideBarData = !sideBarData.error && !sideBarData?.props;
+
+  if (!sideBarData?.props) return null;
 
   return (
     <Modal onClickOutside={onClose} onPressEscape={onClose}>
