@@ -130,7 +130,9 @@ export const DraggableWindow = ({
       }}
     >
       <WindowHeader {...bind()} data-draggable>
-        {headerLeftContent ? <div>{headerLeftContent}</div> : null}
+        {headerLeftContent ? (
+          <div style={{ flexShrink: 0 }}>{headerLeftContent}</div>
+        ) : null}
         <div
           style={{
             fontWeight: "bold",
