@@ -110,6 +110,7 @@ const ChatMessage_SharedResourceChatMessageFragment = graphql`
       ... on Note {
         __typename
         id
+        documentId
         title
         contentPreview
       }
@@ -138,10 +139,10 @@ const NoteFooter = styled.div`
 `;
 
 const NotePreview: React.FC<{
-  id: string;
+  documentId: string;
   title: string;
   contentPreview: string;
-}> = ({ id, title, contentPreview }) => {
+}> = ({ documentId, title, contentPreview }) => {
   const noteWindowActions = useNoteWindowActions();
   return (
     <NoteCard>
@@ -150,7 +151,9 @@ const NotePreview: React.FC<{
       <NoteFooter>
         <Button.Primary
           small
-          onClick={() => noteWindowActions.focusOrShowNoteInNewWindow(id)}
+          onClick={() =>
+            noteWindowActions.focusOrShowNoteInNewWindow(documentId)
+          }
         >
           Show
         </Button.Primary>
@@ -174,7 +177,7 @@ const SharedResourceRenderer: React.FC<{
       case "Note":
         resourceContent = (
           <NotePreview
-            id={message.resource.id}
+            documentId={message.resource.documentId}
             title={message.resource.title}
             contentPreview={message.resource.contentPreview}
           />

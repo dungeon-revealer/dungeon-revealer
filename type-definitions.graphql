@@ -159,6 +159,7 @@ type NoteSearchEdgeType {
 }
 
 type NoteSearchResultType {
+  noteId: ID!
   documentId: ID!
   title: String!
   preview: String!

@@ -1,15 +1,7 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
-import {
-  usePagination,
-  ConnectionConfig,
-  useFragment,
-  useQuery,
-} from "relay-hooks";
-import type {
-  noteEditorSideBar_notesFragment$key,
-  noteEditorSideBar_notesFragment,
-} from "./__generated__/noteEditorSideBar_notesFragment.graphql";
+import { usePagination, ConnectionConfig, useQuery } from "relay-hooks";
+import type { noteEditorSideBar_notesFragment$key } from "./__generated__/noteEditorSideBar_notesFragment.graphql";
 import * as ScrollableList from "../components/scrollable-list";
 import { Input } from "../../input";
 import { useCurrent } from "../../hooks/use-current";
@@ -51,8 +43,8 @@ const connectionConfig: ConnectionConfig = {
 
 const NotesRenderer: React.FC<{
   notesRef: noteEditorSideBar_notesFragment$key;
-  setActiveItem: (id: string) => void;
-  activeItemId: string | null;
+  setActiveItem: (id: { id: string; documentId: string }) => void;
+  activeItemId: { id: string; documentId: string } | null;
 }> = (props) => {
   const [data, { isLoading, hasMore, loadMore }] = usePagination(
     NoteEditorSideBar_notesFragment,
@@ -88,9 +80,9 @@ const NotesRenderer: React.FC<{
       {data.notes.edges.map((edge) => (
         <ScrollableList.ListItem key={edge.node.id}>
           <ScrollableList.ListItemButton
-            isActive={props.activeItemId === edge.node.documentId}
+            isActive={props.activeItemId?.documentId === edge.node.documentId}
             onClick={() => {
-              props.setActiveItem(edge.node.documentId);
+              props.setActiveItem(edge.node);
             }}
           >
             {edge.node.title || "<Untitled Note>"}
@@ -107,6 +99,7 @@ const NoteEditorSideBar_SearchQuery = graphql`
       @connection(key: "noteEditorSideBar_notesSearch", filters: ["query"]) {
       edges {
         node {
+          noteId
           documentId
           title
         }
@@ -116,9 +109,10 @@ const NoteEditorSideBar_SearchQuery = graphql`
 `;
 
 export const NoteEditorSideBar: React.FC<{
-  setActiveNoteId: (activeItemId: string) => void;
-  activeNoteId: string | null;
+  setActiveNoteId: (activeItemId: { id: string; documentId: string }) => void;
+  activeNoteId: { id: string; documentId: string } | null;
   notesRef: noteEditorSideBar_notesFragment$key;
+  sideBarRefetchRef?: React.MutableRefObject<null | (() => void)>;
 }> = (props) => {
   const [filter, setFilter] = React.useState("");
 
@@ -133,6 +127,13 @@ export const NoteEditorSideBar: React.FC<{
   );
 
   const [, cachedData] = useCurrent(data, !data.error && !data.props, 0);
+
+  React.useEffect(() => {
+    if (props.sideBarRefetchRef) {
+      props.sideBarRefetchRef.current =
+        filter !== "" ? () => data.retry({ force: true }) : () => undefined;
+    }
+  });
 
   return (
     <>
@@ -162,9 +163,14 @@ export const NoteEditorSideBar: React.FC<{
           {cachedData.props.notesSearch.edges.map((edge) => (
             <ScrollableList.ListItem key={edge.node.documentId}>
               <ScrollableList.ListItemButton
-                isActive={props.activeNoteId === edge.node.documentId}
+                isActive={
+                  props.activeNoteId?.documentId === edge.node.documentId
+                }
                 onClick={() => {
-                  props.setActiveNoteId(edge.node.documentId);
+                  props.setActiveNoteId({
+                    id: edge.node.noteId,
+                    documentId: edge.node.documentId,
+                  });
                 }}
               >
                 {edge.node.title || "<Untitled Note>"}

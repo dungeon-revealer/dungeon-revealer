@@ -85,7 +85,10 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
     SelectTokenMarkerReferenceQuery,
     {}
   );
-  const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
+  const [activeNoteId, setActiveNoteId] = React.useState<{
+    id: string;
+    documentId: string;
+  } | null>(null);
   const [mutate] = useMutation<
     selectTokenMarkerReferenceModal_NoteCreateMutation
   >(NoteCreateMutation);
@@ -121,11 +124,11 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
 
     const reference = {
       type: "note" as "note",
-      id: activeNoteId,
+      id: activeNoteId.documentId,
     };
 
     updateToken({ id: tokenId, reference });
-    noteWindowActions.focusOrShowNoteInNewWindow(activeNoteId);
+    noteWindowActions.focusOrShowNoteInNewWindow(activeNoteId.documentId);
 
     close();
   }, [updateToken, activeNoteId]);
@@ -151,7 +154,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
               <QueryRenderer<selectTokenMarkerReferenceModal_ActiveContentQuery>
                 environment={environment}
                 query={SelectTokenMarkerReference_ActiveContentQuery}
-                variables={{ documentId: activeNoteId }}
+                variables={{ documentId: activeNoteId.documentId }}
                 render={({ error, props }) => {
                   if (error) return null;
                   if (!props?.note) return null;

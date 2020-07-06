@@ -172,6 +172,8 @@ const parseTagAstFromHtmlTagString = (input: string) => {
   return result.length ? result[0] : null;
 };
 
+const getParseLinkRegex = () => /\[([^\]]*)\]\(([^)]*)\)/;
+
 // @TODO: optimize this function
 const getMarkdownLinkSelectionRange = (
   column: number,
@@ -179,75 +181,39 @@ const getMarkdownLinkSelectionRange = (
 ): {
   type: "link";
   id: string;
+  text: string;
   position: { start: number; end: number };
 } | null => {
-  const LINK_START_TAG = "<Link";
-  const LINK_END_TAG = "</Link>";
+  const LINK_START_CHAR = "[";
 
   // check whether cursor is inside a link definition
   let characterBeforeCounter = 0;
-  let startIndex = -1;
-  let endIndex = -1;
 
   while (characterBeforeCounter <= 300) {
     const index = column - characterBeforeCounter;
-    if (text[index] === "<") {
-      if (text.substr(index, LINK_START_TAG.length) === LINK_START_TAG) {
-        startIndex = index;
-        break;
-      } else if (text.substr(index, LINK_END_TAG.length) === LINK_END_TAG) {
-        // in case the selection starts inside the end tag
-        endIndex = index + LINK_END_TAG.length;
-
-        // but not before the end tag
-        if (endIndex < column) {
-          break;
+    if (text[index] === LINK_START_CHAR) {
+      const part = text.substring(index);
+      if (part.search(getParseLinkRegex()) === 0) {
+        const match = part.match(getParseLinkRegex());
+        if (match) {
+          const start = index;
+          const end = index + match[0].length - 1;
+          if (column >= start && column <= end) {
+            return {
+              type: "link" as const,
+              text: match[1],
+              id: match[2],
+              position: { start: index, end: index + match[0].length },
+            };
+          }
         }
-      } else {
-        break;
       }
     }
 
     characterBeforeCounter = characterBeforeCounter + 1;
   }
 
-  if (startIndex === -1) {
-    return null;
-  }
-
-  let characterAfterCounter = 0;
-
-  if (endIndex === -1) {
-    while (characterAfterCounter <= 300) {
-      const index = column + characterAfterCounter;
-
-      if (
-        text[index] === "<" &&
-        text.substr(index, LINK_END_TAG.length) === LINK_END_TAG
-      ) {
-        endIndex = index + LINK_END_TAG.length;
-        break;
-      }
-
-      characterAfterCounter = characterAfterCounter + 1;
-    }
-  }
-
-  if (endIndex === -1) {
-    return null;
-  }
-
-  const part = text.substring(startIndex, endIndex);
-
-  const node = parseTagAstFromHtmlTagString(part);
-  if (!node) return null;
-
-  return {
-    type: "link" as const,
-    // @ts-ignore
-    id: node.attribs.id || "",
-    position: { start: startIndex, end: endIndex },
-  };
+  return null;
 };
 
 const getMarkdownImageSelectionRange = (
@@ -794,20 +760,11 @@ export const MarkdownEditor: React.FC<{
                 },
               });
             } else {
-              const parseInnerContentResult = text
-                .substring(
-                  selectionRange.position.start,
-                  selectionRange.position.end
-                )
-                .match(/<Link\s*(?:id=".*")?\s*>(.*)<\s*\/\s*Link\s*>/);
-
-              if (!parseInnerContentResult) return;
-              const [, innerContent] = parseInnerContentResult;
               setMenu({
                 type: selectionRange.type,
                 data: {
                   id: selectionRange.id,
-                  innerContent,
+                  innerContent: selectionRange.text,
                   textPosition: {
                     ...selectionRange.position,
                   },
@@ -908,7 +865,7 @@ export const MarkdownEditor: React.FC<{
                     if (!model) return;
                     const value = editor.getValue();
 
-                    const newTag = `<Link id="${id}">${menu.data.innerContent}</Link>`;
+                    const newTag = `[${menu.data.innerContent}](${id})`;
                     const newValue = replaceRange(
                       value,
                       menu.data.textPosition.start,

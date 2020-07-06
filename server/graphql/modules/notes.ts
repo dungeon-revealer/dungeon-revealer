@@ -200,6 +200,10 @@ export const resolveNote = flow(
 const GraphQLNoteSearchResultType = t.objectType<notes.NoteSearchMatchType>({
   name: "NoteSearchResultType",
   fields: () => [
+    t.field("noteId", {
+      type: t.NonNull(t.ID),
+      resolve: (obj) => encodeNoteId(obj.noteId),
+    }),
     t.field("documentId", {
       type: t.NonNull(t.ID),
       resolve: (obj) => obj.noteId,
@@ -427,6 +431,7 @@ const resolveNoteDelete = flow(
   RTE.map((id) => encodeNoteId(id)),
   RTE.fold(
     (err) => {
+      console.log(JSON.stringify(err, null, 2));
       throw err;
     },
     (deletedNoteId) => RT.of({ deletedNoteId })

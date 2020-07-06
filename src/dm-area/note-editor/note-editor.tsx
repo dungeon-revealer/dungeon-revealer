@@ -58,8 +58,10 @@ const NoteEditor_SideBarQuery = graphql`
 export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const environment = useRelayEnvironment();
   const [isEditMode, setIsEditMode] = React.useState(false);
-  const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
-
+  const [activeNoteId, setActiveNoteId] = React.useState<{
+    id: string;
+    documentId: string;
+  } | null>(null);
   const [confirmationDialog, showConfirmationDialog] = useConfirmationDialog();
 
   const [deleteNoteMutation] = useMutation<noteEditor_NoteDeleteMutation>(
@@ -73,10 +75,9 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     NoteEditor_SideBarQuery,
     {}
   );
+  const sideBarRefetchRef = React.useRef<null | (() => void)>(null);
 
   const sideBarRef = React.useRef<HTMLDivElement>(null);
-
-  const isLoadingSideBarData = !sideBarData.error && !sideBarData?.props;
 
   if (!sideBarData?.props) return null;
 
@@ -114,6 +115,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               notesRef={sideBarData.props}
               setActiveNoteId={setActiveNoteId}
               activeNoteId={activeNoteId}
+              sideBarRefetchRef={sideBarRefetchRef}
             />
             <Modal.Footer>
               <Button.Primary
@@ -145,7 +147,10 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       ConnectionHandler.insertEdgeBefore(notesConnection, edge);
                     },
                     onCompleted: (data) => {
-                      setActiveNoteId(data.noteCreate.note.id);
+                      setActiveNoteId({
+                        id: data.noteCreate.note.id,
+                        documentId: data.noteCreate.note.documentId,
+                      });
                       setIsEditMode(true);
                     },
                   })
@@ -162,7 +167,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <QueryRenderer<noteEditor_ActiveItemQuery>
                 environment={environment}
                 query={NoteEditor_ActiveItemQuery}
-                variables={{ documentId: activeNoteId }}
+                variables={{ documentId: activeNoteId.documentId }}
                 render={({ error, props }) => {
                   if (error) return null;
                   if (!props?.note) return null;
@@ -194,7 +199,10 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     setActiveNoteId(null);
                                     deleteNoteMutation({
                                       variables: {
-                                        input: { noteId: activeNoteId },
+                                        input: { noteId: activeNoteId.id },
+                                      },
+                                      onCompleted: () => {
+                                        sideBarRefetchRef.current?.();
                                       },
                                       configs: [
                                         {

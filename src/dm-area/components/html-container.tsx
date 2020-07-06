@@ -16,6 +16,7 @@ const components = {
 };
 
 const allowedTags = [
+  "a",
   "div",
   "p",
   "blockquote",
@@ -84,11 +85,35 @@ const sanitizeHtml = (html: string) =>
       Link: ["id"],
       div: ["style"],
       span: ["style"],
+      a: ["target", "rel", "href", "id"],
     },
+    allowedSchemes: ["http", "https"],
+    allowedSchemesAppliedToAttributes: ["href"],
     selfClosing: ["Image"],
     parser: {
       lowerCaseTags: false,
       lowerCaseAttributeNames: false,
+    },
+    transformTags: {
+      a: (name, attribs) => {
+        if (attribs.href && /^https?:\/\//.test(attribs.href)) {
+          return {
+            tagName: "a",
+            attribs: {
+              ...attribs,
+              href: attribs.href,
+              target: "_BLANK",
+              rel: "noopener",
+            } as { [key: string]: string },
+          };
+        }
+        return {
+          tagName: "Link",
+          attribs: {
+            id: attribs.href || "",
+          } as { [key: string]: string },
+        };
+      },
     },
   });
 
@@ -112,6 +137,7 @@ const HtmlContainerStyled = styled.div`
   p {
     margin-top: 0;
     margin-bottom: 4px;
+    max-width: 40em;
   }
 
   pre {

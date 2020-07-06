@@ -102,7 +102,7 @@ export const DraggableWindow = ({
   const dimensionDragBind = useDrag(
     ({ movement: [mx, my], down }) => {
       set({
-        width: mx,
+        width: Math.max(mx, 300),
         height: my,
         immediate: true,
       });
