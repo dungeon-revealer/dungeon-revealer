@@ -4,8 +4,10 @@
 [![Downloads](https://img.shields.io/github/downloads/dungeon-revealer/dungeon-revealer/total.svg?logo=github&style=plastic)](https://github.com/dungeon-revealer/dungeon-revealer/releases)
 [![Release](https://img.shields.io/github/v/release/dungeon-revealer/dungeon-revealer?logo=github&color=orange&style=plastic)](https://github.com/dungeon-revealer/dungeon-revealer/releases/latest)
 [![Docker](https://img.shields.io/static/v1?label=docker&message=latest&color=blue&logo=Docker&style=plastic)](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer)
+[![Discord](https://img.shields.io/discord/709687178422386708?style=plastic)](https://discord.gg/ypDpJM)
 
-A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
+
+A web app for tabletop gaming to allow the game master to reveal areas of the game map to players. Join the [discord server](https://discord.gg/ypDpJM).
 
 ## What the DM Sees
 
