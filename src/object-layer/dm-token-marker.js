@@ -293,6 +293,7 @@ export const DmTokenMarker = React.memo(
   }) => {
     const tokenRef = useRef();
     const [contextMenuCoordinates, setContextMenuCoordinates] = useState(null);
+    const noteWindowActions = useNoteWindowActions();
 
     const isDraggingRef = useRef(false);
 
@@ -427,7 +428,16 @@ export const DmTokenMarker = React.memo(
               close={() => setContextMenuCoordinates(null)}
               showLinkReferenceModal={() => {
                 setContextMenuCoordinates(null);
-                showSelectTokenMarkerModal(token.id, updateToken);
+                showSelectTokenMarkerModal((documentId) => {
+                  updateToken({
+                    id: token.id,
+                    reference: {
+                      type: "note",
+                      id: documentId,
+                    },
+                  });
+                  noteWindowActions.focusOrShowNoteInNewWindow(documentId);
+                });
               }}
             />
           </Modal>

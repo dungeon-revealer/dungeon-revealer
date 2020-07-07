@@ -63,12 +63,13 @@ export const useShowSelectTokenMarkerReferenceModal = () => {
 
   return [
     modalNode,
-    React.useCallback((tokenId: string, updateToken: UpdateTokenFunction) => {
+    React.useCallback((onSelectNote: (noteId: string) => void) => {
       setModalNode(
         <SelectTokenMarkerReferenceModal
-          tokenId={tokenId}
-          updateToken={updateToken}
-          close={() => setModalNode(null)}
+          onSelectNote={(documentId) => {
+            setModalNode(null);
+            onSelectNote(documentId);
+          }}
         />
       );
     }, []),
@@ -76,10 +77,8 @@ export const useShowSelectTokenMarkerReferenceModal = () => {
 };
 
 export const SelectTokenMarkerReferenceModal: React.FC<{
-  close: () => void;
-  tokenId: string;
-  updateToken: UpdateTokenFunction;
-}> = ({ close, tokenId, updateToken }) => {
+  onSelectNote: (documentId: string) => void;
+}> = (props) => {
   const environment = useRelayEnvironment();
   const sideBarData = useQuery<selectTokenMarkerReferenceModal_NotesQuery>(
     SelectTokenMarkerReferenceQuery,
@@ -93,8 +92,6 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
     selectTokenMarkerReferenceModal_NoteCreateMutation
   >(NoteCreateMutation);
 
-  const noteWindowActions = useNoteWindowActions();
-
   const attachNewNote = useCallback(() => {
     mutate({
       variables: {
@@ -105,33 +102,15 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
         },
       },
       onCompleted: (data) => {
-        const reference = {
-          type: "note" as "note",
-          id: data.noteCreate.note.documentId,
-        };
-
-        updateToken({ id: tokenId, reference });
-        noteWindowActions.focusOrShowNoteInNewWindow(
-          data.noteCreate.note.documentId
-        );
-        close();
+        props.onSelectNote(data.noteCreate.note.documentId);
       },
     });
-  }, [updateToken, tokenId, close, mutate]);
+  }, [mutate]);
 
   const attachExistingNote = useCallback(() => {
     if (!activeNoteId) return;
-
-    const reference = {
-      type: "note" as "note",
-      id: activeNoteId.documentId,
-    };
-
-    updateToken({ id: tokenId, reference });
-    noteWindowActions.focusOrShowNoteInNewWindow(activeNoteId.documentId);
-
-    close();
-  }, [updateToken, activeNoteId]);
+    props.onSelectNote(activeNoteId.documentId);
+  }, [activeNoteId]);
 
   if (!sideBarData?.props) return null;
 
