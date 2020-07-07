@@ -25,7 +25,7 @@
     "eslint": "eslint --ignore-path .gitignore --max-warnings 0 \"**/*.js\" \"bin/dungeon-revealer\"",
     "postinstall": "patch-package",
     "start": "node ./bin/dungeon-revealer",
-    "test": "react-scripts test --passWithNoTests",
+    "test": "jest --passWithNoTests",
     "start:frontend:dev": "cross-env PORT=3001 EXTEND_ESLINT=true react-scripts start",
     "start:server:dev": "ts-node-dev --project server/tsconfig.json server/index.js",
     "relay-compiler": "relay-compiler",
@@ -71,6 +71,7 @@
     "socket.io": "2.3.0",
     "sqlite": "4.0.11",
     "sqlite3": "4.2.0",
+    "unzipper": "0.10.11",
     "uuid": "3.4.0"
   },
   "devDependencies": {
@@ -78,6 +79,7 @@
     "@emotion/styled": "10.0.27",
     "@n1ru4l/use-async-effect": "1.2.3",
     "@types/body-scroll-lock": "2.6.1",
+    "@types/connect-busboy": "0.0.2",
     "@types/express": "4.17.6",
     "@types/fs-extra": "9.0.1",
     "@types/jest": "26.0.3",
@@ -94,6 +96,7 @@
     "@types/socket.io": "2.1.8",
     "@types/socket.io-client": "1.4.33",
     "@types/sqlite3": "3.1.6",
+    "@types/unzipper": "0.10.3",
     "@types/use-persisted-state": "0.3.0",
     "@types/uuid": "3.4.9",
     "babel-eslint": "10.1.0",

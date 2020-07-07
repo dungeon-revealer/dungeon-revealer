@@ -1,10 +1,11 @@
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as TE from "fp-ts/lib/TaskEither";
-import * as db from "./notes-db";
-import { pipe } from "fp-ts/lib/pipeable";
+import { flow, pipe } from "fp-ts/lib/function";
 import uuid from "uuid/v4";
 import sanitizeHtml from "sanitize-html";
 import showdown from "showdown";
+import * as db from "./notes-db";
+import * as noteImport from "./note-import";
 
 type ViewerRole = "admin" | "user";
 
@@ -158,3 +159,15 @@ export const findPublicNotes = (query: string) =>
       }
     })
   );
+
+export const importNote = flow(
+  noteImport.parseNoteData,
+  RTE.fromEither,
+  RTE.chainW((d) =>
+    db.updateOrInsertNote({
+      ...d,
+      access: "public",
+      isEntryPoint: d.isEntryPoint,
+    })
+  )
+);

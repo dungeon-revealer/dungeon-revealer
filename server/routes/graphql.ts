@@ -14,11 +14,7 @@ type Dependencies = {
   db: Database;
 };
 
-export default ({
-  roleMiddleware,
-  registerSocketCommand,
-  db,
-}: Dependencies) => {
+export default ({ registerSocketCommand, db }: Dependencies) => {
   const chat = createChat();
   const user = createUser({
     sendUserConnectedMessage: ({ name }) =>

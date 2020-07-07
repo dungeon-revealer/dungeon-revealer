@@ -1,16 +1,16 @@
-"use strict";
+import * as path from "path";
+import * as fs from "fs";
+import * as os from "os";
 
-const path = require("path");
-const fs = require("fs");
-const os = require("os");
-const uuid = require("uuid");
-const once = require("lodash/once");
+import * as uuid from "uuid";
+import once from "lodash/once";
+import * as express from "express";
 
 /**
  * Helper function for retreiving the correct data directory.
  * In the bundled pkg "binary" we use the execPath.
  */
-const getDefaultDataDirectory = () => {
+export const getDefaultDataDirectory = () => {
   if (process.pkg) {
     return path.resolve(path.dirname(process.execPath), "data");
   } else {
@@ -19,23 +19,23 @@ const getDefaultDataDirectory = () => {
   }
 };
 
-const getTmpDirectory = once(() => fs.realpathSync(os.tmpdir()));
+export const getTmpDirectory = once(() => fs.realpathSync(os.tmpdir()));
 
-const getTmpFile = (extension = "") =>
+export const getTmpFile = (extension = "") =>
   path.join(getTmpDirectory(), uuid.v4() + extension);
 
-const parseFileExtension = (fileName) => {
+export const parseFileExtension = (fileName: string) => {
   const parts = fileName.split(".");
   if (parts.length < 2) return null;
-  return parts.pop();
+  return parts.pop() || null;
 };
 
 /**
  * utility that ensures tasks on a given resource are executed in sequence in order to prevent race conditions etc.
  */
-const createResourceTaskProcessor = () => {
+export const createResourceTaskProcessor = () => {
   const queueMap = new Map();
-  return (operationIdentifier, process) => {
+  return (operationIdentifier: string, process: () => unknown) => {
     const queue = (queueMap.get(operationIdentifier) || Promise.resolve())
       .catch(() => undefined)
       .then(process);
@@ -54,7 +54,9 @@ const createResourceTaskProcessor = () => {
   };
 };
 
-const handleUnexpectedError = (response) => (thrownThing) => {
+export const handleUnexpectedError = (response: express.Response) => (
+  thrownThing: any
+) => {
   console.error(thrownThing);
   response.status(500).send({
     data: null,
@@ -63,12 +65,4 @@ const handleUnexpectedError = (response) => (thrownThing) => {
       code: "ERR_UNEXPECTED",
     },
   });
-};
-
-module.exports = {
-  getDefaultDataDirectory,
-  parseFileExtension,
-  getTmpFile,
-  createResourceTaskProcessor,
-  handleUnexpectedError,
 };
