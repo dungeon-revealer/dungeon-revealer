@@ -29,6 +29,7 @@ import { markdownEditor_asideNoteQuery } from "./__generated__/markdownEditor_as
 import { useNoteWindowActions } from "../token-info-aside";
 import { useWindowContext } from "../token-info-aside/token-info-aside";
 import { useCurrent } from "../../hooks/use-current";
+import { useShowSelectNoteModal } from "../select-note-modal";
 
 const insertImageIntoEditor = (
   editor: editor.IStandaloneCodeEditor,
@@ -423,6 +424,10 @@ const AsideSelectNote: React.FC<{
 
   const isValidNoteIdWithoutResult = props.noteId && !data.props?.asideNote;
 
+  const [selectNoteModalNode, showSelectNoteModal] = useShowSelectNoteModal();
+
+  const linkNote = () => showSelectNoteModal(props.onSelect);
+
   return (
     <>
       <SideMenuTitle>
@@ -432,7 +437,10 @@ const AsideSelectNote: React.FC<{
         <>
           No Note selected.
           <br />
-          <Button.Primary small>Link Note</Button.Primary>
+          <br />
+          <Button.Primary small onClick={linkNote}>
+            Link Note
+          </Button.Primary>{" "}
           or{" "}
           <Button.Primary
             small
@@ -459,7 +467,7 @@ const AsideSelectNote: React.FC<{
             {dataProps.asideNote.contentPreview}
           </div>
           <div>
-            <Button.Primary small style={{ marginRight: 8 }}>
+            <Button.Primary small style={{ marginRight: 8 }} onClick={linkNote}>
               Change linked Note
             </Button.Primary>
             <Button.Primary
@@ -473,6 +481,7 @@ const AsideSelectNote: React.FC<{
           </div>
         </>
       ) : null}
+      {selectNoteModalNode}
     </>
   );
 };
@@ -698,6 +707,31 @@ export const MarkdownEditor: React.FC<{
             </DropDownMenuInner>
           </DropDownMenu>
         </ToolBarButtonDropDown>
+        <ToolBarButton
+          title="Insert Link"
+          onClick={() => {
+            const editor = ref.current?.editor;
+            const model = editor?.getModel();
+            const selection = editor?.getSelection();
+            if (!model || !editor || !selection) return;
+            // const selectedText = model.getValueInRange(selection);
+
+            editor.executeEdits("", [
+              {
+                range: new MonacoRange(
+                  selection.startLineNumber,
+                  selection.startColumn,
+                  selection.endLineNumber,
+                  selection.endColumn
+                ),
+                text: `[` + model.getValueInRange(selection) + `]()`,
+              },
+            ]);
+            editor.focus();
+          }}
+        >
+          <Link height={16} />
+        </ToolBarButton>
       </TextToolBar>
       <MonacoEditor
         value={value}

@@ -7,7 +7,7 @@ import * as Button from "../button";
 import * as Icon from "../feather-icons";
 import { Modal } from "../modal";
 import { ToggleSwitch } from "../toggle-switch";
-import { useShowSelectTokenMarkerReferenceModal } from "../dm-area/select-token-marker-reference-modal";
+import { useShowSelectNoteModal } from "../dm-area/select-note-modal";
 import { useNoteWindowActions } from "../dm-area/token-info-aside";
 
 const ColorPicker = React.memo(({ color, onChange, styles }) => {
@@ -300,7 +300,7 @@ export const DmTokenMarker = React.memo(
     const [
       showSelectTokenMarkerModalNode,
       showSelectTokenMarkerModal,
-    ] = useShowSelectTokenMarkerReferenceModal();
+    ] = useShowSelectNoteModal();
 
     return (
       <>

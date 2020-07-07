@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, Props } from "react";
 import { Modal } from "../modal";
 import * as Button from "../button";
 import styled from "@emotion/styled/macro";
@@ -6,20 +6,19 @@ import { HtmlContainer } from "./components/html-container";
 import graphql from "babel-plugin-relay/macro";
 import { QueryRenderer } from "react-relay";
 import { useRelayEnvironment, useMutation, useQuery } from "relay-hooks";
-import { selectTokenMarkerReferenceModal_NotesQuery } from "./__generated__/selectTokenMarkerReferenceModal_NotesQuery.graphql";
-import { selectTokenMarkerReferenceModal_ActiveContentQuery } from "./__generated__/selectTokenMarkerReferenceModal_ActiveContentQuery.graphql";
+import { selectNoteModal_NotesQuery } from "./__generated__/selectNoteModal_NotesQuery.graphql";
+import { selectNoteModal_ActiveContentQuery } from "./__generated__/selectNoteModal_ActiveContentQuery.graphql";
 import { NoteEditorSideBar } from "./note-editor/note-editor-side-bar";
-import { selectTokenMarkerReferenceModal_NoteCreateMutation } from "./__generated__/selectTokenMarkerReferenceModal_NoteCreateMutation.graphql";
-import { useNoteWindowActions } from "./token-info-aside";
+import { selectNoteModal_NoteCreateMutation } from "./__generated__/selectNoteModal_NoteCreateMutation.graphql";
 
-const SelectTokenMarkerReferenceQuery = graphql`
-  query selectTokenMarkerReferenceModal_NotesQuery {
+const SelectNoteModal_ReferenceQuery = graphql`
+  query selectNoteModal_NotesQuery {
     ...noteEditorSideBar_notesFragment
   }
 `;
 
-const SelectTokenMarkerReference_ActiveContentQuery = graphql`
-  query selectTokenMarkerReferenceModal_ActiveContentQuery($documentId: ID!) {
+const SelectNoteModal_ActiveContentQuery = graphql`
+  query selectNoteModal_ActiveContentQuery($documentId: ID!) {
     note(documentId: $documentId) {
       id
       documentId
@@ -29,9 +28,7 @@ const SelectTokenMarkerReference_ActiveContentQuery = graphql`
 `;
 
 const NoteCreateMutation = graphql`
-  mutation selectTokenMarkerReferenceModal_NoteCreateMutation(
-    $input: NoteCreateInput!
-  ) {
+  mutation selectNoteModal_NoteCreateMutation($input: NoteCreateInput!) {
     noteCreate(input: $input) {
       note {
         id
@@ -52,45 +49,42 @@ const OrSeperator = styled.span`
   margin: 0;
 `;
 
-type UpdateTokenFunction = (
-  token: {
-    id: string;
-  } & Partial<{ reference: { type: "note"; id: string } }>
-) => Promise<void>;
-
-export const useShowSelectTokenMarkerReferenceModal = () => {
+export const useShowSelectNoteModal = () => {
   const [modalNode, setModalNode] = React.useState<React.ReactNode>(null);
+  const close = () => setModalNode(null);
 
   return [
     modalNode,
     React.useCallback((onSelectNote: (noteId: string) => void) => {
       setModalNode(
-        <SelectTokenMarkerReferenceModal
+        <SelectNoteModal
           onSelectNote={(documentId) => {
-            setModalNode(null);
+            close();
             onSelectNote(documentId);
           }}
+          onClose={close}
         />
       );
     }, []),
   ] as const;
 };
 
-export const SelectTokenMarkerReferenceModal: React.FC<{
+export const SelectNoteModal: React.FC<{
   onSelectNote: (documentId: string) => void;
+  onClose: () => void;
 }> = (props) => {
   const environment = useRelayEnvironment();
-  const sideBarData = useQuery<selectTokenMarkerReferenceModal_NotesQuery>(
-    SelectTokenMarkerReferenceQuery,
+  const sideBarData = useQuery<selectNoteModal_NotesQuery>(
+    SelectNoteModal_ReferenceQuery,
     {}
   );
   const [activeNoteId, setActiveNoteId] = React.useState<{
     id: string;
     documentId: string;
   } | null>(null);
-  const [mutate] = useMutation<
-    selectTokenMarkerReferenceModal_NoteCreateMutation
-  >(NoteCreateMutation);
+  const [mutate] = useMutation<selectNoteModal_NoteCreateMutation>(
+    NoteCreateMutation
+  );
 
   const attachNewNote = useCallback(() => {
     mutate({
@@ -115,7 +109,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
   if (!sideBarData?.props) return null;
 
   return (
-    <Modal onPressEscape={close} onClickOutside={close}>
+    <Modal onPressEscape={props.onClose} onClickOutside={props.onClose}>
       <Modal.Dialog>
         <Modal.Header>
           <Modal.Heading3>Attach Note</Modal.Heading3>
@@ -130,9 +124,9 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
           </Modal.Aside>
           <Modal.Content>
             {activeNoteId ? (
-              <QueryRenderer<selectTokenMarkerReferenceModal_ActiveContentQuery>
+              <QueryRenderer<selectNoteModal_ActiveContentQuery>
                 environment={environment}
-                query={SelectTokenMarkerReference_ActiveContentQuery}
+                query={SelectNoteModal_ActiveContentQuery}
                 variables={{ documentId: activeNoteId.documentId }}
                 render={({ error, props }) => {
                   if (error) return null;
@@ -157,7 +151,7 @@ export const SelectTokenMarkerReferenceModal: React.FC<{
           <Modal.Actions>
             <Modal.ActionGroup>
               <div>
-                <Button.Tertiary onClick={close}>Abort</Button.Tertiary>
+                <Button.Tertiary onClick={props.onClose}>Abort</Button.Tertiary>
               </div>
               <div>
                 <Button.Primary tabIndex={1} onClick={attachNewNote}>
