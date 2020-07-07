@@ -62,7 +62,7 @@ jobs:
         run: |
           echo "unsafe-perm = true" > .npmrc
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          docker run --rm -v $(pwd):/usr/src/app/ arm32v7/node:12 /bin/sh -c 'cd /usr/src/app/ && npm install && npm run build && node ./scripts/copy-node-bindings-path.js && npm run compile:armv7 && cp node_sqlite3.node bin/'
+          docker run --rm -v $(pwd):/usr/src/app/ arm32v7/node:10 /bin/sh -c 'cd /usr/src/app/ && export NODE_OPTIONS=--max_old_space_size=3072 && npm install && npm run build && node ./scripts/copy-node-bindings-path.js && npm run compile:armv7 && cp node_sqlite3.node bin/'
 
       - name: Package binary
         run: |
