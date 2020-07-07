@@ -459,11 +459,10 @@ const GraphQLNoteDeleteResult = t.objectType<{ deletedNoteId: string }>({
   ],
 });
 
-const GraphQLNoteUpdateInputType = t.inputObjectType({
-  name: "NoteUpdateInput",
+const GraphQLNoteUpdateContentInputType = t.inputObjectType({
+  name: "NoteUpdateContentInput",
   fields: () => ({
     id: { type: t.NonNullInput(t.String) },
-    title: { type: t.NonNullInput(t.String) },
     content: { type: t.NonNullInput(t.String) },
   }),
 });
@@ -478,9 +477,8 @@ const GraphQLNoteUpdateResult = t.objectType<{ note: notes.NoteModelType }>({
   ],
 });
 
-const resolveNoteUpdate = flow(
-  notes.updateNote,
-  RTE.chain((id) => notes.getNoteById(id)),
+const findNoteById = flow(
+  RTE.chainW(notes.getNoteById),
   RTE.fold(
     (err) => {
       throw err;
@@ -488,6 +486,10 @@ const resolveNoteUpdate = flow(
     (note) => RT.of({ note })
   )
 );
+
+const resolveNoteContentUpdate = flow(notes.updateNoteContent, findNoteById);
+
+const resolveNoteTitleUpdate = flow(notes.updateNoteTitle, findNoteById);
 
 const tryDecodeId = flow(
   decodeNoteId,
@@ -498,6 +500,14 @@ const tryDecodeId = flow(
     (id) => id
   )
 );
+
+const GraphQLNoteUpdateTitleInputType = t.inputObjectType({
+  name: "NoteUpdateTitleInput",
+  fields: () => ({
+    id: { type: t.NonNullInput(t.String) },
+    title: { type: t.NonNullInput(t.String) },
+  }),
+});
 
 export const mutationFields = [
   t.field("noteCreate", {
@@ -516,14 +526,32 @@ export const mutationFields = [
     resolve: (src, { input }, context) =>
       RT.run(resolveNoteDelete(input.noteId), context),
   }),
-  t.field("noteUpdate", {
+  t.field("noteUpdateContent", {
     type: t.NonNull(GraphQLNoteUpdateResult),
     args: {
-      input: t.arg(t.NonNullInput(GraphQLNoteUpdateInputType)),
+      input: t.arg(t.NonNullInput(GraphQLNoteUpdateContentInputType)),
     },
     resolve: (src, args, context) => {
       return RT.run(
-        resolveNoteUpdate({ ...args.input, id: tryDecodeId(args.input.id) }),
+        resolveNoteContentUpdate({
+          ...args.input,
+          id: tryDecodeId(args.input.id),
+        }),
+        context
+      );
+    },
+  }),
+  t.field("noteUpdateTitle", {
+    type: t.NonNull(GraphQLNoteUpdateResult),
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLNoteUpdateTitleInputType)),
+    },
+    resolve: (src, args, context) => {
+      return RT.run(
+        resolveNoteTitleUpdate({
+          ...args.input,
+          id: tryDecodeId(args.input.id),
+        }),
         context
       );
     },

@@ -140,7 +140,8 @@ export const DraggableWindow = ({
             whiteSpace: "nowrap",
             overflowY: "hidden",
             textOverflow: "ellipsis",
-            paddingLeft: 4,
+            marginLeft: 4,
+            width: "100%",
           }}
         >
           {headerContent}

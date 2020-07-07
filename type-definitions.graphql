@@ -172,7 +172,8 @@ type Mutation {
   shareResource(input: ShareResourceInput!): Boolean
   noteCreate(input: NoteCreateInput!): NoteCreateResult!
   noteDelete(input: NoteDeleteInput!): NoteDeleteResult!
-  noteUpdate(input: NoteUpdateInput!): NoteUpdateResult!
+  noteUpdateContent(input: NoteUpdateContentInput!): NoteUpdateResult!
+  noteUpdateTitle(input: NoteUpdateTitleInput!): NoteUpdateResult!
 }
 
 type LogInResult {
@@ -223,10 +224,14 @@ type NoteUpdateResult {
   note: Note
 }
 
-input NoteUpdateInput {
+input NoteUpdateContentInput {
+  id: String!
+  content: String!
+}
+
+input NoteUpdateTitleInput {
   id: String!
   title: String!
-  content: String!
 }
 
 type Subscription {

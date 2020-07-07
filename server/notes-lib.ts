@@ -105,13 +105,11 @@ export const createNote = ({
     )
   );
 
-export const updateNote = ({
+export const updateNoteContent = ({
   id,
-  title,
   content,
 }: {
   id: string;
-  title: string;
   content: string;
 }) =>
   pipe(
@@ -120,10 +118,26 @@ export const updateNote = ({
     RTE.chainW((note) =>
       db.updateOrInsertNote({
         id,
-        title,
+        title: note.title,
         content,
         access: note.type,
         sanitizedContent: sanitizeNoteContent(content),
+        isEntryPoint: note.isEntryPoint,
+      })
+    )
+  );
+
+export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
+  pipe(
+    checkAdmin(null),
+    RTE.chainW(() => db.getNoteById(id)),
+    RTE.chainW((note) =>
+      db.updateOrInsertNote({
+        id,
+        title,
+        content: note.content,
+        access: note.type,
+        sanitizedContent: sanitizeNoteContent(note.content),
         isEntryPoint: note.isEntryPoint,
       })
     )

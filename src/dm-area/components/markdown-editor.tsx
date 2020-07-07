@@ -28,6 +28,7 @@ import { markdownEditor_noteCreateMutation } from "./__generated__/markdownEdito
 import { markdownEditor_asideNoteQuery } from "./__generated__/markdownEditor_asideNoteQuery.graphql";
 import { useNoteWindowActions } from "../token-info-aside";
 import { useWindowContext } from "../token-info-aside/token-info-aside";
+import { useCurrent } from "../../hooks/use-current";
 
 const insertImageIntoEditor = (
   editor: editor.IStandaloneCodeEditor,
@@ -418,6 +419,8 @@ const AsideSelectNote: React.FC<{
     }
   );
 
+  const [, dataProps] = useCurrent(data.props, !data.props && !data.error, 300);
+
   const isValidNoteIdWithoutResult = props.noteId && !data.props?.asideNote;
 
   return (
@@ -447,14 +450,18 @@ const AsideSelectNote: React.FC<{
             Create Note
           </Button.Primary>
         </>
-      ) : data?.props?.asideNote ? (
+      ) : dataProps?.asideNote ? (
         <>
-          <div>
-            <b>Title:</b> {data.props.asideNote.title}
+          <div style={{ marginBottom: 8 }}>
+            <b>Title:</b> {dataProps.asideNote.title}
           </div>
-          <div>{data.props.asideNote.contentPreview}</div>
+          <div style={{ marginBottom: 8 }}>
+            {dataProps.asideNote.contentPreview}
+          </div>
           <div>
-            <Button.Primary small>Change linked Note</Button.Primary>
+            <Button.Primary small style={{ marginRight: 8 }}>
+              Change linked Note
+            </Button.Primary>
             <Button.Primary
               small
               onClick={() => {

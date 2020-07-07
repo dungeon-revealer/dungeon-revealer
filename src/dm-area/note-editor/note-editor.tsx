@@ -17,6 +17,7 @@ import { NoteEditorActiveItem } from "./note-editor-active-item";
 import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
 import styled from "@emotion/styled/macro";
 import { QueryRenderer } from "react-relay";
+import { useNoteTitleAutoSave } from "../../hooks/use-note-title-auto-save";
 
 const NoteEditor_NoteDeleteMutation = graphql`
   mutation noteEditor_NoteDeleteMutation($input: NoteDeleteInput!) {
@@ -44,6 +45,7 @@ const NoteEditor_ActiveItemQuery = graphql`
   query noteEditor_ActiveItemQuery($documentId: ID!) {
     note(documentId: $documentId) {
       id
+      title
       ...noteEditorActiveItem_nodeFragment
     }
   }
@@ -54,6 +56,27 @@ const NoteEditor_SideBarQuery = graphql`
     ...noteEditorSideBar_notesFragment
   }
 `;
+
+const TitleAutoSaveInput: React.FC<{ id: string; title: string }> = (props) => {
+  const [title, setTitle] = useNoteTitleAutoSave(props.id, props.title);
+  return (
+    <label
+      style={{
+        display: "block",
+        paddingLeft: 16,
+        paddingRight: 16,
+        paddingTop: 10,
+      }}
+    >
+      <strong style={{ paddingBottom: 10, display: "block" }}>Title: </strong>
+      <input
+        value={title}
+        style={{ width: "100%" }}
+        onChange={(ev) => setTitle(ev.target.value)}
+      />
+    </label>
+  );
+};
 
 export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const environment = useRelayEnvironment();
@@ -174,6 +197,12 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
                   return (
                     <>
+                      {isEditMode ? (
+                        <TitleAutoSaveInput
+                          id={props.note.id}
+                          title={props.note.title}
+                        />
+                      ) : null}
                       <NoteEditorActiveItem
                         key={props.note.id}
                         isEditMode={isEditMode}

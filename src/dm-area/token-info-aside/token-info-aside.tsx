@@ -13,6 +13,7 @@ import * as Icon from "../../feather-icons";
 import * as Button from "../../button";
 import { tokenInfoAside_shareNoteMutation } from "./__generated__/tokenInfoAside_shareNoteMutation.graphql";
 import { useCurrent } from "../../hooks/use-current";
+import { useNoteTitleAutoSave } from "../../hooks/use-note-title-auto-save";
 
 const TokenInfoAside_nodeQuery = graphql`
   query tokenInfoAside_nodeQuery($documentId: ID!) {
@@ -29,6 +30,19 @@ const TokenInfoAside_nodeQuery = graphql`
 const TokenInfoAside_shareResourceMutation = graphql`
   mutation tokenInfoAside_shareNoteMutation($input: ShareResourceInput!) {
     shareResource(input: $input)
+  }
+`;
+
+const TokenInfoAside_noteUpdateTitleMutation = graphql`
+  mutation tokenInfoAside_noteUpdateTitleMutation(
+    $input: NoteUpdateTitleInput!
+  ) {
+    noteUpdateTitle(input: $input) {
+      note {
+        id
+        title
+      }
+    }
   }
 `;
 
@@ -51,6 +65,17 @@ const extractNode = (
 ) => {
   if (!input?.note) return null;
   return input.note;
+};
+
+const TitleAutoSaveInput: React.FC<{ id: string; title: string }> = (props) => {
+  const [title, setTitle] = useNoteTitleAutoSave(props.id, props.title);
+  return (
+    <input
+      value={title}
+      style={{ width: "100%" }}
+      onChange={(ev) => setTitle(ev.target.value)}
+    />
+  );
 };
 
 const WindowRenderer: React.FC<{
@@ -141,7 +166,17 @@ const WindowRenderer: React.FC<{
           </>
         }
         headerContent={
-          node ? node.title : isLoading ? "Loading..." : "NOT FOUND"
+          node ? (
+            isEditMode ? (
+              <TitleAutoSaveInput id={node.id} title={node.title} />
+            ) : (
+              node.title
+            )
+          ) : isLoading ? (
+            "Loading..."
+          ) : (
+            "NOT FOUND"
+          )
         }
         bodyContent={
           node ? (
