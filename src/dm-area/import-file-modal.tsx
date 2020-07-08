@@ -181,7 +181,7 @@ const NoteImportModal: React.FC<{ file: File; close: () => void }> = (
       url: buildApiUrl("/notes/import"),
       body: data,
       headers: {
-        Authentication: accessToken ? `Bearer ${accessToken}` : null,
+        Authorization: accessToken ? `Bearer ${accessToken}` : null,
       },
       onProgress: throttle((data: string) => {
         const lastLine = data.split("\n").pop();
