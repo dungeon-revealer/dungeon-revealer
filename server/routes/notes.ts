@@ -40,10 +40,20 @@ export const resolveStreamContentString = (input: Readable) =>
     });
   });
 
-export default ({ db }: { db: Database }) => {
+type RoleMiddleware = {
+  dm: express.RequestHandler;
+  pc: express.RequestHandler;
+};
+
+type Dependencies = {
+  db: Database;
+  roleMiddleware: RoleMiddleware;
+};
+
+export default ({ db, roleMiddleware }: Dependencies) => {
   const router = express.Router();
 
-  router.post("/notes/import", (request, response) => {
+  router.post("/notes/import", roleMiddleware.dm, (request, response) => {
     request.setTimeout(0);
     request.pipe(request.busboy);
 

@@ -13,7 +13,7 @@ const busboy = require("connect-busboy");
 const createFilesRouter = require("./routes/files");
 const createMapRouter = require("./routes/map");
 const createGraphQLRouter = require("./routes/graphql").default;
-const createNotesImportRouter = require("./routes/note-import").default;
+const createNotesRouter = require("./routes/notes").default;
 
 const { Maps } = require("./maps");
 const { Settings } = require("./settings");
@@ -188,7 +188,7 @@ const bootstrapServer = async () => {
     registerSocketCommand: (handler) => ioHandler.push(handler),
     db,
   });
-  const notesImportRouter = createNotesImportRouter({ db });
+  const notesImportRouter = createNotesRouter({ db, roleMiddleware });
 
   apiRouter.use(mapsRouter);
   // apiRouter.use(notesRouter);
