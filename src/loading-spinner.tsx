@@ -16,9 +16,7 @@ export const LoadingSpinner: React.FC<{
 
   React.useEffect(() => {
     if (props.state === "inProgress") {
-      // @ts-ignore
       ref1.current?.beginElement();
-      // @ts-ignore
       ref2.current?.beginElement();
     }
   }, [props.state]);
@@ -43,20 +41,18 @@ export const LoadingSpinner: React.FC<{
         strokeLinecap="round"
         transform="rotate(360 50 50)"
       >
-        <animateTransform
-          ref={ref1}
-          attributeName="transform"
-          type="rotate"
-          dur="2.857142857142857s"
-          repeatCount={repeatCount}
-          fill="freeze"
-          {...(props.state === "notStarted"
-            ? null
-            : {
-                from: "360 50 50",
-                to: "0 50 50",
-              })}
-        />
+        {props.state === "notStarted" ? null : (
+          <animateTransform
+            ref={ref1}
+            attributeName="transform"
+            type="rotate"
+            dur="2.857142857142857s"
+            repeatCount={repeatCount}
+            fill="freeze"
+            from="360 50 50"
+            to="0 50 50"
+          />
+        )}
       </circle>
       <circle
         cx={50}
@@ -70,20 +66,18 @@ export const LoadingSpinner: React.FC<{
         strokeLinecap="round"
         transform="rotate(-360 50 50)"
       >
-        <animateTransform
-          ref={ref2}
-          attributeName="transform"
-          type="rotate"
-          dur="2.857142857142857s"
-          repeatCount={repeatCount}
-          fill="freeze"
-          {...(props.state === "notStarted"
-            ? null
-            : {
-                from: "-360 50 50",
-                to: "0 50 50",
-              })}
-        />
+        {props.state === "notStarted" ? null : (
+          <animateTransform
+            ref={ref2}
+            attributeName="transform"
+            type="rotate"
+            dur="2.857142857142857s"
+            repeatCount={repeatCount}
+            fill="freeze"
+            from="-360 50 50"
+            to="0 50 50"
+          />
+        )}
       </circle>
     </svg>
   );

@@ -7,3 +7,7 @@ module "babel-plugin-relay/macro" {
 module "*.mp3" {
   export default string;
 }
+
+interface SVGElement extends Element {
+  beginElement(): SVGElement;
+}
