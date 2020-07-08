@@ -1,7 +1,28 @@
 import * as React from "react";
 
 // generated with https://loading.io/
-export const LoadingSpinner: React.FC<{}> = () => {
+export const LoadingSpinner: React.FC<{
+  state?: "notStarted" | "inProgress" | "finished";
+}> = (props) => {
+  let repeatCount = "0";
+  if (props.state === "inProgress") {
+    repeatCount = "indefinite";
+  } else if (props.state === "finished") {
+    repeatCount = "1";
+  }
+
+  const ref1 = React.useRef<SVGElement | null>(null);
+  const ref2 = React.useRef<SVGElement | null>(null);
+
+  React.useEffect(() => {
+    if (props.state === "inProgress") {
+      // @ts-ignore
+      ref1.current?.beginElement();
+      // @ts-ignore
+      ref2.current?.beginElement();
+    }
+  }, [props.state]);
+
   return (
     <svg
       width={200}
@@ -20,15 +41,21 @@ export const LoadingSpinner: React.FC<{}> = () => {
         strokeDasharray="67.54424205218055 67.54424205218055"
         fill="none"
         strokeLinecap="round"
-        transform="rotate(131.9 50 50)"
+        transform="rotate(360 50 50)"
       >
         <animateTransform
+          ref={ref1}
           attributeName="transform"
           type="rotate"
           dur="2.857142857142857s"
-          repeatCount="indefinite"
-          keyTimes="0;1"
-          values="0 50 50;360 50 50"
+          repeatCount={repeatCount}
+          fill="freeze"
+          {...(props.state === "notStarted"
+            ? null
+            : {
+                from: "360 50 50",
+                to: "0 50 50",
+              })}
         />
       </circle>
       <circle
@@ -41,15 +68,21 @@ export const LoadingSpinner: React.FC<{}> = () => {
         strokeDashoffset={61.261}
         fill="none"
         strokeLinecap="round"
-        transform="rotate(-131.9 50 50)"
+        transform="rotate(-360 50 50)"
       >
         <animateTransform
+          ref={ref2}
           attributeName="transform"
           type="rotate"
           dur="2.857142857142857s"
-          repeatCount="indefinite"
-          keyTimes="0;1"
-          values="0 50 50;-360 50 50"
+          repeatCount={repeatCount}
+          fill="freeze"
+          {...(props.state === "notStarted"
+            ? null
+            : {
+                from: "-360 50 50",
+                to: "0 50 50",
+              })}
         />
       </circle>
     </svg>

@@ -205,32 +205,38 @@ const NoteImportModal: React.FC<{ file: File; close: () => void }> = (
           <h3>Import Notes</h3>
         </Modal.Header>
         <Modal.Body>
-          {state === "inProgress" || state === "finished" ? (
-            <div style={{ textAlign: "center" }}>
+          <div style={{ textAlign: "center" }}>
+            {state === "notStarted" ? (
+              <h2>Preparing import</h2>
+            ) : (
               <h2>
                 Successfully imported {importedFilesCount} note
                 {importedFilesCount === 1 ? "" : "s"}
               </h2>
-              <FileTitle>Importing {props.file.name}</FileTitle>
-
-              <div style={{ height: 200 }}>
-                {state === "inProgress" ? <LoadingSpinner /> : null}
-                {importedFilesCount === 0 && state !== "finished" ? (
+            )}
+            <FileTitle>File: {props.file.name}</FileTitle>
+            <div style={{ height: 200, position: "relative", marginTop: 12 }}>
+              <LoadingSpinner state={state} />
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                {state === "notStarted" ? null : importedFilesCount === 0 &&
+                  state === "inProgress" ? (
                   <strong>
                     Uploading
                     <AnimatedDotDotDot />
                   </strong>
                 ) : state === "finished" ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      height: 200,
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <strong>All notes have been imported.</strong>
-                  </div>
+                  <strong>Done.</strong>
                 ) : (
                   <strong>
                     Importing
@@ -239,13 +245,7 @@ const NoteImportModal: React.FC<{ file: File; close: () => void }> = (
                 )}
               </div>
             </div>
-          ) : (
-            <div style={{ textAlign: "center" }}>
-              <h2>Preparing import</h2>
-              <FileTitle>Target: {props.file.name}</FileTitle>
-              <div style={{ height: 200 }} />
-            </div>
-          )}
+          </div>
         </Modal.Body>
         <Modal.Footer>
           <Modal.Actions>
