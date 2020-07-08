@@ -4,8 +4,7 @@ import * as O from "fp-ts/lib/Option";
 import * as A from "fp-ts/lib/Array";
 import * as t from "io-ts";
 import camelCase from "lodash/camelCase";
-import sanitizeHtml from "sanitize-html";
-import showdown from "showdown";
+import * as md from "./markdown-to-plain-text";
 
 const StringUtilities = {
   split1: (delimiter: string) => (
@@ -132,26 +131,12 @@ const decodeMetaData = (records: [string, string][]) =>
     )
   );
 
-const parseBody = (content: string) => content.replace(/^(---\n[^]*\n---)/, "");
-
-export const sanitizeBody = (body: string) => {
-  const converter = new showdown.Converter({
-    tables: true,
-  });
-
-  return sanitizeHtml(converter.makeHtml(body), {
-    allowedTags: [],
-    nonTextTags: [
-      "style",
-      "script",
-      "textarea",
-      "option",
-      "noscript",
-      /* We filter out the breadcrumb because it does not provide us any information we want to search for :) */
-      "breadcrumb",
-    ],
-  }).trimStart();
-};
+const parseBody = (content: string) =>
+  content
+    // remove head
+    .replace(/^(---\n[^]*\n---)/, "")
+    // remove trailing line breaks
+    .replace(/^\n*/, "");
 
 export const parseNoteData = (content: string) =>
   pipe(
@@ -164,7 +149,7 @@ export const parseNoteData = (content: string) =>
       return NoteImportData.encode({
         ...metadata,
         content: body,
-        sanitizedContent: sanitizeBody(body),
+        sanitizedContent: md.markdownToPlainText(body),
       });
     })
   );

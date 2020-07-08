@@ -3,6 +3,7 @@ type ISendRequestOptions = {
   headers: {
     [headerName: string]: string | null;
   };
+  onProgress?: (content: string) => void;
 } & (
   | {
       method: "POST";
@@ -69,6 +70,17 @@ export const sendRequest = (options: ISendRequestOptions): ISendRequestTask => {
       data: request.responseText,
     });
   });
+
+  if (options.onProgress) {
+    let seenBytes = 0;
+    request.addEventListener("readystatechange", (ev) => {
+      if (request.readyState === 3) {
+        const data = request.response.substr(seenBytes);
+        seenBytes = request.responseText.length;
+        options.onProgress?.(data);
+      }
+    });
+  }
 
   request.open(options.method, options.url, true);
   for (const [header, value] of Object.entries(options.headers)) {

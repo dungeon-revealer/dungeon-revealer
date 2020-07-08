@@ -1,5 +1,5 @@
 import sanitizeHtml from "sanitize-html";
-import * as showdown from "showdown";
+import showdown from "showdown";
 
 export const markdownToPlainText = (text: string) => {
   const converter = new showdown.Converter({
@@ -8,7 +8,18 @@ export const markdownToPlainText = (text: string) => {
 
   return sanitizeHtml(converter.makeHtml(text), {
     allowedTags: [],
-  });
+    nonTextTags: [
+      "style",
+      "script",
+      "textarea",
+      "option",
+      "noscript",
+      /* We filter out the breadcrumb because it does not provide us any information we want to search for :) */
+      "breadcrumb",
+    ],
+  })
+    .trimStart()
+    .replace(/^\n*/, "");
 };
 
 export const shortenText = (
