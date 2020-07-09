@@ -5,3 +5,6 @@ data/
 build/
 bin/dungeon-revealer-*
 docker-cache
+arm-compile.Dockerfile
+Dockerfile
+.github/

@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  job_build:
+  build_x64_native:
     name: ${{ matrix.os }} Binaries
     runs-on: ${{ matrix.os }}-latest
     strategy:
@@ -51,36 +51,56 @@ jobs:
           path: "dungeon-revealer-${{ matrix.os }}/"
 
 
-  job_build_arm:
-    name: ARM Linux Binaries
+  build_arm:
+    name: ${{ matrix.arch }} Binaries
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux/arm/v7, linux/arm64/v8 ]
+        include:
+          - platform: linux/arm/v7
+            arch: armv7
+          - platform: linux/arm64/v8
+            arch: arm64
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Build arm
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: crazy-max/ghaction-docker-buildx@v1
+        with:
+          buildx-version: latest
+          qemu-version: latest
+
+      - name: Build ${{ matrix.arch }}
         run: |
-          echo "unsafe-perm = true" > .npmrc
-          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          docker run --rm -v $(pwd):/usr/src/app/ arm32v7/node:10 /bin/sh -c 'cd /usr/src/app/ && export NODE_OPTIONS=--max_old_space_size=3072 && npm install && npm run build && node ./scripts/copy-node-bindings-path.js && npm run compile:armv7 && cp node_sqlite3.node bin/'
+          docker buildx build -f arm-compile.Dockerfile --platform ${{ matrix.platform }} \
+          --build-arg ARCH=${{ matrix.arch }} \
+          --build-arg FETCH_CMD="mkdir -p ~/.pkg-cache/v2.5 && cd ~/.pkg-cache/v2.5 && wget https://github.com/robertsLando/pkg-binaries/releases/download/v1.0.0/fetched-v10.15.3-linux-${{ matrix.arch }} -O fetched-v10.4.1-linux-${{ matrix.arch }}" \
+          --load -t dr/bin:${{ matrix.arch }} .
+          APP=$(docker run --rm -it -d dr/bin:${{ matrix.arch }})
+          docker cp $APP:/usr/src/build/bin/dungeon-revealer-linux ./bin/
+          docker cp $APP:/usr/src/build/node_sqlite3.node ./bin/
+          docker kill $APP
 
       - name: Package binary
         run: |
-          mkdir dungeon-revealer-linux-armv7
-          mv ./bin/dungeon-revealer-linux-armv7 ./dungeon-revealer-linux-armv7/
-          mv ./bin/node_sqlite3.node ./dungeon-revealer-linux-armv7/
-          mv ./LICENSE ./dungeon-revealer-linux-armv7/
-          mv ./README.md ./dungeon-revealer-linux-armv7/
+          mkdir dungeon-revealer-linux-${{ matrix.arch }}
+          mv ./bin/dungeon-revealer-linux ./dungeon-revealer-linux-${{ matrix.arch }}/dungeon-revealer-linux-${{ matrix.arch }}
+          mv ./bin/node_sqlite3.node ./dungeon-revealer-linux-${{ matrix.arch }}/
+          mv ./LICENSE ./dungeon-revealer-linux-${{ matrix.arch }}/
+          mv ./README.md ./dungeon-revealer-linux-${{ matrix.arch }}/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: dungeon-revealer-linux-armv7
-          path: "dungeon-revealer-linux-armv7/"
+          name: dungeon-revealer-linux-${{ matrix.arch }}
+          path: "dungeon-revealer-linux-${{ matrix.arch }}/"
 
   job_upload:
     name: Upload Release Assets
-    needs: [job_build, job_build_arm]
+    needs: [build_x64_native, build_arm]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -117,6 +137,7 @@ jobs:
           chmod +x ./dungeon-revealer-macos/dungeon-revealer-macos
           chmod +x ./dungeon-revealer-ubuntu/dungeon-revealer-linux
           chmod +x ./dungeon-revealer-linux-armv7/dungeon-revealer-linux-armv7
+          chmod +x ./dungeon-revealer-linux-arm64/dungeon-revealer-linux-arm64
           for idir in */;
           do
             (cd "$idir"; rm dungeon-revealer || true; zip -r "../${idir%/}.zip" .);
@@ -154,7 +175,7 @@ jobs:
           asset_name: dungeon-revealer-windows-${{ env.GH_TAG }}.zip
           asset_content_type: application/zip
 
-      - name: Upload Linux ARM Release
+      - name: Upload Linux armv7 Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -162,4 +183,14 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
           asset_path: ./bin/dungeon-revealer-linux-armv7.zip
           asset_name: dungeon-revealer-linux-armv7-${{ env.GH_TAG }}.zip
+          asset_content_type: application/zip
+
+      - name: Upload Linux arm64 Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./bin/dungeon-revealer-linux-arm64.zip
+          asset_name: dungeon-revealer-linux-arm64-${{ env.GH_TAG }}.zip
           asset_content_type: application/zip
