@@ -134,7 +134,7 @@
     "showdown": "1.9.1",
     "socket.io-client": "2.3.0",
     "ts-jest": "26.1.1",
-    "ts-node-dev": "1.0.0-pre.50",
+    "ts-node-dev": "1.0.0-pre.51",
     "typescript": "3.9.6",
     "use-persisted-state": "0.3.0",
     "use-sound": "1.0.2"
