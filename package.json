@@ -59,7 +59,7 @@
     "express": "4.17.1",
     "fp-ts": "2.7.0",
     "fs-extra": "9.0.1",
-    "gqtx": "0.6.0",
+    "gqtx": "0.7.0",
     "graphql": "14.6.0",
     "graphql-subscriptions": "1.1.0",
     "io-ts": "2.2.7",
