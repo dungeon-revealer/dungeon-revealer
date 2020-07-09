@@ -1,0 +1,22 @@
+FROM node:10
+
+ARG ARCH
+
+WORKDIR /usr/src/build
+
+COPY . .
+
+RUN echo "unsafe-perm = true" > .npmrc
+
+
+RUN npm --max_old_space_size=3072 install
+
+RUN npm --max_old_space_size=3072 run build
+
+RUN node ./scripts/copy-node-bindings-path.js
+
+RUN mkdir -p ~/.pkg-cache/v2.5 && cd ~/.pkg-cache/v2.5 && wget https://github.com/robertsLando/pkg-binaries/releases/download/v1.0.0/fetched-v10.15.3-linux-$ARCH -O fetched-v10.4.1-linux-$ARCH
+
+RUN npm --max_old_space_size=3072 run compile
+
+CMD ["sh"]
