@@ -52,7 +52,7 @@ jobs:
 
 
   build_arm:
-    name: ${{ matrix.platform }} Linux Binaries
+    name: ${{ matrix.platform }} Binaries
     runs-on: ubuntu-latest
     strategy:
       matrix:
