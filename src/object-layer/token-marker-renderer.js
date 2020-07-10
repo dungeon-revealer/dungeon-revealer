@@ -295,8 +295,6 @@ export const TokenMarkerRenderer = React.memo(
       showSelectTokenMarkerModal,
     ] = useShowSelectNoteModal();
 
-    const [isAnimated, setIsAnimated] = React.useState(true);
-
     return (
       <>
         <TokenMarker
@@ -304,7 +302,6 @@ export const TokenMarkerRenderer = React.memo(
           ratio={ratio}
           {...token}
           cursor={token.reference ? "pointer" : undefined}
-          isAnimated={isAnimated}
           onDoubleClick={(ev) => ev.stopPropagation()}
           onClick={(ev) => {
             if (mode === "player") {
@@ -319,7 +316,6 @@ export const TokenMarkerRenderer = React.memo(
           }}
           onTouchStart={(ev) => {
             if (token.isLocked) return;
-            setIsAnimated(false);
             ev.preventDefault();
             ev.stopPropagation();
 
@@ -349,8 +345,6 @@ export const TokenMarkerRenderer = React.memo(
               tokenRef.current.setTransform(currentX, currentY);
             };
             const onTouchEnd = (ev) => {
-              setTimeout(() => setIsAnimated(true), 0);
-
               ev.preventDefault();
               ev.stopPropagation();
 
@@ -367,7 +361,6 @@ export const TokenMarkerRenderer = React.memo(
             ev.preventDefault();
             ev.stopPropagation();
             if (ev.button !== 0) return;
-            setIsAnimated(false);
 
             const { x, y } = getRelativePosition({
               x: ev.pageX,
@@ -390,7 +383,6 @@ export const TokenMarkerRenderer = React.memo(
               tokenRef.current.setTransform(x - diffX, y - diffY);
             };
             const onMouseUp = (ev) => {
-              setTimeout(() => setIsAnimated(true), 0);
               ev.preventDefault();
               ev.stopPropagation();
 

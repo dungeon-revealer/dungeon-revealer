@@ -18,7 +18,6 @@ export const TokenMarker = React.memo(
         onMouseDown,
         onContextMenu,
         ratio = 1,
-        isAnimated = true,
         isLocked,
         ...props
       },
@@ -31,49 +30,46 @@ export const TokenMarker = React.memo(
 
       const [localColor, setLocalColor] = useResetState(color, [color]);
 
-      const {
-        x: animatedX,
-        y: animatedY,
-        radius: animatedRadius,
-        color: animatedColor,
-      } = useSpring({
-        to: { x, y, radius, color: localColor },
-        immediate: !isAnimated,
-      });
+      const [animatedProps, set] = useSpring(() => ({
+        to: {
+          x,
+          y,
+          radius,
+        },
+      }));
+
+      React.useEffect(() => {
+        set({
+          x: x * ratio,
+          y: y * ratio,
+          radius: radius * ratio,
+        });
+      }, [x, y, radius, set, ratio]);
 
       useEffect(() => {
         ratioRef.current = ratio;
         if (ref && !ref.current) {
           ref.current = {
             setTransform: (x, y) => {
-              gRef.current.setAttribute(
-                "transform",
-                `translate(${x * ratioRef.current}, ${y * ratioRef.current})`
-              );
+              set({
+                x: x * ratioRef.current,
+                y: y * ratioRef.current,
+                immediate: true,
+              });
             },
             setRadius: (radius) => {
-              circleRef.current.setAttribute("r", radius * ratioRef.current);
-              circleRef.current.setAttribute(
-                "stroke-width",
-                radius * ratioRef.current * 0.05
-              );
-              textRef.current.setAttribute(
-                "font-size",
-                radius * ratioRef.current
-              );
+              set({ radius: radius * ratioRef.current, immediate: true });
             },
           };
         }
       });
 
-      const realRadius = animatedRadius.to((r) => r * ratio);
-
       return (
         <animated.g
           ref={gRef}
           transform={interpolate(
-            [animatedX, animatedY],
-            (x, y) => `translate(${x * ratio}, ${y * ratio})`
+            [animatedProps.x, animatedProps.y],
+            (x, y) => `translate(${x}, ${y})`
           )}
           opacity={isVisibleForPlayers ? 1 : 0.7}
           {...props}
@@ -90,10 +86,10 @@ export const TokenMarker = React.memo(
               }
             }}
             ref={circleRef}
-            r={realRadius}
-            strokeWidth={realRadius.to((val) => val * 0.05)}
-            stroke={animatedColor.to((value) => darken(0.1, value))}
-            fill={animatedColor}
+            r={animatedProps.radius}
+            strokeWidth={animatedProps.radius.to((val) => val * 0.05)}
+            stroke={darken(0.1, localColor)}
+            fill={localColor}
             opacity="1"
             onClick={onClick}
             onMouseDown={onMouseDown}
@@ -105,7 +101,7 @@ export const TokenMarker = React.memo(
             pointerEvents="none"
             textAnchor="middle"
             stroke="black"
-            fontSize={realRadius}
+            fontSize={animatedProps.radius}
             dy=".3em"
           >
             {label}

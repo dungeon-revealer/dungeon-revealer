@@ -12,9 +12,14 @@ export const TokenRenderer = React.memo(
     isDisabled,
     onClickToken,
   }) => {
+    const tokensToRender =
+      mode === "dungeon-master"
+        ? tokens
+        : tokens.filter((token) => token.isVisibleForPlayers);
+
     return (
       <g pointerEvents={isDisabled ? "none" : undefined}>
-        {tokens.map((token) => (
+        {tokensToRender.map((token) => (
           <TokenMarkerRenderer
             mode={mode}
             token={token}

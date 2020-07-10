@@ -376,15 +376,10 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
       });
     }
 
-    let updates = {};
-
-    if (req.role === "PC" || req.role === "DM") {
-      updates = {
-        ...updates,
-        x: req.body.x,
-        y: req.body.y,
-      };
-    }
+    let updates = {
+      x: req.body.x,
+      y: req.body.y,
+    };
 
     if (req.role === "DM") {
       updates = {
