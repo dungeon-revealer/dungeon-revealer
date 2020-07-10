@@ -85,7 +85,7 @@
     "@types/fs-extra": "9.0.1",
     "@types/jest": "26.0.4",
     "@types/lodash": "4.14.157",
-    "@types/node": "13.13.12",
+    "@types/node": "13.13.14",
     "@types/react": "16.9.42",
     "@types/react-dom": "16.9.8",
     "@types/react-relay": "7.0.8",
