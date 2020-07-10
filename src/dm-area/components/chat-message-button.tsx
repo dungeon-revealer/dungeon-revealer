@@ -3,7 +3,7 @@ import styled from "@emotion/styled/macro";
 import { useMessageAddMutation } from "../../chat/message-add-mutation";
 import { TemplateContext } from "./html-container";
 
-const StyledChatMessageButton = styled.button`
+export const StyledChatMessageButton = styled.button`
   all: unset;
   cursor: pointer;
   background: white;

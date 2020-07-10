@@ -1,5 +1,5 @@
 import { commitMutation } from "react-relay";
-import { useRelayEnvironment } from "react-relay/hooks";
+import { useRelayEnvironment } from "relay-hooks";
 
 import { useCallback } from "react";
 import graphql from "babel-plugin-relay/macro";

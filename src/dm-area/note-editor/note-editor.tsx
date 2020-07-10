@@ -1,10 +1,6 @@
 import React from "react";
 import graphql from "babel-plugin-relay/macro";
-import {
-  useMutation,
-  useLazyLoadQuery,
-  useRelayEnvironment,
-} from "react-relay/hooks";
+import { useMutation, useRelayEnvironment, useQuery } from "relay-hooks";
 import { ConnectionHandler } from "relay-runtime";
 
 import { noteEditor_NoteDeleteMutation } from "./__generated__/noteEditor_NoteDeleteMutation.graphql";
@@ -21,6 +17,7 @@ import { NoteEditorActiveItem } from "./note-editor-active-item";
 import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
 import styled from "@emotion/styled/macro";
 import { QueryRenderer } from "react-relay";
+import { useNoteTitleAutoSave } from "../../hooks/use-note-title-auto-save";
 
 const NoteEditor_NoteDeleteMutation = graphql`
   mutation noteEditor_NoteDeleteMutation($input: NoteDeleteInput!) {
@@ -36,6 +33,7 @@ const NoteEditor_NoteCreateMutation = graphql`
     noteCreate(input: $input) {
       note {
         id
+        documentId
         title
         content
       }
@@ -44,13 +42,11 @@ const NoteEditor_NoteCreateMutation = graphql`
 `;
 
 const NoteEditor_ActiveItemQuery = graphql`
-  query noteEditor_ActiveItemQuery($activeNoteId: ID!) {
-    node(id: $activeNoteId) {
-      ... on Note {
-        __typename
-        id
-        ...noteEditorActiveItem_nodeFragment
-      }
+  query noteEditor_ActiveItemQuery($documentId: ID!) {
+    note(documentId: $documentId) {
+      id
+      title
+      ...noteEditorActiveItem_nodeFragment
     }
   }
 `;
@@ -61,13 +57,35 @@ const NoteEditor_SideBarQuery = graphql`
   }
 `;
 
+const TitleAutoSaveInput: React.FC<{ id: string; title: string }> = (props) => {
+  const [title, setTitle] = useNoteTitleAutoSave(props.id, props.title);
+  return (
+    <label
+      style={{
+        display: "block",
+        paddingLeft: 16,
+        paddingRight: 16,
+        paddingTop: 10,
+      }}
+    >
+      <strong style={{ paddingBottom: 10, display: "block" }}>Title: </strong>
+      <input
+        value={title}
+        style={{ width: "100%" }}
+        onChange={(ev) => setTitle(ev.target.value)}
+      />
+    </label>
+  );
+};
+
 export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const environment = useRelayEnvironment();
   const [isEditMode, setIsEditMode] = React.useState(false);
-  const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
-
+  const [activeNoteId, setActiveNoteId] = React.useState<{
+    id: string;
+    documentId: string;
+  } | null>(null);
   const [confirmationDialog, showConfirmationDialog] = useConfirmationDialog();
-  const [activeModal, setActiveModal] = React.useState<React.ReactNode>(null);
 
   const [deleteNoteMutation] = useMutation<noteEditor_NoteDeleteMutation>(
     NoteEditor_NoteDeleteMutation
@@ -76,12 +94,15 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     NoteEditor_NoteCreateMutation
   );
 
-  const sideBarData = useLazyLoadQuery<noteEditor_SideBarQuery>(
+  const sideBarData = useQuery<noteEditor_SideBarQuery>(
     NoteEditor_SideBarQuery,
     {}
   );
+  const sideBarRefetchRef = React.useRef<null | (() => void)>(null);
 
   const sideBarRef = React.useRef<HTMLDivElement>(null);
+
+  if (!sideBarData?.props) return null;
 
   return (
     <Modal onClickOutside={onClose} onPressEscape={onClose}>
@@ -114,9 +135,10 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <Modal.Body style={{ display: "flex", height: "80vh" }} noPadding>
           <Modal.Aside>
             <NoteEditorSideBar
-              notesRef={sideBarData}
+              notesRef={sideBarData.props}
               setActiveNoteId={setActiveNoteId}
               activeNoteId={activeNoteId}
+              sideBarRefetchRef={sideBarRefetchRef}
             />
             <Modal.Footer>
               <Button.Primary
@@ -126,6 +148,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       input: {
                         title: "<Untitled Note>",
                         content: "",
+                        isEntryPoint: true,
                       },
                     },
                     updater: (store) => {
@@ -147,7 +170,10 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       ConnectionHandler.insertEdgeBefore(notesConnection, edge);
                     },
                     onCompleted: (data) => {
-                      setActiveNoteId(data.noteCreate.note.id);
+                      setActiveNoteId({
+                        id: data.noteCreate.note.id,
+                        documentId: data.noteCreate.note.documentId,
+                      });
                       setIsEditMode(true);
                     },
                   })
@@ -164,20 +190,26 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <QueryRenderer<noteEditor_ActiveItemQuery>
                 environment={environment}
                 query={NoteEditor_ActiveItemQuery}
-                variables={{ activeNoteId }}
+                variables={{ documentId: activeNoteId.documentId }}
                 render={({ error, props }) => {
                   if (error) return null;
-                  if (props?.node?.__typename !== "Note") return null;
+                  if (!props?.note) return null;
 
                   return (
                     <>
+                      {isEditMode ? (
+                        <TitleAutoSaveInput
+                          id={props.note.id}
+                          title={props.note.title}
+                        />
+                      ) : null}
                       <NoteEditorActiveItem
-                        key={props.node.id}
+                        key={props.note.id}
                         isEditMode={isEditMode}
                         toggleIsEditMode={() =>
                           setIsEditMode((isEditMode) => !isEditMode)
                         }
-                        nodeRef={props.node}
+                        nodeRef={props.note}
                         sideBarRef={sideBarRef}
                       />
                       <Modal.Footer>
@@ -196,7 +228,10 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     setActiveNoteId(null);
                                     deleteNoteMutation({
                                       variables: {
-                                        input: { noteId: activeNoteId },
+                                        input: { noteId: activeNoteId.id },
+                                      },
+                                      onCompleted: () => {
+                                        sideBarRefetchRef.current?.();
                                       },
                                       configs: [
                                         {
@@ -256,7 +291,6 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </Modal.Body>
       </Modal.Dialog>
       {confirmationDialog}
-      {activeModal}
     </Modal>
   );
 };

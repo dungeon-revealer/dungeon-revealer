@@ -14,11 +14,7 @@ type Dependencies = {
   db: Database;
 };
 
-export default ({
-  roleMiddleware,
-  registerSocketCommand,
-  db,
-}: Dependencies) => {
+export default ({ registerSocketCommand, db }: Dependencies) => {
   const chat = createChat();
   const user = createUser({
     sendUserConnectedMessage: ({ name }) =>
@@ -62,6 +58,9 @@ export default ({
         source,
         variableValues: variables,
       }).then((result) => {
+        result.errors?.forEach((error) => {
+          console.error(error.originalError);
+        });
         socket.emit("graphql/result", { id, ...result });
       });
     });

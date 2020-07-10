@@ -1,7 +1,7 @@
 import * as React from "react";
 import { commitMutation } from "react-relay";
 import graphql from "babel-plugin-relay/macro";
-import { useRelayEnvironment } from "react-relay/hooks";
+import { useRelayEnvironment } from "relay-hooks";
 import { changeNameMutation } from "./__generated__/changeNameMutation.graphql";
 import * as userSession from "./user-session";
 

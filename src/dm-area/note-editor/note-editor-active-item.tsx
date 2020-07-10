@@ -1,9 +1,9 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
 import debounce from "lodash/debounce";
-import { useMutation, useFragment } from "react-relay/hooks";
+import { useMutation, useFragment } from "relay-hooks";
 import type { noteEditorActiveItem_nodeFragment$key } from "./__generated__/noteEditorActiveItem_nodeFragment.graphql";
-import { noteEditorActiveItemNoteUpdateMutation } from "./__generated__/noteEditorActiveItemNoteUpdateMutation.graphql";
+import { noteEditorActiveItemNoteUpdateContentMutation } from "./__generated__/noteEditorActiveItemNoteUpdateContentMutation.graphql";
 import styled from "@emotion/styled/macro";
 import { MarkdownEditor } from "../components/markdown-editor";
 import { HtmlContainer } from "../components/html-container";
@@ -17,9 +17,11 @@ const NoteEditorActiveItem_NodeFragment = graphql`
   }
 `;
 
-const NoteEditorActiveItemNoteUpdateMutation = graphql`
-  mutation noteEditorActiveItemNoteUpdateMutation($input: NoteUpdateInput!) {
-    noteUpdate(input: $input) {
+const NoteEditorActiveItemNoteUpdateContentMutation = graphql`
+  mutation noteEditorActiveItemNoteUpdateContentMutation(
+    $input: NoteUpdateContentInput!
+  ) {
+    noteUpdateContent(input: $input) {
       note {
         ...noteEditorActiveItem_nodeFragment
       }
@@ -27,27 +29,17 @@ const NoteEditorActiveItemNoteUpdateMutation = graphql`
   }
 `;
 
-const extractTitleFromContent = (content: string) => {
-  const subject = (content.split("\n")[0] || "")
-    .replace(/(<!--|-->)/g, "")
-    .replace(/[*#~]/g, "")
-    .replace(/<.*\/>/g, "")
-    .replace(/<.*>/g, "")
-    .trim();
-  if (!subject) return "<Untitled Note>";
-  return subject;
-};
-
 export const NoteEditorActiveItem: React.FC<{
   isEditMode: boolean;
   toggleIsEditMode: () => void;
   nodeRef: noteEditorActiveItem_nodeFragment$key;
   sideBarRef: React.RefObject<HTMLDivElement>;
-}> = ({ isEditMode, nodeRef, sideBarRef }) => {
+  editorOnResizeRef?: React.MutableRefObject<() => void>;
+}> = ({ isEditMode, nodeRef, sideBarRef, editorOnResizeRef }) => {
   const node = useFragment(NoteEditorActiveItem_NodeFragment, nodeRef);
 
-  const [mutate] = useMutation<noteEditorActiveItemNoteUpdateMutation>(
-    NoteEditorActiveItemNoteUpdateMutation
+  const [mutate] = useMutation<noteEditorActiveItemNoteUpdateContentMutation>(
+    NoteEditorActiveItemNoteUpdateContentMutation
   );
 
   const mutateRef = React.useRef(mutate);
@@ -58,10 +50,10 @@ export const NoteEditorActiveItem: React.FC<{
 
   const update = useStaticRef(() =>
     debounce(
-      (input: { title: string; content: string }) =>
+      (content: string) =>
         mutateRef.current({
           variables: {
-            input: { ...input, id: node.id },
+            input: { id: node.id, content },
           },
         }),
       500
@@ -75,10 +67,7 @@ export const NoteEditorActiveItem: React.FC<{
 
   React.useEffect(() => {
     if (previousContent.current !== content) {
-      update({
-        title: extractTitleFromContent(content),
-        content,
-      });
+      update(content);
     }
     previousContent.current = content;
   }, [content]);
@@ -91,6 +80,7 @@ export const NoteEditorActiveItem: React.FC<{
             value={content}
             onChange={setContent}
             sideBarRef={sideBarRef}
+            editorOnResizeRef={editorOnResizeRef}
           />
         </EditorContainer>
       ) : (

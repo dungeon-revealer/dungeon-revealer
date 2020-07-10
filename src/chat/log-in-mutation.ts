@@ -1,7 +1,7 @@
 import * as React from "react";
 import { commitMutation } from "react-relay";
 import graphql from "babel-plugin-relay/macro";
-import { useRelayEnvironment } from "react-relay/hooks";
+import { useRelayEnvironment } from "relay-hooks";
 import { logInMutation } from "./__generated__/logInMutation.graphql";
 import { useGetIsMounted } from "../hooks/use-get-is-mounted";
 import * as userSession from "./user-session";

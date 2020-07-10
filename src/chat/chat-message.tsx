@@ -4,9 +4,13 @@ import graphql from "babel-plugin-relay/macro";
 import type { chatMessage_message } from "./__generated__/chatMessage_message.graphql";
 import styled from "@emotion/styled/macro";
 import MarkdownView from "react-showdown";
+import * as Button from "../button";
 import { FormattedDiceRoll } from "./formatted-dice-roll";
 import _sanitizeHtml from "sanitize-html";
 import { chatMessageComponents } from "../user-content-components";
+import { useFragment } from "relay-hooks";
+import { chatMessage_SharedResourceChatMessageFragment$key } from "./__generated__/chatMessage_SharedResourceChatMessageFragment.graphql";
+import { useNoteWindowActions } from "../dm-area/token-info-aside";
 
 const Container = styled.div`
   margin-bottom: 4px;
@@ -98,6 +102,98 @@ const UserMessageRenderer: React.FC<{
   );
 };
 
+const ChatMessage_SharedResourceChatMessageFragment = graphql`
+  fragment chatMessage_SharedResourceChatMessageFragment on SharedResourceChatMessage {
+    __typename
+    authorName
+    resource {
+      ... on Note {
+        __typename
+        id
+        documentId
+        title
+        contentPreview
+      }
+    }
+  }
+`;
+
+const NoteCard = styled.div`
+  border: 0.5px solid lightgrey;
+  border-radius: 2px;
+`;
+
+const NoteTitle = styled.div`
+  font-weight: bold;
+  padding: 8px;
+  padding-bottom: 4px;
+`;
+
+const NoteBody = styled.div`
+  padding: 8px;
+  padding-top: 0;
+`;
+
+const NoteFooter = styled.div`
+  padding: 8px;
+`;
+
+const NotePreview: React.FC<{
+  documentId: string;
+  title: string;
+  contentPreview: string;
+}> = ({ documentId, title, contentPreview }) => {
+  const noteWindowActions = useNoteWindowActions();
+  return (
+    <NoteCard>
+      <NoteTitle>{title}</NoteTitle>
+      <NoteBody>{contentPreview}</NoteBody>
+      <NoteFooter>
+        <Button.Primary
+          small
+          onClick={() =>
+            noteWindowActions.focusOrShowNoteInNewWindow(documentId)
+          }
+        >
+          Show
+        </Button.Primary>
+      </NoteFooter>
+    </NoteCard>
+  );
+};
+
+const SharedResourceRenderer: React.FC<{
+  message: chatMessage_SharedResourceChatMessageFragment$key;
+}> = ({ message: messageKey }) => {
+  const message = useFragment(
+    ChatMessage_SharedResourceChatMessageFragment,
+    messageKey
+  );
+
+  let resourceContent: React.ReactNode = <strong>CONTENT UNAVAILABLE</strong>;
+
+  if (message.resource) {
+    switch (message.resource.__typename) {
+      case "Note":
+        resourceContent = (
+          <NotePreview
+            documentId={message.resource.documentId}
+            title={message.resource.title}
+            contentPreview={message.resource.contentPreview}
+          />
+        );
+        break;
+    }
+  }
+
+  return (
+    <Container>
+      <AuthorName>{message.authorName} shared </AuthorName>
+      {resourceContent}
+    </Container>
+  );
+};
+
 const ChatMessageRenderer: React.FC<{
   message: chatMessage_message;
 }> = React.memo(({ message }) => {
@@ -118,6 +214,8 @@ const ChatMessageRenderer: React.FC<{
           <TextRenderer text={message.content} />
         </Container>
       );
+    case "SharedResourceChatMessage":
+      return <SharedResourceRenderer message={message} />;
     default:
       return null;
   }
@@ -164,6 +262,10 @@ export const ChatMessage = createFragmentContainer(ChatMessageRenderer, {
       ... on OperationalChatMessage {
         __typename
         content
+      }
+      ... on SharedResourceChatMessage {
+        __typename
+        ...chatMessage_SharedResourceChatMessageFragment
       }
     }
   `,

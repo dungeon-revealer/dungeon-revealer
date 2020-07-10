@@ -1,23 +1,28 @@
 import { t } from "../..";
 
-export const GraphQLPageInfoType = t.objectType<{}>({
+export const GraphQLPageInfoType = t.objectType<{
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
+  startCursor?: string;
+  endCursor?: string;
+}>({
   name: "PageInfo",
   fields: () => [
     t.field("hasNextPage", {
       type: t.NonNull(t.Boolean),
-      resolve: () => false,
+      resolve: (obj) => obj.hasNextPage ?? false,
     }),
     t.field("hasPreviousPage", {
       type: t.NonNull(t.Boolean),
-      resolve: () => false,
+      resolve: (obj) => obj.hasPreviousPage ?? false,
     }),
     t.field("startCursor", {
       type: t.NonNull(t.String),
-      resolve: () => "",
+      resolve: (obj) => obj.startCursor ?? "",
     }),
     t.field("endCursor", {
       type: t.NonNull(t.String),
-      resolve: () => "",
+      resolve: (obj) => obj.endCursor ?? "",
     }),
   ],
 });

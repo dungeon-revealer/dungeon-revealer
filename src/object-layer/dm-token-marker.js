@@ -7,8 +7,8 @@ import * as Button from "../button";
 import * as Icon from "../feather-icons";
 import { Modal } from "../modal";
 import { ToggleSwitch } from "../toggle-switch";
-import { useShowSelectTokenMarkerReferenceModal } from "../dm-area/select-token-marker-reference-modal";
-import { SetActiveNoteIdContext } from "../dm-area/token-info-aside";
+import { useShowSelectNoteModal } from "../dm-area/select-note-modal";
+import { useNoteWindowActions } from "../dm-area/token-info-aside";
 
 const ColorPicker = React.memo(({ color, onChange, styles }) => {
   return (
@@ -37,7 +37,7 @@ const TokenContextMenu = ({
   close,
   showLinkReferenceModal,
 }) => {
-  const setActiveNoteId = React.useContext(SetActiveNoteIdContext);
+  const noteWindowActions = useNoteWindowActions();
 
   const containerRef = useRef(null);
   const rangeSlideRef = useRef(null);
@@ -223,7 +223,9 @@ const TokenContextMenu = ({
                   <Button.Tertiary
                     small
                     onClick={() => {
-                      setActiveNoteId(reference.id);
+                      noteWindowActions.focusOrShowNoteInNewWindow(
+                        reference.id
+                      );
                       close();
                     }}
                   >
@@ -291,13 +293,14 @@ export const DmTokenMarker = React.memo(
   }) => {
     const tokenRef = useRef();
     const [contextMenuCoordinates, setContextMenuCoordinates] = useState(null);
+    const noteWindowActions = useNoteWindowActions();
 
     const isDraggingRef = useRef(false);
 
     const [
       showSelectTokenMarkerModalNode,
       showSelectTokenMarkerModal,
-    ] = useShowSelectTokenMarkerReferenceModal();
+    ] = useShowSelectNoteModal();
 
     return (
       <>
@@ -425,7 +428,16 @@ export const DmTokenMarker = React.memo(
               close={() => setContextMenuCoordinates(null)}
               showLinkReferenceModal={() => {
                 setContextMenuCoordinates(null);
-                showSelectTokenMarkerModal(token.id, updateToken);
+                showSelectTokenMarkerModal((documentId) => {
+                  updateToken({
+                    id: token.id,
+                    reference: {
+                      type: "note",
+                      id: documentId,
+                    },
+                  });
+                  noteWindowActions.focusOrShowNoteInNewWindow(documentId);
+                });
               }}
             />
           </Modal>

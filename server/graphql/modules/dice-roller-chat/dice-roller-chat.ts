@@ -5,12 +5,19 @@ import type {
   ApplicationRecordSchema,
   DiceRollResult,
 } from "../../../chat";
+import * as NotesModule from "../notes";
+import * as E from "fp-ts/lib/Either";
+import * as RT from "fp-ts/lib/ReaderTask";
 
 type ChatMessageType = ApplicationRecordSchema;
 type UserChatMessageType = Extract<ChatMessageType, { type: "USER_MESSAGE" }>;
 type OperationalChatMessageType = Extract<
   ChatMessageType,
   { type: "OPERATIONAL_MESSAGE" }
+>;
+type SharedResourceChatMessageType = Extract<
+  ChatMessageType,
+  { type: "SHARED_RESOURCE" }
 >;
 
 enum DiceRollType {
@@ -163,6 +170,12 @@ const GraphQLChatMessageDiceRoll = t.objectType<DiceRollResult>({
 
 const GraphQLChatMessageInterfaceType = t.interfaceType<ChatMessageType>({
   name: "ChatMessage",
+  fields: () => [t.abstractField("id", t.NonNull(t.ID))],
+});
+
+const GraphQLTextChatMessageInterfaceType = t.interfaceType<ChatMessageType>({
+  name: "TextChatMessage",
+  interfaces: [GraphQLChatMessageInterfaceType],
   fields: () => [
     t.abstractField("id", t.NonNull(t.ID)),
     t.abstractField("content", t.NonNull(t.String)),
@@ -171,10 +184,46 @@ const GraphQLChatMessageInterfaceType = t.interfaceType<ChatMessageType>({
   ],
 });
 
+const GraphQLSharedResourceEnumType = t.unionType<NotesModule.NoteModelType>({
+  name: "SharedResource",
+  types: [NotesModule.GraphQLNoteType],
+  resolveType: (input) => {
+    if (NotesModule.isTypeOfNote(input)) return NotesModule.GraphQLNoteType;
+    throw new Error("Invalid State.");
+  },
+});
+
+const GraphQLSharedResourceChatMessageType = t.objectType<
+  SharedResourceChatMessageType
+>({
+  name: "SharedResourceChatMessage",
+  interfaces: [GraphQLChatMessageInterfaceType],
+  isTypeOf: (input) => input?.type === "SHARED_RESOURCE",
+  fields: () => [
+    t.field("id", {
+      type: t.NonNull(t.ID),
+      resolve: (obj) => obj.id,
+    }),
+    t.field("authorName", {
+      type: t.NonNull(t.String),
+      resolve: (obj) => obj.authorName,
+    }),
+    t.field("resource", {
+      type: GraphQLSharedResourceEnumType,
+      resolve: (input, args, context) => {
+        return RT.run(NotesModule.resolveNote(input.resource.id), context);
+      },
+    }),
+  ],
+});
+
 const GraphQLOperationalChatMessageType = t.objectType<
   OperationalChatMessageType
 >({
-  interfaces: [GraphQLChatMessageInterfaceType],
+  interfaces: [
+    GraphQLChatMessageInterfaceType,
+    GraphQLTextChatMessageInterfaceType,
+  ],
   name: "OperationalChatMessage",
   fields: () => [
     t.field("id", {
@@ -198,7 +247,10 @@ const GraphQLOperationalChatMessageType = t.objectType<
 });
 
 const GraphQLUserChatMessageType = t.objectType<UserChatMessageType>({
-  interfaces: [GraphQLChatMessageInterfaceType],
+  interfaces: [
+    GraphQLChatMessageInterfaceType,
+    GraphQLTextChatMessageInterfaceType,
+  ],
   name: "UserChatMessage",
   description: "A chat message",
   fields: () => [
@@ -298,6 +350,15 @@ const GraphQLChatMessageCreateInputType = t.inputObjectType({
   }),
 });
 
+const GraphQLShareResourceInputType = t.inputObjectType({
+  name: "ShareResourceInput",
+  fields: () => ({
+    contentId: {
+      type: t.NonNullInput(t.ID),
+    },
+  }),
+});
+
 export const mutationFields = [
   t.field("chatMessageCreate", {
     type: t.Boolean,
@@ -314,6 +375,26 @@ export const mutationFields = [
       return null;
     },
   }),
+  t.field("shareResource", {
+    type: t.Boolean,
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLShareResourceInputType)),
+    },
+    resolve: (obj, args, context) => {
+      const user = context.user.get(context.getSessionId());
+      if (!user) return null;
+      const decodedId = NotesModule.decodeNoteId(args.input.contentId);
+      if (E.isLeft(decodedId)) return null;
+
+      context.chat.addSharedResourceMessage({
+        authorName: user.name,
+        resource: {
+          type: "NOTE",
+          id: decodedId.right,
+        },
+      });
+    },
+  }),
 ];
 
 export const objectTypesNotDirectlyExposedOnFields = [
@@ -324,4 +405,5 @@ export const objectTypesNotDirectlyExposedOnFields = [
   GraphQLDiceRollCloseParenNode,
   GraphQLUserChatMessageType,
   GraphQLOperationalChatMessageType,
+  GraphQLSharedResourceChatMessageType,
 ];

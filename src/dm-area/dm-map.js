@@ -20,12 +20,12 @@ import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useDropZone } from "../hooks/use-drop-zone";
 import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
-import { TokenInfoAside, SetActiveNoteIdContext } from "./token-info-aside";
 import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
 import { useToasts } from "react-toast-notifications";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
 import { useConfirmationDialog } from "../hooks/use-confirmation-dialog";
+import { useNoteWindowActions } from "./token-info-aside";
 
 const ShapeButton = styled.button`
   border: none;
@@ -913,15 +913,15 @@ export const DmMap = ({
     [mapCanvasDimensions]
   );
 
-  const setActiveTokenId = React.useContext(SetActiveNoteIdContext);
+  const noteWindowActions = useNoteWindowActions();
 
   const onClickToken = React.useCallback(
     (token) => {
       if (token.reference) {
-        setActiveTokenId(token.reference.id);
+        noteWindowActions.focusOrShowNoteInNewWindow(token.reference.id);
       }
     },
-    [setActiveTokenId]
+    [noteWindowActions]
   );
 
   const onStateChange = useStaticRef(() =>
@@ -1594,7 +1594,7 @@ export const DmMap = ({
           </Toolbar.Group>
         </Toolbar>
       </div>
-      <TokenInfoAside />
+
       {confirmDialogNode}
     </div>
   );

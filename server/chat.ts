@@ -50,6 +50,16 @@ export type ApplicationRecordSchema =
       id: string;
       content: string;
       createdAt: number;
+    }
+  | {
+      type: "SHARED_RESOURCE";
+      id: string;
+      resource: {
+        type: "NOTE";
+        id: string;
+      };
+      authorName: string;
+      createdAt: number;
     };
 
 // We map the result to our own representation
@@ -163,6 +173,19 @@ export const createChat = () => {
     addMessageToStack(message);
   };
 
+  const addSharedResourceMessage = (args: {
+    authorName: string;
+    resource: { type: "NOTE"; id: string };
+  }) => {
+    const message: ApplicationRecordSchema = {
+      id: uuid.v4(),
+      type: "SHARED_RESOURCE",
+      createdAt: new Date().getTime(),
+      ...args,
+    };
+    addMessageToStack(message);
+  };
+
   const addOperationalMessage = (args: { content: string }) => {
     const message: ApplicationRecordSchema = {
       id: uuid.v4(),
@@ -175,6 +198,7 @@ export const createChat = () => {
 
   return {
     addUserMessage,
+    addSharedResourceMessage,
     addOperationalMessage,
     getMessages: () => state,
     subscribe: {

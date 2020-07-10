@@ -5,14 +5,28 @@ import { flow } from "fp-ts/lib/function";
 import { pipe } from "fp-ts/lib/pipeable";
 import toCamelCase from "lodash/camelCase";
 import isObject from "lodash/isObject";
-import uuid from "uuid/v4";
 import * as t from "io-ts";
 import type { Database } from "sqlite";
 
-const NoteModel = t.type({
+const BooleanFromNumber = new t.Type(
+  "BooleanFromNumber",
+  (input: unknown): input is boolean => typeof input === "boolean",
+  (input, context) =>
+    pipe(
+      t.number.validate(input, context),
+      E.chain((value) => {
+        return t.success(Boolean(value));
+      })
+    ),
+  (value) => (value ? 1 : 0)
+);
+
+export const NoteModel = t.type({
   id: t.string,
   title: t.string,
   content: t.string,
+  type: t.union([t.literal("admin"), t.literal("public")]),
+  isEntryPoint: BooleanFromNumber,
   createdAt: t.number,
   updatedAt: t.number,
 });
@@ -56,10 +70,13 @@ export const getNoteById = (
           "id",
           "title",
           "content",
+          "type",
+          "is_entry_point",
           "created_at",
           "updated_at"
         FROM "notes"
-        WHERE "id" = ?;
+        WHERE
+          "id" = ?;
       `,
           id
         ),
@@ -68,7 +85,11 @@ export const getNoteById = (
     TE.chainW(flow(decodeNote, TE.fromEither))
   );
 
-export const getPaginatedNotes = (): RTE.ReaderTaskEither<
+export const getPaginatedNotes = ({
+  maximumAmountOfRecords,
+}: {
+  maximumAmountOfRecords: number;
+}): RTE.ReaderTaskEither<
   { db: Database },
   Error | t.Errors,
   NoteModelType[]
@@ -76,88 +97,77 @@ export const getPaginatedNotes = (): RTE.ReaderTaskEither<
   pipe(
     TE.tryCatch(
       () =>
-        db.all(/* SQL */ `
-          SELECT
-            "id",
-            "title",
-            "content",
-            "created_at",
-            "updated_at"
-          FROM "notes"
-          ORDER BY
-            "created_at" DESC
-          ;
-    `),
+        db.all(
+          /* SQL */ `
+            SELECT
+              "id",
+              "title",
+              "content",
+              "type",
+              "is_entry_point",
+              "created_at",
+              "updated_at"
+            FROM "notes"
+            WHERE
+              "is_entry_point" = 1
+            ORDER BY
+              "created_at" DESC,
+              "id" DESC
+            LIMIT ?
+            ;
+          `,
+          maximumAmountOfRecords
+        ),
       E.toError
     ),
     TE.chainW(decodeNoteList)
   );
 
-export const createNote = ({
-  title,
-  content,
+export const getMorePaginatedNotes = ({
+  lastCreatedAt,
+  lastId,
+  maximumAmountOfRecords,
 }: {
-  title: string;
-  content: string;
-}): RTE.ReaderTaskEither<{ db: Database }, Error | t.Errors, string> => ({
-  db,
-}) => {
-  const id = uuid();
-  const timestamp = getTimestamp();
-  return pipe(
-    TE.tryCatch(
-      () =>
-        db.run(
-          /* SQL */ `
-          INSERT INTO "notes" (
-           "id",
-           "title",
-           "content",
-           "created_at",
-           "updated_at"
-          ) VALUES (?, ?, ?, ?, ?);
-        `,
-          id,
-          title,
-          content,
-          timestamp,
-          timestamp
-        ),
-      E.toError
-    ),
-    TE.map(() => id)
-  );
-};
-
-export const updateNote = ({
-  id,
-  title,
-  content,
-}: {
-  id: string;
-  title: string;
-  content: string;
-}): RTE.ReaderTaskEither<{ db: Database }, Error | t.Errors, string> => ({
-  db,
-}) =>
+  lastCreatedAt: number;
+  lastId: string;
+  maximumAmountOfRecords: number;
+}): RTE.ReaderTaskEither<
+  { db: Database },
+  Error | t.Errors,
+  NoteModelType[]
+> => ({ db }) =>
   pipe(
     TE.tryCatch(
       () =>
-        db.run(
+        db.all(
           /* SQL */ `
-          UPDATE "notes"
-          SET
-            "title" = ?,
-            "content" = ?
-          WHERE "id" = ?;
+            SELECT
+              "id",
+              "title",
+              "content",
+              "type",
+              "is_entry_point",
+              "created_at",
+              "updated_at"
+            FROM
+              "notes"
+            WHERE
+              "created_at" <= ?
+              AND "id" < ?
+              AND "is_entry_point" = 1
+            ORDER BY
+              "created_at" DESC,
+              "id" DESC
+            LIMIT ?
+            ;
           `,
-          title,
-          content,
-          id
+          lastCreatedAt,
+          lastId,
+          maximumAmountOfRecords
         ),
       E.toError
     ),
-    TE.map(() => id)
+    TE.chainW(decodeNoteList)
   );
 
 export const deleteNote = (
@@ -166,16 +176,178 @@ export const deleteNote = (
   db,
 }) =>
   pipe(
+    TE.tryCatch(async () => {
+      await db.run(
+        /* SQL */ `
+          DELETE FROM "notes"
+          WHERE
+            "id" = ?
+          ;
+        `,
+        noteId
+      );
+      await db.run(
+        /* SQL */ `
+          DELETE
+          FROM "notes_search"
+          WHERE
+            "id" = ?
+          ;
+        `,
+        noteId
+      );
+    }, E.toError),
+    TE.map(() => noteId)
+  );
+
+export const updateOrInsertNote = (record: {
+  id: string;
+  title: string;
+  content: string;
+  sanitizedContent: string;
+  access: "public" | "admin";
+  isEntryPoint: boolean;
+}): RTE.ReaderTaskEither<{ db: Database }, Error | t.Errors, string> => ({
+  db,
+}) =>
+  pipe(
+    TE.tryCatch(async () => {
+      await db.run(
+        /* SQL */ `
+          INSERT OR REPLACE INTO "notes" (
+            "id",
+            "title",
+            "content",
+            "type",
+            "is_entry_point",
+            "created_at",
+            "updated_at"
+          ) VALUES (
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            COALESCE((SELECT "created_at" FROM "notes" WHERE id = ?), ?),
+            ?
+          );
+        `,
+        record.id,
+        record.title,
+        record.content,
+        record.access,
+        BooleanFromNumber.encode(record.isEntryPoint),
+        record.id,
+        getTimestamp(),
+        getTimestamp()
+      );
+
+      await db.run(
+        /* SQL */ `
+          INSERT OR REPLACE INTO "notes_search" (
+            "rowid",
+            "id",
+            "title",
+            "content",
+            "access"
+          ) VALUES (
+            COALESCE((SELECT "rowid" FROM "notes_search" WHERE id = ?), NULL),
+            ?,
+            ?,
+            ?,
+            ?
+          );
+        `,
+        record.id,
+        record.id,
+        record.title,
+        record.sanitizedContent,
+        record.access
+      );
+    }, E.toError),
+    TE.map(() => record.id)
+  );
+
+export const NoteSearchMatch = t.type(
+  {
+    noteId: t.string,
+    title: t.string,
+    preview: t.string,
+  },
+  "SearchMatch"
+);
+
+export type NoteSearchMatchType = t.TypeOf<typeof NoteSearchMatch>;
+
+export const NoteSearchMatchList = t.array(NoteSearchMatch);
+
+type NoteSearchMatchListType = t.TypeOf<typeof NoteSearchMatchList>;
+
+export const decodeNoteSearchMatchList = flow(
+  (obj) =>
+    Array.isArray(obj)
+      ? obj.map((obj) => (isObject(obj) ? camelCaseKeys(obj) : obj))
+      : obj,
+  NoteSearchMatchList.decode
+);
+
+export const findAllNotes = (
+  query: string
+): RTE.ReaderTaskEither<
+  { db: Database },
+  Error | t.Errors,
+  NoteSearchMatchListType
+> => ({ db }) =>
+  pipe(
     TE.tryCatch(
       () =>
-        db.run(
+        db.all(
           /* SQL */ `
-          DELETE FROM "notes"
-          WHERE "id" = ?;
+          SELECT
+            "id" as "note_id",
+            "title",
+            snippet("notes_search", 2, '!', '!', "...", 16) as "preview"
+          FROM "notes_search"
+          WHERE
+            "notes_search" MATCH ?
+          ORDER BY bm25("notes_search", 1.0, 100.0, 0.0) ASC
+          LIMIT 10
+          ;
         `,
-          noteId
+          `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*))`
         ),
       E.toError
     ),
-    TE.map(() => noteId)
+    TE.chainW(flow(decodeNoteSearchMatchList, TE.fromEither))
+  );
+
+export const findPublicNotes = (
+  query: string
+): RTE.ReaderTaskEither<
+  { db: Database },
+  Error | t.Errors,
+  NoteSearchMatchListType
+> => ({ db }) =>
+  pipe(
+    TE.tryCatch(
+      () =>
+        db.all(
+          /* SQL */ `
+          SELECT
+            "id" as "note_id",
+            "title",
+            snippet("notes_search", 2, '!', '!', "...", 16) as "preview"
+          FROM "notes_search"
+          WHERE
+            "notes_search" MATCH ?
+          ORDER BY
+            bm25("notes_search", 1.0, 100.0, 0.0) ASC
+          LIMIT 10
+          ;
+        `,
+          `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*)) AND access:"public"`
+        ),
+      E.toError
+    ),
+    TE.chainW(flow(decodeNoteSearchMatchList, TE.fromEither))
   );

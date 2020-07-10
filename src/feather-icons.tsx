@@ -867,3 +867,22 @@ export const InfoIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
     <path d="M12 16v-4M12 8h.01" />{" "}
   </svg>
 );
+
+export const SearchIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <circle cx={11} cy={11} r={8} />
+    <path d="M21 21l-4.35-4.35" />
+  </svg>
+);

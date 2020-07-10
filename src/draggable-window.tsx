@@ -58,20 +58,26 @@ export const DraggableWindow = ({
   headerContent,
   bodyContent,
   onKeyDown,
+  onMouseDown,
   close,
   style,
+  headerLeftContent = null,
   options = [],
+  onDidResize,
 }: {
   headerContent: React.ReactNode;
   bodyContent: React.ReactNode;
   onKeyDown: React.ComponentProps<"div">["onKeyDown"];
+  onMouseDown: React.ComponentProps<"div">["onMouseDown"];
   close: () => void;
   style?: Pick<React.CSSProperties, "top" | "left" | "right">;
+  headerLeftContent?: React.ReactNode;
   options?: {
     title: string;
     onClick: () => void;
     Icon: (p: { height?: number }) => React.ReactElement;
   }[];
+  onDidResize?: () => void;
 }): JSX.Element => {
   const [props, set] = useSpring(() => ({
     x: 0,
@@ -96,10 +102,13 @@ export const DraggableWindow = ({
   const dimensionDragBind = useDrag(
     ({ movement: [mx, my], down }) => {
       set({
-        width: mx,
+        width: Math.max(mx, 300),
         height: my,
         immediate: true,
       });
+      if (down === false) {
+        onDidResize?.();
+      }
     },
     {
       initial: () => [props.width.get(), props.height.get()],
@@ -109,6 +118,7 @@ export const DraggableWindow = ({
   return (
     <WindowContainer
       onKeyDown={onKeyDown}
+      onMouseDown={onMouseDown}
       onContextMenu={(ev) => {
         ev.stopPropagation();
       }}
@@ -120,6 +130,9 @@ export const DraggableWindow = ({
       }}
     >
       <WindowHeader {...bind()} data-draggable>
+        {headerLeftContent ? (
+          <div style={{ flexShrink: 0 }}>{headerLeftContent}</div>
+        ) : null}
         <div
           style={{
             fontWeight: "bold",
@@ -127,7 +140,8 @@ export const DraggableWindow = ({
             whiteSpace: "nowrap",
             overflowY: "hidden",
             textOverflow: "ellipsis",
-            paddingLeft: 4,
+            marginLeft: 4,
+            width: "100%",
           }}
         >
           {headerContent}

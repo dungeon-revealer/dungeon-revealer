@@ -3,6 +3,7 @@ import * as sqlite from "sqlite";
 import * as path from "path";
 import * as migration0 from "./migrations/0";
 import * as migration1 from "./migrations/1";
+import * as migration2 from "./migrations/2";
 
 /**
  * @param {{ dataPath: string }}
@@ -29,6 +30,9 @@ const runMigrations = async (
     }
     case 1: {
       await migration1.migrate({ db, dataPath });
+    }
+    case 2: {
+      await migration2.migrate({ db });
     }
   }
 

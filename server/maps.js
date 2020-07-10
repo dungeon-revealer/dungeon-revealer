@@ -4,7 +4,6 @@ const path = require("path");
 const fs = require("fs-extra");
 const junk = require("junk");
 const uuid = require("uuid/v4");
-const RelayModule = require("./graphql/modules/relay-spec");
 
 const isDirectory = (source) => fs.lstatSync(source).isDirectory();
 
@@ -314,17 +313,10 @@ class Maps {
         if (reference === null) {
           token.reference = null;
         } else {
-          // legacy -> we need to decode the id of notes to the internal representation
-          const maybeId = RelayModule.decodeId(reference.id);
-
-          if (maybeId._tag === "Right") {
-            if (maybeId.right[1] === "Note") {
-              token.reference = reference = {
-                type: reference.type,
-                id: maybeId.right[2],
-              };
-            }
-          }
+          token.reference = reference = {
+            type: reference.type,
+            id: reference.id,
+          };
         }
       }
 

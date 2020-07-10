@@ -3,13 +3,7 @@ import styled from "@emotion/styled/macro";
 import * as Icon from "./feather-icons";
 import { darken } from "polished";
 
-const Container = styled.div`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-`;
-
-const StyledChatToggleButton = styled.button`
+export const IconButton = styled.button`
   position: relative;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
   height: 30px;
@@ -28,7 +22,7 @@ const StyledChatToggleButton = styled.button`
   }
 `;
 
-const Badge = styled.span`
+export const ButtonBadge = styled.span`
   position: absolute;
   top: -2px;
   right: -2px;
@@ -43,11 +37,9 @@ export const ChatToggleButton: React.FC<{
   onClick: React.ComponentProps<"button">["onClick"];
 }> = ({ hasUnreadMessages, onClick }) => {
   return (
-    <Container>
-      <StyledChatToggleButton onClick={onClick}>
-        <Icon.MessageCircleIcon height={20} width={20} />
-        {hasUnreadMessages ? <Badge /> : null}
-      </StyledChatToggleButton>
-    </Container>
+    <IconButton onClick={onClick}>
+      <Icon.MessageCircleIcon height={20} width={20} />
+      {hasUnreadMessages ? <ButtonBadge /> : null}
+    </IconButton>
   );
 };
