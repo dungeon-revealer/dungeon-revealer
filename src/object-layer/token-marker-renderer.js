@@ -23,15 +23,7 @@ const ColorPicker = React.memo(({ color, onChange, styles }) => {
 const TokenContextMenu = ({
   tokenRef,
   position,
-  token: {
-    id: tokenId,
-    label,
-    color,
-    radius,
-    isVisibleForPlayers,
-    isLocked,
-    reference,
-  },
+  token: { label, color, radius, isVisibleForPlayers, isLocked, reference },
   updateToken,
   deleteToken,
   close,
@@ -282,8 +274,9 @@ const TokenContextMenu = ({
   );
 };
 
-export const DmTokenMarker = React.memo(
+export const TokenMarkerRenderer = React.memo(
   ({
+    mode,
     getRelativePosition,
     updateToken,
     deleteToken,
@@ -302,6 +295,8 @@ export const DmTokenMarker = React.memo(
       showSelectTokenMarkerModal,
     ] = useShowSelectNoteModal();
 
+    const [isAnimated, setIsAnimated] = React.useState(true);
+
     return (
       <>
         <TokenMarker
@@ -309,9 +304,12 @@ export const DmTokenMarker = React.memo(
           ratio={ratio}
           {...token}
           cursor={token.reference ? "pointer" : undefined}
-          isAnimated={false}
+          isAnimated={isAnimated}
           onDoubleClick={(ev) => ev.stopPropagation()}
           onClick={(ev) => {
+            if (mode === "player") {
+              return;
+            }
             ev.preventDefault();
             ev.stopPropagation();
             if (isDraggingRef.current === false) {
@@ -321,6 +319,7 @@ export const DmTokenMarker = React.memo(
           }}
           onTouchStart={(ev) => {
             if (token.isLocked) return;
+            setIsAnimated(false);
             ev.preventDefault();
             ev.stopPropagation();
 
@@ -350,6 +349,8 @@ export const DmTokenMarker = React.memo(
               tokenRef.current.setTransform(currentX, currentY);
             };
             const onTouchEnd = (ev) => {
+              setTimeout(() => setIsAnimated(true), 0);
+
               ev.preventDefault();
               ev.stopPropagation();
 
@@ -366,6 +367,7 @@ export const DmTokenMarker = React.memo(
             ev.preventDefault();
             ev.stopPropagation();
             if (ev.button !== 0) return;
+            setIsAnimated(false);
 
             const { x, y } = getRelativePosition({
               x: ev.pageX,
@@ -388,6 +390,7 @@ export const DmTokenMarker = React.memo(
               tokenRef.current.setTransform(x - diffX, y - diffY);
             };
             const onMouseUp = (ev) => {
+              setTimeout(() => setIsAnimated(true), 0);
               ev.preventDefault();
               ev.stopPropagation();
 
@@ -404,6 +407,9 @@ export const DmTokenMarker = React.memo(
             window.addEventListener("mouseup", onMouseUp);
           }}
           onContextMenu={(ev) => {
+            if (mode === "player") {
+              return;
+            }
             ev.preventDefault();
             ev.stopPropagation();
             setContextMenuCoordinates({ x: ev.clientX, y: ev.clientY });

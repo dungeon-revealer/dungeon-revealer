@@ -18,6 +18,8 @@ import { buildApiUrl } from "../public-url";
 import { ImageLightBoxModal } from "../image-lightbox-modal";
 import { AuthenticatedAppShell } from "../authenticated-app-shell";
 import { useSocket } from "../socket";
+import { useStaticRef } from "../hooks/use-static-ref";
+import debounce from "lodash/debounce";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -187,7 +189,7 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
               );
             })
             .catch((err) => {
-              // @TODO: distinguish between network error (rertry?) and cancel error
+              // @TODO: distinguish between network error (retry?) and cancel error
               console.error(err);
             });
           return;
@@ -272,7 +274,7 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
             setShowSplashScreen(false);
           })
           .catch((err) => {
-            // @TODO: distinguish between network error (rertry?) and cancel error
+            // @TODO: distinguish between network error (retry?) and cancel error
             console.error(err);
           });
       };
@@ -390,6 +392,50 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
     socket.emit("mark area", { x: x / ratio, y: y / ratio });
   }, 500);
 
+  const getRelativePosition = React.useCallback(
+    (pageCoordinates) => {
+      const ref = new Referentiel(panZoomRef.current.getDragContainer());
+      if (!ref) return { x: 0, y: 0 };
+      const [x, y] = ref.global_to_local([
+        pageCoordinates.x,
+        pageCoordinates.y,
+      ]);
+      const { ratio } = mapCanvasDimensions.current;
+      return { x: x / ratio, y: y / ratio };
+    },
+    [mapCanvasDimensions]
+  );
+
+  const persistTokenChanges = useStaticRef(() =>
+    debounce((loadedMapId, id, updates, localFetch) => {
+      localFetch(`/map/${loadedMapId}/token/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...updates,
+        }),
+      });
+    }, 100)
+  );
+
+  const updateToken = useCallback(
+    ({ id, ...updates }) => {
+      setCurrentMap(
+        produce((map) => {
+          map.tokens = map.tokens.map((token) => {
+            if (token.id !== id) return token;
+            return { ...token, ...updates };
+          });
+        })
+      );
+
+      persistTokenChanges(currentMap.id, id, updates, fetch);
+    },
+    [currentMap, persistTokenChanges, fetch]
+  );
+
   return (
     <>
       <PanZoom
@@ -412,12 +458,18 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
           />
           <ObjectLayer ref={objectSvgRef}>
             <TokenRenderer
+              mode="player"
               tokens={(currentMap && currentMap.tokens) || []}
               ratio={
                 mapCanvasDimensions.current
                   ? mapCanvasDimensions.current.ratio
                   : 1
               }
+              getRelativePosition={getRelativePosition}
+              updateToken={updateToken}
+              deleteToken={() => Promise.resolve()}
+              isDisabled={false}
+              onClickToken={() => undefined}
             />
 
             <AreaMarkerRenderer
