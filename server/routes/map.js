@@ -366,6 +366,8 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
 
   router.patch("/map/:id/token/:tokenId", roleMiddleware.pc, (req, res) => {
     const map = maps.get(req.params.id);
+    const token = map.tokens?.find((token) => token.id === req.params.tokenId);
+
     if (!map) {
       return res.status(404).json({
         data: null,
@@ -376,10 +378,21 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
       });
     }
 
-    let updates = {
-      x: req.body.x,
-      y: req.body.y,
-    };
+    if (!token || (req.role === "PC" && token.isVisibleForPlayers === false)) {
+      return res.status(404).json({
+        data: null,
+        error: {
+          message: `Token with id '${req.params.tokenId}' does not exist.`,
+          code: "ERR_TOKEN_DOES_NOT_EXIST",
+        },
+      });
+    }
+
+    let updates = {};
+
+    if (req.role === "DM" || (req.role === "PC" && token.isLocked === false)) {
+      updates = { ...updates, x: req.body.x, y: req.body.y };
+    }
 
     if (req.role === "DM") {
       updates = {

@@ -7,7 +7,7 @@ import once from "lodash/once";
 import * as express from "express";
 
 /**
- * Helper function for retreiving the correct data directory.
+ * Helper function for retrieving the correct data directory.
  * In the bundled pkg "binary" we use the execPath.
  */
 export const getDefaultDataDirectory = () => {
