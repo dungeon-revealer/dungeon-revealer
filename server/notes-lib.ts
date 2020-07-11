@@ -128,6 +128,35 @@ export const updateNoteContent = ({
     )
   );
 
+export const updateNoteAccess = ({
+  id,
+  access,
+}: {
+  id: string;
+  access: string;
+}) =>
+  pipe(
+    checkAdmin(null),
+    RTE.chainW(() =>
+      pipe(db.NoteAccessTypeModel.decode(access), RTE.fromEither)
+    ),
+    RTE.chainW((access) =>
+      pipe(
+        db.getNoteById(id),
+        RTE.chainW((note) =>
+          db.updateOrInsertNote({
+            id,
+            title: note.title,
+            content: note.content,
+            access: access,
+            sanitizedContent: sanitizeNoteContent(note.content),
+            isEntryPoint: note.isEntryPoint,
+          })
+        )
+      )
+    )
+  );
+
 export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
   pipe(
     checkAdmin(null),

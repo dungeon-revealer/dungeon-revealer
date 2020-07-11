@@ -9,6 +9,8 @@ import { ChatSettings } from "./chat-settings";
 import { chatSubscription } from "./__generated__/chatSubscription.graphql";
 import { chatQuery } from "./__generated__/chatQuery.graphql";
 import * as Button from "../button";
+import * as HorizontalNavigation from "../horizontal-navigation";
+
 import * as Icon from "../feather-icons";
 import useSound from "use-sound";
 import diceRollSound from "./dice-roll.mp3";
@@ -92,43 +94,6 @@ const ChatWindow = styled.div`
   height: 100%;
   display: flex;
   flex-direction: column;
-`;
-
-type HorizontalNavigationButtonProps = React.ComponentProps<
-  typeof Button.Tertiary
-> & { isActive: boolean };
-
-const HorizontalNavigationButton = styled(Button.Tertiary)<
-  HorizontalNavigationButtonProps
->`
-  border-right: none;
-  border: 1px solid rgb(203, 210, 217);
-  white-space: nowrap;
-
-  background-color: ${(p) => (p.isActive ? "#044e54" : null)};
-  color: ${(p) => (p.isActive ? "#fff" : null)};
-  border-color: ${(p) => (p.isActive ? "#044e54" : null)};
-
-  &:hover {
-    background-color: ${(p) => (p.isActive ? "#044e54" : null)};
-  }
-
-  &:first-child {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    border-right: 0;
-  }
-
-  &:not(:last-child):not(:first-child) {
-    border-radius: unset;
-    border-right: none;
-  }
-
-  &:last-child {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    border-right: 1px solid rgb(203, 210, 217);
-  }
 `;
 
 export const useChatSoundsAndUnreadCount = (chatState: "hidden" | "show") => {
@@ -286,8 +251,8 @@ export const Chat: React.FC<{
                 ev.stopPropagation();
               }}
             >
-              <div style={{ display: "flex", marginBottom: 8 }}>
-                <HorizontalNavigationButton
+              <HorizontalNavigation.Group>
+                <HorizontalNavigation.Button
                   small
                   isActive={mode === "chat"}
                   fullWidth
@@ -295,8 +260,8 @@ export const Chat: React.FC<{
                 >
                   <Icon.MessageCircleIcon height={12} width={12} />
                   <span>Chat</span>
-                </HorizontalNavigationButton>
-                <HorizontalNavigationButton
+                </HorizontalNavigation.Button>
+                <HorizontalNavigation.Button
                   small
                   isActive={mode === "user"}
                   fullWidth
@@ -306,8 +271,8 @@ export const Chat: React.FC<{
                   <span>
                     Users (<ChatOnlineUserIndicator data={props} />)
                   </span>
-                </HorizontalNavigationButton>
-                <HorizontalNavigationButton
+                </HorizontalNavigation.Button>
+                <HorizontalNavigation.Button
                   small
                   isActive={mode === "settings"}
                   fullWidth
@@ -315,8 +280,9 @@ export const Chat: React.FC<{
                 >
                   <Icon.SettingsIcon height={12} width={12} />
                   <span>Settings</span>
-                </HorizontalNavigationButton>
-              </div>
+                </HorizontalNavigation.Button>
+              </HorizontalNavigation.Group>
+              <div style={{ height: 8 }} />
               {mode === "chat" ? (
                 <>
                   <ChatMessages chat={props} />
