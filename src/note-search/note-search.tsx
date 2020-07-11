@@ -18,11 +18,9 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  max-width: 600px;
   width: 100%;
-  margin-left: 24px;
-  margin-right: 24px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  padding-left: 24px;
+  padding-right: 24px;
   z-index: 200;
 `;
 
@@ -30,6 +28,11 @@ const InputLabel = styled.label`
   display: flex;
   font-size: 24px;
   margin-bottom: 12px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 `;
 
 const IconContainer = styled.div`
