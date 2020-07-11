@@ -23,15 +23,7 @@ const ColorPicker = React.memo(({ color, onChange, styles }) => {
 const TokenContextMenu = ({
   tokenRef,
   position,
-  token: {
-    id: tokenId,
-    label,
-    color,
-    radius,
-    isVisibleForPlayers,
-    isLocked,
-    reference,
-  },
+  token: { label, color, radius, isVisibleForPlayers, isLocked, reference },
   updateToken,
   deleteToken,
   close,
@@ -282,8 +274,9 @@ const TokenContextMenu = ({
   );
 };
 
-export const DmTokenMarker = React.memo(
+export const TokenMarkerRenderer = React.memo(
   ({
+    mode,
     getRelativePosition,
     updateToken,
     deleteToken,
@@ -309,9 +302,11 @@ export const DmTokenMarker = React.memo(
           ratio={ratio}
           {...token}
           cursor={token.reference ? "pointer" : undefined}
-          isAnimated={false}
           onDoubleClick={(ev) => ev.stopPropagation()}
           onClick={(ev) => {
+            if (mode === "player") {
+              return;
+            }
             ev.preventDefault();
             ev.stopPropagation();
             if (isDraggingRef.current === false) {
@@ -404,6 +399,9 @@ export const DmTokenMarker = React.memo(
             window.addEventListener("mouseup", onMouseUp);
           }}
           onContextMenu={(ev) => {
+            if (mode === "player") {
+              return;
+            }
             ev.preventDefault();
             ev.stopPropagation();
             setContextMenuCoordinates({ x: ev.clientX, y: ev.clientY });

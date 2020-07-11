@@ -364,8 +364,10 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
       .catch(handleUnexpectedError(res));
   });
 
-  router.patch("/map/:id/token/:tokenId", roleMiddleware.dm, (req, res) => {
+  router.patch("/map/:id/token/:tokenId", roleMiddleware.pc, (req, res) => {
     const map = maps.get(req.params.id);
+    const token = map.tokens?.find((token) => token.id === req.params.tokenId);
+
     if (!map) {
       return res.status(404).json({
         data: null,
@@ -376,12 +378,27 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
       });
     }
 
-    maps
-      .updateToken(map.id, req.params.tokenId, {
+    if (!token || (req.role === "PC" && token.isVisibleForPlayers === false)) {
+      return res.status(404).json({
+        data: null,
+        error: {
+          message: `Token with id '${req.params.tokenId}' does not exist.`,
+          code: "ERR_TOKEN_DOES_NOT_EXIST",
+        },
+      });
+    }
+
+    let updates = {};
+
+    if (req.role === "DM" || (req.role === "PC" && token.isLocked === false)) {
+      updates = { ...updates, x: req.body.x, y: req.body.y };
+    }
+
+    if (req.role === "DM") {
+      updates = {
+        ...updates,
         type: req.body.type,
         label: req.body.label,
-        x: req.body.x,
-        y: req.body.y,
         color: req.body.color,
         radius: req.body.radius,
         isVisibleForPlayers: req.body.isVisibleForPlayers,
@@ -389,7 +406,11 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         title: req.body.title,
         description: req.body.description,
         reference: req.body.reference,
-      })
+      };
+    }
+
+    maps
+      .updateToken(map.id, req.params.tokenId, updates)
       .then(({ token, map }) => {
         res.json({
           error: null,

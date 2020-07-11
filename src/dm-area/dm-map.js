@@ -18,7 +18,7 @@ import { useSvgGrid } from "../hooks/use-svg-grid";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useDropZone } from "../hooks/use-drop-zone";
-import { DmTokenRenderer } from "../object-layer/dm-token-renderer";
+import { TokenRenderer } from "../object-layer/token-renderer";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { buildApiUrl } from "../public-url";
 import { sendRequest } from "../http-request";
@@ -1238,7 +1238,8 @@ export const DmMap = ({
             }}
           >
             {gridRectangleElement}
-            <DmTokenRenderer
+            <TokenRenderer
+              mode="dungeon-master"
               onClickToken={onClickToken}
               tokens={tokens}
               getRelativePosition={getRelativePosition}
