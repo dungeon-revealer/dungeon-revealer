@@ -20,6 +20,7 @@ import { AuthenticatedAppShell } from "../authenticated-app-shell";
 import { useSocket } from "../socket";
 import { useStaticRef } from "../hooks/use-static-ref";
 import debounce from "lodash/debounce";
+import { MapView } from "../map-view";
 
 const ToolbarContainer = styled.div`
   position: absolute;
@@ -73,6 +74,7 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
   const panZoomRef = useRef(null);
   const currentMapRef = useRef(null);
   const [currentMap, setCurrentMap] = useState(null);
+  const [mapImages, setMapImages] = useState(null);
   const [sharedMediaId, setSharedMediaId] = useState(false);
 
   const mapId = currentMap ? currentMap.id : null;
@@ -113,7 +115,7 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
           return;
         }
 
-        const context = mapCanvasRef.current.getContext("2d");
+        // const context = mapCanvasRef.current.getContext("2d");
 
         if (pendingImageLoads.current) {
           pendingImageLoads.current.forEach((task) => {
@@ -128,15 +130,15 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
         if (!data.map) {
           currentMapRef.current = null;
           setCurrentMap(null);
-          mapCanvasDimensions.current = null;
-          mapImageRef.current = null;
+          // mapCanvasDimensions.current = null;
+          // mapImageRef.current = null;
 
-          context.clearRect(
-            0,
-            0,
-            mapCanvasRef.current.width,
-            mapCanvasRef.current.height
-          );
+          // context.clearRect(
+          //   0,
+          //   0,
+          //   mapCanvasRef.current.width,
+          //   mapCanvasRef.current.height
+          // );
           setShowSplashScreen(true);
           return;
         }
@@ -157,36 +159,36 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
             .then((fogImage) => {
               pendingImageLoads.current = null;
 
-              context.clearRect(
-                0,
-                0,
-                mapCanvasRef.current.width,
-                mapCanvasRef.current.height
-              );
-              context.drawImage(
-                mapImageRef.current,
-                0,
-                0,
-                mapCanvasRef.current.width,
-                mapCanvasRef.current.height
-              );
+              // context.clearRect(
+              //   0,
+              //   0,
+              //   mapCanvasRef.current.width,
+              //   mapCanvasRef.current.height
+              // );
+              // context.drawImage(
+              //   mapImageRef.current,
+              //   0,
+              //   0,
+              //   mapCanvasRef.current.width,
+              //   mapCanvasRef.current.height
+              // );
 
-              if (data.map.showGridToPlayers) {
-                drawGridToContext(
-                  data.map.grid,
-                  mapCanvasDimensions.current,
-                  mapCanvasRef.current,
-                  data.map.gridColor
-                );
-              }
+              // if (data.map.showGridToPlayers) {
+              //   drawGridToContext(
+              //     data.map.grid,
+              //     mapCanvasDimensions.current,
+              //     mapCanvasRef.current,
+              //     data.map.gridColor
+              //   );
+              // }
 
-              context.drawImage(
-                fogImage,
-                0,
-                0,
-                mapCanvasRef.current.width,
-                mapCanvasRef.current.height
-              );
+              // context.drawImage(
+              //   fogImage,
+              //   0,
+              //   0,
+              //   mapCanvasRef.current.width,
+              //   mapCanvasRef.current.height
+              // );
             })
             .catch((err) => {
               // @TODO: distinguish between network error (retry?) and cancel error
@@ -200,83 +202,95 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
          */
         currentMapRef.current = data.map;
 
-        const tasks = [
-          loadImage(
-            buildApiUrl(
-              // prettier-ignore
-              `/map/${data.map.id}/map?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
-            )
+        // const tasks = [
+        //   loadImage(
+        //     buildApiUrl(
+        //       // prettier-ignore
+        //       `/map/${data.map.id}/map?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
+        //     )
+        //   ),
+        //   loadImage(
+        //     buildApiUrl(
+        //       // prettier-ignore
+        //       `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
+        //     )
+        //   ),
+        // ];
+        // pendingImageLoads.current = tasks;
+
+        // Promise.all(tasks.map((task) => task.promise))
+        //   .then(([map, fog]) => {
+        // pendingImageLoads.current = null;
+
+        // mapImageRef.current = map;
+        // const mapCanvas = mapCanvasRef.current;
+        // const objectSvg = objectSvgRef.current;
+        // const mapContainer = mapContainerRef.current;
+
+        // const mapContext = mapCanvas.getContext("2d");
+
+        // const canvasDimensions = getOptimalDimensions(
+        //   map.width,
+        //   map.height,
+        //   9000,
+        //   9000
+        // );
+
+        // mapCanvas.width = canvasDimensions.width;
+        // mapCanvas.height = canvasDimensions.height;
+        // objectSvg.setAttribute("width", canvasDimensions.width);
+        // objectSvg.setAttribute("height", canvasDimensions.height);
+
+        // mapCanvasDimensions.current = canvasDimensions;
+        setCurrentMap(data.map);
+        setMapImages([
+          buildApiUrl(
+            `/map/${data.map.id}/map?cache_buster=${
+              cacheBusterRef.current
+            }&authorization=${encodeURIComponent(pcPassword)}`
           ),
-          loadImage(
-            buildApiUrl(
-              // prettier-ignore
-              `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
-            )
+          buildApiUrl(
+            `/map/${data.map.id}/fog-live?cache_buster=${
+              cacheBusterRef.current
+            }&authorization=${encodeURIComponent(pcPassword)}`
           ),
-        ];
-        pendingImageLoads.current = tasks;
+        ]);
 
-        Promise.all(tasks.map((task) => task.promise))
-          .then(([map, fog]) => {
-            pendingImageLoads.current = null;
+        // const widthPx = `${canvasDimensions.width}px`;
+        // const heightPx = `${canvasDimensions.height}px`;
+        // mapCanvas.style.width = mapContainer.style.width = objectSvg.style.width = widthPx;
+        // mapCanvas.style.height = mapContainer.style.height = objectSvg.style.height = heightPx;
 
-            mapImageRef.current = map;
-            const mapCanvas = mapCanvasRef.current;
-            const objectSvg = objectSvgRef.current;
-            const mapContainer = mapContainerRef.current;
+        // mapContext.drawImage(
+        //   map,
+        //   0,
+        //   0,
+        //   canvasDimensions.width,
+        //   canvasDimensions.height
+        // );
+        // if (data.map.showGridToPlayers) {
+        //   drawGridToContext(
+        //     data.map.grid,
+        //     canvasDimensions,
+        //     mapCanvas,
+        //     data.map.gridColor
+        //   );
+        // }
+        // mapContext.drawImage(
+        //   fog,
+        //   0,
+        //   0,
+        //   canvasDimensions.width,
+        //   canvasDimensions.height
+        // );
 
-            const mapContext = mapCanvas.getContext("2d");
-
-            const canvasDimensions = getOptimalDimensions(
-              map.width,
-              map.height,
-              9000,
-              9000
-            );
-
-            mapCanvas.width = canvasDimensions.width;
-            mapCanvas.height = canvasDimensions.height;
-            objectSvg.setAttribute("width", canvasDimensions.width);
-            objectSvg.setAttribute("height", canvasDimensions.height);
-
-            mapCanvasDimensions.current = canvasDimensions;
-            setCurrentMap(data.map);
-
-            const widthPx = `${canvasDimensions.width}px`;
-            const heightPx = `${canvasDimensions.height}px`;
-            mapCanvas.style.width = mapContainer.style.width = objectSvg.style.width = widthPx;
-            mapCanvas.style.height = mapContainer.style.height = objectSvg.style.height = heightPx;
-
-            mapContext.drawImage(
-              map,
-              0,
-              0,
-              canvasDimensions.width,
-              canvasDimensions.height
-            );
-            if (data.map.showGridToPlayers) {
-              drawGridToContext(
-                data.map.grid,
-                canvasDimensions,
-                mapCanvas,
-                data.map.gridColor
-              );
-            }
-            mapContext.drawImage(
-              fog,
-              0,
-              0,
-              canvasDimensions.width,
-              canvasDimensions.height
-            );
-
-            centerMap(false);
-            setShowSplashScreen(false);
-          })
-          .catch((err) => {
-            // @TODO: distinguish between network error (retry?) and cancel error
-            console.error(err);
-          });
+        // centerMap(false);
+        setShowSplashScreen(false);
+        // })
+        // .catch((err) => {
+        //   // @TODO: distinguish between network error (retry?) and cancel error
+        //   console.error(err);
+        // });
       };
 
       const {
@@ -438,7 +452,16 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
 
   return (
     <>
-      <PanZoom
+      <div
+        style={{
+          cursor: "grab",
+          background: "black",
+          height: "100vh",
+        }}
+      >
+        <MapView images={mapImages} />
+      </div>
+      {/* <PanZoom
         style={{
           cursor: "grab",
           background: "black",
@@ -478,7 +501,7 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
             />
           </ObjectLayer>
         </div>
-      </PanZoom>
+      </PanZoom> */}
       {!showSplashScreen ? (
         <ToolbarContainer>
           <Toolbar horizontal>
