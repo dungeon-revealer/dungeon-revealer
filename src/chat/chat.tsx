@@ -22,6 +22,7 @@ import { chatUserUpdateSubscription } from "./__generated__/chatUserUpdateSubscr
 import { ChatOnlineUserIndicator } from "./chat-online-user-indicator";
 import { isAbstractGraphQLMemberType } from "../relay-utilities";
 import { chatMessageSoundSubscription } from "./__generated__/chatMessageSoundSubscription.graphql";
+import { useSoundSettings } from "../sound-settings";
 
 const AppSubscription = graphql`
   subscription chatSubscription {
@@ -105,12 +106,21 @@ export const useChatSoundsAndUnreadCount = (chatState: "hidden" | "show") => {
   const [playNotificationSound] = useSound(notificationSound, {
     volume: 0.5,
   });
+  const soundSettings = useSoundSettings();
+
   const refs = React.useRef({
     playDiceRollSound,
     playNotificationSound,
     chatState,
+    soundSettings,
   });
-  refs.current = { playDiceRollSound, playNotificationSound, chatState };
+
+  refs.current = {
+    playDiceRollSound,
+    playNotificationSound,
+    chatState,
+    soundSettings,
+  };
 
   React.useEffect(() => {
     const subscription = requestSubscription<chatMessageSoundSubscription>(
@@ -130,9 +140,15 @@ export const useChatSoundsAndUnreadCount = (chatState: "hidden" | "show") => {
               mode = "dice-roll-message";
             }
 
-            if (mode === "text-message") {
+            if (
+              mode === "text-message" &&
+              refs.current.soundSettings.value === "all"
+            ) {
               refs.current.playNotificationSound();
-            } else if (mode === "dice-roll-message") {
+            } else if (
+              mode === "dice-roll-message" &&
+              refs.current.soundSettings.value !== "none"
+            ) {
               refs.current.playDiceRollSound();
             }
 

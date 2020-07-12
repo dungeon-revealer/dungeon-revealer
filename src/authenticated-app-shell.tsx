@@ -16,6 +16,7 @@ import {
   NoteWindowContextProvider,
 } from "./dm-area/token-info-aside";
 import * as Icon from "./feather-icons";
+import { SoundSettingsProvider } from "./sound-settings";
 
 const useShowChatState = createPersistedState("chat.state");
 const useShowDiceRollNotesState = createPersistedState(
@@ -197,8 +198,12 @@ export const AuthenticatedAppShell: React.FC<{
   }
 
   return (
-    <RelayEnvironmentProvider environment={relayEnvironment}>
-      <AuthenticatedAppShellRenderer>{children}</AuthenticatedAppShellRenderer>
-    </RelayEnvironmentProvider>
+    <SoundSettingsProvider>
+      <RelayEnvironmentProvider environment={relayEnvironment}>
+        <AuthenticatedAppShellRenderer>
+          {children}
+        </AuthenticatedAppShellRenderer>
+      </RelayEnvironmentProvider>
+    </SoundSettingsProvider>
   );
 };
