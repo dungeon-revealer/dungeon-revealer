@@ -74,7 +74,7 @@ export const DraggableWindow = ({
   headerLeftContent?: React.ReactNode;
   options?: {
     title: string;
-    onClick: () => void;
+    onClick: (ev: React.MouseEvent) => void;
     Icon: (p: { height?: number }) => React.ReactElement;
   }[];
   onDidResize?: () => void;
@@ -136,11 +136,11 @@ export const DraggableWindow = ({
         <div
           style={{
             fontWeight: "bold",
-            marginRight: "auto",
             whiteSpace: "nowrap",
             overflowY: "hidden",
             textOverflow: "ellipsis",
             marginLeft: 4,
+            marginRight: 4,
             width: "100%",
           }}
         >

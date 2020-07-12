@@ -289,7 +289,7 @@ const Actions = styled.div`
 
 const ActionGroup = styled.div<{ left?: boolean }>`
   margin-left: ${(p) => (p.left ? "0" : "20px")};
-  margin-right: ${(p) => (p.left ? "auto" : "null")};
+  margin-right: ${(p) => (p.left ? "auto" : null)};
 
   > * {
     margin-left: 18px;

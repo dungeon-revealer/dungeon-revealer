@@ -75,6 +75,8 @@ const ResultContainer = styled.div`
   width: 100%;
   display: flex;
   flex-wrap: wrap;
+  margin-left: auto;
+  margin-right: auto;
 `;
 
 const Result = styled.button`

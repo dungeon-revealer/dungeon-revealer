@@ -11,6 +11,7 @@ import { noteEditor_ActiveItemQuery } from "./__generated__/noteEditor_ActiveIte
 
 import { Modal } from "../../modal";
 import * as Button from "../../button";
+import * as HorizontalNavigation from "../../horizontal-navigation";
 import * as Icons from "../../feather-icons";
 import { NoteEditorSideBar } from "./note-editor-side-bar";
 import { NoteEditorActiveItem } from "./note-editor-active-item";
@@ -18,6 +19,7 @@ import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
 import styled from "@emotion/styled/macro";
 import { QueryRenderer } from "react-relay";
 import { useNoteTitleAutoSave } from "../../hooks/use-note-title-auto-save";
+import { noteEditor_noteUpdateAccessMutation } from "./__generated__/noteEditor_noteUpdateAccessMutation.graphql";
 
 const NoteEditor_NoteDeleteMutation = graphql`
   mutation noteEditor_NoteDeleteMutation($input: NoteDeleteInput!) {
@@ -36,6 +38,7 @@ const NoteEditor_NoteCreateMutation = graphql`
         documentId
         title
         content
+        access
       }
     }
   }
@@ -46,7 +49,20 @@ const NoteEditor_ActiveItemQuery = graphql`
     note(documentId: $documentId) {
       id
       title
+      access
       ...noteEditorActiveItem_nodeFragment
+    }
+  }
+`;
+
+const NoteEditor_NoteUpdateAccessMutation = graphql`
+  mutation noteEditor_noteUpdateAccessMutation($input: NoteUpdateAccessInput!) {
+    noteUpdateAccess(input: $input) {
+      note {
+        id
+        access
+        viewerCanShare
+      }
     }
   }
 `;
@@ -93,6 +109,9 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [createNoteMutation] = useMutation<noteEditor_NoteCreateMutation>(
     NoteEditor_NoteCreateMutation
   );
+  const [updateNoteAccessMutation] = useMutation<
+    noteEditor_noteUpdateAccessMutation
+  >(NoteEditor_NoteUpdateAccessMutation);
 
   const sideBarData = useQuery<noteEditor_SideBarQuery>(
     NoteEditor_SideBarQuery,
@@ -214,7 +233,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       />
                       <Modal.Footer>
                         <Modal.Actions>
-                          <Modal.ActionGroup>
+                          <Modal.ActionGroup left>
                             <Button.Tertiary
                               onClick={() => {
                                 showConfirmationDialog({
@@ -258,6 +277,46 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                               <Icons.TrashIcon height={20} width={20} />
                               <span>Delete Note</span>
                             </Button.Tertiary>
+                          </Modal.ActionGroup>
+                          <Modal.ActionGroup>
+                            <HorizontalNavigation.Group
+                              style={{ marginRight: 8 }}
+                            >
+                              <HorizontalNavigation.Button
+                                isActive={props.note.access === "admin"}
+                                onClick={() =>
+                                  props.note
+                                    ? updateNoteAccessMutation({
+                                        variables: {
+                                          input: {
+                                            id: props.note.id,
+                                            access: "admin",
+                                          },
+                                        },
+                                      })
+                                    : null
+                                }
+                              >
+                                Admin
+                              </HorizontalNavigation.Button>
+                              <HorizontalNavigation.Button
+                                isActive={props.note.access === "public"}
+                                onClick={() =>
+                                  props.note
+                                    ? updateNoteAccessMutation({
+                                        variables: {
+                                          input: {
+                                            id: props.note.id,
+                                            access: "public",
+                                          },
+                                        },
+                                      })
+                                    : null
+                                }
+                              >
+                                Public
+                              </HorizontalNavigation.Button>
+                            </HorizontalNavigation.Group>
                             {isEditMode ? (
                               <Button.Primary
                                 onClick={() => setIsEditMode(false)}

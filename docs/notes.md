@@ -106,7 +106,7 @@ This allows easily defining triggers for multiple skill checks or weapon attacks
         <BoxColumn>
         <div style="font-weight:bold;color:#B71C1C">{title}</div>
         </BoxCoumn>
-        
+
       </BoxRow>
       <BoxRow>
         <BoxColumn>{{attribute1}}</BoxColumn>
@@ -134,3 +134,27 @@ This allows easily defining triggers for multiple skill checks or weapon attacks
  Schwimmen Probe
 </ChatMacro>
 ```
+
+## Import Notes
+
+As the admin it is possible to import markdown files into dungeon-revealer.
+You can either drag & drop a `.zip` archive containing markdown files or a single markdown file into the dungeon-master section for starting an import.
+
+The files must follow this format convention:
+
+```md
+---
+id: unique-id
+title: The title of the note
+is_entry_point: true
+---
+
+This is the text of the note. It can contain any type of markdown. Such as **bold text** or [links](http://google.de).
+```
+
+The markdown files **MUST** start with a header constrained by `---`.
+Each line represents a value:
+
+- **`id`**. A global unique id for all notes. When importing a lot files it is recommended to prefix them with something like `collection-1-` to avoid clashes with other notes.
+- **`title`**. The title of the note.
+- **`is_entry_point`**. Either `true` or `false` depending on whether the note should pop-up in the notes library as an entry point or not.

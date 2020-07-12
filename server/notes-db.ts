@@ -21,11 +21,16 @@ const BooleanFromNumber = new t.Type(
   (value) => (value ? 1 : 0)
 );
 
+export const NoteAccessTypeModel = t.union([
+  t.literal("admin"),
+  t.literal("public"),
+]);
+
 export const NoteModel = t.type({
   id: t.string,
   title: t.string,
   content: t.string,
-  type: t.union([t.literal("admin"), t.literal("public")]),
+  type: NoteAccessTypeModel,
   isEntryPoint: BooleanFromNumber,
   createdAt: t.number,
   updatedAt: t.number,

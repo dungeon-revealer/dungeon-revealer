@@ -3,7 +3,7 @@ import styled from "@emotion/styled/macro";
 import graphql from "babel-plugin-relay/macro";
 import { useNoteWindows, useNoteWindowActions } from ".";
 import { NoteEditorActiveItem } from "../note-editor/note-editor-active-item";
-import { useQuery, useMutation } from "relay-hooks";
+import { useQuery, useMutation, useFragment } from "relay-hooks";
 import type {
   tokenInfoAside_nodeQuery,
   tokenInfoAside_nodeQueryResponse,
@@ -11,9 +11,20 @@ import type {
 import { DraggableWindow } from "../../draggable-window";
 import * as Icon from "../../feather-icons";
 import * as Button from "../../button";
+import * as HorizontalNavigation from "../../horizontal-navigation";
 import { tokenInfoAside_shareNoteMutation } from "./__generated__/tokenInfoAside_shareNoteMutation.graphql";
+import { tokenInfoAside_permissionsPopUpFragment$key } from "./__generated__/tokenInfoAside_permissionsPopUpFragment.graphql";
 import { useCurrent } from "../../hooks/use-current";
 import { useNoteTitleAutoSave } from "../../hooks/use-note-title-auto-save";
+import { useOnClickOutside } from "../../hooks/use-on-click-outside";
+import { tokenInfoAside_noteUpdateAccessMutation } from "./__generated__/tokenInfoAside_noteUpdateAccessMutation.graphql";
+
+const TokenInfoAside_permissionsPopUpFragment = graphql`
+  fragment tokenInfoAside_permissionsPopUpFragment on Note {
+    id
+    access
+  }
+`;
 
 const TokenInfoAside_nodeQuery = graphql`
   query tokenInfoAside_nodeQuery($documentId: ID!) {
@@ -23,6 +34,7 @@ const TokenInfoAside_nodeQuery = graphql`
       viewerCanEdit
       viewerCanShare
       ...noteEditorActiveItem_nodeFragment
+      ...tokenInfoAside_permissionsPopUpFragment
     }
   }
 `;
@@ -33,14 +45,15 @@ const TokenInfoAside_shareResourceMutation = graphql`
   }
 `;
 
-const TokenInfoAside_noteUpdateTitleMutation = graphql`
-  mutation tokenInfoAside_noteUpdateTitleMutation(
-    $input: NoteUpdateTitleInput!
+const TokenInfoAside_noteUpdateAccessMutation = graphql`
+  mutation tokenInfoAside_noteUpdateAccessMutation(
+    $input: NoteUpdateAccessInput!
   ) {
-    noteUpdateTitle(input: $input) {
+    noteUpdateAccess(input: $input) {
       note {
         id
-        title
+        access
+        viewerCanShare
       }
     }
   }
@@ -78,6 +91,70 @@ const TitleAutoSaveInput: React.FC<{ id: string; title: string }> = (props) => {
   );
 };
 
+const PermissionLabel = styled.div`
+  font-size: 10px;
+  line-height: 10px;
+  display: block;
+  margin-bottom: 6px;
+  font-weight: bold;
+`;
+
+const PermissionMenuContainer = styled.div`
+  background-color: white;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  padding: 8px;
+  position: absolute;
+  z-index: 900;
+`;
+
+const PermissionsMenu: React.FC<{
+  close: () => void;
+  position: { x: number; y: number };
+  fragmentRef: tokenInfoAside_permissionsPopUpFragment$key;
+}> = (props) => {
+  const data = useFragment(
+    TokenInfoAside_permissionsPopUpFragment,
+    props.fragmentRef
+  );
+  const [mutate] = useMutation<tokenInfoAside_noteUpdateAccessMutation>(
+    TokenInfoAside_noteUpdateAccessMutation
+  );
+  const ref = useOnClickOutside<HTMLDivElement>(props.close);
+
+  return (
+    <PermissionMenuContainer
+      ref={ref}
+      style={{
+        top: props.position.y,
+        left: props.position.x,
+      }}
+    >
+      <PermissionLabel style={{ fontSize: 10 }}>Access</PermissionLabel>
+      <HorizontalNavigation.Group>
+        <HorizontalNavigation.Button
+          small
+          isActive={data.access === "admin"}
+          onClick={() =>
+            mutate({ variables: { input: { id: data.id, access: "admin" } } })
+          }
+        >
+          Admin
+        </HorizontalNavigation.Button>
+        <HorizontalNavigation.Button
+          small
+          isActive={data.access === "public"}
+          onClick={() =>
+            mutate({ variables: { input: { id: data.id, access: "public" } } })
+          }
+        >
+          Public
+        </HorizontalNavigation.Button>
+      </HorizontalNavigation.Group>
+    </PermissionMenuContainer>
+  );
+};
+
 const WindowRenderer: React.FC<{
   windowId: string;
   noteId: string;
@@ -102,6 +179,10 @@ const WindowRenderer: React.FC<{
     TokenInfoAside_shareResourceMutation
   );
 
+  const [permissionPopUpNode, setPermissionPopUpNode] = React.useState<
+    React.ReactNode
+  >(null);
+
   const canEditOptions = node?.viewerCanEdit
     ? [
         {
@@ -109,6 +190,21 @@ const WindowRenderer: React.FC<{
           title: isEditMode ? "Save" : "Edit",
           //TODO: Make types more strict
           Icon: isEditMode ? (Icon.SaveIcon as any) : (Icon.EditIcon as any),
+        },
+        {
+          onClick: (ev: React.MouseEvent) => {
+            if (!node) return;
+            const coords = ev.currentTarget.getBoundingClientRect();
+            setPermissionPopUpNode(
+              <PermissionsMenu
+                close={() => setPermissionPopUpNode(null)}
+                position={{ x: coords.left, y: coords.bottom }}
+                fragmentRef={node}
+              />
+            );
+          },
+          title: "Edit permissions",
+          Icon: Icon.ShieldIcon as any,
         },
       ]
     : [];
@@ -218,6 +314,7 @@ const WindowRenderer: React.FC<{
           editorOnResizeRef.current?.();
         }}
       />
+      {permissionPopUpNode}
     </WindowContext.Provider>
   );
 };
