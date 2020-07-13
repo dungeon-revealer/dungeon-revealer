@@ -26,8 +26,8 @@
     "postinstall": "patch-package",
     "start": "node ./bin/dungeon-revealer",
     "test": "jest --passWithNoTests",
-    "start:frontend:dev": "cross-env PORT=3001 EXTEND_ESLINT=true react-scripts start",
-    "start:server:dev": "ts-node-dev --project server/tsconfig.json server/index.js",
+    "start:frontend:dev": "cross-env PORT=3001 EXTEND_ESLINT=true SKIP_TYPE_CHECK=true react-scripts start",
+    "start:server:dev": "ts-node-dev --project server/tsconfig.json --no-deps server/index.js",
     "relay-compiler": "relay-compiler",
     "write-schema": "ts-node --project ./server/tsconfig.json  ./scripts/write-graphql-schema.ts",
     "patch-package": "patch-package"
@@ -139,7 +139,7 @@
     "relay-runtime": "9.1.0",
     "socket.io-client": "2.3.0",
     "ts-jest": "26.1.1",
-    "ts-node-dev": "1.0.0-pre.50",
+    "ts-node-dev": "1.0.0-pre.51",
     "typescript": "3.9.6",
     "use-persisted-state": "0.3.0",
     "use-sound": "1.0.2"
