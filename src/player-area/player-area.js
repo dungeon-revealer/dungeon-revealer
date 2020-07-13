@@ -80,6 +80,8 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
   const mapId = currentMap ? currentMap.id : null;
   const [showSplashScreen, setShowSplashScreen] = useState(true);
 
+  const controlRef = React.useRef(null);
+
   /**
    * used for canceling pending requests in case there is a new update incoming.
    * should be either null or an array of tasks returned by loadImage
@@ -115,30 +117,12 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
           return;
         }
 
-        // const context = mapCanvasRef.current.getContext("2d");
-
-        if (pendingImageLoads.current) {
-          pendingImageLoads.current.forEach((task) => {
-            task.cancel();
-          });
-          pendingImageLoads.current = null;
-        }
-
         /**
          * Hide map (show splashscreen)
          */
         if (!data.map) {
           currentMapRef.current = null;
           setCurrentMap(null);
-          // mapCanvasDimensions.current = null;
-          // mapImageRef.current = null;
-
-          // context.clearRect(
-          //   0,
-          //   0,
-          //   mapCanvasRef.current.width,
-          //   mapCanvasRef.current.height
-          // );
           setShowSplashScreen(true);
           return;
         }
@@ -146,54 +130,12 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
          * Fog has updated
          */
         if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
-          const task = loadImage(
-            buildApiUrl(
-              // prettier-ignore
-              `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
-            )
+          const imageUrl = buildApiUrl(
+            // prettier-ignore
+            `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
           );
+          setMapImages((mapImages) => [mapImages[0], imageUrl]);
           cacheBusterRef.current = cacheBusterRef.current + 1;
-          pendingImageLoads.current = [task];
-
-          task.promise
-            .then((fogImage) => {
-              pendingImageLoads.current = null;
-
-              // context.clearRect(
-              //   0,
-              //   0,
-              //   mapCanvasRef.current.width,
-              //   mapCanvasRef.current.height
-              // );
-              // context.drawImage(
-              //   mapImageRef.current,
-              //   0,
-              //   0,
-              //   mapCanvasRef.current.width,
-              //   mapCanvasRef.current.height
-              // );
-
-              // if (data.map.showGridToPlayers) {
-              //   drawGridToContext(
-              //     data.map.grid,
-              //     mapCanvasDimensions.current,
-              //     mapCanvasRef.current,
-              //     data.map.gridColor
-              //   );
-              // }
-
-              // context.drawImage(
-              //   fogImage,
-              //   0,
-              //   0,
-              //   mapCanvasRef.current.width,
-              //   mapCanvasRef.current.height
-              // );
-            })
-            .catch((err) => {
-              // @TODO: distinguish between network error (retry?) and cancel error
-              console.error(err);
-            });
           return;
         }
 
@@ -201,47 +143,8 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
          * Load new map
          */
         currentMapRef.current = data.map;
+        mapImageRef.current = data.map;
 
-        // const tasks = [
-        //   loadImage(
-        //     buildApiUrl(
-        //       // prettier-ignore
-        //       `/map/${data.map.id}/map?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
-        //     )
-        //   ),
-        //   loadImage(
-        //     buildApiUrl(
-        //       // prettier-ignore
-        //       `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
-        //     )
-        //   ),
-        // ];
-        // pendingImageLoads.current = tasks;
-
-        // Promise.all(tasks.map((task) => task.promise))
-        //   .then(([map, fog]) => {
-        // pendingImageLoads.current = null;
-
-        // mapImageRef.current = map;
-        // const mapCanvas = mapCanvasRef.current;
-        // const objectSvg = objectSvgRef.current;
-        // const mapContainer = mapContainerRef.current;
-
-        // const mapContext = mapCanvas.getContext("2d");
-
-        // const canvasDimensions = getOptimalDimensions(
-        //   map.width,
-        //   map.height,
-        //   9000,
-        //   9000
-        // );
-
-        // mapCanvas.width = canvasDimensions.width;
-        // mapCanvas.height = canvasDimensions.height;
-        // objectSvg.setAttribute("width", canvasDimensions.width);
-        // objectSvg.setAttribute("height", canvasDimensions.height);
-
-        // mapCanvasDimensions.current = canvasDimensions;
         setCurrentMap(data.map);
         setMapImages([
           buildApiUrl(
@@ -255,42 +158,7 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
             }&authorization=${encodeURIComponent(pcPassword)}`
           ),
         ]);
-
-        // const widthPx = `${canvasDimensions.width}px`;
-        // const heightPx = `${canvasDimensions.height}px`;
-        // mapCanvas.style.width = mapContainer.style.width = objectSvg.style.width = widthPx;
-        // mapCanvas.style.height = mapContainer.style.height = objectSvg.style.height = heightPx;
-
-        // mapContext.drawImage(
-        //   map,
-        //   0,
-        //   0,
-        //   canvasDimensions.width,
-        //   canvasDimensions.height
-        // );
-        // if (data.map.showGridToPlayers) {
-        //   drawGridToContext(
-        //     data.map.grid,
-        //     canvasDimensions,
-        //     mapCanvas,
-        //     data.map.gridColor
-        //   );
-        // }
-        // mapContext.drawImage(
-        //   fog,
-        //   0,
-        //   0,
-        //   canvasDimensions.width,
-        //   canvasDimensions.height
-        // );
-
-        // centerMap(false);
         setShowSplashScreen(false);
-        // })
-        // .catch((err) => {
-        //   // @TODO: distinguish between network error (retry?) and cancel error
-        //   console.error(err);
-        // });
       };
 
       const {
@@ -459,49 +327,8 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
           height: "100vh",
         }}
       >
-        <MapView images={mapImages} />
+        <MapView images={mapImages} controlRef={controlRef} />
       </div>
-      {/* <PanZoom
-        style={{
-          cursor: "grab",
-          background: "black",
-          height: "100vh",
-        }}
-        ref={panZoomRef}
-        {...longPressProps}
-      >
-        <div ref={mapContainerRef}>
-          <canvas
-            ref={mapCanvasRef}
-            style={{
-              pointerEvents: "none",
-              backfaceVisibility: "hidden",
-              position: "absolute",
-            }}
-          />
-          <ObjectLayer ref={objectSvgRef}>
-            <TokenRenderer
-              mode="player"
-              tokens={(currentMap && currentMap.tokens) || []}
-              ratio={
-                mapCanvasDimensions.current
-                  ? mapCanvasDimensions.current.ratio
-                  : 1
-              }
-              getRelativePosition={getRelativePosition}
-              updateToken={updateToken}
-              deleteToken={() => Promise.resolve()}
-              isDisabled={false}
-              onClickToken={() => undefined}
-            />
-
-            <AreaMarkerRenderer
-              markedAreas={markedAreas}
-              setMarkedAreas={setMarkedAreas}
-            />
-          </ObjectLayer>
-        </div>
-      </PanZoom> */}
       {!showSplashScreen ? (
         <ToolbarContainer>
           <Toolbar horizontal>
@@ -510,11 +337,11 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
               <Toolbar.Item isActive>
                 <Toolbar.Button
                   onClick={() => {
-                    centerMap();
+                    controlRef.current.center();
                   }}
                   onTouchStart={(ev) => {
                     ev.preventDefault();
-                    centerMap();
+                    controlRef.current.center();
                   }}
                 >
                   <Icons.Compass />

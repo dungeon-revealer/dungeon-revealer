@@ -15,34 +15,11 @@ const Plane: React.FC<{}> = ({}) => {
   );
 };
 
-const Texture: React.FC<{ texture: THREE.Texture }> = (props) => {
-  const dimensions = React.useMemo(() => {
-    if (!props.texture.image) {
-      return [1, 1] as [number, number];
-    }
-
-    const { naturalWidth, naturalHeight } = props.texture.image;
-    const optimalDimensions = getOptimalDimensions(
-      naturalWidth,
-      naturalHeight,
-      10,
-      10
-    );
-    return [optimalDimensions.width, optimalDimensions.height] as [
-      number,
-      number
-    ];
-  }, [props.texture.image]);
-
-  return (
-    <mesh>
-      <planeBufferGeometry attach="geometry" args={dimensions} />
-      <meshStandardMaterial attach="material" map={props.texture} />
-    </mesh>
-  );
-};
-
-const MapRenderer: React.FC<{ map: string; fog: string }> = (props) => {
+const MapRenderer: React.FC<{
+  map: string;
+  fog: string;
+  viewport: { height: number; width: number };
+}> = (props) => {
   const mapImage = useLoader(TextureLoader, props.map);
   const fogImage = useLoader(TextureLoader, props.fog);
 
@@ -54,15 +31,15 @@ const MapRenderer: React.FC<{ map: string; fog: string }> = (props) => {
     const optimalDimensions = getOptimalDimensions(
       mapImage.image.naturalWidth,
       mapImage.image.naturalHeight,
-      10,
-      10
+      props.viewport.width * 0.95,
+      props.viewport.height * 0.95
     );
 
     return [optimalDimensions.width, optimalDimensions.height] as [
       number,
       number
     ];
-  }, [mapImage, fogImage]);
+  }, [mapImage, fogImage, props.viewport]);
 
   return dimensions ? (
     <>
@@ -127,11 +104,9 @@ const getTranslateOffsetsFromScale = ({
   currentTranslate: [number, number];
   aspect: number;
 }) => {
-  //console.log(touchOriginX, touchOriginY);
   // Get the (x,y) touch position relative to image origin at the current scale
   const imageCoordX = (touchOriginX - imageTopLeftX - imageWidth / 2) / scale;
   const imageCoordY = (touchOriginY - imageTopLeftY - imageHeight / 2) / scale;
-  // console.log(imageCoordX, imageCoordY);
   // Calculate translateX/Y offset at the next scale to zoom to touch position
   const newTranslateX =
     (-imageCoordX * pinchDelta + translateX * aspect) / aspect;
@@ -141,32 +116,58 @@ const getTranslateOffsetsFromScale = ({
   return [newTranslateX, newTranslateY];
 };
 
-// without this the pinch-zoom on desktop (chrome osx) is interfered by wheel events
-document.addEventListener(
-  "wheel",
-  (e) => {
-    e.preventDefault();
-  },
-  { passive: false }
-);
-document.addEventListener("gesturestart", (e) => e.preventDefault(), false);
-document.addEventListener("gesturechange", (e) => e.preventDefault(), false);
+type ControlInterface = {
+  center: () => void;
+};
 
 export const MapView: React.FC<{
   images: [string, string] | null;
+  tokens: { id: string; radius: number; color: string; x: number; y: number };
+  controlRef?: React.MutableRefObject<ControlInterface>;
 }> = (props) => {
-  const aspectRef = React.useRef(1);
+  const [viewport, setViewport] = React.useState<{
+    width: number;
+    height: number;
+    factor: number;
+  } | null>(null);
+
   const [spring, set] = useSpring(() => ({
     scale: [1, 1, 1] as [number, number, number],
     position: [0, 0, 0] as [number, number, number],
-    immediate: true,
-  }));
-  const [viewportDimensions, setDimensions] = React.useState(() => ({
-    width: 0,
-    height: 0,
   }));
 
-  // const isPinchingRef = React.useRef(false);
+  React.useEffect(() => {
+    const wheelHandler = (ev: WheelEvent) => {
+      ev.preventDefault();
+    };
+    // without this the pinch-zoom on desktop (chrome osx) is interfered by wheel events
+    document.addEventListener("wheel", wheelHandler, { passive: false });
+
+    const gestureStartHandler = (ev: Event) => ev.preventDefault();
+    const gestureChangeHandler = (ev: Event) => ev.preventDefault();
+
+    document.addEventListener("gesturestart", gestureStartHandler, false);
+    document.addEventListener("gesturechange", gestureChangeHandler, false);
+
+    return () => {
+      document.removeEventListener("wheel", wheelHandler);
+      document.removeEventListener("gesturestart", gestureStartHandler);
+      document.removeEventListener("gesturestart", gestureChangeHandler);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (props.controlRef) {
+      props.controlRef.current = {
+        center: () =>
+          set({
+            scale: [1, 1, 1] as [number, number, number],
+            position: [0, 0, 0] as [number, number, number],
+            immediate: true,
+          }),
+      };
+    }
+  });
 
   useGesture(
     {
@@ -178,6 +179,7 @@ export const MapView: React.FC<{
         last,
         cancel,
       }) => {
+        if (!viewport) return;
         // isPinchingRef.current = true;
 
         const position = spring.position.get();
@@ -207,11 +209,14 @@ export const MapView: React.FC<{
           imageTopLeftX,
         } = calculateScreenPosition({
           imageDimensions: { width: 5, height: 7 },
-          viewportDimensions: viewportDimensions,
+          viewportDimensions: {
+            width: viewport.width * viewport.factor,
+            height: viewport.height * viewport.factor,
+          },
           scale,
           translateX: position[0],
           translateY: position[1],
-          aspect: aspectRef.current,
+          aspect: viewport.factor,
         });
 
         // Calculate the amount of x, y translate offset needed to
@@ -222,7 +227,7 @@ export const MapView: React.FC<{
           imageWidth,
           imageHeight,
           scale,
-          aspect: aspectRef.current,
+          aspect: viewport.factor,
           pinchDelta: pinchDelta,
           currentTranslate: [position[0], position[1]],
           // Use the [x, y] coords of mouse if a trackpad or ctrl + wheel event
@@ -235,6 +240,7 @@ export const MapView: React.FC<{
         set({
           scale: [pinchScale, pinchScale, 1],
           position: [newTranslateX, newTranslateY, 0],
+          // immediate: true,
           // pinching: true,
         });
       },
@@ -248,6 +254,7 @@ export const MapView: React.FC<{
         first,
         memo = { initialTranslateX: 0, initialTranslateY: 0 },
       }) => {
+        if (!viewport) return;
         // if (isPinchingRef.current) return;
         const [translateX, translateY] = spring.position.get();
         if (first) {
@@ -258,10 +265,11 @@ export const MapView: React.FC<{
         }
         set({
           position: [
-            memo.initialTranslateX + xMovement / aspectRef.current,
-            memo.initialTranslateY - yMovement / aspectRef.current,
+            memo.initialTranslateX + xMovement / viewport.factor,
+            memo.initialTranslateY - yMovement / viewport.factor,
             0,
           ],
+          // immediate: true,
         });
         return memo;
       },
@@ -275,71 +283,37 @@ export const MapView: React.FC<{
     }
   );
 
-  const [mousePos, setMousePos] = React.useState(() => [0, 0]);
-
-  //   React.useEffect(() => {
-  //     const listener = (ev) => {
-  //       setMousePos([ev.clientX, ev.clientY]);
-  //     };
-  //     window.addEventListener("mousemove", listener);
-
-  //     const onClick = (ev) => {
-  //       const [translateX, translateY] = spring.position.get();
-  //       const [scale] = spring.scale.get();
-
-  //       const { imageTopLeftY, imageTopLeftX } = calculateScreenPosition({
-  //         imageDimensions: { width: 5, height: 7 },
-  //         scale,
-  //         translateX,
-  //         translateY,
-  //         aspect: aspectRef.current,
-  //       });
-
-  //       console.log(
-  //         "Image position relative to viewport:",
-  //         imageTopLeftY,
-  //         imageTopLeftX
-  //       );
-  //     };
-  //     window.addEventListener("click", onClick);
-
-  //     return () => {
-  //       window.removeEventListener("mousemove", listener);
-  //       window.removeEventListener("click", onClick);
-  //     };
-  //   }, []);
-
   return (
-    <div
-      ref={(element) => {
-        if (element && viewportDimensions.width === 0) {
-          setDimensions({
-            width: element.clientWidth,
-            height: element.clientHeight,
-          });
-        }
+    <Canvas
+      camera={{ position: [0, 0, 5] }}
+      onCreated={(props) => {
+        setViewport({
+          factor: props.viewport.factor,
+          width: props.viewport.width,
+          height: props.viewport.height,
+        });
       }}
-      style={{ height: "100%" }}
     >
-      <Canvas
-        camera={{ position: [0, 0, 5] }}
-        onCreated={({ aspect, size, viewport }) => {
-          aspectRef.current = viewport.factor;
-        }}
-      >
-        <ambientLight intensity={1} />
-        <Plane />
-        <animated.group
-          position={spring.position as any}
-          scale={spring.scale as any}
-        >
-          {Array.isArray(props.images) ? (
-            <React.Suspense fallback={null}>
-              <MapRenderer map={props.images[0]} fog={props.images[1]} />
-            </React.Suspense>
-          ) : null}
-        </animated.group>
-      </Canvas>
-    </div>
+      {viewport ? (
+        <React.Fragment>
+          <ambientLight intensity={1} />
+          <Plane />
+          <animated.group
+            position={spring.position as any}
+            scale={spring.scale as any}
+          >
+            {Array.isArray(props.images) ? (
+              <React.Suspense fallback={null}>
+                <MapRenderer
+                  map={props.images[0]}
+                  fog={props.images[1]}
+                  viewport={viewport}
+                />
+              </React.Suspense>
+            ) : null}
+          </animated.group>
+        </React.Fragment>
+      ) : null}
+    </Canvas>
   );
 };
