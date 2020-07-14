@@ -32,6 +32,10 @@ export const globalStyles = css`
     font-size: 16px;
   }
 
+  html {
+    touch-action: none;
+  }
+
   #root {
     height: 100%;
     overflow: hidden;

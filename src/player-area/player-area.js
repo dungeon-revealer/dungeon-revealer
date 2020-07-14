@@ -1,17 +1,15 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import produce from "immer";
 import createPersistedState from "use-persisted-state";
-import { PanZoom } from "../pan-zoom";
 import Referentiel from "referentiel";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
-import { loadImage, getOptimalDimensions } from "../util";
+import { loadImage } from "../util";
 import { useLongPress } from "../hooks/use-long-press";
 import { ObjectLayer } from "../object-layer";
 import { Toolbar } from "../toolbar";
 import styled from "@emotion/styled/macro";
 import * as Icons from "../feather-icons";
 import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
-import { TokenRenderer } from "../object-layer/token-renderer";
 import { SplashScreen } from "../splash-screen";
 import { AuthenticationScreen } from "../authentication-screen";
 import { buildApiUrl } from "../public-url";
@@ -74,8 +72,10 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
   const panZoomRef = useRef(null);
   const currentMapRef = useRef(null);
   const [currentMap, setCurrentMap] = useState(null);
-  const [mapImages, setMapImages] = useState(null);
+  const [fogCanvas, setFogCanvas] = useState(null);
+  const fogCanvasRef = React.useRef(fogCanvas);
   const [sharedMediaId, setSharedMediaId] = useState(false);
+  const mapNeedsUpdateRef = React.useRef(false);
 
   const mapId = currentMap ? currentMap.id : null;
   const [showSplashScreen, setShowSplashScreen] = useState(true);
@@ -86,11 +86,8 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
    * used for canceling pending requests in case there is a new update incoming.
    * should be either null or an array of tasks returned by loadImage
    */
-  const pendingImageLoads = useRef(null);
+  const pendingFogImageLoad = useRef(null);
 
-  const mapContainerRef = useRef(null);
-  const mapCanvasRef = useRef(null);
-  const objectSvgRef = useRef(null);
   const mapCanvasDimensions = useRef(null);
   /**
    * reference to the image object of the currently loaded map
@@ -98,14 +95,6 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
   const mapImageRef = useRef(null);
 
   const [markedAreas, setMarkedAreas] = useState(() => []);
-
-  const centerMap = (isAnimated = true) => {
-    if (!panZoomRef.current) {
-      return;
-    }
-
-    panZoomRef.current.autoCenter(0.8, isAnimated);
-  };
 
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const cacheBusterRef = useRef(0);
@@ -123,6 +112,7 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
         if (!data.map) {
           currentMapRef.current = null;
           setCurrentMap(null);
+          setFogCanvas(null);
           setShowSplashScreen(true);
           return;
         }
@@ -134,8 +124,25 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
             // prettier-ignore
             `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
           );
-          setMapImages((mapImages) => [mapImages[0], imageUrl]);
           cacheBusterRef.current = cacheBusterRef.current + 1;
+
+          const task = loadImage(imageUrl);
+          pendingFogImageLoad.current = task;
+
+          task.promise.then((fogImage) => {
+            const context = fogCanvasRef.current?.getContext("2d");
+            if (!context) {
+              throw new Error("Invalid state.");
+            }
+            context.clearRect(
+              0,
+              0,
+              fogImage.naturalWidth,
+              fogImage.naturalHeight
+            );
+            context.drawImage(fogImage, 0, 0);
+            mapNeedsUpdateRef.current = true;
+          });
           return;
         }
 
@@ -145,20 +152,30 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
         currentMapRef.current = data.map;
         mapImageRef.current = data.map;
 
-        setCurrentMap(data.map);
-        setMapImages([
-          buildApiUrl(
-            `/map/${data.map.id}/map?cache_buster=${
-              cacheBusterRef.current
-            }&authorization=${encodeURIComponent(pcPassword)}`
-          ),
-          buildApiUrl(
-            `/map/${data.map.id}/fog-live?cache_buster=${
-              cacheBusterRef.current
-            }&authorization=${encodeURIComponent(pcPassword)}`
-          ),
-        ]);
-        setShowSplashScreen(false);
+        const imageUrl = buildApiUrl(
+          // prettier-ignore
+          `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
+        );
+        cacheBusterRef.current = cacheBusterRef.current + 1;
+
+        const task = loadImage(imageUrl);
+        pendingFogImageLoad.current = task;
+
+        task.promise.then((fogImage) => {
+          const canvas = document.createElement("canvas");
+          canvas.width = fogImage.naturalWidth;
+          canvas.height = fogImage.naturalHeight;
+          const context = canvas.getContext("2d");
+          if (!context) {
+            throw new Error("Invalid state.");
+          }
+          context.drawImage(fogImage, 0, 0);
+          setFogCanvas(canvas);
+          setCurrentMap(data.map);
+          setShowSplashScreen(false);
+          fogCanvasRef.current = canvas;
+          mapNeedsUpdateRef.current = true;
+        });
       };
 
       const {
@@ -196,11 +213,9 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
         socket.off("map update");
 
         window.removeEventListener("contextmenu", contextmenuListener);
-        if (pendingImageLoads.current) {
-          pendingImageLoads.current.forEach((task) => {
-            task.cancel();
-          });
-          pendingImageLoads.current = null;
+        if (pendingFogImageLoad.current) {
+          pendingFogImageLoad.current.cancel();
+          pendingFogImageLoad.current = null;
         }
       };
     },
@@ -274,20 +289,6 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
     socket.emit("mark area", { x: x / ratio, y: y / ratio });
   }, 500);
 
-  const getRelativePosition = React.useCallback(
-    (pageCoordinates) => {
-      const ref = new Referentiel(panZoomRef.current.getDragContainer());
-      if (!ref) return { x: 0, y: 0 };
-      const [x, y] = ref.global_to_local([
-        pageCoordinates.x,
-        pageCoordinates.y,
-      ]);
-      const { ratio } = mapCanvasDimensions.current;
-      return { x: x / ratio, y: y / ratio };
-    },
-    [mapCanvasDimensions]
-  );
-
   const persistTokenChanges = useStaticRef(() =>
     debounce((loadedMapId, id, updates, localFetch) => {
       localFetch(`/map/${loadedMapId}/token/${id}`, {
@@ -327,7 +328,22 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
           height: "100vh",
         }}
       >
-        <MapView images={mapImages} controlRef={controlRef} />
+        {currentMap && fogCanvas ? (
+          <MapView
+            mapImageUrl={buildApiUrl(
+              `/map/${currentMap.id}/map?authorization=${encodeURIComponent(
+                pcPassword
+              )}`
+            )}
+            fogCanvas={fogCanvas}
+            controlRef={controlRef}
+            tokens={currentMap.tokens}
+            updateTokenPosition={(id, position) =>
+              updateToken({ id, ...position })
+            }
+            mapTextureNeedsUpdateRef={mapNeedsUpdateRef}
+          />
+        ) : null}
       </div>
       {!showSplashScreen ? (
         <ToolbarContainer>
