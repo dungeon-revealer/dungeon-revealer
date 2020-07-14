@@ -76,7 +76,7 @@ docker run -e DM_PASSWORD=<password> -e PC_PASSWORD=<password> -p <PORT>:3000 -v
 - Replace `<PORT>` with your preferred port.
 - `<DATA_DIR>` is the directory on the host filesystem in which you want to store the maps and settings. `<DATA_DIR>` **must be an absolute path.** One way to achieve this in linux is to navigate to the directory you want in the terminal and then use `$PWD/data` as `<DATA_DIR>`.
 
-In your browser, go to `<YOUR_IPADDRESS>:<PORT>`.
+In your browser, go to `<YOUR_IPADDRESS>:<PORT>/dm`. If your players are on the local network, have them go to `<YOUR_IPADDRESS>:<PORT>`.
 
 ##### Heroku
 
