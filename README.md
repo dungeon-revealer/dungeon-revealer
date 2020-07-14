@@ -86,7 +86,7 @@ Heroku is a platform supporting one-click deployments and includes a free usage 
 
 ### Using the app
 
-The app is separated into two sections. One for the dungeon master and one for the players.
+The app is separated into two sections. One for the dungeon master and one for the players. Check out the [wiki](https://github.com/dungeon-revealer/dungeon-revealer/wiki) for a detailed walkthrough!
 
 #### Dungeon Master
 
