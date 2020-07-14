@@ -25,7 +25,7 @@ const useShowDiceRollNotesState = createPersistedState(
 
 const Container = styled.div`
   display: flex;
-  height: 100vh;
+  height: 100%;
   position: relative;
   overflow: hidden;
 `;

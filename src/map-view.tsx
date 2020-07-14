@@ -2,7 +2,7 @@ import * as React from "react";
 import { Canvas, useLoader, useUpdate, useFrame } from "react-three-fiber";
 import * as THREE from "three";
 import { getOptimalDimensions } from "./util";
-import { TextureLoader } from "three";
+import { TextureLoader, Vector3 } from "three";
 import { animated, useSpring, SpringValue } from "@react-spring/three";
 import { useGesture } from "react-use-gesture";
 import { darken, lighten } from "polished";
@@ -14,13 +14,13 @@ type Viewport = { height: number; width: number; factor: number };
 
 const Plane: React.FC = (props) => {
   return (
-    <group {...props}>
+    <animated.group {...props}>
       <mesh>
         <planeBufferGeometry attach="geometry" args={[10000, 10000]} />
         <meshPhongMaterial attach="material" color="black" />
       </mesh>
       {props.children}
-    </group>
+    </animated.group>
   );
 };
 
@@ -182,6 +182,51 @@ const TokenRenderer: React.FC<{
   );
 };
 
+const MarkedAreaRenderer: React.FC<{
+  x: number;
+  y: number;
+  factor: number;
+  dimensions: [number, number];
+}> = (props) => {
+  const initialRadius = 10 * props.factor;
+
+  const spring = useSpring({
+    from: {
+      scale: [1, 1, 1],
+      opacity: 1,
+    },
+    to: {
+      scale: [10, 10, 10],
+      opacity: 0,
+    },
+    config: {
+      duration: 1250,
+    },
+  });
+
+  return (
+    <animated.mesh
+      {...spring}
+      position={[
+        calculateX(props.x, props.factor, props.dimensions[0]),
+        calculateY(props.y, props.factor, props.dimensions[1]),
+        0,
+      ]}
+    >
+      <ringBufferGeometry
+        attach="geometry"
+        args={[initialRadius * (1 - 0.1), initialRadius, 128]}
+      />
+      <animated.meshStandardMaterial
+        attach="material"
+        color={"red"}
+        transparent={true}
+        opacity={spring.opacity}
+      />
+    </animated.mesh>
+  );
+};
+
 type Token = {
   id: string;
   radius: number;
@@ -192,15 +237,25 @@ type Token = {
   isVisibleForPlayers: boolean;
 };
 
+type MarkedArea = {
+  id: string;
+  x: string;
+  y: string;
+};
+
+type ImageDimensions = { width: number; height: number; factor: number };
+
 const MapRenderer: React.FC<{
   mapImageUrl: string;
   fogCanvas: HTMLCanvasElement;
   viewport: Viewport;
   tokens: Token[];
+  markedAreas: MarkedArea[];
   scale: SpringValue<[number, number, number]>;
   updateTokenPosition: (id: string, position: { x: number; y: number }) => void;
   hoveredElementRef: React.MutableRefObject<null | unknown>;
   mapTextureNeedsUpdateRef: React.MutableRefObject<boolean>;
+  imageRef: React.MutableRefObject<ImageDimensions | undefined>;
 }> = (props) => {
   const mapImage = useLoader(TextureLoader, props.mapImageUrl);
 
@@ -240,6 +295,12 @@ const MapRenderer: React.FC<{
 
   const factor = dimensions[0] / mapImage.image.naturalWidth;
 
+  props.imageRef.current = {
+    factor,
+    width: dimensions[0],
+    height: dimensions[1],
+  };
+
   return (
     <>
       <group renderOrder={0}>
@@ -276,6 +337,15 @@ const MapRenderer: React.FC<{
             hoveredElementRef={props.hoveredElementRef}
           />
         ))}
+      {props.markedAreas.map((markedArea) => (
+        <MarkedAreaRenderer
+          key={markedArea.id}
+          x={markedArea.x}
+          y={markedArea.y}
+          factor={factor}
+          dimensions={dimensions}
+        />
+      ))}
     </>
   );
 };
@@ -347,6 +417,8 @@ export const MapView: React.FC<{
   tokens: Token[];
   controlRef?: React.MutableRefObject<ControlInterface>;
   updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
+  markedAreas: MarkedArea[];
+  markArea: (coordinates: { x: number; y: number }) => void;
   mapTextureNeedsUpdateRef: React.MutableRefObject<boolean>;
 }> = (props) => {
   const [viewport, setViewport] = React.useState<Viewport | null>(null);
@@ -388,9 +460,49 @@ export const MapView: React.FC<{
   });
 
   const isDragDisabledRef = React.useRef(false);
+  const imageRef = React.useRef<ImageDimensions>();
+  const pointerTimer = React.useRef<NodeJS.Timeout>();
 
   const bind = useGesture(
     {
+      onPointerDown: (state) => {
+        if (pointerTimer.current) {
+          clearTimeout(pointerTimer.current);
+        }
+
+        // TODO: figure out why the typing do not show our point
+        // @ts-ignore
+        const point = (state as any).point as Vector3;
+
+        pointerTimer.current = setTimeout(() => {
+          if (imageRef.current) {
+            const d = imageRef.current;
+            const x = calculateRealX(
+              // We need to convert the point to the point local to our element.
+              (point.x - spring.position.get()[0]) / spring.scale.get()[0],
+              d.factor,
+              d.width
+            );
+            const y = calculateRealY(
+              // We need to convert the point to the point local to our element.
+              (point.y - spring.position.get()[1]) / spring.scale.get()[1],
+              d.factor,
+              d.height
+            );
+            props.markArea({ x, y });
+          }
+        }, 200);
+      },
+      onPointerUp: () => {
+        if (pointerTimer.current) {
+          clearTimeout(pointerTimer.current);
+        }
+      },
+      onPointerMove: () => {
+        if (pointerTimer.current) {
+          clearTimeout(pointerTimer.current);
+        }
+      },
       onDrag: ({
         movement: [xMovement, yMovement],
         memo = spring.position.get(),
@@ -525,18 +637,20 @@ export const MapView: React.FC<{
         <ambientLight intensity={1} />
         {viewport ? (
           <React.Fragment>
-            <Plane {...bind()}>
-              <animated.group position={spring.position} scale={spring.scale}>
+            <Plane position={spring.position} scale={spring.scale} {...bind()}>
+              <animated.group>
                 <React.Suspense fallback={null}>
                   <MapRenderer
                     mapImageUrl={props.mapImageUrl}
                     fogCanvas={props.fogCanvas}
                     viewport={viewport}
                     tokens={props.tokens}
+                    markedAreas={props.markedAreas}
                     updateTokenPosition={props.updateTokenPosition}
                     scale={spring.scale}
                     hoveredElementRef={hoveredElementRef}
                     mapTextureNeedsUpdateRef={props.mapTextureNeedsUpdateRef}
+                    imageRef={imageRef}
                   />
                 </React.Suspense>
               </animated.group>

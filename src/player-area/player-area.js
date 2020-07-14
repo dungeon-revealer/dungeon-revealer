@@ -1,15 +1,11 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import produce from "immer";
 import createPersistedState from "use-persisted-state";
-import Referentiel from "referentiel";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import { loadImage } from "../util";
-import { useLongPress } from "../hooks/use-long-press";
-import { ObjectLayer } from "../object-layer";
 import { Toolbar } from "../toolbar";
 import styled from "@emotion/styled/macro";
 import * as Icons from "../feather-icons";
-import { AreaMarkerRenderer } from "../object-layer/area-marker-renderer";
 import { SplashScreen } from "../splash-screen";
 import { AuthenticationScreen } from "../authentication-screen";
 import { buildApiUrl } from "../public-url";
@@ -25,7 +21,6 @@ const ToolbarContainer = styled.div`
   display: flex;
   justify-content: center;
   width: 100%;
-  bottom: 0;
   bottom: 12px;
   pointer-events: none;
 `;
@@ -87,8 +82,6 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
    * should be either null or an array of tasks returned by loadImage
    */
   const pendingFogImageLoad = useRef(null);
-
-  const mapCanvasDimensions = useRef(null);
   /**
    * reference to the image object of the currently loaded map
    */
@@ -191,8 +184,8 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
           ...markedAreas,
           {
             id: data.id,
-            x: data.x * mapCanvasDimensions.current.ratio,
-            y: data.y * mapCanvasDimensions.current.ratio,
+            x: data.x,
+            y: data.y,
           },
         ]);
       });
@@ -268,27 +261,6 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
     return () => window.removeEventListener("focus", listener);
   }, []);
 
-  // long press event for setting a map marker
-  const longPressProps = useLongPress((ev) => {
-    if (!mapCanvasDimensions.current) {
-      return;
-    }
-
-    let input = null;
-    // ev can be a touch or click event
-    if (ev.touches) {
-      input = [ev.touches[0].pageX, ev.touches[0].pageY];
-    } else {
-      input = [ev.pageX, ev.pageY];
-    }
-
-    // calculate coordinates relative to the canvas
-    const ref = new Referentiel(panZoomRef.current.getDragContainer());
-    const [x, y] = ref.global_to_local(input);
-    const { ratio } = mapCanvasDimensions.current;
-    socket.emit("mark area", { x: x / ratio, y: y / ratio });
-  }, 500);
-
   const persistTokenChanges = useStaticRef(() =>
     debounce((loadedMapId, id, updates, localFetch) => {
       localFetch(`/map/${loadedMapId}/token/${id}`, {
@@ -341,6 +313,10 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
             updateTokenPosition={(id, position) =>
               updateToken({ id, ...position })
             }
+            markedAreas={markedAreas}
+            markArea={({ x, y }) => {
+              socket.emit("mark area", { x, y });
+            }}
             mapTextureNeedsUpdateRef={mapNeedsUpdateRef}
           />
         ) : null}
