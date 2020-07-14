@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-scripts/config/webpack.config.js b/node_modules/react-scripts/config/webpack.config.js
-index 25840d9..066b9ba 100644
+index 25840d9..64b8e5d 100644
 --- a/node_modules/react-scripts/config/webpack.config.js
 +++ b/node_modules/react-scripts/config/webpack.config.js
 @@ -36,6 +36,7 @@ const typescriptFormatter = require('react-dev-utils/typescriptFormatter');
@@ -10,7 +10,18 @@ index 25840d9..066b9ba 100644
  
  const appPackageJson = require(paths.appPackageJson);
  
-@@ -648,6 +649,10 @@ module.exports = function(webpackEnv) {
+@@ -54,6 +55,10 @@ const imageInlineSizeLimit = parseInt(
+ // Check if TypeScript is setup
+ const useTypeScript = fs.existsSync(paths.appTsConfig);
+ 
++// Skip TypeScript type checking
++const typeCheckTypeScript =
++  useTypeScript && !(process.env.SKIP_TYPE_CHECK === 'true');
++
+ // style files regexes
+ const cssRegex = /\.css$/;
+ const cssModuleRegex = /\.module\.css$/;
+@@ -648,6 +653,10 @@ module.exports = function(webpackEnv) {
            };
          },
        }),
@@ -21,3 +32,12 @@ index 25840d9..066b9ba 100644
        // Moment.js is an extremely popular library that bundles large locale files
        // by default due to how webpack interprets its code. This is a practical
        // solution that requires the user to opt into importing specific locales.
+@@ -673,7 +682,7 @@ module.exports = function(webpackEnv) {
+           ],
+         }),
+       // TypeScript type checking
+-      useTypeScript &&
++      typeCheckTypeScript &&
+         new ForkTsCheckerWebpackPlugin({
+           typescript: resolve.sync('typescript', {
+             basedir: paths.appNodeModules,
