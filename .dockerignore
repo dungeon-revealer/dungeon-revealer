@@ -8,3 +8,7 @@ docker-cache
 arm-compile.Dockerfile
 Dockerfile
 .github/
+docs/
+wiki/
+.vscode
+*.md
