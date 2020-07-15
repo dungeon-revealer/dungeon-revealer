@@ -12,7 +12,10 @@ import { useUniqueId } from "./hooks/use-unique-id";
 
 type Viewport = { height: number; width: number; factor: number };
 
-const Plane: React.FC = (props) => {
+const Plane: React.FC<{
+  position: SpringValue<[number, number, number]>;
+  scale: SpringValue<[number, number, number]>;
+}> = (props) => {
   return (
     <animated.group {...props}>
       <mesh>
@@ -62,8 +65,8 @@ const TokenRenderer: React.FC<{
       calculateX(props.x, props.factor, props.dimensions[0]),
       calculateY(props.y, props.factor, props.dimensions[1]),
       0,
-    ],
-    circleScale: [1, 1, 1],
+    ] as [number, number, number],
+    circleScale: [1, 1, 1] as [number, number, number],
   }));
 
   React.useEffect(() => {
@@ -192,11 +195,11 @@ const MarkedAreaRenderer: React.FC<{
 
   const spring = useSpring({
     from: {
-      scale: [1, 1, 1],
+      scale: [1, 1, 1] as [number, number, number],
       opacity: 1,
     },
     to: {
-      scale: [10, 10, 10],
+      scale: [10, 10, 10] as [number, number, number],
       opacity: 0,
     },
     config: {
@@ -206,7 +209,7 @@ const MarkedAreaRenderer: React.FC<{
 
   return (
     <animated.mesh
-      {...spring}
+      scale={spring.scale}
       position={[
         calculateX(props.x, props.factor, props.dimensions[0]),
         calculateY(props.y, props.factor, props.dimensions[1]),
@@ -239,8 +242,8 @@ type Token = {
 
 type MarkedArea = {
   id: string;
-  x: string;
-  y: string;
+  x: number;
+  y: number;
 };
 
 type ImageDimensions = { width: number; height: number; factor: number };
