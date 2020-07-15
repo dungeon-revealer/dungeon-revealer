@@ -22,6 +22,8 @@ jobs:
         echo "::set-env name=AUTHOR_MAIL::$(git log -n 1 --skip=1 --pretty=format:%ae)"
         echo "::set-env name=AUTHOR_NAME::$(git log -n 1 --skip=1 --pretty=format:%an)"
         echo "::set-env name=COMMIT_MESSAGE::$(git log -n 1 --skip=1 --pretty=format:%s)"
+        echo $AUTHOR_EMAIL $AUTHOR_NAME $COMMIT_MESSAGE
+
 
 
     - name: Push Wiki Changes
