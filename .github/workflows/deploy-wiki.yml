@@ -6,9 +6,9 @@ on:
     paths:
       # Trigger only when wiki directory changes
       - 'wiki/**'
-    branches:
+    #branches:
       # And only on master branch
-      - master
+      #- master
 
 jobs:
   deploy-wiki:
@@ -21,7 +21,8 @@ jobs:
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         MD_FOLDER: wiki/
-        ACTION_MAIL: maxb2@mail.missouri.edu
-        ACTION_NAME: maxb2
+        ACTION_MAIL: $(git log -1 --pretty=format:%ae)
+        ACTION_NAME: $(git log -1 --pretty=format:%an)
+        WIKI_PUSH_MESSAGE: $(git log -1 --pretty=format:%s)
         OWNER: maxb2
         REPO_NAME: dungeon-revealer
