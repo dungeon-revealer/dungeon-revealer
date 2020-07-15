@@ -11,5 +11,5 @@ You can protect the DM area by setting a password.
 ![alt text](https://user-images.githubusercontent.com/14338007/83942940-6e270380-a7f8-11ea-9eb5-ec440ea57c83.png "Player's view")
 
 
-A simple change 5
+A simple change 6
 
