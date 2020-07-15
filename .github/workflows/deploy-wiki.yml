@@ -29,8 +29,8 @@ jobs:
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         MD_FOLDER: wiki/
-        ACTION_MAIL: ${{ AUTHOR_MAIL }}
-        ACTION_NAME: ${{ AUTHOR_NAME }}
-        WIKI_PUSH_MESSAGE: ${{ COMMIT_MESSAGE }}
+        ACTION_MAIL: ${{ env.AUTHOR_MAIL }}
+        ACTION_NAME: ${{ env.AUTHOR_NAME }}
+        WIKI_PUSH_MESSAGE: ${{ env.COMMIT_MESSAGE }}
         OWNER: maxb2
         REPO_NAME: dungeon-revealer
