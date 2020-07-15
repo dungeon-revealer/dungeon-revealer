@@ -20,6 +20,7 @@ jobs:
       uses: docker://decathlon/wiki-page-creator-action:2.0.1
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
+        MD_FOLDER: wiki/
         ACTION_MAIL: maxb2@mail.missouri.edu
         ACTION_NAME: maxb2
         OWNER: maxb2
