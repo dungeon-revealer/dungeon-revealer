@@ -16,13 +16,21 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+
+    - name: Set environment
+      run: |
+        echo "::set-env name=AUTHOR_MAIL::$(git log -1 --pretty=format:%ae)"
+        echo "::set-env name=AUTHOR_NAME::$(git log -1 --pretty=format:%an)"
+        echo "::set-env name=COMMIT_MESSAGE::$(git log -1 --pretty=format:%s)"
+
+
     - name: Push Wiki Changes
       uses: docker://decathlon/wiki-page-creator-action:2.0.1
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         MD_FOLDER: wiki/
-        ACTION_MAIL: $(git log -1 --pretty=format:%ae)
-        ACTION_NAME: $(git log -1 --pretty=format:%an)
-        WIKI_PUSH_MESSAGE: $(git log -1 --pretty=format:%s)
+        ACTION_MAIL: $AUTHOR_MAIL
+        ACTION_NAME: $AUTHOR_NAME
+        WIKI_PUSH_MESSAGE: $COMMIT_MESSAGE
         OWNER: maxb2
         REPO_NAME: dungeon-revealer
