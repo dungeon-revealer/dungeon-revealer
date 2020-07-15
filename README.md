@@ -7,7 +7,9 @@
 [![Discord](https://img.shields.io/discord/709687178422386708?style=plastic)](https://discord.gg/dS5khqk)
 
 
-A web app for tabletop gaming to allow the game master to reveal areas of the game map to players. Join the [discord server](https://discord.gg/dS5khqk).
+A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
+Join the [discord server](https://discord.gg/dS5khqk).
+Check out the [wiki](https://github.com/dungeon-revealer/dungeon-revealer/wiki) for a detailed walkthrough!
 
 ## What the DM Sees
 
