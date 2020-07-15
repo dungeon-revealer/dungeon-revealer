@@ -20,10 +20,9 @@ jobs:
 
     - name: Set environment
       run: |
-        echo "::set-env name=AUTHOR_MAIL::$(git log -n 1 --skip=1 --pretty=format:%ae)"
-        echo "::set-env name=AUTHOR_NAME::$(git log -n 1 --skip=1 --pretty=format:%an)"
-        echo "::set-env name=COMMIT_MESSAGE::$(git log -n 1 --skip=1 --pretty=format:%s)"
-        echo $AUTHOR_EMAIL $AUTHOR_NAME $COMMIT_MESSAGE
+        echo "::set-env name=ACTION_MAIL::$(git log -n 1 --skip=1 --pretty=format:%ae)"
+        echo "::set-env name=ACTION_NAME::$(git log -n 1 --skip=1 --pretty=format:%an)"
+        echo "::set-env name=WIKI_PUSH_MESSAGE::$(git log -n 1 --skip=1 --pretty=format:%s)"
 
 
 
@@ -32,8 +31,5 @@ jobs:
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         MD_FOLDER: wiki/
-        ACTION_MAIL: ${{ env.AUTHOR_MAIL }}
-        ACTION_NAME: ${{ env.AUTHOR_NAME }}
-        WIKI_PUSH_MESSAGE: ${{ env.COMMIT_MESSAGE }}
         OWNER: maxb2
         REPO_NAME: dungeon-revealer
