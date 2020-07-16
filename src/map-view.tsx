@@ -552,11 +552,16 @@ export const MapView: React.FC<{
 
   React.useEffect(() => {
     const wheelHandler = (event: WheelEvent) => {
+      if (event.target instanceof HTMLCanvasElement === false) {
+        return;
+      }
       event.preventDefault();
+
       const { viewport, dimensions } = wheelHandlerRef.current;
       if (!viewport || !dimensions) {
         return;
       }
+
       const { clientX, clientY } = event;
 
       const position = spring.position.get();
@@ -729,6 +734,10 @@ export const MapView: React.FC<{
         if (!viewport || !event || !dimensions) {
           return;
         }
+        if (event?.target instanceof HTMLCanvasElement === false) {
+          return;
+        }
+
         isDragDisabledRef.current = true;
 
         const position = spring.position.get();
@@ -801,6 +810,9 @@ export const MapView: React.FC<{
     },
     {
       domTarget: window.document,
+      eventOptions: {
+        passive: false,
+      },
     }
   );
 

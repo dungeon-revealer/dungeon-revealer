@@ -22,13 +22,13 @@ export const Button = styled(BButton.Tertiary)<HorizontalNavigationButtonProps>`
     background-color: ${(p) => (p.isActive ? "#044e54" : null)};
   }
 
-  &:first-child {
+  &:first-of-type {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
     border-right: 0;
   }
 
-  &:not(:last-child):not(:first-child) {
+  &:not(:last-child):not(:first-of-type) {
     border-radius: unset;
     border-right: none;
   }

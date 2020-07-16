@@ -105,7 +105,7 @@ const Result = styled.button`
     background-color: ${darken(0.1, "#fff")};
   }
 
-  &:first-child {
+  &:first-of-type {
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
   }

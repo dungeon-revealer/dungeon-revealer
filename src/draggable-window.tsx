@@ -27,7 +27,7 @@ const WindowHeader = styled.div`
 const WindowBody = styled(animated.div)`
   height: 400px;
   width: 100%;
-  overflow-y: scroll;
+  overflow: hidden;
 `;
 
 const WindowsResizeHandle = styled.button`
