@@ -4,6 +4,7 @@ import { render } from "react-dom";
 import { getUrlPrefix } from "./public-url";
 import { globalStyles } from "./global-styles";
 import { Modal } from "./modal";
+import { registerSoundPlayback } from "./register-sound-playback";
 
 const element = document.querySelector("#root");
 
@@ -55,4 +56,5 @@ const main = async () => {
   }
 };
 
+registerSoundPlayback();
 main();
