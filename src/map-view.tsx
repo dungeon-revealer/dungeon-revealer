@@ -1,7 +1,7 @@
 import * as React from "react";
+import * as THREE from "three";
 import { Canvas, useLoader, useUpdate, useFrame } from "react-three-fiber";
 import { Line } from "drei";
-import * as THREE from "three";
 import { getOptimalDimensions } from "./util";
 import { animated, useSpring, SpringValue } from "@react-spring/three";
 import { useGesture } from "react-use-gesture";
@@ -547,16 +547,19 @@ export const MapView: React.FC<{
     return null;
   }, [mapImageTexture, viewport]);
 
-  const viewportRef = React.useRef(viewport);
+  const wheelHandlerRef = React.useRef({ viewport, dimensions });
   React.useEffect(() => {
-    viewportRef.current = viewport;
+    wheelHandlerRef.current = {
+      viewport,
+      dimensions,
+    };
   });
 
   React.useEffect(() => {
     const wheelHandler = (event: WheelEvent) => {
       event.preventDefault();
-      const viewport = viewportRef.current;
-      if (!viewport) {
+      const { viewport, dimensions } = wheelHandlerRef.current;
+      if (!viewport || !dimensions) {
         return;
       }
       const { clientX, clientY } = event;
@@ -575,7 +578,7 @@ export const MapView: React.FC<{
         imageTopLeftY,
         imageTopLeftX,
       } = calculateScreenPosition({
-        imageDimensions: { width: 5, height: 7 },
+        imageDimensions: dimensions,
         viewportDimensions: {
           width: viewport.width * viewport.factor,
           height: viewport.height * viewport.factor,
@@ -729,7 +732,7 @@ export const MapView: React.FC<{
         last,
         cancel,
       }) => {
-        if (!viewport || !event) {
+        if (!viewport || !event || !dimensions) {
           return;
         }
         isDragDisabledRef.current = true;
@@ -767,7 +770,7 @@ export const MapView: React.FC<{
           imageTopLeftY,
           imageTopLeftX,
         } = calculateScreenPosition({
-          imageDimensions: { width: 5, height: 7 },
+          imageDimensions: dimensions,
           viewportDimensions: {
             width: viewport.width * viewport.factor,
             height: viewport.height * viewport.factor,
