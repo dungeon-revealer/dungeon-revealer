@@ -90,7 +90,7 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
               onClick={() => setShowSearch(true)}
               style={{ marginRight: 8 }}
             >
-              <Icon.SearchIcon height={20} width={20} />
+              <Icon.SearchIcon size={20} />
             </IconButton>
             <ChatToggleButton
               hasUnreadMessages={hasUnreadMessages}
