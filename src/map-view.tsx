@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as THREE from "three";
 import { Canvas, useLoader, useUpdate, useFrame } from "react-three-fiber";
-import { Line } from "drei";
+import { Line, Text } from "drei";
 import { getOptimalDimensions } from "./util";
 import { animated, useSpring, SpringValue } from "@react-spring/three";
 import { useGesture } from "react-use-gesture";
@@ -84,7 +84,6 @@ const TokenRenderer: React.FC<{
 }> = (props) => {
   const initialRadius = useStaticRef(() => props.radius * props.factor);
   const id = useUniqueId();
-  const font = useLoader(THREE.FontLoader, buildUrl("/fonts/roboto-bold.json"));
 
   const [isHover, setIsHover] = React.useState(false);
 
@@ -218,20 +217,16 @@ const TokenRenderer: React.FC<{
           transparent={true}
         />
       </mesh>
-      <mesh ref={meshRef}>
-        <textBufferGeometry
-          attach="geometry"
-          args={[
-            props.textLabel,
-            {
-              font,
-              size: 0.8 * initialRadius,
-              height: 0,
-            },
-          ]}
-        />
-        <meshBasicMaterial attach="material" color="black" transparent={true} />
-      </mesh>
+      <Text
+        anchorX="center"
+        anchorY="middle"
+        fontSize={0.8 * initialRadius}
+        color="black"
+        font={buildUrl("/fonts/Roboto-Bold.ttf")}
+        key={props.textLabel}
+      >
+        {props.textLabel}
+      </Text>
     </animated.group>
   );
 };
@@ -819,8 +814,10 @@ export const MapView: React.FC<{
             width: props.viewport.width,
             height: props.viewport.height,
           });
+          // we wanna have the best quality available on retina displays
+          // https://discourse.threejs.org/t/render-looks-blurry-and-pixelated-even-with-antialias-true-why/12381
+          props.gl.setPixelRatio(window.devicePixelRatio);
         }}
-        resize={{}}
       >
         <UseTextureUpdater
           fogTexture={fogTexture}
