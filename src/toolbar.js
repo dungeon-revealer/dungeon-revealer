@@ -158,45 +158,41 @@ const Item = ({ children, isActive, style, ...props }) => {
 
 const LongPressButton = ({ onLongPress, ...props }) => {
   const timeoutRef = useRef(null);
-  const releaseHandler = useRef(null);
 
   const onMouseDown = useMemo(() => {
     if (!onLongPress) {
       return undefined;
     }
+
     return (ev) => {
       ev.stopPropagation();
       timeoutRef.current = setTimeout(() => {
-        releaseHandler.current = onLongPress();
+        const releaseHandler = onLongPress();
+
+        const onMouseUp = () => {
+          if (releaseHandler) {
+            releaseHandler();
+          }
+          clearTimeout(timeoutRef.current);
+          window.removeEventListener("mouseup", onMouseUp);
+          window.removeEventListener("touchend", onMouseUp);
+          window.removeEventListener("touchcancel", onMouseUp);
+        };
+
+        window.addEventListener("mouseup", onMouseUp);
+        window.addEventListener("touchend", onMouseUp);
+        window.addEventListener("touchcancel", onMouseUp);
       }, 300);
     };
   }, [onLongPress]);
 
-  const onMouseUp = useMemo(() => {
-    if (!onLongPress) {
-      return undefined;
-    }
-    return () => {
-      if (releaseHandler.current) {
-        releaseHandler.current();
-      }
-      clearTimeout(timeoutRef.current);
-    };
-  }, [onLongPress]);
-
-  useEffect(() => {
-    return () => {
-      clearTimeout(timeoutRef.current);
-    };
-  }, []);
+  useEffect(() => () => clearTimeout(timeoutRef.current), []);
 
   return (
     <ToolboxButton
       {...props}
       onMouseDown={onMouseDown}
       onTouchStart={onMouseDown}
-      onMouseUp={onMouseUp}
-      onTouchEnd={onMouseUp}
     />
   );
 };

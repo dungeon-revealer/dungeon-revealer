@@ -638,7 +638,7 @@ export const MapView: React.FC<{
         zoomOut: () => {
           const scale = spring.scale.get();
           set({
-            scale: [scale[0] * 0.9, scale[1] * 0.9, 1],
+            scale: [scale[0] / 1.1, scale[1] / 1.1, 1],
           });
         },
       };
