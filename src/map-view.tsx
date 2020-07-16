@@ -241,6 +241,7 @@ const MarkedAreaRenderer: React.FC<{
   y: number;
   factor: number;
   dimensions: Dimensions;
+  remove: () => void;
 }> = (props) => {
   const initialRadius = 10 * props.factor;
 
@@ -255,6 +256,9 @@ const MarkedAreaRenderer: React.FC<{
     },
     config: {
       duration: 1250,
+    },
+    onRest: () => {
+      props.remove();
     },
   });
 
@@ -362,6 +366,7 @@ const MapRenderer: React.FC<{
   viewport: Viewport;
   tokens: Token[];
   markedAreas: MarkedArea[];
+  removeMarkedArea: (id: string) => void;
   grid: Grid | null;
   scale: SpringValue<[number, number, number]>;
   updateTokenPosition: (id: string, position: { x: number; y: number }) => void;
@@ -432,6 +437,7 @@ const MapRenderer: React.FC<{
           y={markedArea.y}
           factor={props.factor}
           dimensions={props.dimensions}
+          remove={() => props.removeMarkedArea(markedArea.id)}
         />
       ))}
     </>
@@ -507,6 +513,7 @@ export const MapView: React.FC<{
   updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
   markedAreas: MarkedArea[];
   markArea: (coordinates: { x: number; y: number }) => void;
+  removeMarkedArea: (id: string) => void;
   grid: Grid | null;
   mapTextureNeedsUpdateRef: React.MutableRefObject<boolean>;
 }> = (props) => {
@@ -762,6 +769,7 @@ export const MapView: React.FC<{
                   viewport={viewport}
                   tokens={props.tokens}
                   markedAreas={props.markedAreas}
+                  removeMarkedArea={props.removeMarkedArea}
                   grid={props.grid}
                   updateTokenPosition={props.updateTokenPosition}
                   scale={spring.scale}

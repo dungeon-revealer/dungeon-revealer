@@ -278,6 +278,11 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
               markArea={({ x, y }) => {
                 socket.emit("mark area", { x, y });
               }}
+              removeMarkedArea={(id) => {
+                setMarkedAreas((markedAreas) =>
+                  markedAreas.filter((area) => area.id !== id)
+                );
+              }}
               mapTextureNeedsUpdateRef={mapNeedsUpdateRef}
               grid={
                 currentMap.grid && currentMap.showGridToPlayers
