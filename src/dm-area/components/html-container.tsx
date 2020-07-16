@@ -120,7 +120,7 @@ const sanitizeHtml = (html: string) =>
 const HtmlContainerStyled = styled.div`
   flex-grow: 1;
   overflow-wrap: break-word;
-
+  min-height: 100%;
   font-size: 12px;
   line-height: 1.5;
 

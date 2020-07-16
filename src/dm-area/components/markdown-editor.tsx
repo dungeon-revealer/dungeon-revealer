@@ -156,6 +156,7 @@ const Container = styled.div`
   flex-direction: column;
   height: 100%;
   width: 100%;
+  overflow: hidden;
 
   .active-image-component {
     background-color: ${transparentize(0.5, "pink")};

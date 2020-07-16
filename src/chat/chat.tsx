@@ -274,7 +274,7 @@ export const Chat: React.FC<{
                   fullWidth
                   onClick={() => setMode("chat")}
                 >
-                  <Icon.MessageCircleIcon height={12} width={12} />
+                  <Icon.MessageCircleIcon size={12} />
                   <span>Chat</span>
                 </HorizontalNavigation.Button>
                 <HorizontalNavigation.Button

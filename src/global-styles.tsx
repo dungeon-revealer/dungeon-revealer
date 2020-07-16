@@ -36,6 +36,12 @@ export const globalStyles = css`
     touch-action: none;
   }
 
+  .user-select-disabled {
+    * {
+      user-select: none !important;
+    }
+  }
+
   #root {
     height: 100%;
     overflow: hidden;

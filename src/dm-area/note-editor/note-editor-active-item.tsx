@@ -93,10 +93,12 @@ export const NoteEditorActiveItem: React.FC<{
 };
 
 const HtmlContainerWrapper = styled.div`
+  padding-top: 8px;
   padding-left: 16px;
   padding-right: 16px;
   flex-grow: 1;
   overflow-y: scroll;
+  height: 100%;
 `;
 
 const EditorContainer = styled.div`
