@@ -547,9 +547,63 @@ export const MapView: React.FC<{
     return null;
   }, [mapImageTexture, viewport]);
 
+  const viewportRef = React.useRef(viewport);
   React.useEffect(() => {
-    const wheelHandler = (ev: WheelEvent) => {
-      ev.preventDefault();
+    viewportRef.current = viewport;
+  });
+
+  React.useEffect(() => {
+    const wheelHandler = (event: WheelEvent) => {
+      event.preventDefault();
+      const viewport = viewportRef.current;
+      if (!viewport) {
+        return;
+      }
+      const { clientX, clientY } = event;
+
+      const position = spring.position.get();
+      const [scale] = spring.scale.get();
+
+      // Speed up pinch zoom when using mouse versus touch
+      const SCALE_FACTOR = 100;
+      const pinchScale = Math.max(scale + event.deltaY / SCALE_FACTOR, 0.1);
+      const pinchDelta = pinchScale - scale;
+
+      const {
+        imageWidth,
+        imageHeight,
+        imageTopLeftY,
+        imageTopLeftX,
+      } = calculateScreenPosition({
+        imageDimensions: { width: 5, height: 7 },
+        viewportDimensions: {
+          width: viewport.width * viewport.factor,
+          height: viewport.height * viewport.factor,
+        },
+        scale,
+        translateX: position[0],
+        translateY: position[1],
+        aspect: viewport.factor,
+      });
+
+      // Calculate the amount of x, y translate offset needed to
+      // zoom-in to point as image scale grows
+      const [newTranslateX, newTranslateY] = getTranslateOffsetsFromScale({
+        imageTopLeftY,
+        imageTopLeftX,
+        imageWidth,
+        imageHeight,
+        scale,
+        aspect: viewport.factor,
+        pinchDelta: pinchDelta,
+        currentTranslate: [position[0], position[1]],
+        touchOrigin: [clientX, clientY],
+      });
+
+      set({
+        scale: [pinchScale, pinchScale, 1],
+        position: [newTranslateX, newTranslateY, 0],
+      });
     };
     // without this the pinch-zoom on desktop (chrome osx) is interfered by wheel events
     document.addEventListener("wheel", wheelHandler, { passive: false });
