@@ -628,7 +628,6 @@ export const MapView: React.FC<{
           set({
             scale: [1, 1, 1] as [number, number, number],
             position: [0, 0, 0] as [number, number, number],
-            immediate: true,
           }),
         zoomIn: () => {
           const scale = spring.scale.get();
@@ -821,6 +820,7 @@ export const MapView: React.FC<{
             height: props.viewport.height,
           });
         }}
+        resize={{}}
       >
         <UseTextureUpdater
           fogTexture={fogTexture}

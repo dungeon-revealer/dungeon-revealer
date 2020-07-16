@@ -17,6 +17,7 @@ import {
 } from "./dm-area/token-info-aside";
 import * as Icon from "./feather-icons";
 import { SoundSettingsProvider } from "./sound-settings";
+import { animated, useSpring } from "react-spring";
 
 const useShowChatState = createPersistedState("chat.state");
 const useShowDiceRollNotesState = createPersistedState(
@@ -30,10 +31,9 @@ const Container = styled.div`
   overflow: hidden;
 `;
 
-const IconContainer = styled.div`
-  position: absolute;
-  top: 10px;
-  right: 10px;
+const IconContainer = styled(animated.div)`
+  margin-top: 10px;
+  margin-right: 10px;
   pointer-events: all;
   display: flex;
 `;
@@ -76,6 +76,10 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
     return () => window.removeEventListener("keydown", listener);
   }, [isLoggedIn]);
 
+  const chatPosition = useSpring({
+    x: chatState === "hidden" ? 400 : 0,
+  });
+
   if (isLoggedIn === false) {
     return null;
   }
@@ -85,6 +89,17 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
       <Container>
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
           {children}
+        </div>
+        <animated.div
+          style={{
+            display: "flex",
+            position: "absolute",
+            right: 0,
+            height: "100%",
+            transform: chatPosition.x.to((value) => `translateX(${value}px)`),
+            pointerEvents: "none",
+          }}
+        >
           <IconContainer>
             <IconButton
               onClick={() => setShowSearch(true)}
@@ -102,18 +117,19 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
               }}
             />
           </IconContainer>
-        </div>
-        {chatState === "show" ? (
+
           <div
             style={{
-              flex: 1,
-              maxWidth: 400,
+              height: "100%",
+              width: 400,
               borderLeft: "1px solid lightgrey",
+              pointerEvents: "all",
             }}
           >
             <Chat toggleShowDiceRollNotes={toggleShowDiceRollNotes} />
           </div>
-        ) : null}
+        </animated.div>
+
         {diceRollNotesState === "show" ? (
           <DiceRollNotes close={toggleShowDiceRollNotes} />
         ) : null}
@@ -147,9 +163,13 @@ export const AuthenticatedAppShell: React.FC<{
    * We do this in order to prevent message/user connect/music sound effect spamming.
    */
   React.useEffect(() => {
+    const authenticate = () => {
+      socket.emit("authenticate", { password: password });
+    };
+
     socket.on("connect", () => {
       setConnectionMode("connected");
-      socket.emit("authenticate", { password: password });
+      authenticate();
     });
 
     socket.on("authenticated", () => {
@@ -164,6 +184,10 @@ export const AuthenticatedAppShell: React.FC<{
     socket.on("disconnect", () => {
       setConnectionMode("disconnected");
     });
+
+    if (socket.connected) {
+      authenticate();
+    }
 
     const tabId = String(
       parseInt(localStorage.getItem("app.tabId") || "0", 10) + 1
