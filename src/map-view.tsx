@@ -501,8 +501,10 @@ const getTranslateOffsetsFromScale = ({
   return [newTranslateX, newTranslateY];
 };
 
-type ControlInterface = {
+export type ControlInterface = {
   center: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
 };
 
 export const MapView: React.FC<{
@@ -571,6 +573,18 @@ export const MapView: React.FC<{
             position: [0, 0, 0] as [number, number, number],
             immediate: true,
           }),
+        zoomIn: () => {
+          const scale = spring.scale.get();
+          set({
+            scale: [scale[0] * 1.1, scale[1] * 1.1, 1],
+          });
+        },
+        zoomOut: () => {
+          const scale = spring.scale.get();
+          set({
+            scale: [scale[0] * 0.9, scale[1] * 0.9, 1],
+          });
+        },
       };
     }
   });

@@ -23,6 +23,7 @@ const ToolbarContainer = styled.div`
   width: 100%;
   bottom: 12px;
   pointer-events: none;
+  user-select: none;
 `;
 
 const AbsoluteFullscreenContainer = styled.div`
@@ -319,8 +320,16 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
               </Toolbar.Item>
               <Toolbar.Item isActive>
                 <Toolbar.LongPressButton
-                  onClick={() => {}}
-                  onLongPress={() => {}}
+                  onClick={() => {
+                    controlRef.current.zoomIn();
+                  }}
+                  onLongPress={() => {
+                    const interval = setInterval(() => {
+                      controlRef.current.zoomIn();
+                    }, 100);
+
+                    return () => clearInterval(interval);
+                  }}
                 >
                   <Icons.ZoomIn />
                   <Icons.Label>Zoom In</Icons.Label>
@@ -328,8 +337,16 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
               </Toolbar.Item>
               <Toolbar.Item isActive>
                 <Toolbar.LongPressButton
-                  onClick={() => {}}
-                  onLongPress={() => {}}
+                  onClick={() => {
+                    controlRef.current.zoomOut();
+                  }}
+                  onLongPress={() => {
+                    const interval = setInterval(() => {
+                      controlRef.current.zoomOut();
+                    }, 100);
+
+                    return () => clearInterval(interval);
+                  }}
                 >
                   <Icons.ZoomOut />
                   <Icons.Label>Zoom Out</Icons.Label>
