@@ -3,7 +3,6 @@ import { Canvas, useLoader, useUpdate, useFrame } from "react-three-fiber";
 import { Line } from "drei";
 import * as THREE from "three";
 import { getOptimalDimensions } from "./util";
-import { TextureLoader, Vector3 } from "three";
 import { animated, useSpring, SpringValue } from "@react-spring/three";
 import { useGesture } from "react-use-gesture";
 import { darken, lighten } from "polished";
@@ -38,6 +37,7 @@ type Token = {
   x: number;
   y: number;
   isVisibleForPlayers: boolean;
+  isLocked: boolean;
 };
 
 type MarkedArea = {
@@ -77,6 +77,7 @@ const TokenRenderer: React.FC<{
   viewport: Viewport;
   dimensions: Dimensions;
   factor: number;
+  isLocked: boolean;
   updateTokenPosition: ({ x, y }: { x: number; y: number }) => void;
   mapScale: SpringValue<[number, number, number]>;
   hoveredElementRef: React.MutableRefObject<null | unknown>;
@@ -108,55 +109,78 @@ const TokenRenderer: React.FC<{
     });
   }, [props.x, props.y, props.radius, props.factor, set, props.dimensions]);
 
+  React.useEffect(() => {
+    if (props.isLocked === false) {
+      setIsHover(false);
+    }
+  }, [props.isLocked]);
+
   const isDraggingRef = React.useRef(false);
 
-  const dragProps = useGesture({
-    onDrag: ({ movement, last, memo = animatedProps.position.get() }) => {
-      isDraggingRef.current = true;
+  const dragProps = useGesture(
+    {
+      onDrag: ({ movement, last, memo = animatedProps.position.get() }) => {
+        isDraggingRef.current = true;
 
-      const mapScale = props.mapScale.get();
-      const newX = memo[0] + movement[0] / props.viewport.factor / mapScale[0];
-      const newY = memo[1] - movement[1] / props.viewport.factor / mapScale[1];
+        const mapScale = props.mapScale.get();
+        const newX =
+          memo[0] + movement[0] / props.viewport.factor / mapScale[0];
+        const newY =
+          memo[1] - movement[1] / props.viewport.factor / mapScale[1];
 
-      set({
-        position: [newX, newY, 0],
-        immediate: true,
-      });
-
-      if (last) {
-        props.updateTokenPosition({
-          x: calculateRealX(newX, props.factor, props.dimensions.width),
-          y: calculateRealY(newY, props.factor, props.dimensions.height),
+        set({
+          position: [newX, newY, 0],
+          immediate: true,
         });
-        isDraggingRef.current = false;
-      }
 
-      return memo;
+        if (last) {
+          props.updateTokenPosition({
+            x: calculateRealX(newX, props.factor, props.dimensions.width),
+            y: calculateRealY(newY, props.factor, props.dimensions.height),
+          });
+          isDraggingRef.current = false;
+        }
+
+        return memo;
+      },
+      onPointerDown: (event) => {
+        if (props.isLocked === false) {
+          setIsHover(true);
+          event.stopPropagation();
+        }
+      },
+      onPointerOver: () => {
+        if (props.isLocked === false) {
+          setIsHover(true);
+          props.hoveredElementRef.current = id;
+        }
+      },
+      onPointerUp: () => {
+        if (props.isLocked === false) {
+          // TODO: only on tablet
+          setIsHover(false);
+          props.hoveredElementRef.current = null;
+        }
+      },
+      onPointerOut: () => {
+        if (props.isLocked === false) {
+          if (isDraggingRef.current === false) {
+            setIsHover(false);
+            props.hoveredElementRef.current = null;
+          }
+        }
+      },
+      onClick: () => {
+        if (props.isLocked === false) {
+          setIsHover(false);
+          props.hoveredElementRef.current = null;
+        }
+      },
     },
-    onPointerDown: (event) => {
-      setIsHover(true);
-      event.stopPropagation();
-    },
-    onPointerOver: () => {
-      setIsHover(true);
-      props.hoveredElementRef.current = id;
-    },
-    onPointerUp: () => {
-      // TODO: only on tablet
-      setIsHover(false);
-      props.hoveredElementRef.current = null;
-    },
-    onPointerOut: () => {
-      if (isDraggingRef.current === false) {
-        setIsHover(false);
-        props.hoveredElementRef.current = null;
-      }
-    },
-    onClick: () => {
-      setIsHover(false);
-      props.hoveredElementRef.current = null;
-    },
-  });
+    {
+      enabled: props.isLocked === false,
+    }
+  );
 
   const meshRef = useUpdate<THREE.Mesh>((self) => {
     const size = new THREE.Vector3();
@@ -275,8 +299,6 @@ const GridRenderer: React.FC<{
 }> = (props) => {
   const lines = React.useMemo(() => {
     const lines: React.ReactNodeArray = [];
-
-    // vertical lines
     for (
       let currentY = reduceOffsetToMinimum(props.y, props.sideLength);
       currentY <= props.imageHeight;
@@ -391,6 +413,7 @@ const MapRenderer: React.FC<{
             y={token.y}
             color={token.color}
             textLabel={token.label}
+            isLocked={token.isLocked}
             factor={props.factor}
             radius={token.radius}
             dimensions={props.dimensions}
@@ -495,7 +518,7 @@ export const MapView: React.FC<{
     position: [0, 0, 0] as [number, number, number],
   }));
 
-  const mapImageTexture = useLoader(TextureLoader, props.mapImageUrl);
+  const mapImageTexture = useLoader(THREE.TextureLoader, props.mapImageUrl);
   const fogTexture = React.useMemo(() => new THREE.Texture(props.fogCanvas), [
     props.fogCanvas,
   ]);
