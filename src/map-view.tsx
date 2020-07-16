@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Canvas, useLoader, useUpdate, useFrame } from "react-three-fiber";
+import { Line } from "drei";
 import * as THREE from "three";
 import { getOptimalDimensions } from "./util";
 import { TextureLoader, Vector3 } from "three";
@@ -9,8 +10,48 @@ import { darken, lighten } from "polished";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { buildUrl } from "./public-url";
 import { useUniqueId } from "./hooks/use-unique-id";
+import uniqueId from "lodash/uniqueId";
+
+// convert image relative to three.js
+const calculateX = (x: number, factor: number, dimensionsWidth: number) =>
+  x * factor - dimensionsWidth / 2;
+
+const calculateY = (y: number, factor: number, dimensionsHeight: number) =>
+  -y * factor + dimensionsHeight / 2;
+
+// convert three.js to image relative
+const calculateRealX = (x: number, factor: number, dimensionsWidth: number) =>
+  (x + dimensionsWidth / 2) / factor;
+
+const calculateRealY = (y: number, factor: number, dimensionsHeight: number) =>
+  ((y - dimensionsHeight / 2) / factor) * -1;
 
 type Viewport = { height: number; width: number; factor: number };
+
+type Dimensions = { width: number; height: number; ratio: number };
+
+type Token = {
+  id: string;
+  radius: number;
+  color: string;
+  label: string;
+  x: number;
+  y: number;
+  isVisibleForPlayers: boolean;
+};
+
+type MarkedArea = {
+  id: string;
+  x: number;
+  y: number;
+};
+
+type Grid = {
+  x: number;
+  y: number;
+  sideLength: number;
+  color: string;
+};
 
 const Plane: React.FC<{
   position: SpringValue<[number, number, number]>;
@@ -27,20 +68,6 @@ const Plane: React.FC<{
   );
 };
 
-// convert image relative to three.js
-const calculateX = (x: number, factor: number, dimensionsWidth: number) =>
-  x * factor - dimensionsWidth / 2;
-
-const calculateY = (y: number, factor: number, dimensionsHeight: number) =>
-  -y * factor + dimensionsHeight / 2;
-
-// convert three.js to image relative
-const calculateRealX = (x: number, factor: number, dimensionsWidth: number) =>
-  (x + dimensionsWidth / 2) / factor;
-
-const calculateRealY = (y: number, factor: number, dimensionsHeight: number) =>
-  ((y - dimensionsHeight / 2) / factor) * -1;
-
 const TokenRenderer: React.FC<{
   x: number;
   y: number;
@@ -48,7 +75,7 @@ const TokenRenderer: React.FC<{
   radius: number;
   textLabel: string;
   viewport: Viewport;
-  dimensions: [number, number];
+  dimensions: Dimensions;
   factor: number;
   updateTokenPosition: ({ x, y }: { x: number; y: number }) => void;
   mapScale: SpringValue<[number, number, number]>;
@@ -62,8 +89,8 @@ const TokenRenderer: React.FC<{
 
   const [animatedProps, set] = useSpring(() => ({
     position: [
-      calculateX(props.x, props.factor, props.dimensions[0]),
-      calculateY(props.y, props.factor, props.dimensions[1]),
+      calculateX(props.x, props.factor, props.dimensions.width),
+      calculateY(props.y, props.factor, props.dimensions.height),
       0,
     ] as [number, number, number],
     circleScale: [1, 1, 1] as [number, number, number],
@@ -73,8 +100,8 @@ const TokenRenderer: React.FC<{
     const newRadius = props.factor * props.radius;
     set({
       position: [
-        calculateX(props.x, props.factor, props.dimensions[0]),
-        calculateY(props.y, props.factor, props.dimensions[1]),
+        calculateX(props.x, props.factor, props.dimensions.width),
+        calculateY(props.y, props.factor, props.dimensions.height),
         0,
       ],
       circleScale: [newRadius / initialRadius, newRadius / initialRadius, 1],
@@ -98,8 +125,8 @@ const TokenRenderer: React.FC<{
 
       if (last) {
         props.updateTokenPosition({
-          x: calculateRealX(newX, props.factor, props.dimensions[0]),
-          y: calculateRealY(newY, props.factor, props.dimensions[1]),
+          x: calculateRealX(newX, props.factor, props.dimensions.width),
+          y: calculateRealY(newY, props.factor, props.dimensions.height),
         });
         isDraggingRef.current = false;
       }
@@ -189,7 +216,7 @@ const MarkedAreaRenderer: React.FC<{
   x: number;
   y: number;
   factor: number;
-  dimensions: [number, number];
+  dimensions: Dimensions;
 }> = (props) => {
   const initialRadius = 10 * props.factor;
 
@@ -211,8 +238,8 @@ const MarkedAreaRenderer: React.FC<{
     <animated.mesh
       scale={spring.scale}
       position={[
-        calculateX(props.x, props.factor, props.dimensions[0]),
-        calculateY(props.y, props.factor, props.dimensions[1]),
+        calculateX(props.x, props.factor, props.dimensions.width),
+        calculateY(props.y, props.factor, props.dimensions.height),
         0,
       ]}
     >
@@ -230,95 +257,130 @@ const MarkedAreaRenderer: React.FC<{
   );
 };
 
-type Token = {
-  id: string;
-  radius: number;
+const reduceOffsetToMinimum = (offset: number, sideLength: number): number => {
+  const newOffset = offset - sideLength;
+  if (newOffset > 0) return reduceOffsetToMinimum(newOffset, sideLength);
+  return offset;
+};
+
+const GridRenderer: React.FC<{
+  x: number;
+  y: number;
+  sideLength: number;
   color: string;
-  label: string;
-  x: number;
-  y: number;
-  isVisibleForPlayers: boolean;
-};
+  dimensions: Dimensions;
+  factor: number;
+  imageHeight: number;
+  imageWidth: number;
+}> = (props) => {
+  const lines = React.useMemo(() => {
+    const lines: React.ReactNodeArray = [];
 
-type MarkedArea = {
-  id: string;
-  x: number;
-  y: number;
-};
+    // vertical lines
+    for (
+      let currentY = reduceOffsetToMinimum(props.y, props.sideLength);
+      currentY <= props.imageHeight;
+      currentY = currentY + props.sideLength
+    ) {
+      lines.push(
+        <Line
+          key={uniqueId()}
+          linewidth={0.5}
+          color={props.color}
+          points={[
+            [
+              -props.dimensions.width / 2,
+              calculateY(currentY, props.factor, props.dimensions.height),
+              0,
+            ],
+            [
+              props.dimensions.width / 2,
+              calculateY(currentY, props.factor, props.dimensions.height),
+              0,
+            ],
+          ]}
+        />
+      );
+    }
+    for (
+      let currentX = reduceOffsetToMinimum(props.x, props.sideLength);
+      currentX <= props.imageWidth;
+      currentX = currentX + props.sideLength
+    ) {
+      lines.push(
+        <Line
+          key={uniqueId()}
+          linewidth={0.5}
+          color={props.color}
+          points={[
+            [
+              calculateX(currentX, props.factor, props.dimensions.width),
+              -props.dimensions.height / 2,
+              0,
+            ],
+            [
+              calculateX(currentX, props.factor, props.dimensions.width),
+              props.dimensions.height / 2,
+              0,
+            ],
+          ]}
+        />
+      );
+    }
 
-type ImageDimensions = { width: number; height: number; factor: number };
+    return lines;
+  }, [props.x, props.y, props.sideLength, props.factor, props.dimensions]);
+
+  return <React.Fragment>{lines}</React.Fragment>;
+};
 
 const MapRenderer: React.FC<{
-  mapImageUrl: string;
-  fogCanvas: HTMLCanvasElement;
+  mapImageTexture: THREE.Texture;
+  fogTexture: THREE.Texture;
   viewport: Viewport;
   tokens: Token[];
   markedAreas: MarkedArea[];
+  grid: Grid | null;
   scale: SpringValue<[number, number, number]>;
   updateTokenPosition: (id: string, position: { x: number; y: number }) => void;
   hoveredElementRef: React.MutableRefObject<null | unknown>;
   mapTextureNeedsUpdateRef: React.MutableRefObject<boolean>;
-  imageRef: React.MutableRefObject<ImageDimensions | undefined>;
+  factor: number;
+  dimensions: Dimensions;
 }> = (props) => {
-  const mapImage = useLoader(TextureLoader, props.mapImageUrl);
-
-  const fogTexture = React.useMemo(() => new THREE.Texture(props.fogCanvas), [
-    props.fogCanvas,
-  ]);
-
-  // TODO: find a better way to communicate updates. Maybe pull that stuff into this component?
-  useFrame(() => {
-    if (props.mapTextureNeedsUpdateRef.current) {
-      fogTexture.needsUpdate = true;
-      props.mapTextureNeedsUpdateRef.current = false;
-    }
-  });
-
-  const dimensions = React.useMemo(() => {
-    if (!mapImage.image) {
-      return null;
-    }
-
-    const optimalDimensions = getOptimalDimensions(
-      mapImage.image.naturalWidth,
-      mapImage.image.naturalHeight,
-      props.viewport.width * 0.95,
-      props.viewport.height * 0.95
-    );
-
-    return [optimalDimensions.width, optimalDimensions.height] as [
-      number,
-      number
-    ];
-  }, [mapImage, props.viewport]);
-
-  if (!dimensions) {
-    return null;
-  }
-
-  const factor = dimensions[0] / mapImage.image.naturalWidth;
-
-  props.imageRef.current = {
-    factor,
-    width: dimensions[0],
-    height: dimensions[1],
-  };
-
   return (
     <>
       <group renderOrder={0}>
         <mesh>
-          <planeBufferGeometry attach="geometry" args={dimensions} />
-          <meshStandardMaterial attach="material" map={mapImage} />
+          <planeBufferGeometry
+            attach="geometry"
+            args={[props.dimensions.width, props.dimensions.height]}
+          />
+          <meshStandardMaterial attach="material" map={props.mapImageTexture} />
         </mesh>
         <mesh>
-          <planeBufferGeometry attach="geometry" args={dimensions} />
+          <planeBufferGeometry
+            attach="geometry"
+            args={[props.dimensions.width, props.dimensions.height]}
+          />
           <meshBasicMaterial
             attach="material"
-            map={fogTexture}
+            map={props.fogTexture}
             transparent={true}
           />
         </mesh>
+        {props.grid ? (
+          <GridRenderer
+            x={props.grid.x}
+            y={props.grid.y}
+            sideLength={props.grid.sideLength}
+            color={props.grid.color}
+            dimensions={props.dimensions}
+            factor={props.factor}
+            imageHeight={props.mapImageTexture.image.naturalHeight}
+            imageWidth={props.mapImageTexture.image.naturalWidth}
+          />
+        ) : null}
       </group>
       {props.tokens
         .filter((token) => token.isVisibleForPlayers)
@@ -329,9 +391,9 @@ const MapRenderer: React.FC<{
             y={token.y}
             color={token.color}
             textLabel={token.label}
-            factor={factor}
+            factor={props.factor}
             radius={token.radius}
-            dimensions={dimensions}
+            dimensions={props.dimensions}
             viewport={props.viewport}
             updateTokenPosition={(position) =>
               props.updateTokenPosition(token.id, position)
@@ -345,8 +407,8 @@ const MapRenderer: React.FC<{
           key={markedArea.id}
           x={markedArea.x}
           y={markedArea.y}
-          factor={factor}
-          dimensions={dimensions}
+          factor={props.factor}
+          dimensions={props.dimensions}
         />
       ))}
     </>
@@ -422,6 +484,7 @@ export const MapView: React.FC<{
   updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
   markedAreas: MarkedArea[];
   markArea: (coordinates: { x: number; y: number }) => void;
+  grid: Grid | null;
   mapTextureNeedsUpdateRef: React.MutableRefObject<boolean>;
 }> = (props) => {
   const [viewport, setViewport] = React.useState<Viewport | null>(null);
@@ -431,6 +494,26 @@ export const MapView: React.FC<{
     scale: [1, 1, 1] as [number, number, number],
     position: [0, 0, 0] as [number, number, number],
   }));
+
+  const mapImageTexture = useLoader(TextureLoader, props.mapImageUrl);
+  const fogTexture = React.useMemo(() => new THREE.Texture(props.fogCanvas), [
+    props.fogCanvas,
+  ]);
+
+  const dimensions = React.useMemo(() => {
+    if (mapImageTexture.image instanceof HTMLImageElement && viewport) {
+      const optimalDimensions = getOptimalDimensions(
+        mapImageTexture.image.naturalWidth,
+        mapImageTexture.image.naturalHeight,
+        viewport.width * 0.95,
+        viewport.height * 0.95
+      );
+
+      return optimalDimensions;
+    }
+
+    return null;
+  }, [mapImageTexture, viewport]);
 
   React.useEffect(() => {
     const wheelHandler = (ev: WheelEvent) => {
@@ -463,7 +546,6 @@ export const MapView: React.FC<{
   });
 
   const isDragDisabledRef = React.useRef(false);
-  const imageRef = React.useRef<ImageDimensions>();
   const pointerTimer = React.useRef<NodeJS.Timeout>();
 
   const bind = useGesture(
@@ -478,19 +560,20 @@ export const MapView: React.FC<{
         const point = (state as any).point as Vector3;
 
         pointerTimer.current = setTimeout(() => {
-          if (imageRef.current) {
-            const d = imageRef.current;
+          if (dimensions) {
+            const factor =
+              dimensions.width / mapImageTexture.image.naturalWidth;
             const x = calculateRealX(
               // We need to convert the point to the point local to our element.
               (point.x - spring.position.get()[0]) / spring.scale.get()[0],
-              d.factor,
-              d.width
+              factor,
+              dimensions.width
             );
             const y = calculateRealY(
               // We need to convert the point to the point local to our element.
               (point.y - spring.position.get()[1]) / spring.scale.get()[1],
-              d.factor,
-              d.height
+              factor,
+              dimensions.height
             );
             props.markArea({ x, y });
           }
@@ -625,6 +708,7 @@ export const MapView: React.FC<{
       domTarget: window.document,
     }
   );
+
   return (
     <div style={{ height: "100%", touchAction: "manipulation" }}>
       <Canvas
@@ -637,30 +721,50 @@ export const MapView: React.FC<{
           });
         }}
       >
-        <ambientLight intensity={1} />
-        {viewport ? (
-          <React.Fragment>
-            <Plane position={spring.position} scale={spring.scale} {...bind()}>
-              <animated.group>
-                <React.Suspense fallback={null}>
-                  <MapRenderer
-                    mapImageUrl={props.mapImageUrl}
-                    fogCanvas={props.fogCanvas}
-                    viewport={viewport}
-                    tokens={props.tokens}
-                    markedAreas={props.markedAreas}
-                    updateTokenPosition={props.updateTokenPosition}
-                    scale={spring.scale}
-                    hoveredElementRef={hoveredElementRef}
-                    mapTextureNeedsUpdateRef={props.mapTextureNeedsUpdateRef}
-                    imageRef={imageRef}
-                  />
-                </React.Suspense>
-              </animated.group>
-            </Plane>
-          </React.Fragment>
-        ) : null}
+        <UseTextureUpdater
+          fogTexture={fogTexture}
+          mapTextureNeedsUpdateRef={props.mapTextureNeedsUpdateRef}
+        >
+          <React.Suspense fallback={null}>
+            <ambientLight intensity={1} />
+            {dimensions && viewport ? (
+              <Plane
+                position={spring.position}
+                scale={spring.scale}
+                {...bind()}
+              >
+                <MapRenderer
+                  mapImageTexture={mapImageTexture}
+                  fogTexture={fogTexture}
+                  viewport={viewport}
+                  tokens={props.tokens}
+                  markedAreas={props.markedAreas}
+                  grid={props.grid}
+                  updateTokenPosition={props.updateTokenPosition}
+                  scale={spring.scale}
+                  hoveredElementRef={hoveredElementRef}
+                  mapTextureNeedsUpdateRef={props.mapTextureNeedsUpdateRef}
+                  dimensions={dimensions}
+                  factor={dimensions.width / mapImageTexture.image.naturalWidth}
+                />
+              </Plane>
+            ) : null}
+          </React.Suspense>
+        </UseTextureUpdater>
       </Canvas>
     </div>
   );
+};
+
+const UseTextureUpdater: React.FC<{
+  fogTexture: THREE.Texture;
+  mapTextureNeedsUpdateRef: React.MutableRefObject<boolean>;
+}> = (props) => {
+  useFrame(() => {
+    if (props.mapTextureNeedsUpdateRef.current) {
+      props.fogTexture.needsUpdate = true;
+      props.mapTextureNeedsUpdateRef.current = false;
+    }
+  });
+  return <React.Fragment>{props.children}</React.Fragment>;
 };

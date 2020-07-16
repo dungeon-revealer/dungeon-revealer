@@ -33,38 +33,7 @@ const AbsoluteFullscreenContainer = styled.div`
   height: 100%;
 `;
 
-const reduceOffsetToMinimum = (offset, sideLength) => {
-  const newOffset = offset - sideLength;
-  if (newOffset > 0) return reduceOffsetToMinimum(newOffset, sideLength);
-  return offset;
-};
-
-const drawGridToContext = (grid, dimensions, canvas, gridColor) => {
-  if (!grid) return;
-  const context = canvas.getContext("2d");
-  context.strokeStyle = gridColor || "rgba(0, 0, 0, .5)";
-  context.lineWidth = 2;
-
-  const sideLength = grid.sideLength * dimensions.ratio;
-  const offsetX = reduceOffsetToMinimum(grid.x * dimensions.ratio, sideLength);
-  const offsetY = reduceOffsetToMinimum(grid.y * dimensions.ratio, sideLength);
-
-  for (let i = 0; i < canvas.width / sideLength; i++) {
-    context.beginPath();
-    context.moveTo(offsetX + i * sideLength, 0);
-    context.lineTo(offsetX + i * sideLength, canvas.height);
-    context.stroke();
-  }
-  for (let i = 0; i < canvas.height / sideLength; i++) {
-    context.beginPath();
-    context.moveTo(0, offsetY + i * sideLength);
-    context.lineTo(canvas.width, offsetY + i * sideLength);
-    context.stroke();
-  }
-};
-
 const PlayerMap = ({ fetch, pcPassword, socket }) => {
-  const panZoomRef = useRef(null);
   const currentMapRef = useRef(null);
   const [currentMap, setCurrentMap] = useState(null);
   const [fogCanvas, setFogCanvas] = useState(null);
@@ -73,20 +42,14 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
   const mapNeedsUpdateRef = React.useRef(false);
 
   const mapId = currentMap ? currentMap.id : null;
-  const [showSplashScreen, setShowSplashScreen] = useState(true);
+  const showSplashScreen = mapId === null;
 
   const controlRef = React.useRef(null);
-
   /**
    * used for canceling pending requests in case there is a new update incoming.
    * should be either null or an array of tasks returned by loadImage
    */
   const pendingFogImageLoad = useRef(null);
-  /**
-   * reference to the image object of the currently loaded map
-   */
-  const mapImageRef = useRef(null);
-
   const [markedAreas, setMarkedAreas] = useState(() => []);
 
   const [refetchTrigger, setRefetchTrigger] = useState(0);
@@ -106,7 +69,6 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
           currentMapRef.current = null;
           setCurrentMap(null);
           setFogCanvas(null);
-          setShowSplashScreen(true);
           return;
         }
         /**
@@ -143,7 +105,6 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
          * Load new map
          */
         currentMapRef.current = data.map;
-        mapImageRef.current = data.map;
 
         const imageUrl = buildApiUrl(
           // prettier-ignore
@@ -165,7 +126,6 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
           context.drawImage(fogImage, 0, 0);
           setFogCanvas(canvas);
           setCurrentMap(data.map);
-          setShowSplashScreen(false);
           fogCanvasRef.current = canvas;
           mapNeedsUpdateRef.current = true;
         });
@@ -300,26 +260,38 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
           height: "100vh",
         }}
       >
-        {currentMap && fogCanvas ? (
-          <MapView
-            mapImageUrl={buildApiUrl(
-              `/map/${currentMap.id}/map?authorization=${encodeURIComponent(
-                pcPassword
-              )}`
-            )}
-            fogCanvas={fogCanvas}
-            controlRef={controlRef}
-            tokens={currentMap.tokens}
-            updateTokenPosition={(id, position) =>
-              updateToken({ id, ...position })
-            }
-            markedAreas={markedAreas}
-            markArea={({ x, y }) => {
-              socket.emit("mark area", { x, y });
-            }}
-            mapTextureNeedsUpdateRef={mapNeedsUpdateRef}
-          />
-        ) : null}
+        <React.Suspense fallback={null}>
+          {currentMap && fogCanvas ? (
+            <MapView
+              mapImageUrl={buildApiUrl(
+                `/map/${currentMap.id}/map?authorization=${encodeURIComponent(
+                  pcPassword
+                )}`
+              )}
+              fogCanvas={fogCanvas}
+              controlRef={controlRef}
+              tokens={currentMap.tokens}
+              updateTokenPosition={(id, position) =>
+                updateToken({ id, ...position })
+              }
+              markedAreas={markedAreas}
+              markArea={({ x, y }) => {
+                socket.emit("mark area", { x, y });
+              }}
+              mapTextureNeedsUpdateRef={mapNeedsUpdateRef}
+              grid={
+                currentMap.grid && currentMap.showGridToPlayers
+                  ? {
+                      x: currentMap.grid.x,
+                      y: currentMap.grid.y,
+                      sideLength: currentMap.grid.sideLength,
+                      color: currentMap.gridColor || "red",
+                    }
+                  : null
+              }
+            />
+          ) : null}
+        </React.Suspense>
       </div>
       {!showSplashScreen ? (
         <ToolbarContainer>
@@ -342,19 +314,8 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
               </Toolbar.Item>
               <Toolbar.Item isActive>
                 <Toolbar.LongPressButton
-                  onClick={() => {
-                    if (!panZoomRef.current) {
-                      return;
-                    }
-                    panZoomRef.current.zoomIn();
-                  }}
-                  onLongPress={() => {
-                    const interval = setInterval(() => {
-                      panZoomRef.current.zoomIn();
-                    }, 100);
-
-                    return () => clearInterval(interval);
-                  }}
+                  onClick={() => {}}
+                  onLongPress={() => {}}
                 >
                   <Icons.ZoomIn />
                   <Icons.Label>Zoom In</Icons.Label>
@@ -362,19 +323,8 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
               </Toolbar.Item>
               <Toolbar.Item isActive>
                 <Toolbar.LongPressButton
-                  onClick={() => {
-                    if (!panZoomRef.current) {
-                      return;
-                    }
-                    panZoomRef.current.zoomOut();
-                  }}
-                  onLongPress={() => {
-                    const interval = setInterval(() => {
-                      panZoomRef.current.zoomOut();
-                    }, 100);
-
-                    return () => clearInterval(interval);
-                  }}
+                  onClick={() => {}}
+                  onLongPress={() => {}}
                 >
                   <Icons.ZoomOut />
                   <Icons.Label>Zoom Out</Icons.Label>
