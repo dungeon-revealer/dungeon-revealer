@@ -476,7 +476,7 @@ const getTranslateOffsetsFromScale = ({
   return [newTranslateX, newTranslateY];
 };
 
-export type ControlInterface = {
+export type MapControlInterface = {
   center: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -486,7 +486,7 @@ export const MapView: React.FC<{
   mapImageUrl: string;
   fogCanvas: HTMLCanvasElement;
   tokens: Token[];
-  controlRef?: React.MutableRefObject<ControlInterface>;
+  controlRef?: React.MutableRefObject<MapControlInterface | null>;
   updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
   markedAreas: MarkedArea[];
   markArea: (coordinates: { x: number; y: number }) => void;
@@ -703,14 +703,7 @@ export const MapView: React.FC<{
           isDragDisabledRef.current = false;
         }, 100);
       },
-      onPinch: ({
-        movement: [xMovement],
-        event,
-        origin,
-        ctrlKey,
-        last,
-        cancel,
-      }) => {
+      onPinch: ({ movement, event, origin, ctrlKey, last, cancel }) => {
         if (!viewport || !event || !dimensions) {
           return;
         }
@@ -729,6 +722,8 @@ export const MapView: React.FC<{
           cancel?.();
           return;
         }
+
+        let xMovement = Array.isArray(movement) ? movement[0] : 0;
 
         // Speed up pinch zoom when using mouse versus touch
         const SCALE_FACTOR = 100;

@@ -1,21 +1,21 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import * as React from "react";
 import produce from "immer";
 import createPersistedState from "use-persisted-state";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
-import { loadImage } from "../util";
-import { Toolbar } from "../toolbar";
+import { loadImage } from "./util";
+import { Toolbar } from "./toolbar";
 import styled from "@emotion/styled/macro";
-import * as Icons from "../feather-icons";
-import { SplashScreen } from "../splash-screen";
-import { AuthenticationScreen } from "../authentication-screen";
-import { buildApiUrl } from "../public-url";
-import { ImageLightBoxModal } from "../image-lightbox-modal";
-import { AuthenticatedAppShell } from "../authenticated-app-shell";
-import { useSocket } from "../socket";
-import { useStaticRef } from "../hooks/use-static-ref";
+import * as Icons from "./feather-icons";
+import { SplashScreen } from "./splash-screen";
+import { AuthenticationScreen } from "./authentication-screen";
+import { buildApiUrl } from "./public-url";
+import { ImageLightBoxModal } from "./image-lightbox-modal";
+import { AuthenticatedAppShell } from "./authenticated-app-shell";
+import { useSocket } from "./socket";
+import { useStaticRef } from "./hooks/use-static-ref";
 import debounce from "lodash/debounce";
 import { animated, useSpring, to } from "react-spring";
-import { MapView } from "../map-view";
+import { MapView, MapControlInterface } from "./map-view";
 import { useGesture } from "react-use-gesture";
 
 const ToolbarContainer = styled(animated.div)`
@@ -36,31 +36,70 @@ const AbsoluteFullscreenContainer = styled.div`
   height: 100%;
 `;
 
-const PlayerMap = ({ fetch, pcPassword, socket }) => {
-  const currentMapRef = useRef(null);
-  const [currentMap, setCurrentMap] = useState(null);
-  const [fogCanvas, setFogCanvas] = useState(null);
+type Grid = {
+  x: number;
+  y: number;
+  sideLength: number;
+};
+
+type Token = {
+  id: string;
+  radius: number;
+  color: string;
+  label: string;
+  x: number;
+  y: number;
+  isVisibleForPlayers: boolean;
+  isLocked: boolean;
+};
+
+type Map = {
+  id: string;
+  showGridToPlayers: boolean;
+  grid: null | Grid;
+  gridColor: string;
+  tokens: Token[];
+};
+
+type MarkedArea = {
+  id: string;
+  x: number;
+  y: number;
+};
+
+const PlayerMap: React.FC<{
+  fetch: typeof fetch;
+  pcPassword: string;
+  socket: ReturnType<typeof useSocket>;
+}> = ({ fetch, pcPassword, socket }) => {
+  const [currentMap, setCurrentMap] = React.useState<null | Map>(null);
+  const currentMapRef = React.useRef(currentMap);
+  const [fogCanvas, setFogCanvas] = React.useState<null | HTMLCanvasElement>(
+    null
+  );
   const fogCanvasRef = React.useRef(fogCanvas);
-  const [sharedMediaId, setSharedMediaId] = useState(false);
+  const [sharedMediaId, setSharedMediaId] = React.useState<string | null>(null);
   const mapNeedsUpdateRef = React.useRef(false);
 
   const mapId = currentMap ? currentMap.id : null;
   const showSplashScreen = mapId === null;
 
-  const controlRef = React.useRef(null);
+  const controlRef = React.useRef<MapControlInterface | null>(null);
   /**
    * used for canceling pending requests in case there is a new update incoming.
    * should be either null or an array of tasks returned by loadImage
    */
-  const pendingFogImageLoad = useRef(null);
-  const [markedAreas, setMarkedAreas] = useState(() => []);
+  const pendingFogImageLoad = React.useRef<ReturnType<typeof loadImage> | null>(
+    null
+  );
+  const [markedAreas, setMarkedAreas] = React.useState<MarkedArea[]>(() => []);
 
-  const [refetchTrigger, setRefetchTrigger] = useState(0);
-  const cacheBusterRef = useRef(0);
+  const [refetchTrigger, setRefetchTrigger] = React.useState(0);
+  const cacheBusterRef = React.useRef(0);
 
   useAsyncEffect(
-    function* () {
-      const onReceiveMap = async (data) => {
+    function* (_, cast) {
+      const onReceiveMap = async (data: { map: Map }) => {
         if (!data) {
           return;
         }
@@ -134,15 +173,16 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
         });
       };
 
-      const {
-        data: { activeMap },
-      } = yield fetch("/active-map").then((res) => res.json());
+      const result = yield* cast(
+        fetch("/active-map").then((res) => res.json())
+      );
+      const activeMap = result.data.activeMap;
 
       if (activeMap) {
         yield onReceiveMap({ map: activeMap });
       }
 
-      socket.on("mark area", async (data) => {
+      socket.on("mark area", (data: { id: string; x: number; y: number }) => {
         setMarkedAreas((markedAreas) => [
           ...markedAreas,
           {
@@ -153,13 +193,13 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
         ]);
       });
 
-      socket.on("share image", ({ id }) => {
+      socket.on("share image", ({ id }: { id: string }) => {
         setSharedMediaId(id);
       });
 
       socket.on("map update", onReceiveMap);
 
-      const contextmenuListener = (ev) => {
+      const contextmenuListener = (ev: Event) => {
         ev.preventDefault();
       };
       window.addEventListener("contextmenu", contextmenuListener);
@@ -178,11 +218,11 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
     [socket, fetch, pcPassword, refetchTrigger]
   );
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!mapId) return;
     const eventName = `token:mapId:${mapId}`;
 
-    socket.on(eventName, ({ type, data }) => {
+    socket.on(eventName, ({ type, data }: { type: string; data: any }) => {
       if (type === "add") {
         setCurrentMap(
           produce((map) => {
@@ -191,31 +231,37 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
         );
       } else if (type === "update") {
         setCurrentMap(
-          produce((map) => {
-            map.tokens = map.tokens.map((token) => {
-              if (token.id !== data.token.id) return token;
-              return {
-                ...token,
-                ...data.token,
-              };
-            });
+          produce((map: Map | null) => {
+            if (map) {
+              map.tokens = map.tokens.map((token) => {
+                if (token.id !== data.token.id) return token;
+                return {
+                  ...token,
+                  ...data.token,
+                };
+              });
+            }
           })
         );
       } else if (type === "remove") {
         setCurrentMap(
-          produce((map) => {
-            map.tokens = map.tokens = map.tokens.filter(
-              (token) => token.id !== data.tokenId
-            );
+          produce((map: Map | null) => {
+            if (map) {
+              map.tokens = map.tokens = map.tokens.filter(
+                (token) => token.id !== data.tokenId
+              );
+            }
           })
         );
       }
     });
 
-    return () => socket.off(eventName);
+    return () => {
+      socket.off(eventName);
+    };
   }, [socket, mapId]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const listener = () => {
       setRefetchTrigger((i) => i + 1);
     };
@@ -225,37 +271,49 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
   }, []);
 
   const persistTokenChanges = useStaticRef(() =>
-    debounce((loadedMapId, id, updates, localFetch) => {
-      localFetch(`/map/${loadedMapId}/token/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...updates,
-        }),
-      });
-    }, 100)
+    debounce(
+      (
+        loadedMapId: string,
+        id: string,
+        updates: any,
+        localFetch: typeof fetch
+      ) => {
+        localFetch(`/map/${loadedMapId}/token/${id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...updates,
+          }),
+        });
+      },
+      100
+    )
   );
 
-  const updateToken = useCallback(
+  const updateToken = React.useCallback(
     ({ id, ...updates }) => {
       setCurrentMap(
-        produce((map) => {
-          map.tokens = map.tokens.map((token) => {
-            if (token.id !== id) return token;
-            return { ...token, ...updates };
-          });
+        produce((map: Map | null) => {
+          if (map) {
+            map.tokens = map.tokens.map((token) => {
+              if (token.id !== id) return token;
+              return { ...token, ...updates };
+            });
+          }
         })
       );
 
-      persistTokenChanges(currentMap.id, id, updates, fetch);
+      if (currentMap) {
+        persistTokenChanges(currentMap.id, id, updates, fetch);
+      }
     },
     [currentMap, persistTokenChanges, fetch]
   );
 
   const [toolbarPosition, setToolbarPosition] = useSpring(() => ({
-    position: [12, window.innerHeight - 50 - 12],
+    position: [12, window.innerHeight - 50 - 12] as [number, number],
   }));
 
   const [showItems, setShowItems] = React.useState(true);
@@ -264,13 +322,11 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
 
   const handler = useGesture(
     {
-      onDrag: ({ movement, memo = toolbarPosition.position.get(), last }) => {
+      onDrag: (state) => {
         setToolbarPosition({
-          position: [movement[0], movement[1]],
+          position: state.movement,
           immediate: true,
         });
-
-        return memo;
       },
       onClick: () => {
         if (isDraggingRef.current) {
@@ -358,11 +414,11 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
                   <Toolbar.Item isActive>
                     <Toolbar.Button
                       onClick={() => {
-                        controlRef.current.center();
+                        controlRef.current?.center();
                       }}
                       onTouchStart={(ev) => {
                         ev.preventDefault();
-                        controlRef.current.center();
+                        controlRef.current?.center();
                       }}
                     >
                       <Icons.Compass size={20} />
@@ -372,11 +428,11 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
                   <Toolbar.Item isActive>
                     <Toolbar.LongPressButton
                       onClick={() => {
-                        controlRef.current.zoomIn();
+                        controlRef.current?.zoomIn();
                       }}
                       onLongPress={() => {
                         const interval = setInterval(() => {
-                          controlRef.current.zoomIn();
+                          controlRef.current?.zoomIn();
                         }, 100);
 
                         return () => clearInterval(interval);
@@ -389,11 +445,11 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
                   <Toolbar.Item isActive>
                     <Toolbar.LongPressButton
                       onClick={() => {
-                        controlRef.current.zoomOut();
+                        controlRef.current?.zoomOut();
                       }}
                       onLongPress={() => {
                         const interval = setInterval(() => {
-                          controlRef.current.zoomOut();
+                          controlRef.current?.zoomOut();
                         }, 100);
 
                         return () => clearInterval(interval);
@@ -425,7 +481,10 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
 
 const usePcPassword = createPersistedState("pcPassword");
 
-const AuthenticatedContent = ({ pcPassword, localFetch }) => {
+const AuthenticatedContent: React.FC<{
+  pcPassword: string;
+  localFetch: typeof fetch;
+}> = ({ pcPassword, localFetch }) => {
   const socket = useSocket();
 
   return (
@@ -435,12 +494,12 @@ const AuthenticatedContent = ({ pcPassword, localFetch }) => {
   );
 };
 
-export const PlayerArea = () => {
+export const PlayerArea: React.FC<{}> = () => {
   const [pcPassword, setPcPassword] = usePcPassword("");
 
-  const [mode, setMode] = useState("LOADING");
+  const [mode, setMode] = React.useState("LOADING");
 
-  const localFetch = useCallback(
+  const localFetch = React.useCallback(
     (input, init = {}) => {
       return fetch(buildApiUrl(input), {
         ...init,
@@ -461,7 +520,7 @@ export const PlayerArea = () => {
 
   useAsyncEffect(
     function* () {
-      const result = yield localFetch("/auth").then((res) => res.json());
+      const result: any = yield localFetch("/auth").then((res) => res.json());
       if (!result.data.role) {
         setMode("AUTHENTICATE");
         return;

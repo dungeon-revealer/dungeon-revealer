@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect } from "react";
 import styled from "@emotion/styled/macro";
+import type { ReactEventHandlers } from "react-use-gesture/dist/types";
 
 const MARGIN_2 = "4px";
 const BORDER_RADIUS = "5px";
@@ -188,7 +189,10 @@ const ToolbarLogo = styled.div<{ horizontal?: boolean }>`
   }
 `;
 
-const Logo: React.FC<{}> = (props) => {
+const Logo: React.FC<{
+  style?: Pick<Pick<React.ComponentProps<"div">, "style">, "cursor"> &
+    ReactEventHandlers;
+}> = (props) => {
   const { horizontal } = React.useContext(ToolbarContext);
   return (
     <ToolbarLogo horizontal={horizontal} {...props}>
@@ -220,10 +224,10 @@ const Item: React.FC<
   );
 };
 
-const LongPressButton: React.FC<{ onLongPress?: () => () => void }> = ({
-  onLongPress,
-  ...props
-}) => {
+const LongPressButton: React.FC<{
+  onLongPress?: () => () => void;
+  onClick: () => void;
+}> = ({ onLongPress, ...props }) => {
   const timeoutRef = React.useRef<() => void>();
 
   const onMouseDown = useMemo(() => {
