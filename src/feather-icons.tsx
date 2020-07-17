@@ -125,10 +125,10 @@ export const EyeOffIcon: React.FC<{ color?: string; size?: number }> = ({
   </svg>
 );
 
-export const MapIcon: React.FC<{ color?: string; size?: number }> = ({
-  color = "currentColor",
-  size = 30,
-}) => (
+export const MapIcon: React.FC<{
+  color?: string;
+  size?: number;
+}> = ({ color = "currentColor", size = 30 }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -388,19 +388,19 @@ export const CheckIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
   </svg>
 );
 
-export const TrashIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
-  fill = "currentColor",
-  ...props
+export const TrashIcon: React.FC<{ color?: string; size?: number }> = ({
+  color = "currentColor",
+  size = 30,
 }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke={fill}
+    stroke={color}
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
-    height={30}
-    {...props}
+    height={size}
+    width={size}
   >
     <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
   </svg>
@@ -592,10 +592,10 @@ export const UnlockIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
   </svg>
 );
 
-export const BookOpen: React.FC<{ color?: string; size?: number }> = ({
-  color = "currentColor",
-  size = 30,
-}) => (
+export const BookOpen: React.FC<{
+  color?: string;
+  size?: number;
+}> = ({ color = "currentColor", size = 30 }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -722,10 +722,10 @@ export const ItalicIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
   </svg>
 );
 
-export const ImageIcon: React.FC<{ color?: string; size?: number }> = ({
-  color = "currentColor",
-  size = 30,
-}) => (
+export const ImageIcon: React.FC<{
+  color?: string;
+  size?: number;
+}> = ({ color = "currentColor", size = 30 }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"

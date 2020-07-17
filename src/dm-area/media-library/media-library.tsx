@@ -278,12 +278,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
       <Content onClick={(ev) => ev.stopPropagation()} tabIndex={1}>
         <Modal.Header>
           <Modal.Heading2>
-            <Icon.ImageIcon
-              width={28}
-              height={28}
-              style={{ marginBottom: -2, marginRight: 16 }}
-            />{" "}
-            Media Library
+            <Icon.ImageIcon size={28} /> Media Library
           </Modal.Heading2>
           <div style={{ flex: 1, textAlign: "right" }}>
             <Button.Tertiary
@@ -426,7 +421,7 @@ const EditImageModal: React.FC<{
             <Modal.ActionGroup left>
               <div>
                 <Button.Tertiary onClick={onDelete} type="button" danger>
-                  <Icon.TrashIcon height={18} width={18} />
+                  <Icon.TrashIcon size={18} />
                   <span>Delete</span>
                 </Button.Tertiary>
               </div>

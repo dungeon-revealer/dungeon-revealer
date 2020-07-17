@@ -217,33 +217,22 @@ const Dialog: React.FC<
   );
 };
 
-const Header: React.FC<{ style?: React.CSSProperties }> = ({
-  children,
-  style,
-  ...props
-}) => {
-  return (
-    <div
-      {...props}
-      style={{
-        width: "100%",
-        paddingLeft: 20,
-        paddingRight: 20,
-        paddingTop: 16,
-        paddingBottom: 8,
-        borderBottom: "1px solid rgba(0,0,0,.1)",
-        display: "flex",
-        alignItems: "center",
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-};
+const Header = styled.div`
+  padding: 8px 20px;
+  width: 100%;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+`;
 
 const Heading2 = styled.h2`
   margin: 0;
+
+  > svg:first-child {
+    display: inline-block;
+    transform: translateY(3px);
+    margin-right: 12px;
+  }
 `;
 
 const Heading3 = styled.h3`

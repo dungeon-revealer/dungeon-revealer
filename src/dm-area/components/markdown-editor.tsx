@@ -695,7 +695,7 @@ export const MarkdownEditor: React.FC<{
         </ToolBarButton>
         <ToolBarButtonDropDown>
           <ToolBarButton title="Insert Image" onClick={onClickImageButton}>
-            <ImageIcon height={16} />
+            <ImageIcon size={16} />
           </ToolBarButton>
           <DropDownMenu data-menu>
             <DropDownMenuInner>

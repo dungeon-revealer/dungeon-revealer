@@ -134,12 +134,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       >
         <Modal.Header>
           <Modal.Heading2>
-            <Icons.BookOpen
-              width={28}
-              height={28}
-              style={{ marginBottom: -2, marginRight: 16 }}
-            />{" "}
-            Notes
+            <Icons.BookOpen size={28} /> Notes
           </Modal.Heading2>
           <div style={{ flex: 1, textAlign: "right" }}>
             <Button.Tertiary
@@ -274,7 +269,7 @@ export const NoteEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 });
                               }}
                             >
-                              <Icons.TrashIcon height={20} width={20} />
+                              <Icons.TrashIcon size={20} />
                               <span>Delete Note</span>
                             </Button.Tertiary>
                           </Modal.ActionGroup>

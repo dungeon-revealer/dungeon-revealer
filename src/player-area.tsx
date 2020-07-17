@@ -407,7 +407,7 @@ const PlayerMap: React.FC<{
           }}
         >
           <Toolbar horizontal>
-            <Toolbar.Logo {...handler()} style={{ cursor: "grab" }} />
+            <Toolbar.Logo {...handler()} cursor="grab" />
             {showItems ? (
               <React.Fragment>
                 <Toolbar.Group>

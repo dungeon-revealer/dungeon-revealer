@@ -9,7 +9,7 @@ import { darken, lighten } from "polished";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { buildUrl } from "./public-url";
 import { useUniqueId } from "./hooks/use-unique-id";
-import uniqueId from "lodash/uniqueId";
+import { debounce } from "lodash";
 
 // convert image relative to three.js
 const calculateX = (x: number, factor: number, dimensionsWidth: number) =>
@@ -791,9 +791,21 @@ export const MapView: React.FC<{
     }
   );
 
+  const [recreateCounter, setRecreateCounter] = React.useState(0);
+
+  React.useEffect(() => {
+    const listener = debounce(() => {
+      setRecreateCounter((i) => i + 1);
+    }, 500);
+    window.addEventListener("resize", listener);
+
+    return () => window.removeEventListener("resize", listener);
+  }, []);
+
   return (
     <div style={{ height: "100%", touchAction: "manipulation" }}>
       <Canvas
+        key={recreateCounter}
         camera={{ position: [0, 0, 5] }}
         onCreated={(props) => {
           setViewport({

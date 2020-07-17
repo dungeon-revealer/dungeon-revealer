@@ -164,7 +164,10 @@ export const Toolbar: ToolbarType = ({ children, horizontal, ...props }) => {
   );
 };
 
-const ToolbarLogo = styled.div<{ horizontal?: boolean }>`
+const ToolbarLogo = styled.div<{
+  horizontal?: boolean;
+  cursor?: string;
+}>`
   width: 50px;
   height: 50px;
   background-color: #044e54;
@@ -176,6 +179,7 @@ const ToolbarLogo = styled.div<{ horizontal?: boolean }>`
   color: rgba(255, 255, 255, 1);
   font-family: folkard, palitino, serif;
   line-height: 2;
+  cursor: ${(props) => props.cursor};
 
   > span {
     transform: translateY(22%);
@@ -190,8 +194,7 @@ const ToolbarLogo = styled.div<{ horizontal?: boolean }>`
 `;
 
 const Logo: React.FC<{
-  style?: Pick<Pick<React.ComponentProps<"div">, "style">, "cursor"> &
-    ReactEventHandlers;
+  cursor?: string & ReactEventHandlers;
 }> = (props) => {
   const { horizontal } = React.useContext(ToolbarContext);
   return (
