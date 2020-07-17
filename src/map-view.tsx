@@ -181,14 +181,6 @@ const TokenRenderer: React.FC<{
     }
   );
 
-  const meshRef = useUpdate<THREE.Mesh>((self) => {
-    const size = new THREE.Vector3();
-    self.geometry.computeBoundingBox();
-    self.geometry.boundingBox?.getSize(size);
-    self.position.x = -size.x / 2;
-    self.position.y = -size.y / 2;
-  }, []);
-
   const color = isHover ? lighten(0.1, props.color) : props.color;
 
   return (
@@ -282,77 +274,68 @@ const MarkedAreaRenderer: React.FC<{
 
 const reduceOffsetToMinimum = (offset: number, sideLength: number): number => {
   const newOffset = offset - sideLength;
-  if (newOffset > 0) return reduceOffsetToMinimum(newOffset, sideLength);
+  if (newOffset > 0) {
+    return reduceOffsetToMinimum(newOffset, sideLength);
+  }
   return offset;
 };
 
+const drawGridToContext = (grid: Grid, canvas: HTMLCanvasElement) => {
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
+  }
+  context.strokeStyle = grid.color || "rgba(0, 0, 0, .5)";
+  context.lineWidth = 2;
+
+  const sideLength = grid.sideLength;
+  const offsetX = reduceOffsetToMinimum(grid.x, sideLength);
+  const offsetY = reduceOffsetToMinimum(grid.y, sideLength);
+
+  for (let i = 0; i < canvas.width / sideLength; i++) {
+    context.beginPath();
+    context.moveTo(offsetX + i * sideLength, 0);
+    context.lineTo(offsetX + i * sideLength, canvas.height);
+    context.stroke();
+  }
+  for (let i = 0; i < canvas.height / sideLength; i++) {
+    context.beginPath();
+    context.moveTo(0, offsetY + i * sideLength);
+    context.lineTo(canvas.width, offsetY + i * sideLength);
+    context.stroke();
+  }
+};
+
 const GridRenderer: React.FC<{
-  x: number;
-  y: number;
-  sideLength: number;
-  color: string;
+  grid: Grid;
   dimensions: Dimensions;
   factor: number;
   imageHeight: number;
   imageWidth: number;
 }> = (props) => {
-  const lines = React.useMemo(() => {
-    const lines: React.ReactNodeArray = [];
-    for (
-      let currentY = reduceOffsetToMinimum(props.y, props.sideLength);
-      currentY <= props.imageHeight;
-      currentY = currentY + props.sideLength
-    ) {
-      lines.push(
-        <Line
-          key={uniqueId()}
-          linewidth={0.5}
-          color={props.color}
-          points={[
-            [
-              -props.dimensions.width / 2,
-              calculateY(currentY, props.factor, props.dimensions.height),
-              0,
-            ],
-            [
-              props.dimensions.width / 2,
-              calculateY(currentY, props.factor, props.dimensions.height),
-              0,
-            ],
-          ]}
-        />
-      );
-    }
-    for (
-      let currentX = reduceOffsetToMinimum(props.x, props.sideLength);
-      currentX <= props.imageWidth;
-      currentX = currentX + props.sideLength
-    ) {
-      lines.push(
-        <Line
-          key={uniqueId()}
-          linewidth={0.5}
-          color={props.color}
-          points={[
-            [
-              calculateX(currentX, props.factor, props.dimensions.width),
-              -props.dimensions.height / 2,
-              0,
-            ],
-            [
-              calculateX(currentX, props.factor, props.dimensions.width),
-              props.dimensions.height / 2,
-              0,
-            ],
-          ]}
-        />
-      );
-    }
+  const texture = React.useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = props.imageWidth;
+    canvas.height = props.imageHeight;
+    drawGridToContext(props.grid, canvas);
+    const texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+  }, []);
 
-    return lines;
-  }, [props.x, props.y, props.sideLength, props.factor, props.dimensions]);
-
-  return <React.Fragment>{lines}</React.Fragment>;
+  return (
+    <mesh>
+      <planeBufferGeometry
+        attach="geometry"
+        args={[props.dimensions.width, props.dimensions.height]}
+      />
+      <meshStandardMaterial
+        attach="material"
+        map={texture}
+        transparent={true}
+      />
+    </mesh>
+  );
 };
 
 const MapRenderer: React.FC<{
@@ -380,6 +363,15 @@ const MapRenderer: React.FC<{
           />
           <meshStandardMaterial attach="material" map={props.mapImageTexture} />
         </mesh>
+        {props.grid ? (
+          <GridRenderer
+            grid={props.grid}
+            dimensions={props.dimensions}
+            factor={props.factor}
+            imageHeight={props.mapImageTexture.image.naturalHeight}
+            imageWidth={props.mapImageTexture.image.naturalWidth}
+          />
+        ) : null}
         <mesh>
           <planeBufferGeometry
             attach="geometry"
@@ -391,18 +383,6 @@ const MapRenderer: React.FC<{
             transparent={true}
           />
         </mesh>
-        {props.grid ? (
-          <GridRenderer
-            x={props.grid.x}
-            y={props.grid.y}
-            sideLength={props.grid.sideLength}
-            color={props.grid.color}
-            dimensions={props.dimensions}
-            factor={props.factor}
-            imageHeight={props.mapImageTexture.image.naturalHeight}
-            imageWidth={props.mapImageTexture.image.naturalWidth}
-          />
-        ) : null}
       </group>
       {props.tokens
         .filter((token) => token.isVisibleForPlayers)

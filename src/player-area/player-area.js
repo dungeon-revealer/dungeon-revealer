@@ -14,16 +14,18 @@ import { AuthenticatedAppShell } from "../authenticated-app-shell";
 import { useSocket } from "../socket";
 import { useStaticRef } from "../hooks/use-static-ref";
 import debounce from "lodash/debounce";
+import { animated, useSpring, to } from "react-spring";
 import { MapView } from "../map-view";
+import { useGesture } from "react-use-gesture";
 
-const ToolbarContainer = styled.div`
+const ToolbarContainer = styled(animated.div)`
   position: absolute;
   display: flex;
   justify-content: center;
-  width: 100%;
-  bottom: 12px;
   pointer-events: none;
   user-select: none;
+  top: 0;
+  left: 0;
 `;
 
 const AbsoluteFullscreenContainer = styled.div`
@@ -252,6 +254,46 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
     [currentMap, persistTokenChanges, fetch]
   );
 
+  const [toolbarPosition, setToolbarPosition] = useSpring(() => ({
+    position: [12, window.innerHeight - 50 - 12],
+  }));
+
+  const [showItems, setShowItems] = React.useState(true);
+
+  const isDraggingRef = React.useRef(false);
+
+  const handler = useGesture(
+    {
+      onDrag: ({ movement, memo = toolbarPosition.position.get(), last }) => {
+        setToolbarPosition({
+          position: [movement[0], movement[1]],
+          immediate: true,
+        });
+
+        return memo;
+      },
+      onClick: () => {
+        if (isDraggingRef.current) {
+          isDraggingRef.current = false;
+          return;
+        }
+        setShowItems((showItems) => !showItems);
+      },
+    },
+    {
+      drag: {
+        initial: () => toolbarPosition.position.get(),
+        bounds: {
+          left: 10,
+          right: window.innerWidth - 70 - 10,
+          top: 10,
+          bottom: window.innerHeight - 50 - 10,
+        },
+        threshold: 5,
+      },
+    }
+  );
+
   return (
     <>
       <div
@@ -300,59 +342,70 @@ const PlayerMap = ({ fetch, pcPassword, socket }) => {
         </React.Suspense>
       </div>
       {!showSplashScreen ? (
-        <ToolbarContainer>
+        <ToolbarContainer
+          style={{
+            transform: to(
+              [toolbarPosition.position],
+              ([x, y]) => `translate(${x}px, ${y}px)`
+            ),
+          }}
+        >
           <Toolbar horizontal>
-            <Toolbar.Logo />
-            <Toolbar.Group>
-              <Toolbar.Item isActive>
-                <Toolbar.Button
-                  onClick={() => {
-                    controlRef.current.center();
-                  }}
-                  onTouchStart={(ev) => {
-                    ev.preventDefault();
-                    controlRef.current.center();
-                  }}
-                >
-                  <Icons.Compass />
-                  <Icons.Label>Center Map</Icons.Label>
-                </Toolbar.Button>
-              </Toolbar.Item>
-              <Toolbar.Item isActive>
-                <Toolbar.LongPressButton
-                  onClick={() => {
-                    controlRef.current.zoomIn();
-                  }}
-                  onLongPress={() => {
-                    const interval = setInterval(() => {
-                      controlRef.current.zoomIn();
-                    }, 100);
+            <Toolbar.Logo {...handler()} style={{ cursor: "grab" }} />
+            {showItems ? (
+              <React.Fragment>
+                <Toolbar.Group>
+                  <Toolbar.Item isActive>
+                    <Toolbar.Button
+                      onClick={() => {
+                        controlRef.current.center();
+                      }}
+                      onTouchStart={(ev) => {
+                        ev.preventDefault();
+                        controlRef.current.center();
+                      }}
+                    >
+                      <Icons.Compass size={20} />
+                      <Icons.Label>Center Map</Icons.Label>
+                    </Toolbar.Button>
+                  </Toolbar.Item>
+                  <Toolbar.Item isActive>
+                    <Toolbar.LongPressButton
+                      onClick={() => {
+                        controlRef.current.zoomIn();
+                      }}
+                      onLongPress={() => {
+                        const interval = setInterval(() => {
+                          controlRef.current.zoomIn();
+                        }, 100);
 
-                    return () => clearInterval(interval);
-                  }}
-                >
-                  <Icons.ZoomIn />
-                  <Icons.Label>Zoom In</Icons.Label>
-                </Toolbar.LongPressButton>
-              </Toolbar.Item>
-              <Toolbar.Item isActive>
-                <Toolbar.LongPressButton
-                  onClick={() => {
-                    controlRef.current.zoomOut();
-                  }}
-                  onLongPress={() => {
-                    const interval = setInterval(() => {
-                      controlRef.current.zoomOut();
-                    }, 100);
+                        return () => clearInterval(interval);
+                      }}
+                    >
+                      <Icons.ZoomIn size={20} />
+                      <Icons.Label>Zoom In</Icons.Label>
+                    </Toolbar.LongPressButton>
+                  </Toolbar.Item>
+                  <Toolbar.Item isActive>
+                    <Toolbar.LongPressButton
+                      onClick={() => {
+                        controlRef.current.zoomOut();
+                      }}
+                      onLongPress={() => {
+                        const interval = setInterval(() => {
+                          controlRef.current.zoomOut();
+                        }, 100);
 
-                    return () => clearInterval(interval);
-                  }}
-                >
-                  <Icons.ZoomOut />
-                  <Icons.Label>Zoom Out</Icons.Label>
-                </Toolbar.LongPressButton>
-              </Toolbar.Item>
-            </Toolbar.Group>
+                        return () => clearInterval(interval);
+                      }}
+                    >
+                      <Icons.ZoomOut size={20} />
+                      <Icons.Label>Zoom Out</Icons.Label>
+                    </Toolbar.LongPressButton>
+                  </Toolbar.Item>
+                </Toolbar.Group>
+              </React.Fragment>
+            ) : null}
           </Toolbar>
         </ToolbarContainer>
       ) : (

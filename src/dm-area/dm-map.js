@@ -1296,7 +1296,7 @@ export const DmMap = ({
                   }
                 }}
               >
-                <Icons.GridIcon />
+                <Icons.GridIcon size={20} />
                 <Icons.Label>
                   {map.grid ? "Grid Settings" : "Add Grid"}
                 </Icons.Label>
@@ -1326,7 +1326,7 @@ export const DmMap = ({
                   showMapModal();
                 }}
               >
-                <Icons.MapIcon />
+                <Icons.MapIcon size={20} />
                 <Icons.Label>Map Library</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
@@ -1336,7 +1336,7 @@ export const DmMap = ({
                   openMediaLibrary();
                 }}
               >
-                <Icons.ImageIcon />
+                <Icons.ImageIcon size={20} />
                 <Icons.Label>Media Library</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
@@ -1346,7 +1346,7 @@ export const DmMap = ({
                   openNotes();
                 }}
               >
-                <Icons.BookOpen />
+                <Icons.BookOpen size={20} />
                 <Icons.Label>Notes</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
@@ -1362,12 +1362,12 @@ export const DmMap = ({
                 )}
               >
                 <Icons.PauseIcon
-                  style={{
-                    stroke:
-                      liveMapId !== null
-                        ? "hsl(360, 83%, 62%)"
-                        : "hsl(211, 27%, 70%)",
-                  }}
+                  color={
+                    liveMapId !== null
+                      ? "hsl(360, 83%, 62%)"
+                      : "hsl(211, 27%, 70%)"
+                  }
+                  size={20}
                 />
                 <Icons.Label
                   color={
@@ -1382,29 +1382,29 @@ export const DmMap = ({
             </Toolbar.Item>
             {isCurrentMapLive ? (
               <Toolbar.Item>
-                <Icons.RadioIcon style={{ stroke: "hsl(160, 51%, 49%)" }} />
+                <Icons.RadioIcon color="hsl(160, 51%, 49%)" size={20} />
                 <Icons.Label color="hsl(160, 51%, 49%)">Live</Icons.Label>
               </Toolbar.Item>
             ) : isOtherMapLive ? (
               <Toolbar.Item>
-                <Icons.RadioIcon style={{ stroke: "hsl(48, 94%, 68%)" }} />
+                <Icons.RadioIcon color="hsl(48, 94%, 68%)" size={20} />
                 <Icons.Label color="hsl(48, 94%, 68%)">Live</Icons.Label>
               </Toolbar.Item>
             ) : (
               <Toolbar.Item>
-                <Icons.RadioIcon style={{ stroke: "hsl(211, 27%, 70%)" }} />
+                <Icons.RadioIcon color="hsl(211, 27%, 70%)" size={20} />
                 <Icons.Label color="hsl(211, 27%, 70%)">Not Live</Icons.Label>
               </Toolbar.Item>
             )}
             <Toolbar.Item isEnabled>
               <Toolbar.Button onClick={copyMapToClipboard}>
-                <Icons.ClipboardIcon fill="rgba(0, 0, 0, 1)" />
+                <Icons.ClipboardIcon size={20} />
                 <Icons.Label>Clipboard</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item isEnabled>
               <Toolbar.Button onClick={sendMap}>
-                <Icons.SendIcon fill="rgba(0, 0, 0, 1)" />
+                <Icons.SendIcon size={20} />
                 <Icons.Label>Send</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
@@ -1432,7 +1432,7 @@ export const DmMap = ({
                   setTool("move");
                 }}
               >
-                <Icons.MoveIcon />
+                <Icons.MoveIcon size={20} />
                 <Icons.Label>Move</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
@@ -1442,8 +1442,8 @@ export const DmMap = ({
                   setTool("area");
                 }}
               >
-                <Icons.CropIcon />
-                <Icons.Label>Select Area</Icons.Label>
+                <Icons.CropIcon size={20} />
+                <Icons.Label>Area</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
             <Toolbar.Item isActive={tool === "brush"}>
@@ -1452,13 +1452,13 @@ export const DmMap = ({
                   setTool("brush");
                 }}
               >
-                <Icons.PenIcon />
+                <Icons.PenIcon size={20} />
                 <Icons.Label>Brush</Icons.Label>
               </Toolbar.Button>
 
               {tool === "brush" ? (
                 <Toolbar.Popup>
-                  <h6>Brush Shape</h6>
+                  <h6 style={{ margin: 0, marginBottom: 12 }}>Brush Shape</h6>
                   <div style={{ display: "flex" }}>
                     <div style={{ flex: 1, textAlign: "left" }}>
                       <ShapeButton
@@ -1467,7 +1467,7 @@ export const DmMap = ({
                           setBrushShape("round");
                         }}
                       >
-                        <Icons.CircleIcon />
+                        <Icons.CircleIcon size={20} />
                         <Icons.Label>Circle</Icons.Label>
                       </ShapeButton>
                     </div>
@@ -1478,12 +1478,14 @@ export const DmMap = ({
                           setBrushShape("square");
                         }}
                       >
-                        <Icons.SquareIcon />
+                        <Icons.SquareIcon size={20} />
                         <Icons.Label>Square</Icons.Label>
                       </ShapeButton>
                     </div>
                   </div>
-                  <h6>Brush Size</h6>
+                  <h6 style={{ margin: 0, marginTop: 12, marginBottom: 0 }}>
+                    Brush Size
+                  </h6>
                   <input
                     type="range"
                     min="1"
@@ -1525,7 +1527,7 @@ export const DmMap = ({
                   setTool("mark");
                 }}
               >
-                <Icons.CrosshairIcon />
+                <Icons.CrosshairIcon size={20} />
                 <Icons.Label>Mark</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
@@ -1535,7 +1537,7 @@ export const DmMap = ({
                   setTool("tokens");
                 }}
               >
-                <Icons.TargetIcon />
+                <Icons.TargetIcon size={20} />
                 <Icons.Label>Token</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
@@ -1553,12 +1555,12 @@ export const DmMap = ({
               >
                 {mode === "shroud" ? (
                   <>
-                    <Icons.EyeOffIcon fill="rgba(0, 0, 0, 1)" />
+                    <Icons.EyeOffIcon size={20} />
                     <Icons.Label>Shroud</Icons.Label>
                   </>
                 ) : (
                   <>
-                    <Icons.EyeIcon fill="rgba(0, 0, 0, 1)" />
+                    <Icons.EyeIcon size={20} />
                     <Icons.Label>Reveal</Icons.Label>
                   </>
                 )}
@@ -1574,7 +1576,7 @@ export const DmMap = ({
                   })
                 }
               >
-                <Icons.DropletIcon filled />
+                <Icons.DropletIcon fill size={20} />
                 <Icons.Label>Shroud All</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>
@@ -1588,7 +1590,7 @@ export const DmMap = ({
                   })
                 }
               >
-                <Icons.DropletIcon fill="rgba(0, 0, 0, 1)" />
+                <Icons.DropletIcon size={20} />
                 <Icons.Label>Clear All</Icons.Label>
               </Toolbar.Button>
             </Toolbar.Item>

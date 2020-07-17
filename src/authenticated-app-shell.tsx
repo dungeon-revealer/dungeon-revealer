@@ -34,7 +34,6 @@ const Container = styled.div`
 const IconContainer = styled(animated.div)`
   margin-top: 10px;
   margin-right: 10px;
-  pointer-events: all;
   display: flex;
 `;
 
@@ -103,7 +102,7 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
           <IconContainer>
             <IconButton
               onClick={() => setShowSearch(true)}
-              style={{ marginRight: 8 }}
+              style={{ marginRight: 8, pointerEvents: "all" }}
             >
               <Icon.SearchIcon size={20} />
             </IconButton>

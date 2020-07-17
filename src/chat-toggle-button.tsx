@@ -38,7 +38,7 @@ export const ChatToggleButton: React.FC<{
   onClick: React.ComponentProps<"button">["onClick"];
 }> = ({ hasUnreadMessages, onClick }) => {
   return (
-    <IconButton onClick={onClick}>
+    <IconButton onClick={onClick} style={{ pointerEvents: "all" }}>
       <Icon.MessageCircleIcon size={20} />
       {hasUnreadMessages ? <ButtonBadge /> : null}
     </IconButton>
