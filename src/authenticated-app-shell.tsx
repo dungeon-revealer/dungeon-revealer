@@ -18,6 +18,7 @@ import {
 import * as Icon from "./feather-icons";
 import { SoundSettingsProvider } from "./sound-settings";
 import { animated, useSpring } from "react-spring";
+import { debounce } from "lodash";
 
 const useShowChatState = createPersistedState("chat.state");
 const useShowDiceRollNotesState = createPersistedState(
@@ -36,6 +37,31 @@ const IconContainer = styled(animated.div)`
   margin-right: 10px;
   display: flex;
 `;
+
+const useWindowWidth = () => {
+  const [windowWidth, setWindowWidth] = React.useState(window.innerWidth);
+  React.useEffect(() => {
+    const listener = debounce(() => {
+      setWindowWidth(window.innerWidth);
+    }, 500);
+    window.addEventListener("resize", listener);
+
+    return () => window.removeEventListener("resize", listener);
+  });
+
+  return windowWidth;
+};
+
+const useChatWidth = () => {
+  const windowWidth = useWindowWidth();
+
+  let chatWidth = 400;
+
+  if (chatWidth > windowWidth) {
+    chatWidth = windowWidth * 0.75;
+  }
+  return chatWidth;
+};
 
 const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
   const [chatState, setShowChatState] = useShowChatState<"show" | "hidden">(
@@ -75,8 +101,10 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
     return () => window.removeEventListener("keydown", listener);
   }, [isLoggedIn]);
 
+  const chatWidth = useChatWidth();
+
   const chatPosition = useSpring({
-    x: chatState === "hidden" ? 400 : 0,
+    x: chatState === "hidden" ? chatWidth : 0,
   });
 
   if (isLoggedIn === false) {
@@ -120,7 +148,7 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
           <div
             style={{
               height: "100%",
-              width: 400,
+              width: chatWidth,
               borderLeft: "1px solid lightgrey",
               pointerEvents: "all",
             }}
