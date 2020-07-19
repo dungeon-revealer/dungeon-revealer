@@ -50,6 +50,7 @@ type Token = {
   x: number;
   y: number;
   isVisibleForPlayers: boolean;
+  isMovableByPlayers: boolean;
   isLocked: boolean;
 };
 
@@ -484,18 +485,30 @@ const usePcPassword = createPersistedState("pcPassword");
 const AuthenticatedContent: React.FC<{
   pcPassword: string;
   localFetch: typeof fetch;
-}> = ({ pcPassword, localFetch }) => {
+  isMapOnly: boolean;
+}> = (props) => {
   const socket = useSocket();
 
   return (
-    <AuthenticatedAppShell password={pcPassword} socket={socket}>
-      <PlayerMap fetch={localFetch} pcPassword={pcPassword} socket={socket} />
+    <AuthenticatedAppShell
+      password={props.pcPassword}
+      socket={socket}
+      isMapOnly={props.isMapOnly}
+    >
+      <PlayerMap
+        fetch={props.localFetch}
+        pcPassword={props.pcPassword}
+        socket={socket}
+      />
     </AuthenticatedAppShell>
   );
 };
 
-export const PlayerArea: React.FC<{}> = () => {
-  const [pcPassword, setPcPassword] = usePcPassword("");
+export const PlayerArea: React.FC<{
+  password: string;
+  isMapOnly: boolean;
+}> = (props) => {
+  const [pcPassword, setPcPassword] = usePcPassword(props.password);
 
   const [mode, setMode] = React.useState("LOADING");
 
@@ -548,7 +561,11 @@ export const PlayerArea: React.FC<{}> = () => {
 
   if (mode === "READY") {
     return (
-      <AuthenticatedContent localFetch={localFetch} pcPassword={pcPassword} />
+      <AuthenticatedContent
+        localFetch={localFetch}
+        pcPassword={pcPassword}
+        isMapOnly={props.isMapOnly}
+      />
     );
   }
 
