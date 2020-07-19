@@ -20,6 +20,9 @@ const prepareToken = (token) => {
   if (token.isLocked === undefined) {
     token.isLocked = false;
   }
+  if (token.isLockedForPlayers === undefined) {
+    token.isMovableByPlayers = true;
+  }
   if (token.reference === undefined) {
     token.reference = null;
   }
@@ -261,6 +264,7 @@ class Maps {
       label,
       isVisibleForPlayers,
       isLocked,
+      isMovableByPlayers,
       title,
       description,
       reference,
@@ -308,6 +312,9 @@ class Maps {
       }
       if (isVisibleForPlayers !== undefined) {
         token.isVisibleForPlayers = isVisibleForPlayers;
+      }
+      if (isMovableByPlayers !== undefined) {
+        token.isMovableByPlayers = isMovableByPlayers;
       }
       if (reference !== undefined) {
         if (reference === null) {

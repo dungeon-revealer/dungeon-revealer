@@ -390,7 +390,12 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
 
     let updates = {};
 
-    if (req.role === "DM" || (req.role === "PC" && token.isLocked === false)) {
+    if (
+      req.role === "DM" ||
+      (req.role === "PC" &&
+        token.isLocked === false &&
+        token.isMovableByPlayers === true)
+    ) {
       updates = { ...updates, x: req.body.x, y: req.body.y };
     }
 
@@ -403,6 +408,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         radius: req.body.radius,
         isVisibleForPlayers: req.body.isVisibleForPlayers,
         isLocked: req.body.isLocked,
+        isMovableByPlayers: req.body.isMovableByPlayers,
         title: req.body.title,
         description: req.body.description,
         reference: req.body.reference,
