@@ -156,6 +156,7 @@ const Container = styled.div`
   flex-direction: column;
   height: 100%;
   width: 100%;
+  overflow: hidden;
 
   .active-image-component {
     background-color: ${transparentize(0.5, "pink")};
@@ -694,7 +695,7 @@ export const MarkdownEditor: React.FC<{
         </ToolBarButton>
         <ToolBarButtonDropDown>
           <ToolBarButton title="Insert Image" onClick={onClickImageButton}>
-            <ImageIcon height={16} />
+            <ImageIcon size={16} />
           </ToolBarButton>
           <DropDownMenu data-menu>
             <DropDownMenuInner>

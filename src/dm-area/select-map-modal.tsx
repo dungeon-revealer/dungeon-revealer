@@ -119,12 +119,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
         <Modal.Dialog>
           <Modal.Header>
             <Modal.Heading2>
-              <Icons.MapIcon
-                width={28}
-                height={28}
-                style={{ marginBottom: -2, marginRight: 16 }}
-              />{" "}
-              Map Library
+              <Icons.MapIcon size={28} /> Map Library
             </Modal.Heading2>
             <div style={{ flex: 1, textAlign: "right" }}>
               {canClose ? (
@@ -265,7 +260,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                         });
                       }}
                     >
-                      <Icons.TrashIcon height={20} width={20} />
+                      <Icons.TrashIcon size={20} />
                       <span>Delete</span>
                     </Button.Tertiary>
                   </div>
@@ -276,7 +271,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                         enterGridMode(activeMap.id);
                       }}
                     >
-                      <Icons.GridIcon height={20} width={20} />
+                      <Icons.GridIcon size={20} />
                       <span>Grid</span>
                     </Button.Tertiary>
                   </div>
@@ -326,7 +321,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                         beforeCreateMap(file);
                       }}
                     >
-                      <Icons.MapIcon height={24} width={24} />
+                      <Icons.MapIcon size={24} />
                       <span>Create a new Map</span>
                     </CreateNewMapButton>
                   </>

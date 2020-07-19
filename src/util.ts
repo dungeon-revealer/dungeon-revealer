@@ -10,7 +10,7 @@ export const loadImage = (src: string) => {
     image.src = "";
   };
 
-  const promise = new Promise((resolve, reject) => {
+  const promise = new Promise<HTMLImageElement>((resolve, reject) => {
     image.src = src;
     const removeEventListeners = () => {
       image.removeEventListener("load", loadListener);

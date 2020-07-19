@@ -190,12 +190,7 @@ export const SelectLibraryImageModal: React.FC<{
       <Content onClick={(ev) => ev.stopPropagation()} tabIndex={1}>
         <Modal.Header>
           <Modal.Heading2>
-            <Icons.ImageIcon
-              width={28}
-              height={28}
-              style={{ marginBottom: -2, marginRight: 16 }}
-            />{" "}
-            Media Library
+            <Icons.ImageIcon size={28} /> Media Library
           </Modal.Heading2>
         </Modal.Header>
         <Modal.Body

@@ -10,6 +10,7 @@ export const IconButton = styled.button`
   width: 30px;
   background-color: white;
   z-index: 20;
+  padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -37,8 +38,8 @@ export const ChatToggleButton: React.FC<{
   onClick: React.ComponentProps<"button">["onClick"];
 }> = ({ hasUnreadMessages, onClick }) => {
   return (
-    <IconButton onClick={onClick}>
-      <Icon.MessageCircleIcon height={20} width={20} />
+    <IconButton onClick={onClick} style={{ pointerEvents: "all" }}>
+      <Icon.MessageCircleIcon size={20} />
       {hasUnreadMessages ? <ButtonBadge /> : null}
     </IconButton>
   );

@@ -4,22 +4,9 @@ import { render } from "react-dom";
 import { getUrlPrefix } from "./public-url";
 import { globalStyles } from "./global-styles";
 import { Modal } from "./modal";
+import { registerSoundPlayback } from "./register-sound-playback";
 
 const element = document.querySelector("#root");
-
-//
-// hack for disabling pinch zoom in Safari
-// Unfortunately, Safari does ignore the following HTML meta tags...
-// maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, shrink-to-fit=no
-if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-  window.addEventListener(
-    "touchstart",
-    (ev) => {
-      ev.preventDefault();
-    },
-    { passive: false }
-  );
-}
 
 // Listen to tab events to enable outlines (accessibility improvement)
 document.body.addEventListener("keyup", (ev) => {
@@ -55,4 +42,5 @@ const main = async () => {
   }
 };
 
+registerSoundPlayback();
 main();

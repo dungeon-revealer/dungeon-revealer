@@ -32,6 +32,16 @@ export const globalStyles = css`
     font-size: 16px;
   }
 
+  html {
+    touch-action: none;
+  }
+
+  .user-select-disabled {
+    * {
+      user-select: none !important;
+    }
+  }
+
   #root {
     height: 100%;
     overflow: hidden;

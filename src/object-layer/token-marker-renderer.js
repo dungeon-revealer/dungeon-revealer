@@ -207,7 +207,7 @@ const TokenContextMenu = ({
                       updateToken({ reference: null });
                     }}
                   >
-                    <Icon.TrashIcon height={16} />
+                    <Icon.TrashIcon size={16} />
                     <span>Remove</span>
                   </Button.Tertiary>
                 </div>
@@ -265,7 +265,7 @@ const TokenContextMenu = ({
             disabled={isLocked}
             title="Delete Token"
           >
-            <Icon.TrashIcon height={16} />
+            <Icon.TrashIcon size={16} />
             <span>Delete</span>
           </Button.Tertiary>
         </div>

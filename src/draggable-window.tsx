@@ -1,7 +1,7 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
 import { animated, useSpring } from "react-spring";
-import { useDrag } from "react-use-gesture";
+import { useDrag, useGesture } from "react-use-gesture";
 import * as Icon from "./feather-icons";
 import * as Button from "./button";
 
@@ -27,7 +27,7 @@ const WindowHeader = styled.div`
 const WindowBody = styled(animated.div)`
   height: 400px;
   width: 100%;
-  overflow-y: scroll;
+  overflow: hidden;
 `;
 
 const WindowsResizeHandle = styled.button`
@@ -39,20 +39,6 @@ const WindowsResizeHandle = styled.button`
   height: 15px;
   width: 15px;
 `;
-
-window.addEventListener("mousedown", (ev) => {
-  if (ev.target && ev.target instanceof HTMLElement) {
-    ev.target.hasAttribute("data-draggable");
-    window.document.body.style.userSelect = "none";
-    window.addEventListener(
-      "mouseup",
-      () => {
-        window.document.body.style.userSelect = "";
-      },
-      { once: true }
-    );
-  }
-});
 
 export const DraggableWindow = ({
   headerContent,
@@ -86,18 +72,33 @@ export const DraggableWindow = ({
     height: window.innerHeight / 2,
   }));
 
-  const bind = useDrag(
-    ({ movement: [mx, my] }) => {
+  // In case the component un-mounts before the drag finished we need to remove the use-select-disabled class from body
+  const onUnmountRef = React.useRef<() => void>();
+  React.useEffect(() => () => onUnmountRef.current?.(), []);
+
+  const bind = useGesture({
+    onDrag: ({ offset: [mx, my], memo = [props.x.get(), props.y.get()] }) => {
       set({
         x: mx,
         y: my,
         immediate: true,
       });
+      return memo;
     },
-    {
-      initial: () => [props.x.get(), props.y.get()],
-    }
-  );
+    onMouseDown: (ev) => {
+      // on desktop we want to disable user-select while dragging
+      if (ev.target && ev.target instanceof HTMLElement) {
+        ev.target.hasAttribute("data-draggable");
+        window.document.body.classList.add("user-select-disabled");
+        const onUnmount = () => {
+          window.document.body.classList.remove("user-select-disabled");
+          window.removeEventListener("mouseup", onUnmount);
+        };
+        window.addEventListener("mouseup", onUnmount);
+        onUnmountRef.current = onUnmount;
+      }
+    },
+  });
 
   const dimensionDragBind = useDrag(
     ({ movement: [mx, my], down }) => {
@@ -137,7 +138,7 @@ export const DraggableWindow = ({
           style={{
             fontWeight: "bold",
             whiteSpace: "nowrap",
-            overflowY: "hidden",
+            overflow: "hidden",
             textOverflow: "ellipsis",
             marginLeft: 4,
             marginRight: 4,

@@ -24,7 +24,7 @@ const ButtonBase = styled.button<ButtonBaseProps>`
   height: ${(p) => (p.big ? `60px` : p.small ? `32px` : `54px`)};
   font-size: ${(p) => (p.small ? `12px` : undefined)};
 
-  > svg:first-child:not(:last-child) {
+  > svg:first-of-type:not(:last-child) {
     margin-left: ${(p) => (p.iconOnly ? null : p.small ? `-4px` : `-8px`)};
   }
 

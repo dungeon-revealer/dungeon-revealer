@@ -33,6 +33,7 @@ const InputLabel = styled.label`
   width: 100%;
   margin-left: auto;
   margin-right: auto;
+  justify-content: stretch;
 `;
 
 const IconContainer = styled.div`
@@ -45,6 +46,7 @@ const IconContainer = styled.div`
   padding: 12px;
   pointer-events: default;
   font-size: inherit;
+  height: 50px;
 `;
 
 const NoteSearchInput = styled.input`
@@ -52,8 +54,11 @@ const NoteSearchInput = styled.input`
   padding: 12px;
   border-top-right-radius: 5px;
   border-bottom-right-radius: 5px;
+  border-bottom-left-radius: 0;
+  border-top-left-radius: 0;
   border: none;
   width: 100%;
+  height: 50px;
 `;
 
 const NoteSearch_SearchQuery = graphql`
@@ -77,15 +82,17 @@ const ResultContainer = styled.div`
   flex-wrap: wrap;
   margin-left: auto;
   margin-right: auto;
+  background-color: #fff;
 `;
 
 const Result = styled.button`
   display: block;
   text-align: left;
   cursor: pointer;
-  border: none;
-  background: #fff;
+  background-color: #fff;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  border: 0;
   padding-bottom: 4px;
   padding-top: 4px;
   border-bottom: 1px solid lightgray;
@@ -95,10 +102,10 @@ const Result = styled.button`
 
   &:hover,
   &:focus {
-    background-color: ${darken(0.1, "white")};
+    background-color: ${darken(0.1, "#fff")};
   }
 
-  &:first-child {
+  &:first-of-type {
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
   }
@@ -139,7 +146,7 @@ export const NoteSearch: React.FC<{ close: () => void }> = ({ close }) => {
     >
       <InputLabel>
         <IconContainer>
-          <Icon.SearchIcon height={25} width={25} />
+          <Icon.SearchIcon size={25} />
         </IconContainer>
         <NoteSearchInput
           autoFocus

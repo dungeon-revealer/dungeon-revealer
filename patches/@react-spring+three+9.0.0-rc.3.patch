@@ -1,0 +1,49 @@
+diff --git a/node_modules/@react-spring/three/index.d.ts b/node_modules/@react-spring/three/index.d.ts
+index 4546043..1b3df8a 100644
+--- a/node_modules/@react-spring/three/index.d.ts
++++ b/node_modules/@react-spring/three/index.d.ts
+@@ -1,6 +1,7 @@
+ import { ForwardRefExoticComponent, CSSProperties, FC } from 'react';
+ import { ElementType, ComponentPropsWithRef, AssignableKeys, FluidValue } from '@react-spring/shared';
+ export * from '@react-spring/core';
++import { SpringValue } from '@react-spring/core';
+ 
+ declare type Primitives = keyof JSX.IntrinsicElements;
+ 
+@@ -17,7 +18,23 @@ declare type AnimatedComponent<T extends ElementType> = ForwardRefExoticComponen
+ declare type AnimatedProps<Props extends object> = {
+     [P in keyof Props]: P extends 'ref' | 'key' ? Props[P] : AnimatedProp<Props[P]>;
+ };
+-declare type AnimatedProp<T> = [T, T] extends [infer T, infer DT] ? [DT] extends [never] ? never : DT extends void ? undefined : DT extends object ? [AssignableKeys<DT, CSSProperties>] extends [never] ? DT extends ReadonlyArray<any> ? AnimatedStyles<DT> : DT : AnimatedStyle<T> : DT | AnimatedLeaf<T> : never;
++type ThreeThing = THREE.Vector3 | [number, number, number] | [any, any, any] | undefined
++declare type AnimatedProp<T> = [T, T] extends [infer T, infer DT]
++  ? [DT] extends [never]
++    ? never
++    : DT extends void
++    ? undefined
++    : DT extends ThreeThing
++    ? ThreeThing | SpringValue<[number, number, number]>
++    : DT extends object
++    ? [AssignableKeys<DT, CSSProperties>] extends [never]
++      ? DT extends ReadonlyArray<any>
++        ? AnimatedStyles<DT>
++        : DT
++      : AnimatedStyle<T>
++    : DT | AnimatedLeaf<T>
++  : never
++// declare type AnimatedProp<T> = [T, T] extends [infer T, infer DT] ? [DT] extends [never] ? never : DT extends void ? undefined : DT extends object ? [AssignableKeys<DT, CSSProperties>] extends [never] ? DT extends ReadonlyArray<any> ? AnimatedStyles<DT> : DT : AnimatedStyle<T> : DT | AnimatedLeaf<T> : never;
+ declare type AnimatedStyles<T extends ReadonlyArray<any>> = {
+     [P in keyof T]: [T[P]] extends [infer DT] ? DT extends object ? [AssignableKeys<DT, CSSProperties>] extends [never] ? DT extends ReadonlyArray<any> ? AnimatedStyles<DT> : DT : {
+         [P in keyof DT]: AnimatedProp<DT[P]>;
+diff --git a/node_modules/@react-spring/three/src/animated.ts b/node_modules/@react-spring/three/src/animated.ts
+index b05c6d7..77f089e 100644
+--- a/node_modules/@react-spring/three/src/animated.ts
++++ b/node_modules/@react-spring/three/src/animated.ts
+@@ -6,6 +6,7 @@ import {
+   FluidValue,
+ } from '@react-spring/shared'
+ import { Primitives } from './primitives'
++import { SpringValue } from 'react-spring'
+ 
+ type AnimatedPrimitives = {
+   [P in Primitives]: AnimatedComponent<FC<JSX.IntrinsicElements[P]>>
