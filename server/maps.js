@@ -20,7 +20,7 @@ const prepareToken = (token) => {
   if (token.isLocked === undefined) {
     token.isLocked = false;
   }
-  if (token.isLockedForPlayers === undefined) {
+  if (token.isMovableByPlayers === undefined) {
     token.isMovableByPlayers = true;
   }
   if (token.reference === undefined) {
