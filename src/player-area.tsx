@@ -505,10 +505,16 @@ const AuthenticatedContent: React.FC<{
 };
 
 export const PlayerArea: React.FC<{
-  password: string;
+  password: string | null;
   isMapOnly: boolean;
 }> = (props) => {
-  const [pcPassword, setPcPassword] = usePcPassword(props.password);
+  const [pcPassword, setPcPassword] = usePcPassword("");
+  const initialPcPassword = React.useRef(pcPassword);
+  let usedPassword = pcPassword;
+  // the password in the query parameters has priority.
+  if (pcPassword === initialPcPassword.current && props.password) {
+    usedPassword = props.password;
+  }
 
   const [mode, setMode] = React.useState("LOADING");
 
@@ -517,7 +523,7 @@ export const PlayerArea: React.FC<{
       return fetch(buildApiUrl(input), {
         ...init,
         headers: {
-          Authorization: pcPassword ? `Bearer ${pcPassword}` : undefined,
+          Authorization: usedPassword ? `Bearer ${usedPassword}` : undefined,
           ...init.headers,
         },
       }).then((res) => {
@@ -528,7 +534,7 @@ export const PlayerArea: React.FC<{
         return res;
       });
     },
-    [pcPassword]
+    [usedPassword]
   );
 
   useAsyncEffect(
@@ -563,7 +569,7 @@ export const PlayerArea: React.FC<{
     return (
       <AuthenticatedContent
         localFetch={localFetch}
-        pcPassword={pcPassword}
+        pcPassword={usedPassword}
         isMapOnly={props.isMapOnly}
       />
     );

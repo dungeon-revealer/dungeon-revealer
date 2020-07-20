@@ -63,7 +63,10 @@ const useChatWidth = () => {
   return chatWidth;
 };
 
-const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
+const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
+  isMapOnly,
+  children,
+}) => {
   const [chatState, setShowChatState] = useShowChatState<"show" | "hidden">(
     "hidden"
   );
@@ -117,52 +120,62 @@ const AuthenticatedAppShellRenderer: React.FC<{}> = ({ children }) => {
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
           {children}
         </div>
-        <animated.div
-          style={{
-            display: "flex",
-            position: "absolute",
-            right: 0,
-            height: "100%",
-            transform: chatPosition.x.to((value) => `translateX(${value}px)`),
-            pointerEvents: "none",
-          }}
-        >
-          <IconContainer>
-            <IconButton
-              onClick={() => setShowSearch(true)}
-              style={{ marginRight: 8, pointerEvents: "all" }}
-            >
-              <Icon.SearchIcon size={20} />
-            </IconButton>
-            <ChatToggleButton
-              hasUnreadMessages={hasUnreadMessages}
-              onClick={() => {
-                resetUnreadMessages();
-                setShowChatState((showChat) =>
-                  showChat === "show" ? "hidden" : "show"
-                );
+        {isMapOnly === false ? (
+          <React.Fragment>
+            <animated.div
+              style={{
+                display: "flex",
+                position: "absolute",
+                right: 0,
+                height: "100%",
+                transform: chatPosition.x.to(
+                  (value) => `translateX(${value}px)`
+                ),
+                pointerEvents: "none",
               }}
-            />
-          </IconContainer>
-
-          <div
-            style={{
-              height: "100%",
-              width: chatWidth,
-              borderLeft: "1px solid lightgrey",
-              pointerEvents: "all",
-            }}
-          >
-            <Chat toggleShowDiceRollNotes={toggleShowDiceRollNotes} />
-          </div>
-        </animated.div>
-
-        {diceRollNotesState === "show" ? (
-          <DiceRollNotes close={toggleShowDiceRollNotes} />
+            >
+              <IconContainer>
+                <IconButton
+                  onClick={() => setShowSearch(true)}
+                  style={{ marginRight: 8, pointerEvents: "all" }}
+                >
+                  <Icon.SearchIcon size={20} />
+                </IconButton>
+                <ChatToggleButton
+                  hasUnreadMessages={hasUnreadMessages}
+                  onClick={() => {
+                    resetUnreadMessages();
+                    setShowChatState((showChat) =>
+                      showChat === "show" ? "hidden" : "show"
+                    );
+                  }}
+                />
+              </IconContainer>
+              <div
+                style={{
+                  height: "100%",
+                  width: chatWidth,
+                  borderLeft: "1px solid lightgrey",
+                  pointerEvents: "all",
+                }}
+              >
+                <Chat toggleShowDiceRollNotes={toggleShowDiceRollNotes} />
+              </div>
+            </animated.div>
+          </React.Fragment>
         ) : null}
       </Container>
-      <TokenInfoAside />
-      {showSearch ? <NoteSearch close={() => setShowSearch(false)} /> : null}
+      {isMapOnly === false ? (
+        <React.Fragment>
+          <TokenInfoAside />
+          {showSearch ? (
+            <NoteSearch close={() => setShowSearch(false)} />
+          ) : null}
+          {diceRollNotesState === "show" ? (
+            <DiceRollNotes close={toggleShowDiceRollNotes} />
+          ) : null}
+        </React.Fragment>
+      ) : null}
     </NoteWindowContextProvider>
   );
 };
@@ -177,7 +190,8 @@ type ConnectionMode =
 export const AuthenticatedAppShell: React.FC<{
   socket: SocketIOClient.Socket;
   password: string;
-}> = ({ socket, password, children }) => {
+  isMapOnly: boolean;
+}> = ({ socket, password, isMapOnly, children }) => {
   const relayEnvironment = useStaticRef(() => createEnvironment(socket));
   // WebSocket connection state
   const [connectionMode, setConnectionMode] = React.useState<ConnectionMode>(
@@ -251,7 +265,7 @@ export const AuthenticatedAppShell: React.FC<{
   return (
     <SoundSettingsProvider>
       <RelayEnvironmentProvider environment={relayEnvironment}>
-        <AuthenticatedAppShellRenderer>
+        <AuthenticatedAppShellRenderer isMapOnly={isMapOnly}>
           {children}
         </AuthenticatedAppShellRenderer>
       </RelayEnvironmentProvider>

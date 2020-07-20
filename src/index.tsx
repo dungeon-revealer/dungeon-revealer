@@ -18,6 +18,8 @@ document.body.addEventListener("keyup", (ev) => {
 
 const pathname = window.location.pathname.replace(getUrlPrefix(), "");
 
+const urlSearchParameter = new URLSearchParams(window.location.search);
+
 const main = async () => {
   let component = null;
   switch (pathname) {
@@ -27,8 +29,13 @@ const main = async () => {
       break;
     }
     default: {
+      const isMapOnly = urlSearchParameter.get("map_only") !== null;
+      const password = urlSearchParameter.get("password");
+
       const { PlayerArea } = await import("./player-area");
-      component = <PlayerArea />;
+      component = (
+        <PlayerArea isMapOnly={isMapOnly} password={password || ""} />
+      );
     }
   }
   if (element) {
