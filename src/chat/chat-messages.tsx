@@ -6,6 +6,7 @@ import * as ReactVirtualized from "react-virtualized";
 import { chatMessages_chat } from "./__generated__/chatMessages_chat.graphql";
 import { ChatMessage } from "./chat-message";
 import { useStaticRef } from "../hooks/use-static-ref";
+import { CellMeasureContext } from "../cell-measure-context";
 
 const ChatMessageContainer = styled.div<{ disableScrollbar: boolean }>`
   position: relative;
@@ -62,8 +63,9 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
               width={autoSizerParams.width}
               // TODO: Why do I need to add the type definition
               onScroll={(target: ReactVirtualized.OnScrollParams) => {
-                // we still want to follow in case the content is not scrollable yet.
-                if (target.scrollHeight <= target.clientHeight) return;
+                if (target.scrollTop === 0) {
+                  return;
+                }
                 if (
                   target.scrollTop !==
                   target.scrollHeight - target.clientHeight
@@ -83,9 +85,23 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
                     rowIndex={params.index}
                     width={undefined}
                   >
-                    <div style={params.style} key={params.key}>
-                      <ChatMessage message={chat.edges[params.index].node} />
-                    </div>
+                    {({ measure }) => (
+                      <CellMeasureContext.Provider
+                        key={params.key}
+                        value={() => {
+                          measure();
+                          if (follow) {
+                            listRef.current?.scrollToRow(chat.edges.length - 1);
+                          }
+                        }}
+                      >
+                        <div style={params.style}>
+                          <ChatMessage
+                            message={chat.edges[params.index].node}
+                          />
+                        </div>
+                      </CellMeasureContext.Provider>
+                    )}
                   </ReactVirtualized.CellMeasurer>
                 );
               }}

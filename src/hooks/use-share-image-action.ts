@@ -1,30 +1,15 @@
 import * as React from "react";
-import { useToasts } from "react-toast-notifications";
+import graphql from "babel-plugin-relay/macro";
+import { useMutation } from "relay-hooks";
 
-type ShareImageFunction = (id: string) => void;
-const ShareImageContext = React.createContext<ShareImageFunction>(
-  () => undefined
-);
+const UseShareImageAction_ShareImageMutation = graphql`
+  mutation useShareImageAction_shareImageMutation($input: ShareImageInput!) {
+    shareImage(input: $input)
+  }
+`;
 
-export const useShareImageAction = () => React.useContext(ShareImageContext);
+export const useShareImageAction = () => {
+  const [mutate] = useMutation(UseShareImageAction_ShareImageMutation);
 
-export const ShareImageActionProvider: React.FC<{
-  socket: SocketIOClient.Socket;
-}> = ({ children, socket }) => {
-  const { addToast } = useToasts();
-  const shareImage = React.useCallback(
-    (id: string) => {
-      socket.emit("share image", { id });
-      addToast(`Shared Image '${id}' with players.`, {
-        appearance: "success",
-        autoDismiss: true,
-      });
-    },
-    [socket]
-  );
-
-  return React.createElement(ShareImageContext.Provider, {
-    children,
-    value: shareImage,
-  });
+  return (imageId: string) => mutate({ variables: { input: { imageId } } });
 };

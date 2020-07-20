@@ -290,12 +290,6 @@ const bootstrapServer = async () => {
           socket.emit("remove token", message);
         });
       });
-
-      socket.on("share image", (message) => {
-        Array.from(authenticatedSockets).forEach((socket) => {
-          socket.emit("share image", message);
-        });
-      });
     });
 
     socket.once("disconnect", function () {

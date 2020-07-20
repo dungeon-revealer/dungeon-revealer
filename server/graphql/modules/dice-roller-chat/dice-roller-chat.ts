@@ -1,11 +1,12 @@
 import { t } from "../..";
 import { GraphQLPageInfoType } from "../relay-spec";
+import * as ImageModule from "../image";
+import * as NotesModule from "../notes";
 import type {
   DiceRollDetail,
   ApplicationRecordSchema,
   DiceRollResult,
 } from "../../../chat";
-import * as NotesModule from "../notes";
 import * as E from "fp-ts/lib/Either";
 import * as RT from "fp-ts/lib/ReaderTask";
 
@@ -184,14 +185,21 @@ const GraphQLTextChatMessageInterfaceType = t.interfaceType<ChatMessageType>({
   ],
 });
 
-const GraphQLSharedResourceEnumType = t.unionType<NotesModule.NoteModelType>({
+const GraphQLSharedResourceEnumType = t.unionType<
+  NotesModule.NoteModelType | ImageModule.ImageModelType
+>({
   name: "SharedResource",
-  types: [NotesModule.GraphQLNoteType],
+  types: [NotesModule.GraphQLNoteType, ImageModule.GraphQLImageType],
   resolveType: (input) => {
     if (NotesModule.isTypeOfNote(input)) return NotesModule.GraphQLNoteType;
+    if (ImageModule.isTypeOfImage(input)) return ImageModule.GraphQLImageType;
     throw new Error("Invalid State.");
   },
 });
+
+type SharedResourceResourceResolveType = Promise<
+  NotesModule.NoteModelType | ImageModule.ImageModelType
+>;
 
 const GraphQLSharedResourceChatMessageType = t.objectType<
   SharedResourceChatMessageType
@@ -210,8 +218,25 @@ const GraphQLSharedResourceChatMessageType = t.objectType<
     }),
     t.field("resource", {
       type: GraphQLSharedResourceEnumType,
-      resolve: (input, args, context) => {
-        return RT.run(NotesModule.resolveNote(input.resource.id), context);
+      resolve: (
+        input,
+        args,
+        context
+      ): Promise<NotesModule.NoteModelType | ImageModule.ImageModelType> => {
+        switch (input.resource.type) {
+          case "NOTE": {
+            return RT.run(
+              NotesModule.resolveNote(input.resource.id),
+              context
+            ) as SharedResourceResourceResolveType;
+          }
+          case "IMAGE": {
+            return RT.run(
+              ImageModule.resolveImage(input.resource.id),
+              context
+            ) as SharedResourceResourceResolveType;
+          }
+        }
       },
     }),
   ],
@@ -359,6 +384,15 @@ const GraphQLShareResourceInputType = t.inputObjectType({
   }),
 });
 
+const GraphQLShareImageInputType = t.inputObjectType({
+  name: "ShareImageInput",
+  fields: () => ({
+    imageId: {
+      type: t.NonNullInput(t.ID),
+    },
+  }),
+});
+
 export const mutationFields = [
   t.field("chatMessageCreate", {
     type: t.Boolean,
@@ -391,6 +425,24 @@ export const mutationFields = [
         resource: {
           type: "NOTE",
           id: decodedId.right,
+        },
+      });
+    },
+  }),
+  t.field("shareImage", {
+    type: t.Boolean,
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLShareImageInputType)),
+    },
+    resolve: (obj, args, context) => {
+      const user = context.user.get(context.getSessionId());
+      if (!user) return null;
+
+      context.chat.addSharedResourceMessage({
+        authorName: user.name,
+        resource: {
+          type: "IMAGE",
+          id: args.input.imageId,
         },
       });
     },

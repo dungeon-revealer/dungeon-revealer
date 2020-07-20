@@ -77,7 +77,7 @@ type SharedResourceChatMessage implements ChatMessage {
   resource: SharedResource
 }
 
-union SharedResource = Note
+union SharedResource = Note | Image
 
 type Note implements Node {
   id: ID!
@@ -94,6 +94,12 @@ type Note implements Node {
 
 interface Node {
   id: ID!
+}
+
+type Image implements Node {
+  id: ID!
+  imageId: ID!
+  url: String!
 }
 
 type Query {
@@ -171,6 +177,7 @@ type Mutation {
   changeName(input: ChangeNameInput!): ChangeNameResult!
   chatMessageCreate(input: ChatMessageCreateInput!): Boolean
   shareResource(input: ShareResourceInput!): Boolean
+  shareImage(input: ShareImageInput!): Boolean
   noteCreate(input: NoteCreateInput!): NoteCreateResult!
   noteDelete(input: NoteDeleteInput!): NoteDeleteResult!
   noteUpdateContent(input: NoteUpdateContentInput!): NoteUpdateResult!
@@ -201,6 +208,10 @@ input ChatMessageCreateInput {
 
 input ShareResourceInput {
   contentId: ID!
+}
+
+input ShareImageInput {
+  imageId: ID!
 }
 
 type NoteCreateResult {

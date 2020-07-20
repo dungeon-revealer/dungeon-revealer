@@ -2,6 +2,13 @@ import uuid from "uuid";
 import { PubSub } from "graphql-subscriptions";
 import { roll } from "@airjp73/dice-notation";
 
+type SharedResourceType =
+  | { type: "NOTE"; id: string }
+  | {
+      type: "IMAGE";
+      id: string;
+    };
+
 export type DiceRollDetail =
   | {
       type: "DiceRoll";
@@ -54,10 +61,7 @@ export type ApplicationRecordSchema =
   | {
       type: "SHARED_RESOURCE";
       id: string;
-      resource: {
-        type: "NOTE";
-        id: string;
-      };
+      resource: SharedResourceType;
       authorName: string;
       createdAt: number;
     };
@@ -175,7 +179,7 @@ export const createChat = () => {
 
   const addSharedResourceMessage = (args: {
     authorName: string;
-    resource: { type: "NOTE"; id: string };
+    resource: SharedResourceType;
   }) => {
     const message: ApplicationRecordSchema = {
       id: uuid.v4(),
