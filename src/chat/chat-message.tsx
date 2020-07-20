@@ -11,6 +11,7 @@ import { chatMessageComponents } from "../user-content-components";
 import { useFragment } from "relay-hooks";
 import { chatMessage_SharedResourceChatMessageFragment$key } from "./__generated__/chatMessage_SharedResourceChatMessageFragment.graphql";
 import { useNoteWindowActions } from "../dm-area/token-info-aside";
+import { SharableImage } from "../dm-area/components/sharable-image";
 
 const Container = styled.div`
   margin-bottom: 4px;
@@ -114,6 +115,11 @@ const ChatMessage_SharedResourceChatMessageFragment = graphql`
         title
         contentPreview
       }
+      ... on Image {
+        __typename
+        id
+        imageId
+      }
     }
   }
 `;
@@ -183,6 +189,8 @@ const SharedResourceRenderer: React.FC<{
           />
         );
         break;
+      case "Image":
+        resourceContent = <SharableImage id={message.resource.imageId} />;
     }
   }
 

@@ -5,6 +5,7 @@ import { useShareImageAction } from "../../hooks/use-share-image-action";
 import * as Icon from "../../feather-icons";
 import * as Button from "../../button";
 import { ImageLightBoxModal } from "../../image-lightbox-modal";
+import { useCellMeasure } from "../../cell-measure-context";
 
 const Container = styled.span`
   display: block;
@@ -16,6 +17,7 @@ const Container = styled.span`
 `;
 
 const Image = styled.img`
+  display: inline-block;
   max-width: 100%;
 `;
 
@@ -31,19 +33,27 @@ const Menu = styled.span`
   }
 `;
 
-export const SharableImage: React.FC<{ id: string }> = ({ id }) => {
+export const SharableImage: React.FC<{ id: string }> = (props) => {
   const [showLightboxImage, setShowLightBoxImage] = React.useState(false);
   const shareImage = useShareImageAction();
+  const measure = useCellMeasure();
 
   return (
     <Container>
-      <Image src={buildApiUrl(`/images/${id}`)} />
+      <Image
+        src={buildApiUrl(`/images/${props.id}`)}
+        onDoubleClick={(ev) => {
+          ev.preventDefault();
+          setShowLightBoxImage(true);
+        }}
+        onLoad={measure}
+      />
       <Menu data-menu>
         <Button.Primary
           small
           title="Share with Players"
           iconOnly
-          onClick={() => shareImage(id)}
+          onClick={() => shareImage(props.id)}
         >
           <Icon.Share height={16} />
         </Button.Primary>
@@ -58,7 +68,7 @@ export const SharableImage: React.FC<{ id: string }> = ({ id }) => {
       </Menu>
       {showLightboxImage ? (
         <ImageLightBoxModal
-          src={buildApiUrl(`/images/${id}`)}
+          src={buildApiUrl(`/images/${props.id}`)}
           close={() => setShowLightBoxImage(false)}
         />
       ) : null}

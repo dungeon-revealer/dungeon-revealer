@@ -19,7 +19,6 @@ import { SetMapGrid } from "./set-map-grid";
 import { useSocket } from "../socket";
 import { buildApiUrl } from "../public-url";
 import { useStaticRef } from "../hooks/use-static-ref";
-import { ShareImageActionProvider } from "../hooks/use-share-image-action";
 import { AuthenticationScreen } from "../authentication-screen";
 import { SplashScreen } from "../splash-screen";
 import { FetchContext } from "./fetch-context";
@@ -314,101 +313,99 @@ const Content = ({ socket, password: dmPassword }) => {
 
   return (
     <FetchContext.Provider value={localFetch}>
-      <ShareImageActionProvider socket={socket}>
-        {mode.title === "SHOW_MAP_LIBRARY" ? (
-          <SelectMapModal
-            canClose={loadedMap !== null}
-            maps={data.maps}
-            loadedMapId={loadedMapId}
-            liveMapId={liveMapId}
-            closeModal={() => {
-              setMode({ title: "EDIT_MAP" });
-            }}
-            setLoadedMapId={(loadedMapId) => {
-              setMode({ title: "EDIT_MAP" });
-              setLoadedMapId(loadedMapId);
-            }}
-            updateMap={updateMap}
-            deleteMap={deleteMap}
-            createMap={createMap}
-            enterGridMode={(mapId) =>
-              setMode({ title: "SET_MAP_GRID", data: { mapId } })
-            }
-            dmPassword={dmPassword}
-          />
-        ) : null}
-        {mode.title === "SHOW_NOTES" ? (
-          <React.Suspense fallback={null}>
-            <NoteEditor
-              onClose={() => {
-                setMode({ title: "EDIT_MAP" });
-              }}
-            />
-          </React.Suspense>
-        ) : null}
-        {mode.title === "MEDIA_LIBRARY" ? (
-          <MediaLibrary
+      {mode.title === "SHOW_MAP_LIBRARY" ? (
+        <SelectMapModal
+          canClose={loadedMap !== null}
+          maps={data.maps}
+          loadedMapId={loadedMapId}
+          liveMapId={liveMapId}
+          closeModal={() => {
+            setMode({ title: "EDIT_MAP" });
+          }}
+          setLoadedMapId={(loadedMapId) => {
+            setMode({ title: "EDIT_MAP" });
+            setLoadedMapId(loadedMapId);
+          }}
+          updateMap={updateMap}
+          deleteMap={deleteMap}
+          createMap={createMap}
+          enterGridMode={(mapId) =>
+            setMode({ title: "SET_MAP_GRID", data: { mapId } })
+          }
+          dmPassword={dmPassword}
+        />
+      ) : null}
+      {mode.title === "SHOW_NOTES" ? (
+        <React.Suspense fallback={null}>
+          <NoteEditor
             onClose={() => {
               setMode({ title: "EDIT_MAP" });
             }}
           />
-        ) : null}
-        {setMapGridTargetMap ? (
-          <SetMapGrid
-            map={setMapGridTargetMap}
-            onSuccess={(mapId, grid) => {
-              updateMap(mapId, {
-                grid,
-              });
-              setMode({ title: "SHOW_MAP_LIBRARY" });
+        </React.Suspense>
+      ) : null}
+      {mode.title === "MEDIA_LIBRARY" ? (
+        <MediaLibrary
+          onClose={() => {
+            setMode({ title: "EDIT_MAP" });
+          }}
+        />
+      ) : null}
+      {setMapGridTargetMap ? (
+        <SetMapGrid
+          map={setMapGridTargetMap}
+          onSuccess={(mapId, grid) => {
+            updateMap(mapId, {
+              grid,
+            });
+            setMode({ title: "SHOW_MAP_LIBRARY" });
+          }}
+          onAbort={() => {
+            setMode({ title: "SHOW_MAP_LIBRARY" });
+          }}
+          dmPassword={dmPassword}
+        />
+      ) : loadedMap ? (
+        <div style={{ display: "flex", height: "100vh" }}>
+          <div
+            style={{
+              flex: 1,
+              position: "relative",
+              overflow: "hidden",
             }}
-            onAbort={() => {
-              setMode({ title: "SHOW_MAP_LIBRARY" });
-            }}
-            dmPassword={dmPassword}
-          />
-        ) : loadedMap ? (
-          <div style={{ display: "flex", height: "100vh" }}>
-            <div
-              style={{
-                flex: 1,
-                position: "relative",
-                overflow: "hidden",
+          >
+            <DmMap
+              dmPassword={dmPassword}
+              setAppData={setData}
+              socket={socket}
+              map={loadedMap}
+              loadedMapId={loadedMap.id}
+              liveMapId={liveMapId}
+              sendLiveMap={sendLiveMap}
+              hideMap={hideMap}
+              showMapModal={showMapModal}
+              openNotes={() => {
+                setMode({ title: "SHOW_NOTES" });
               }}
-            >
-              <DmMap
-                dmPassword={dmPassword}
-                setAppData={setData}
-                socket={socket}
-                map={loadedMap}
-                loadedMapId={loadedMap.id}
-                liveMapId={liveMapId}
-                sendLiveMap={sendLiveMap}
-                hideMap={hideMap}
-                showMapModal={showMapModal}
-                openNotes={() => {
-                  setMode({ title: "SHOW_NOTES" });
-                }}
-                openMediaLibrary={() => {
-                  setMode({ title: "MEDIA_LIBRARY" });
-                }}
-                enterGridMode={enterGridMode}
-                updateMap={updateMap}
-                deleteToken={deleteToken}
-                updateToken={updateToken}
-                onDropFile={onDropFile}
-              />
-            </div>
+              openMediaLibrary={() => {
+                setMode({ title: "MEDIA_LIBRARY" });
+              }}
+              enterGridMode={enterGridMode}
+              updateMap={updateMap}
+              deleteToken={deleteToken}
+              updateToken={updateToken}
+              onDropFile={onDropFile}
+            />
           </div>
-        ) : null}
-        {droppedFile ? (
-          <ImportFileModal
-            file={droppedFile}
-            close={() => setDroppedFile(null)}
-            createMap={createMap}
-          />
-        ) : null}
-      </ShareImageActionProvider>
+        </div>
+      ) : null}
+      {droppedFile ? (
+        <ImportFileModal
+          file={droppedFile}
+          close={() => setDroppedFile(null)}
+          createMap={createMap}
+        />
+      ) : null}
     </FetchContext.Provider>
   );
 };

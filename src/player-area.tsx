@@ -79,7 +79,6 @@ const PlayerMap: React.FC<{
     null
   );
   const fogCanvasRef = React.useRef(fogCanvas);
-  const [sharedMediaId, setSharedMediaId] = React.useState<string | null>(null);
   const mapNeedsUpdateRef = React.useRef(false);
 
   const mapId = currentMap ? currentMap.id : null;
@@ -192,10 +191,6 @@ const PlayerMap: React.FC<{
             y: data.y,
           },
         ]);
-      });
-
-      socket.on("share image", ({ id }: { id: string }) => {
-        setSharedMediaId(id);
       });
 
       socket.on("map update", onReceiveMap);
@@ -470,12 +465,6 @@ const PlayerMap: React.FC<{
           <SplashScreen text="Ready." />
         </AbsoluteFullscreenContainer>
       )}
-      {sharedMediaId ? (
-        <ImageLightBoxModal
-          src={buildApiUrl(`/images/${sharedMediaId}`)}
-          close={() => setSharedMediaId(null)}
-        />
-      ) : null}
     </>
   );
 };
