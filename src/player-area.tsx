@@ -50,6 +50,7 @@ type Token = {
   x: number;
   y: number;
   isVisibleForPlayers: boolean;
+  isMovableByPlayers: boolean;
   isLocked: boolean;
 };
 
@@ -484,18 +485,36 @@ const usePcPassword = createPersistedState("pcPassword");
 const AuthenticatedContent: React.FC<{
   pcPassword: string;
   localFetch: typeof fetch;
-}> = ({ pcPassword, localFetch }) => {
+  isMapOnly: boolean;
+}> = (props) => {
   const socket = useSocket();
 
   return (
-    <AuthenticatedAppShell password={pcPassword} socket={socket}>
-      <PlayerMap fetch={localFetch} pcPassword={pcPassword} socket={socket} />
+    <AuthenticatedAppShell
+      password={props.pcPassword}
+      socket={socket}
+      isMapOnly={props.isMapOnly}
+    >
+      <PlayerMap
+        fetch={props.localFetch}
+        pcPassword={props.pcPassword}
+        socket={socket}
+      />
     </AuthenticatedAppShell>
   );
 };
 
-export const PlayerArea: React.FC<{}> = () => {
+export const PlayerArea: React.FC<{
+  password: string | null;
+  isMapOnly: boolean;
+}> = (props) => {
   const [pcPassword, setPcPassword] = usePcPassword("");
+  const initialPcPassword = React.useRef(pcPassword);
+  let usedPassword = pcPassword;
+  // the password in the query parameters has priority.
+  if (pcPassword === initialPcPassword.current && props.password) {
+    usedPassword = props.password;
+  }
 
   const [mode, setMode] = React.useState("LOADING");
 
@@ -504,7 +523,7 @@ export const PlayerArea: React.FC<{}> = () => {
       return fetch(buildApiUrl(input), {
         ...init,
         headers: {
-          Authorization: pcPassword ? `Bearer ${pcPassword}` : undefined,
+          Authorization: usedPassword ? `Bearer ${usedPassword}` : undefined,
           ...init.headers,
         },
       }).then((res) => {
@@ -515,7 +534,7 @@ export const PlayerArea: React.FC<{}> = () => {
         return res;
       });
     },
-    [pcPassword]
+    [usedPassword]
   );
 
   useAsyncEffect(
@@ -548,7 +567,11 @@ export const PlayerArea: React.FC<{}> = () => {
 
   if (mode === "READY") {
     return (
-      <AuthenticatedContent localFetch={localFetch} pcPassword={pcPassword} />
+      <AuthenticatedContent
+        localFetch={localFetch}
+        pcPassword={usedPassword}
+        isMapOnly={props.isMapOnly}
+      />
     );
   }
 

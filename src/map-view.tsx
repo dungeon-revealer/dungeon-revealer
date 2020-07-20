@@ -37,6 +37,7 @@ type Token = {
   x: number;
   y: number;
   isVisibleForPlayers: boolean;
+  isMovableByPlayers: boolean;
   isLocked: boolean;
 };
 
@@ -78,12 +79,15 @@ const TokenRenderer: React.FC<{
   dimensions: Dimensions;
   factor: number;
   isLocked: boolean;
+  isMovableByPlayers: boolean;
   updateTokenPosition: ({ x, y }: { x: number; y: number }) => void;
   mapScale: SpringValue<[number, number, number]>;
   hoveredElementRef: React.MutableRefObject<null | unknown>;
 }> = (props) => {
   const initialRadius = useStaticRef(() => props.radius * props.factor);
   const id = useUniqueId();
+
+  const isLocked = props.isMovableByPlayers === false || props.isLocked;
 
   const [isHover, setIsHover] = React.useState(false);
 
@@ -109,10 +113,10 @@ const TokenRenderer: React.FC<{
   }, [props.x, props.y, props.radius, props.factor, set, props.dimensions]);
 
   React.useEffect(() => {
-    if (props.isLocked === false) {
+    if (isLocked === false) {
       setIsHover(false);
     }
-  }, [props.isLocked]);
+  }, [isLocked]);
 
   const isDraggingRef = React.useRef(false);
 
@@ -143,26 +147,26 @@ const TokenRenderer: React.FC<{
         return memo;
       },
       onPointerDown: (event) => {
-        if (props.isLocked === false) {
+        if (isLocked === false) {
           setIsHover(true);
           event.stopPropagation();
         }
       },
       onPointerOver: () => {
-        if (props.isLocked === false) {
+        if (isLocked === false) {
           setIsHover(true);
           props.hoveredElementRef.current = id;
         }
       },
       onPointerUp: () => {
-        if (props.isLocked === false) {
+        if (isLocked === false) {
           // TODO: only on tablet
           setIsHover(false);
           props.hoveredElementRef.current = null;
         }
       },
       onPointerOut: () => {
-        if (props.isLocked === false) {
+        if (isLocked === false) {
           if (isDraggingRef.current === false) {
             setIsHover(false);
             props.hoveredElementRef.current = null;
@@ -170,14 +174,14 @@ const TokenRenderer: React.FC<{
         }
       },
       onClick: () => {
-        if (props.isLocked === false) {
+        if (isLocked === false) {
           setIsHover(false);
           props.hoveredElementRef.current = null;
         }
       },
     },
     {
-      enabled: props.isLocked === false,
+      enabled: isLocked === false,
     }
   );
 
@@ -394,6 +398,7 @@ const MapRenderer: React.FC<{
             color={token.color}
             textLabel={token.label}
             isLocked={token.isLocked}
+            isMovableByPlayers={token.isMovableByPlayers}
             factor={props.factor}
             radius={token.radius}
             dimensions={props.dimensions}
@@ -791,28 +796,28 @@ export const MapView: React.FC<{
     }
   );
 
-  const [recreateCounter, setRecreateCounter] = React.useState(0);
-
-  React.useEffect(() => {
-    const listener = debounce(() => {
-      setRecreateCounter((i) => i + 1);
-    }, 500);
-    window.addEventListener("resize", listener);
-
-    return () => window.removeEventListener("resize", listener);
-  }, []);
+  const onUnmountRef = React.useRef<() => void>();
+  React.useEffect(() => () => onUnmountRef.current?.(), []);
 
   return (
     <div style={{ height: "100%", touchAction: "manipulation" }}>
       <Canvas
-        key={recreateCounter}
         camera={{ position: [0, 0, 5] }}
         onCreated={(props) => {
-          setViewport({
-            factor: props.viewport.factor,
-            width: props.viewport.width,
-            height: props.viewport.height,
-          });
+          const syncViewport = () =>
+            setViewport({
+              factor: props.viewport.factor,
+              width: props.viewport.width,
+              height: props.viewport.height,
+            });
+
+          const listener = debounce(syncViewport, 500);
+
+          window.addEventListener("resize", listener);
+          onUnmountRef.current = () =>
+            window.removeEventListener("resize", listener);
+          syncViewport();
+
           // we wanna have the best quality available on retina displays
           // https://discourse.threejs.org/t/render-looks-blurry-and-pixelated-even-with-antialias-true-why/12381
           props.gl.setPixelRatio(window.devicePixelRatio);

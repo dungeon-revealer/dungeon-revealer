@@ -23,7 +23,15 @@ const ColorPicker = React.memo(({ color, onChange, styles }) => {
 const TokenContextMenu = ({
   tokenRef,
   position,
-  token: { label, color, radius, isVisibleForPlayers, isLocked, reference },
+  token: {
+    label,
+    color,
+    radius,
+    isVisibleForPlayers,
+    isLocked,
+    isMovableByPlayers,
+    reference,
+  },
   updateToken,
   deleteToken,
   close,
@@ -116,7 +124,7 @@ const TokenContextMenu = ({
         backgroundColor: "white",
         padding: 10,
         borderRadius: 5,
-        width: "260px",
+        width: "560px",
         boxShadow: "0 0 15px rgba(0,0,0,0.1)",
         transform: to([x, y], (x, y) => `translate(${x}px, ${y}px)`),
         top: 0,
@@ -124,116 +132,144 @@ const TokenContextMenu = ({
         position: "absolute",
       }}
     >
-      <div style={{ display: "flex", width: "100%" }}>
-        <div style={{ flexGrow: 1 }}>
+      <div style={{ display: "flex" }}>
+        <div style={{ paddingRight: 8, flex: 1 }}>
+          <div style={{ display: "flex", width: "100%" }}>
+            <div style={{ flexGrow: 1 }}>
+              <label>
+                <h6 style={{ marginBottom: 8, marginTop: 0 }}>Label</h6>
+                <Input
+                  placeholder="Label"
+                  value={label}
+                  onChange={(ev) => updateToken({ label: ev.target.value })}
+                  style={{ marginBottom: 24 }}
+                  maxLength={5}
+                />
+              </label>
+            </div>
+          </div>
           <label>
-            <h6 style={{ marginBottom: 8, marginTop: 0 }}>Label</h6>
-            <Input
-              placeholder="Label"
-              value={label}
-              onChange={(ev) => updateToken({ label: ev.target.value })}
-              style={{ marginBottom: 24 }}
-              maxLength={5}
+            <h6 style={{ marginBottom: 8, marginTop: 0 }}>Size</h6>
+            <input
+              ref={rangeSlideRef}
+              type="range"
+              min="1"
+              max="200"
+              step="1"
+              onChange={(ev) => {
+                const radiusValue = Math.min(200, Math.max(0, ev.target.value));
+                tokenRef.current.setRadius(radiusValue);
+              }}
+              onMouseUp={(ev) => {
+                updateToken({
+                  radius: Math.min(200, Math.max(0, ev.target.value)),
+                });
+              }}
+              style={{ width: "100%", display: "block", marginTop: 0 }}
             />
           </label>
-        </div>
-      </div>
-      <label>
-        <h6 style={{ marginBottom: 8, marginTop: 0 }}>Size</h6>
-        <input
-          ref={rangeSlideRef}
-          type="range"
-          min="1"
-          max="200"
-          step="1"
-          onChange={(ev) => {
-            const radiusValue = Math.min(200, Math.max(0, ev.target.value));
-            tokenRef.current.setRadius(radiusValue);
-          }}
-          onMouseUp={(ev) => {
-            updateToken({
-              radius: Math.min(200, Math.max(0, ev.target.value)),
-            });
-          }}
-          style={{ width: "100%", display: "block", marginTop: 0 }}
-        />
-      </label>
-      <div>
-        <h6 style={{ marginBottom: 16, marginTop: 0 }}>Color</h6>
-        <ColorPicker color={color} onChange={onChangeComplete} />
-      </div>
-      <label>
-        <h6 style={{ marginBottom: 8 }}>Player Visibility</h6>
-        <div
-          style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
-        >
-          <div style={{ flexGrow: 1 }}>
-            {isVisibleForPlayers ? "Visible to Players" : "Hidden to Players"}
+          <div>
+            <h6 style={{ marginBottom: 16, marginTop: 0 }}>Color</h6>
+            <ColorPicker color={color} onChange={onChangeComplete} />
           </div>
-          <div style={{ marginLeft: 8 }}>
-            <ToggleSwitch
-              checked={isVisibleForPlayers}
-              onChange={(checked) => {
-                updateToken({ isVisibleForPlayers: checked });
+        </div>
+        <div style={{ paddingLeft: 8, flex: 1 }}>
+          <label>
+            <h6 style={{ marginBottom: 8, marginTop: 0 }}>Player Appearance</h6>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
               }}
-            />
-          </div>
-        </div>
-      </label>
-      <div>
-        <h6 style={{ marginBottom: 8 }}>Reference</h6>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-          }}
-        >
-          <div>{reference ? "Note" : "None"}</div>
-          <div
-            style={{
-              flexGrow: 1,
-              paddingLeft: 8,
-              display: "flex",
-              justifyContent: "flex-end",
-            }}
-          >
-            {reference ? (
-              <>
-                <div>
-                  <Button.Tertiary
-                    small
-                    onClick={() => {
-                      updateToken({ reference: null });
-                    }}
-                  >
-                    <Icon.TrashIcon size={16} />
-                    <span>Remove</span>
-                  </Button.Tertiary>
-                </div>
-                <div style={{ paddingLeft: 8 }}>
-                  <Button.Tertiary
-                    small
-                    onClick={() => {
-                      noteWindowActions.focusOrShowNoteInNewWindow(
-                        reference.id
-                      );
-                      close();
-                    }}
-                  >
-                    <Icon.EditIcon height={16} />
-                    <span>Edit</span>
-                  </Button.Tertiary>
-                </div>
-              </>
-            ) : (
-              <div>
-                <Button.Tertiary small onClick={showLinkReferenceModal}>
-                  <Icon.Link height={16} />
-                  <span>Link</span>
-                </Button.Tertiary>
+            >
+              <div style={{ flexGrow: 1 }}>Visible to Players</div>
+              <div style={{ marginLeft: 8 }}>
+                <ToggleSwitch
+                  checked={isVisibleForPlayers}
+                  onChange={(checked) => {
+                    updateToken({ isVisibleForPlayers: checked });
+                  }}
+                />
               </div>
-            )}
+            </div>
+          </label>
+          <label>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+                marginTop: 8,
+              }}
+            >
+              <div style={{ flexGrow: 1 }}>Moveable by Players</div>
+              <div style={{ marginLeft: 8 }}>
+                <ToggleSwitch
+                  checked={isMovableByPlayers}
+                  onChange={(checked) => {
+                    updateToken({ isMovableByPlayers: checked });
+                  }}
+                />
+              </div>
+            </div>
+          </label>
+          <div>
+            <h6 style={{ marginBottom: 8 }}>Reference</h6>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                alignItems: "center",
+              }}
+            >
+              <div>{reference ? "Note" : "None"}</div>
+              <div
+                style={{
+                  flexGrow: 1,
+                  paddingLeft: 8,
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                {reference ? (
+                  <>
+                    <div>
+                      <Button.Tertiary
+                        small
+                        onClick={() => {
+                          updateToken({ reference: null });
+                        }}
+                      >
+                        <Icon.TrashIcon size={16} />
+                        <span>Remove</span>
+                      </Button.Tertiary>
+                    </div>
+                    <div style={{ paddingLeft: 8 }}>
+                      <Button.Tertiary
+                        small
+                        onClick={() => {
+                          noteWindowActions.focusOrShowNoteInNewWindow(
+                            reference.id
+                          );
+                          close();
+                        }}
+                      >
+                        <Icon.EditIcon height={16} />
+                        <span>Edit</span>
+                      </Button.Tertiary>
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <Button.Tertiary small onClick={showLinkReferenceModal}>
+                      <Icon.Link height={16} />
+                      <span>Link</span>
+                    </Button.Tertiary>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

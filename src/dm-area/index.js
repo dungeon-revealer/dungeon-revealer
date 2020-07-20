@@ -419,7 +419,11 @@ const DmAreaRenderer = ({ password }) => {
   return (
     <AccessTokenProvider value={password}>
       <ToastProvider placement="bottom-right">
-        <AuthenticatedAppShell socket={socket} password={password}>
+        <AuthenticatedAppShell
+          socket={socket}
+          password={password}
+          isMapOnly={false}
+        >
           <Content socket={socket} password={password} />
         </AuthenticatedAppShell>
       </ToastProvider>
