@@ -1,5 +1,5 @@
 ## [Home](https://github.com/dungeon-revealer/dungeon-revealer/wiki)
-## Setting up 
+## Setting up
 ### [Install](https://github.com/dungeon-revealer/dungeon-revealer/wiki/Install)
 ### [Hosting](https://github.com/dungeon-revealer/dungeon-revealer/wiki/Hosting)
 ## Using the app
@@ -9,3 +9,4 @@
 ### [Dice Macros](https://github.com/dungeon-revealer/dungeon-revealer/wiki/Dice-Macros)
 ## Other
 ### [Community Showcase](https://github.com/dungeon-revealer/dungeon-revealer/wiki/Community-Showcase)
+### [Contributing](https://github.com/dungeon-revealer/dungeon-revealer/wiki/Contributing)
