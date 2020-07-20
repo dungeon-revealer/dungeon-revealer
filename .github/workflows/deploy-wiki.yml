@@ -15,16 +15,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-      with: 
+      with:
         # Fetch merge commit and last commit from pull request
         fetch-depth: 2
 
     - name: Set environment
       run: |
+        # Skip if HEAD is a merge commit
+        if [[ $(git log -n 1 --pretty=format:%s) == "Merge Pull Request"* ]]; then
+          echo "Skipping Merge commit"
+          CMD='git log -n 1 --skip=1'
+        else
+          echo "Using current commit"
+          CMD='git log -n 1'
+        fi
         # Set the author name, author email, and message from the pull request
-        echo "::set-env name=ACTION_MAIL::$(git log -n 1 --skip=1 --pretty=format:%ae)"
-        echo "::set-env name=ACTION_NAME::$(git log -n 1 --skip=1 --pretty=format:%an)"
-        echo "::set-env name=WIKI_PUSH_MESSAGE::$(git log -n 1 --skip=1 --pretty=format:%s)"
+        echo "::set-env name=ACTION_MAIL::$(eval $CMD --pretty=format:%ae)"
+        echo "::set-env name=ACTION_NAME::$(eval $CMD --pretty=format:%an)"
+        echo "::set-env name=WIKI_PUSH_MESSAGE::$(eval $CMD --pretty=format:%s)"
 
 
 
