@@ -796,28 +796,28 @@ export const MapView: React.FC<{
     }
   );
 
-  const [recreateCounter, setRecreateCounter] = React.useState(0);
-
-  React.useEffect(() => {
-    const listener = debounce(() => {
-      setRecreateCounter((i) => i + 1);
-    }, 500);
-    window.addEventListener("resize", listener);
-
-    return () => window.removeEventListener("resize", listener);
-  }, []);
+  const onUnmountRef = React.useRef<() => void>();
+  React.useEffect(() => () => onUnmountRef.current?.(), []);
 
   return (
     <div style={{ height: "100%", touchAction: "manipulation" }}>
       <Canvas
-        key={recreateCounter}
         camera={{ position: [0, 0, 5] }}
         onCreated={(props) => {
-          setViewport({
-            factor: props.viewport.factor,
-            width: props.viewport.width,
-            height: props.viewport.height,
-          });
+          const syncViewport = () =>
+            setViewport({
+              factor: props.viewport.factor,
+              width: props.viewport.width,
+              height: props.viewport.height,
+            });
+
+          const listener = debounce(syncViewport, 500);
+
+          window.addEventListener("resize", listener);
+          onUnmountRef.current = () =>
+            window.removeEventListener("resize", listener);
+          syncViewport();
+
           // we wanna have the best quality available on retina displays
           // https://discourse.threejs.org/t/render-looks-blurry-and-pixelated-even-with-antialias-true-why/12381
           props.gl.setPixelRatio(window.devicePixelRatio);
