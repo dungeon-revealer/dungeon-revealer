@@ -1,5 +1,7 @@
 "use strict";
 
+require("./polyfill");
+
 require("debug")("dungeon-revealer");
 const once = require("lodash/once");
 const flatMap = require("lodash/flatMap");
