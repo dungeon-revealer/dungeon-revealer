@@ -52,13 +52,16 @@ const useWindowWidth = () => {
   return windowWidth;
 };
 
+const CHAT_WIDTH = 400;
+const CHAT_BUTTONS_WIDTH = 85;
+
 const useChatWidth = () => {
   const windowWidth = useWindowWidth();
 
-  let chatWidth = 400;
+  let chatWidth = CHAT_WIDTH;
 
-  if (chatWidth > windowWidth) {
-    chatWidth = windowWidth * 0.75;
+  if (chatWidth + CHAT_BUTTONS_WIDTH > windowWidth) {
+    chatWidth = windowWidth - CHAT_BUTTONS_WIDTH;
   }
   return chatWidth;
 };
