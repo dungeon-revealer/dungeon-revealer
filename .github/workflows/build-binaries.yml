@@ -2,6 +2,7 @@ name: Build Binaries
 
 on:
   push:
+    branches: [ master ] # Run on master or tags
     tags:
       - "v*"
 
@@ -115,18 +116,8 @@ jobs:
         run: |
           node ./scripts/set-git-tag-env.js
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: true
-          prerelease: false
-
-      - uses: actions/download-artifact@v2
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
         with:
           path: bin/
 
@@ -143,9 +134,28 @@ jobs:
             (cd "$idir"; rm dungeon-revealer || true; zip -r "../${idir%/}.zip" .);
           done
 
+      - name: Upload Zip Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: dungeon-revealer-binaries-${{ github.sha }}
+          path: "bin/*.zip"
+
+      - name: Create Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
+          prerelease: false
+
       # We have to upload assets individually using upload-release-asset@v1
       # There isn't a matrix for steps.
       - name: Upload Linux Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -156,6 +166,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload MacOS Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -166,6 +177,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload Windows Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -176,6 +188,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload Linux armv7 Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -186,6 +199,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload Linux arm64 Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
