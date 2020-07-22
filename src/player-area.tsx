@@ -17,6 +17,7 @@ import { animated, useSpring, to } from "react-spring";
 import { MapView, MapControlInterface } from "./map-view";
 import { useGesture } from "react-use-gesture";
 import uuid from "uuid/v4";
+import { useWindowDimensions } from "./hooks/use-window-dimensions";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -310,17 +311,33 @@ const PlayerMap: React.FC<{
 
   const [toolbarPosition, setToolbarPosition] = useSpring(() => ({
     position: [12, window.innerHeight - 50 - 12] as [number, number],
+    snapped: true,
   }));
 
   const [showItems, setShowItems] = React.useState(true);
 
   const isDraggingRef = React.useRef(false);
 
+  const windowDimensions = useWindowDimensions();
+
+  React.useEffect(() => {
+    const position = toolbarPosition.position.get();
+    const snapped = toolbarPosition.snapped.get();
+    const y = position[1] + 50 + 12;
+    if (y > windowDimensions.height || snapped) {
+      setToolbarPosition({
+        position: [position[0], windowDimensions.height - 50 - 12],
+        snapped: true,
+      });
+    }
+  }, [windowDimensions]);
+
   const handler = useGesture(
     {
       onDrag: (state) => {
         setToolbarPosition({
           position: state.movement,
+          snapped: state.movement[1] === windowDimensions.height - 50 - 10,
           immediate: true,
         });
       },
@@ -337,9 +354,9 @@ const PlayerMap: React.FC<{
         initial: () => toolbarPosition.position.get(),
         bounds: {
           left: 10,
-          right: window.innerWidth - 70 - 10,
+          right: windowDimensions.width - 70 - 10,
           top: 10,
-          bottom: window.innerHeight - 50 - 10,
+          bottom: windowDimensions.height - 50 - 10,
         },
         threshold: 5,
       },

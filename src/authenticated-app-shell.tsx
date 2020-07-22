@@ -18,7 +18,7 @@ import {
 import * as Icon from "./feather-icons";
 import { SoundSettingsProvider } from "./sound-settings";
 import { animated, useSpring } from "react-spring";
-import { debounce } from "lodash";
+import { useWindowDimensions } from "./hooks/use-window-dimensions";
 
 const useShowChatState = createPersistedState("chat.state");
 const useShowDiceRollNotesState = createPersistedState(
@@ -38,30 +38,16 @@ const IconContainer = styled(animated.div)`
   display: flex;
 `;
 
-const useWindowWidth = () => {
-  const [windowWidth, setWindowWidth] = React.useState(window.innerWidth);
-  React.useEffect(() => {
-    const listener = debounce(() => {
-      setWindowWidth(window.innerWidth);
-    }, 500);
-    window.addEventListener("resize", listener);
-
-    return () => window.removeEventListener("resize", listener);
-  });
-
-  return windowWidth;
-};
-
 const CHAT_WIDTH = 400;
 const CHAT_BUTTONS_WIDTH = 85;
 
 const useChatWidth = () => {
-  const windowWidth = useWindowWidth();
+  const windowDimensions = useWindowDimensions();
 
   let chatWidth = CHAT_WIDTH;
 
-  if (chatWidth + CHAT_BUTTONS_WIDTH > windowWidth) {
-    chatWidth = windowWidth - CHAT_BUTTONS_WIDTH;
+  if (chatWidth + CHAT_BUTTONS_WIDTH > windowDimensions.width) {
+    chatWidth = windowDimensions.width - CHAT_BUTTONS_WIDTH;
   }
   return chatWidth;
 };
