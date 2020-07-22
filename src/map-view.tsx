@@ -1,7 +1,6 @@
 import * as React from "react";
 import * as THREE from "three";
-import { Canvas, useLoader, useUpdate, useFrame } from "react-three-fiber";
-import { Line, Text } from "drei";
+import { Canvas, useLoader, useFrame, useUpdate } from "react-three-fiber";
 import { getOptimalDimensions } from "./util";
 import { animated, useSpring, SpringValue } from "@react-spring/three";
 import { useGesture } from "react-use-gesture";
@@ -186,6 +185,12 @@ const TokenRenderer: React.FC<{
   );
 
   const color = isHover ? lighten(0.1, props.color) : props.color;
+  const font = useLoader(THREE.FontLoader, buildUrl("/fonts/Roboto-Bold.json"));
+
+  const textRef = useUpdate<THREE.TextBufferGeometry>(
+    (geometry) => geometry.center(),
+    [props.textLabel]
+  );
 
   return (
     <animated.group
@@ -213,16 +218,25 @@ const TokenRenderer: React.FC<{
           transparent={true}
         />
       </mesh>
-      <Text
-        anchorX="center"
-        anchorY="middle"
-        fontSize={0.8 * initialRadius}
-        color="black"
-        font={buildUrl("/fonts/Roboto-Bold.ttf")}
-        key={props.textLabel}
-      >
-        {props.textLabel}
-      </Text>
+      <mesh>
+        <textBufferGeometry
+          ref={textRef}
+          args={[
+            props.textLabel,
+            {
+              font,
+              size: 0.6 * initialRadius,
+              height: 0,
+            },
+          ]}
+          attach="geometry"
+        />
+        <meshStandardMaterial
+          attach="material"
+          color="black"
+          transparent={true}
+        />
+      </mesh>
     </animated.group>
   );
 };
@@ -388,38 +402,42 @@ const MapRenderer: React.FC<{
           />
         </mesh>
       </group>
-      {props.tokens
-        .filter((token) => token.isVisibleForPlayers)
-        .map((token) => (
-          <TokenRenderer
-            key={token.id}
-            x={token.x}
-            y={token.y}
-            color={token.color}
-            textLabel={token.label}
-            isLocked={token.isLocked}
-            isMovableByPlayers={token.isMovableByPlayers}
+      <group>
+        {props.tokens
+          .filter((token) => token.isVisibleForPlayers)
+          .map((token) => (
+            <TokenRenderer
+              key={token.id}
+              x={token.x}
+              y={token.y}
+              color={token.color}
+              textLabel={token.label}
+              isLocked={token.isLocked}
+              isMovableByPlayers={token.isMovableByPlayers}
+              factor={props.factor}
+              radius={token.radius}
+              dimensions={props.dimensions}
+              viewport={props.viewport}
+              updateTokenPosition={(position) =>
+                props.updateTokenPosition(token.id, position)
+              }
+              mapScale={props.scale}
+              hoveredElementRef={props.hoveredElementRef}
+            />
+          ))}
+      </group>
+      <group>
+        {props.markedAreas.map((markedArea) => (
+          <MarkedAreaRenderer
+            key={markedArea.id}
+            x={markedArea.x}
+            y={markedArea.y}
             factor={props.factor}
-            radius={token.radius}
             dimensions={props.dimensions}
-            viewport={props.viewport}
-            updateTokenPosition={(position) =>
-              props.updateTokenPosition(token.id, position)
-            }
-            mapScale={props.scale}
-            hoveredElementRef={props.hoveredElementRef}
+            remove={() => props.removeMarkedArea(markedArea.id)}
           />
         ))}
-      {props.markedAreas.map((markedArea) => (
-        <MarkedAreaRenderer
-          key={markedArea.id}
-          x={markedArea.x}
-          y={markedArea.y}
-          factor={props.factor}
-          dimensions={props.dimensions}
-          remove={() => props.removeMarkedArea(markedArea.id)}
-        />
-      ))}
+      </group>
     </>
   );
 };
@@ -814,11 +832,10 @@ export const MapView: React.FC<{
           onUnmountRef.current = () =>
             window.removeEventListener("resize", listener);
           syncViewport();
-
-          // we wanna have the best quality available on retina displays
-          // https://discourse.threejs.org/t/render-looks-blurry-and-pixelated-even-with-antialias-true-why/12381
-          props.gl.setPixelRatio(window.devicePixelRatio);
         }}
+        // we wanna have the best quality available on retina displays
+        // https://discourse.threejs.org/t/render-looks-blurry-and-pixelated-even-with-antialias-true-why/12381
+        pixelRatio={window.devicePixelRatio}
       >
         <UseTextureUpdater
           fogTexture={fogTexture}
