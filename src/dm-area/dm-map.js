@@ -4,6 +4,7 @@ import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
 import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
+import uuid from "uuid/v4";
 import { AlphaPicker, HuePicker } from "react-color";
 import parseColor from "parse-color";
 import { loadImage, getOptimalDimensions, ConditionalWrap } from "./../util";
@@ -394,6 +395,9 @@ const parseMapColor = (input) => {
 
 const DEFAULT_TOKEN_COLOR = "#e91e63";
 
+const createCacheBusterString = () =>
+  encodeURIComponent(`${Date.now()}_${uuid()}`);
+
 /**
  * loadedMapId = id of the map that is currently visible in the editor
  * liveMapId = id of the map that is currently visible to the players
@@ -769,11 +773,11 @@ export const DmMap = ({
     let tasks = [
       loadImage(
         // prettier-ignore
-        buildApiUrl(`/map/${loadedMapId}/map?authorization=${encodeURIComponent(dmPassword)}`)
+        buildApiUrl(`/map/${loadedMapId}/map?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(dmPassword)}`)
       ),
       loadImage(
         // prettier-ignore
-        buildApiUrl(`/map/${loadedMapId}/fog?authorization=${encodeURIComponent(dmPassword)}`)
+        buildApiUrl(`/map/${loadedMapId}/fog?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(dmPassword)}`)
       ),
     ];
 

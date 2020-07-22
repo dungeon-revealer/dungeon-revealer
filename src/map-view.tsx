@@ -9,6 +9,7 @@ import { useStaticRef } from "./hooks/use-static-ref";
 import { buildUrl } from "./public-url";
 import { useUniqueId } from "./hooks/use-unique-id";
 import { debounce } from "lodash";
+import { CanvasText } from "./canvas-text";
 
 // convert image relative to three.js
 const calculateX = (x: number, factor: number, dimensionsWidth: number) =>
@@ -185,12 +186,6 @@ const TokenRenderer: React.FC<{
   );
 
   const color = isHover ? lighten(0.1, props.color) : props.color;
-  const font = useLoader(THREE.FontLoader, buildUrl("/fonts/Roboto-Bold.json"));
-
-  const textRef = useUpdate<THREE.TextBufferGeometry>(
-    (geometry) => geometry.center(),
-    [props.textLabel]
-  );
 
   return (
     <animated.group
@@ -218,25 +213,15 @@ const TokenRenderer: React.FC<{
           transparent={true}
         />
       </mesh>
-      <mesh>
-        <textBufferGeometry
-          ref={textRef}
-          args={[
-            props.textLabel,
-            {
-              font,
-              size: 0.6 * initialRadius,
-              height: 0,
-            },
-          ]}
-          attach="geometry"
-        />
-        <meshStandardMaterial
-          attach="material"
-          color="black"
-          transparent={true}
-        />
-      </mesh>
+      <CanvasText
+        fontSize={0.8 * initialRadius}
+        color="black"
+        font={buildUrl("/fonts/Roboto-Bold.ttf")}
+        anchorX="center"
+        anchorY="middle"
+      >
+        {props.textLabel}
+      </CanvasText>
     </animated.group>
   );
 };
