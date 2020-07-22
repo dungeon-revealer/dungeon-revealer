@@ -9,7 +9,6 @@ import * as Icons from "./feather-icons";
 import { SplashScreen } from "./splash-screen";
 import { AuthenticationScreen } from "./authentication-screen";
 import { buildApiUrl } from "./public-url";
-import { ImageLightBoxModal } from "./image-lightbox-modal";
 import { AuthenticatedAppShell } from "./authenticated-app-shell";
 import { useSocket } from "./socket";
 import { useStaticRef } from "./hooks/use-static-ref";
@@ -17,6 +16,7 @@ import debounce from "lodash/debounce";
 import { animated, useSpring, to } from "react-spring";
 import { MapView, MapControlInterface } from "./map-view";
 import { useGesture } from "react-use-gesture";
+import uuid from "uuid/v4";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -68,6 +68,9 @@ type MarkedArea = {
   y: number;
 };
 
+const createCacheBusterString = () =>
+  encodeURIComponent(`${Date.now()}_${uuid()}`);
+
 const PlayerMap: React.FC<{
   fetch: typeof fetch;
   pcPassword: string;
@@ -95,7 +98,6 @@ const PlayerMap: React.FC<{
   const [markedAreas, setMarkedAreas] = React.useState<MarkedArea[]>(() => []);
 
   const [refetchTrigger, setRefetchTrigger] = React.useState(0);
-  const cacheBusterRef = React.useRef(0);
 
   useAsyncEffect(
     function* (_, cast) {
@@ -119,9 +121,8 @@ const PlayerMap: React.FC<{
         if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
           const imageUrl = buildApiUrl(
             // prettier-ignore
-            `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
+            `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
           );
-          cacheBusterRef.current = cacheBusterRef.current + 1;
 
           const task = loadImage(imageUrl);
           pendingFogImageLoad.current = task;
@@ -150,9 +151,8 @@ const PlayerMap: React.FC<{
 
         const imageUrl = buildApiUrl(
           // prettier-ignore
-          `/map/${data.map.id}/fog-live?cache_buster=${cacheBusterRef.current}&authorization=${encodeURIComponent(pcPassword)}`
+          `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
         );
-        cacheBusterRef.current = cacheBusterRef.current + 1;
 
         const task = loadImage(imageUrl);
         pendingFogImageLoad.current = task;
