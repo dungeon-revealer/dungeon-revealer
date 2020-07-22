@@ -535,6 +535,8 @@ export const MapView: React.FC<{
     };
   });
 
+  const SCALE_FACTOR = 200;
+
   React.useEffect(() => {
     const wheelHandler = (event: WheelEvent) => {
       if (event.target instanceof HTMLCanvasElement === false) {
@@ -552,9 +554,7 @@ export const MapView: React.FC<{
       const position = spring.position.get();
       const [scale] = spring.scale.get();
 
-      // Speed up pinch zoom when using mouse versus touch
-      const SCALE_FACTOR = 100;
-      const pinchScale = Math.max(scale + event.deltaY / SCALE_FACTOR, 0.1);
+      const pinchScale = Math.max(scale + -event.deltaY / SCALE_FACTOR, 0.1);
       const pinchDelta = pinchScale - scale;
 
       const {
@@ -729,9 +729,6 @@ export const MapView: React.FC<{
         }
 
         let xMovement = Array.isArray(movement) ? movement[0] : 0;
-
-        // Speed up pinch zoom when using mouse versus touch
-        const SCALE_FACTOR = 100;
         const pinchScale = Math.max(scale + xMovement / SCALE_FACTOR, 0.1);
         const pinchDelta = pinchScale - scale;
 
