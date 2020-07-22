@@ -515,6 +515,13 @@ export const MapView: React.FC<{
     props.fogCanvas,
   ]);
 
+  React.useEffect(() => {
+    set({
+      scale: [1, 1, 1],
+      position: [0, 0, 0],
+    });
+  }, [mapImageTexture, set]);
+
   const dimensions = React.useMemo(() => {
     if (mapImageTexture.image instanceof HTMLImageElement && viewport) {
       const optimalDimensions = getOptimalDimensions(
