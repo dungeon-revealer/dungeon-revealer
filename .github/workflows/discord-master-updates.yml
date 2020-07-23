@@ -1,0 +1,23 @@
+name: Discord master update
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: "Set environment: master"
+        run: |
+          echo "::set-env name=COMMIT_SHORT::$(git rev-parse --short HEAD)"
+
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
+        uses: Ilshidur/action-discord@759f6ea
+        with:
+          args: "New commit pushed, master@${{ env.COMMIT_SHORT }}: *${{ github.event.head_commit.message }}*\n <${{ github.event.head_commit.url }}>"
