@@ -114,6 +114,7 @@ jobs:
 
       - name: Set environment
         run: |
+          echo "::set-env name=COMMIT_SHORT::$(git rev-parse --short HEAD)"
           node ./scripts/set-git-tag-env.js
 
       - name: Download Artifacts
@@ -210,7 +211,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Discord notification
-        if: success()
+        if: success() && startsWith( github.ref, 'refs/heads')
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
         uses: Ilshidur/action-discord@master
