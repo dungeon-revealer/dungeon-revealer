@@ -1,4 +1,4 @@
-name: Node.js CI
+name: Discord master update
 
 on:
   push:
