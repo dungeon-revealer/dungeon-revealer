@@ -18,6 +18,6 @@ jobs:
       - name: Discord notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
-        uses: Ilshidur/action-discord@master
+        uses: Ilshidur/action-discord@759f6ea
         with:
           args: "New commit pushed, master@${{ env.COMMIT_SHORT }}: *${{ github.event.head_commit.message }}*\n <${{ github.event.head_commit.url }}>"

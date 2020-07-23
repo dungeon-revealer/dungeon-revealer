@@ -15,7 +15,7 @@ jobs:
         if: ${{ ! github.event.release.prerelease }} # Only releases
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_RELEASES }}
-        uses: Ilshidur/action-discord@master
+        uses: Ilshidur/action-discord@759f6ea
         with:
           args: "@everyone ${{ github.event.repository.name }}@${{ github.event.release.tag_name }} has been deployed! Check out the release at ${{ github.event.release.html_url }}."
 
@@ -24,6 +24,6 @@ jobs:
         if: ${{ github.event.release.prerelease }} # Only prereleases
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_RELEASES }}
-        uses: Ilshidur/action-discord@master
+        uses: Ilshidur/action-discord@759f6ea
         with:
           args: "@everyone ${{ github.event.repository.name }}@${{ github.event.release.tag_name }} has been deployed! Check out the prerelease at ${{ github.event.release.html_url }}. Help us test before the release is finalized. Join the discussion in #feedback"

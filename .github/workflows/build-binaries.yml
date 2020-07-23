@@ -214,6 +214,6 @@ jobs:
         if: success() && startsWith( github.ref, 'refs/heads')
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
-        uses: Ilshidur/action-discord@master
+        uses: Ilshidur/action-discord@759f6ea
         with:
           args: "New binary build finished, master@${{ env.COMMIT_SHORT }}: *${{ github.event.head_commit.message }}*\n <${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}>"
