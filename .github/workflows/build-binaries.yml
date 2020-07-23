@@ -208,3 +208,11 @@ jobs:
           asset_path: ./bin/dungeon-revealer-linux-arm64.zip
           asset_name: dungeon-revealer-linux-arm64-${{ env.GH_TAG }}.zip
           asset_content_type: application/zip
+
+      - name: Discord notification
+        if: success()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
+        uses: Ilshidur/action-discord@master
+        with:
+          args: "New binary build finished, master@${{ env.COMMIT_SHORT }}: *${{ github.event.head_commit.message }}*\n <${{ github.event.repository.html_url }}actions/runs/${{ github.run_id }}>"
