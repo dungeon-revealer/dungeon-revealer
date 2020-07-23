@@ -216,4 +216,4 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
         uses: Ilshidur/action-discord@master
         with:
-          args: "New binary build finished, master@${{ env.COMMIT_SHORT }}: *${{ github.event.head_commit.message }}*\n <${{ github.event.repository.html_url }}actions/runs/${{ github.run_id }}>"
+          args: "New binary build finished, master@${{ env.COMMIT_SHORT }}: *${{ github.event.head_commit.message }}*\n <${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}>"
