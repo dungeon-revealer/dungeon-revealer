@@ -48,7 +48,7 @@ const bootstrapServer = async () => {
   // Not sure if this is needed, Chrome seems to grab the favicon just fine anyway
   // Maybe for cross-browser support
   app.use(logger("dev"));
-  app.use(favicon(path.resolve(env.PUBLIC_PATH, "favicon.ico")));
+  app.use(favicon(path.resolve(env.PUBLIC_PATH, "images", "icons", "favicon.ico")));
 
   // Needed to handle JSON posts, size limit of 50mb
   app.use(bodyParser.json({ limit: "50mb" }));
