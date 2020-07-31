@@ -545,8 +545,6 @@ export const MapView: React.FC<{
     };
   });
 
-  const SCALE_FACTOR = 200;
-
   React.useEffect(() => {
     const wheelHandler = (event: WheelEvent) => {
       if (event.target instanceof HTMLCanvasElement === false) {
@@ -559,12 +557,14 @@ export const MapView: React.FC<{
         return;
       }
 
+      const [scale] = spring.scale.get();
+
       const { clientX, clientY } = event;
 
       const position = spring.position.get();
-      const [scale] = spring.scale.get();
 
-      const pinchScale = Math.max(scale + -event.deltaY / SCALE_FACTOR, 0.1);
+      const wheel = event.deltaY < 0 ? 1 : -1;
+      const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
       const pinchDelta = pinchScale - scale;
 
       const {
@@ -739,11 +739,10 @@ export const MapView: React.FC<{
         }
 
         let xMovement = Array.isArray(movement) ? movement[0] : 0;
-        const pinchScale = Math.max(scale + xMovement / SCALE_FACTOR, 0.1);
-        const pinchDelta = pinchScale - scale;
 
-        // // @ts-ignore
-        // const { clientX, clientY } = event;
+        const wheel = xMovement > 0 ? 1 : -1;
+        const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
+        const pinchDelta = pinchScale - scale;
 
         const clientX =
           "clientX" in event ? event.clientX : event?.touches?.[0]?.clientX;
