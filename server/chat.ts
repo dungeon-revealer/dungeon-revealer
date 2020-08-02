@@ -1,6 +1,8 @@
 import uuid from "uuid";
 import { PubSub } from "graphql-subscriptions";
-import { roll } from "@airjp73/dice-notation";
+import { withPlugins } from "@airjp73/dice-notation";
+import { DiceRule } from "@airjp73/dice-notation/dist/rules/types";
+import { random } from "lodash";
 
 type SharedResourceType =
   | { type: "NOTE"; id: string }
@@ -66,6 +68,71 @@ export type ApplicationRecordSchema =
       createdAt: number;
     };
 
+// Custom dice roll token
+interface RollToken {
+  numDice: number;
+  diceType: number;
+}
+
+// Custom dice roll rule for format [XdY-L]
+const rollRuleDropLowest: DiceRule<RollToken> = {
+  regex: /\d+d\d+\-L/,
+  typeConstant: "DropLowest",
+  tokenize: (raw: string): RollToken => {
+    return {
+      numDice: parseInt(raw.split("d")[0]),
+      diceType: parseInt(raw.split("-")[0].split("d")[1]),
+    };
+  },
+  roll: (token: RollToken) => {
+    const rolls: number[] = [];
+    for (let i = 0; i < token.numDice; i++) {
+      rolls.push(random(1, token.diceType));
+    }
+    return rolls;
+  },
+  calculateValue: (token: RollToken, rolls: number[]) => {
+    const usedRolls: number[] = [...rolls];
+    usedRolls.splice(usedRolls.indexOf(Math.min.apply(null, usedRolls)), 1);
+    return usedRolls.reduce((aggregate: number, current: number) => {
+      return aggregate + current;
+    }, 0);
+  },
+};
+
+// Custom dice roll rule for format [XdY-H]
+const rollRuleDropHighest: DiceRule<RollToken> = {
+  regex: /\d+d\d+\-H/,
+  typeConstant: "DropHighest",
+  tokenize: (raw: string): RollToken => {
+    return {
+      numDice: parseInt(raw.split("d")[0]),
+      diceType: parseInt(raw.split("-")[0].split("d")[1]),
+    };
+  },
+  roll: (token: RollToken) => {
+    const rolls: number[] = [];
+    for (let i = 0; i < token.numDice; i++) {
+      rolls.push(random(1, token.diceType));
+    }
+    return rolls;
+  },
+  calculateValue: (token: RollToken, rolls: number[]) => {
+    const usedRolls: number[] = [...rolls];
+    usedRolls.splice(usedRolls.indexOf(Math.max.apply(null, usedRolls)), 1);
+    return usedRolls.reduce((aggregate: number, current: number) => {
+      return aggregate + current;
+    }, 0);
+  },
+};
+
+// Configure defined roll rules
+const rollRules: DiceRule<RollToken>[] = [
+  rollRuleDropLowest,
+  rollRuleDropHighest,
+];
+const { roll } = withPlugins(...rollRules);
+
 // We map the result to our own representation
 const tryRoll = (input: string): DiceRollResult | null => {
   try {
@@ -79,6 +146,20 @@ const tryRoll = (input: string): DiceRollResult | null => {
             return {
               type: "DiceRoll" as const,
               content: token.content,
+              detail: {
+                min: 1,
+                max: token.detail.numSides as number,
+              },
+              rolls: rollResuls,
+            };
+          } else if (
+            token.detailType === "DropLowest" ||
+            token.detailType === "DropHighest"
+          ) {
+            const rollResuls = result.rolls[index] as number[];
+            return {
+              type: "DiceRoll" as const,
+              content: token.content.split("-")[0],
               detail: {
                 min: 1,
                 max: token.detail.numSides as number,
