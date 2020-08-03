@@ -224,7 +224,7 @@ const tryRoll = (input: string): DiceRollResult | null => {
             const rollResuls = result.rolls[index] as number[];
             return {
               type: "DiceRoll" as const,
-              content: token.content.split("-")[0],
+              content: token.content.split("-")[0].split("v")[0].split("^")[0],
               detail: {
                 min: 1,
                 max: token.detail.numSides as number,
