@@ -85,7 +85,14 @@ const generateRolls = (token: RollToken) => {
 
 const calculateValueRemovingLowest = (token: RollToken, rolls: number[]) => {
   const usedRolls: number[] = [...rolls];
-  usedRolls.splice(usedRolls.indexOf(Math.min.apply(null, usedRolls)), 1);
+
+  // Less efficient that a sort followed by a splice with the number of dice to drop,
+  // but more 'believable' because the rolled dice will remain in a random order in the
+  // results.
+  for (let i = 0; i < token.numToDrop; i++) {
+    usedRolls.splice(usedRolls.indexOf(Math.min.apply(null, usedRolls)), 1);
+  }
+
   return usedRolls.reduce((aggregate: number, current: number) => {
     return aggregate + current;
   }, 0);
@@ -93,7 +100,14 @@ const calculateValueRemovingLowest = (token: RollToken, rolls: number[]) => {
 
 const calculateValueRemovingHighest = (token: RollToken, rolls: number[]) => {
   const usedRolls: number[] = [...rolls];
-  usedRolls.splice(usedRolls.indexOf(Math.max.apply(null, usedRolls)), 1);
+
+  // Less efficient that a sort followed by a splice with the number of dice to drop,
+  // but more 'believable' because the rolled dice will remain in a random order in the
+  // results.
+  for (let i = 0; i < token.numToDrop; i++) {
+    usedRolls.splice(usedRolls.indexOf(Math.max.apply(null, usedRolls)), 1);
+  }
+
   return usedRolls.reduce((aggregate: number, current: number) => {
     return aggregate + current;
   }, 0);
@@ -114,6 +128,21 @@ const rollRuleDropLowest: DiceRule<RollToken> = {
   calculateValue: calculateValueRemovingLowest,
 };
 
+// Custom dice roll rule for format [XdYvN] (i.e. Roll X dY's, keep the lowest N)
+const rollRuleKeepLowestN: DiceRule<RollToken> = {
+  regex: /\d+d\d+v\d+/,
+  typeConstant: "KeepLowestN",
+  tokenize: (raw: string): RollToken => {
+    return {
+      numDice: parseInt(raw.split("d")[0]),
+      diceType: parseInt(raw.split("v")[0].split("d")[1]),
+      numToDrop: 1,
+    };
+  },
+  roll: generateRolls,
+  calculateValue: calculateValueRemovingHighest,
+};
+
 // Custom dice roll rule for format [XdY-H]
 const rollRuleDropHighest: DiceRule<RollToken> = {
   regex: /\d+d\d+\-H/,
@@ -129,10 +158,27 @@ const rollRuleDropHighest: DiceRule<RollToken> = {
   calculateValue: calculateValueRemovingHighest,
 };
 
+// Custom dice roll rule for format [XdY^N] (i.e. Roll X dY's, keep the highest N)
+const rollRuleKeepHighestN: DiceRule<RollToken> = {
+  regex: /\d+d\d+\^\d+/,
+  typeConstant: "KeepHighestN",
+  tokenize: (raw: string): RollToken => {
+    return {
+      numDice: parseInt(raw.split("d")[0]),
+      diceType: parseInt(raw.split("v")[0].split("d")[1]),
+      numToDrop: 1,
+    };
+  },
+  roll: generateRolls,
+  calculateValue: calculateValueRemovingHighest,
+};
+
 // Configure defined roll rules
 const rollRules: DiceRule<RollToken>[] = [
   rollRuleDropLowest,
   rollRuleDropHighest,
+  rollRuleKeepLowestN,
+  rollRuleKeepHighestN,
 ];
 const { roll } = withPlugins(...rollRules);
 
@@ -157,7 +203,9 @@ const tryRoll = (input: string): DiceRollResult | null => {
             };
           } else if (
             token.detailType === "DropLowest" ||
-            token.detailType === "DropHighest"
+            token.detailType === "DropHighest" ||
+            token.detailType === "KeepLowestN" ||
+            token.detailType === "KeepHighestN"
           ) {
             const rollResuls = result.rolls[index] as number[];
             return {
