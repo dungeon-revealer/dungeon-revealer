@@ -72,7 +72,32 @@ export type ApplicationRecordSchema =
 interface RollToken {
   numDice: number;
   diceType: number;
+  numToDrop: number;
 }
+
+const generateRolls = (token: RollToken) => {
+  const rolls: number[] = [];
+  for (let i = 0; i < token.numDice; i++) {
+    rolls.push(random(1, token.diceType));
+  }
+  return rolls;
+};
+
+const calculateValueRemovingLowest = (token: RollToken, rolls: number[]) => {
+  const usedRolls: number[] = [...rolls];
+  usedRolls.splice(usedRolls.indexOf(Math.min.apply(null, usedRolls)), 1);
+  return usedRolls.reduce((aggregate: number, current: number) => {
+    return aggregate + current;
+  }, 0);
+};
+
+const calculateValueRemovingHighest = (token: RollToken, rolls: number[]) => {
+  const usedRolls: number[] = [...rolls];
+  usedRolls.splice(usedRolls.indexOf(Math.max.apply(null, usedRolls)), 1);
+  return usedRolls.reduce((aggregate: number, current: number) => {
+    return aggregate + current;
+  }, 0);
+};
 
 // Custom dice roll rule for format [XdY-L]
 const rollRuleDropLowest: DiceRule<RollToken> = {
@@ -82,22 +107,11 @@ const rollRuleDropLowest: DiceRule<RollToken> = {
     return {
       numDice: parseInt(raw.split("d")[0]),
       diceType: parseInt(raw.split("-")[0].split("d")[1]),
+      numToDrop: 1,
     };
   },
-  roll: (token: RollToken) => {
-    const rolls: number[] = [];
-    for (let i = 0; i < token.numDice; i++) {
-      rolls.push(random(1, token.diceType));
-    }
-    return rolls;
-  },
-  calculateValue: (token: RollToken, rolls: number[]) => {
-    const usedRolls: number[] = [...rolls];
-    usedRolls.splice(usedRolls.indexOf(Math.min.apply(null, usedRolls)), 1);
-    return usedRolls.reduce((aggregate: number, current: number) => {
-      return aggregate + current;
-    }, 0);
-  },
+  roll: generateRolls,
+  calculateValue: calculateValueRemovingLowest,
 };
 
 // Custom dice roll rule for format [XdY-H]
@@ -108,22 +122,11 @@ const rollRuleDropHighest: DiceRule<RollToken> = {
     return {
       numDice: parseInt(raw.split("d")[0]),
       diceType: parseInt(raw.split("-")[0].split("d")[1]),
+      numToDrop: 1,
     };
   },
-  roll: (token: RollToken) => {
-    const rolls: number[] = [];
-    for (let i = 0; i < token.numDice; i++) {
-      rolls.push(random(1, token.diceType));
-    }
-    return rolls;
-  },
-  calculateValue: (token: RollToken, rolls: number[]) => {
-    const usedRolls: number[] = [...rolls];
-    usedRolls.splice(usedRolls.indexOf(Math.max.apply(null, usedRolls)), 1);
-    return usedRolls.reduce((aggregate: number, current: number) => {
-      return aggregate + current;
-    }, 0);
-  },
+  roll: generateRolls,
+  calculateValue: calculateValueRemovingHighest,
 };
 
 // Configure defined roll rules
