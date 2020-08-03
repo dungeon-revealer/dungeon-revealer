@@ -23,7 +23,7 @@
     "compile": "pkg . --out-path ./bin/ --target host",
     "eject": "react-scripts eject",
     "eslint": "eslint --ignore-path .gitignore --max-warnings 0 \"**/*.js\" \"bin/dungeon-revealer\"",
-    "postinstall": "patch-package",
+    "postinstall": "patch-package && npm run build",
     "start": "node ./bin/dungeon-revealer",
     "test": "jest --passWithNoTests",
     "start:frontend:dev": "cross-env PORT=3001 EXTEND_ESLINT=true SKIP_TYPE_CHECK=true react-scripts start",
