@@ -165,7 +165,7 @@ const rollRuleKeepHighestN: DiceRule<RollToken> = {
   tokenize: (raw: string): RollToken => {
     return {
       numDice: parseInt(raw.split("d")[0]),
-      diceType: parseInt(raw.split("v")[0].split("d")[1]),
+      diceType: parseInt(raw.split("^")[0].split("d")[1]),
       numToDrop: 1,
     };
   },
