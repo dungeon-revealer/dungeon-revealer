@@ -133,10 +133,17 @@ const rollRuleKeepLowestN: DiceRule<RollToken> = {
   regex: /\d+d\d+v\d+/,
   typeConstant: "KeepLowestN",
   tokenize: (raw: string): RollToken => {
+    let diceCount: number = parseInt(raw.split("d")[0]);
+    let dropCount: number = parseInt(raw.split("v")[1]);
+    if (dropCount >= diceCount) {
+      dropCount = 1;
+    } else {
+      dropCount = diceCount - dropCount;
+    }
     return {
-      numDice: parseInt(raw.split("d")[0]),
+      numDice: diceCount,
       diceType: parseInt(raw.split("v")[0].split("d")[1]),
-      numToDrop: 1,
+      numToDrop: dropCount,
     };
   },
   roll: generateRolls,
@@ -163,14 +170,21 @@ const rollRuleKeepHighestN: DiceRule<RollToken> = {
   regex: /\d+d\d+\^\d+/,
   typeConstant: "KeepHighestN",
   tokenize: (raw: string): RollToken => {
+    let diceCount: number = parseInt(raw.split("d")[0]);
+    let dropCount: number = parseInt(raw.split("^")[1]);
+    if (dropCount >= diceCount) {
+      dropCount = 1;
+    } else {
+      dropCount = diceCount - dropCount;
+    }
     return {
-      numDice: parseInt(raw.split("d")[0]),
+      numDice: diceCount,
       diceType: parseInt(raw.split("^")[0].split("d")[1]),
-      numToDrop: 1,
+      numToDrop: dropCount,
     };
   },
   roll: generateRolls,
-  calculateValue: calculateValueRemovingHighest,
+  calculateValue: calculateValueRemovingLowest,
 };
 
 // Configure defined roll rules
