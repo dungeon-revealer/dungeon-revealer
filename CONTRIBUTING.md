@@ -2,7 +2,11 @@
 
 Install dependencies:
 
-- `npm run install`
+- `npm install`
+
+Build the backend & frontend:
+
+- `npm run build`
 
 Run the react development server:
 
@@ -11,10 +15,6 @@ Run the react development server:
 Run the backend:
 
 - `npm run start:server:dev` (available on `localhost:3000`)
-
-Build the backend & frontend:
-
-- `npm run build`
 
 Compile executables:
 
