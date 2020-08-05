@@ -134,7 +134,7 @@ const decodeMetaData = (records: [string, string][]) =>
 const parseBody = (content: string) =>
   content
     // remove head
-    .replace(/^(---\n[^]*\n---)/, "")
+    .replace(/^(---\n[^]*\n--- *\n)/, "")
     // remove trailing line breaks
     .replace(/^\n*/, "");
 
