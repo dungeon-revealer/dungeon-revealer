@@ -83,7 +83,10 @@ const generateRolls = (token: RollToken) => {
   return rolls;
 };
 
-const calculateValueRemovingLowest = (token: RollToken, rolls: number[]) => {
+const calculateValueRemovingLowest = (
+  token: RollToken,
+  rolls: number[]
+): number => {
   const usedRolls: number[] = [...rolls];
 
   // Less efficient that a sort followed by a splice with the number of dice to drop,
@@ -98,7 +101,29 @@ const calculateValueRemovingLowest = (token: RollToken, rolls: number[]) => {
   }, 0);
 };
 
-const calculateValueRemovingHighest = (token: RollToken, rolls: number[]) => {
+const calculateVauleKeepingHighest = (
+  token: RollToken,
+  rolls: number[]
+): number => {
+  // Keeping the Highest rolls can be expressed in terms of Dropping the Lowest
+  if (token.numToDrop <= token.numDice) {
+    return calculateValueRemovingLowest(
+      {
+        numDice: token.numDice,
+        diceType: token.diceType,
+        numToDrop: token.numDice - token.numToDrop,
+      },
+      rolls
+    );
+  } else {
+    throw "Cannot keep more dice than were rolled.";
+  }
+};
+
+const calculateValueRemovingHighest = (
+  token: RollToken,
+  rolls: number[]
+): number => {
   const usedRolls: number[] = [...rolls];
 
   // Less efficient that a sort followed by a splice with the number of dice to drop,
@@ -113,7 +138,27 @@ const calculateValueRemovingHighest = (token: RollToken, rolls: number[]) => {
   }, 0);
 };
 
+const calculateValueKeepingLowest = (
+  token: RollToken,
+  rolls: number[]
+): number => {
+  // Keeping the Lowest rolls can be expressed in terms of Dropping the Highest
+  if (token.numToDrop <= token.numDice) {
+    return calculateValueRemovingHighest(
+      {
+        numDice: token.numDice,
+        diceType: token.diceType,
+        numToDrop: token.numDice - token.numToDrop,
+      },
+      rolls
+    );
+  } else {
+    throw "Cannot keep more dice than were rolled.";
+  }
+};
+
 // Custom dice roll rule for format [XdY-L]
+// (i.e. roll X dY's and drop the one lowest)
 const rollRuleDropLowest: DiceRule<RollToken> = {
   regex: /\d+d\d+\-L/,
   typeConstant: "DropLowest",
@@ -128,29 +173,8 @@ const rollRuleDropLowest: DiceRule<RollToken> = {
   calculateValue: calculateValueRemovingLowest,
 };
 
-// Custom dice roll rule for format [XdYvN] (i.e. Roll X dY's, keep the lowest N)
-const rollRuleKeepLowestN: DiceRule<RollToken> = {
-  regex: /\d+d\d+v\d+/,
-  typeConstant: "KeepLowestN",
-  tokenize: (raw: string): RollToken => {
-    let diceCount: number = parseInt(raw.split("d")[0]);
-    let dropCount: number = parseInt(raw.split("v")[1]);
-    if (dropCount >= diceCount) {
-      dropCount = 1;
-    } else {
-      dropCount = diceCount - dropCount;
-    }
-    return {
-      numDice: diceCount,
-      diceType: parseInt(raw.split("v")[0].split("d")[1]),
-      numToDrop: dropCount,
-    };
-  },
-  roll: generateRolls,
-  calculateValue: calculateValueRemovingHighest,
-};
-
 // Custom dice roll rule for format [XdY-H]
+// (i.e. roll X dY's and drop the one highest)
 const rollRuleDropHighest: DiceRule<RollToken> = {
   regex: /\d+d\d+\-H/,
   typeConstant: "DropHighest",
@@ -165,32 +189,77 @@ const rollRuleDropHighest: DiceRule<RollToken> = {
   calculateValue: calculateValueRemovingHighest,
 };
 
-// Custom dice roll rule for format [XdY^N] (i.e. Roll X dY's, keep the highest N)
-const rollRuleKeepHighestN: DiceRule<RollToken> = {
-  regex: /\d+d\d+\^\d+/,
-  typeConstant: "KeepHighestN",
-  tokenize: (raw: string): RollToken => {
-    let diceCount: number = parseInt(raw.split("d")[0]);
-    let dropCount: number = parseInt(raw.split("^")[1]);
-    if (dropCount >= diceCount) {
-      dropCount = 1;
-    } else {
-      dropCount = diceCount - dropCount;
-    }
+// Common tokenisation for Keep / Drop N rules
+const tokeniseKeepDropN = (result: RegExpMatchArray | null) => {
+  if (result) {
     return {
-      numDice: diceCount,
-      diceType: parseInt(raw.split("^")[0].split("d")[1]),
-      numToDrop: dropCount,
+      numDice: parseInt(result[2]),
+      diceType: parseInt(result[3]),
+      numToDrop: parseInt(result[5]),
     };
-  },
+  } else {
+    throw "Invalid raw data passed to tokeniser";
+  }
+};
+
+// Custom dice roll rule for formats [XdYdN] and [XdYdlN]
+// (i.e. Roll X dY's, drop the lowest N)
+const dropLowestN: RegExp = /((\d+)d(\d+))(d|dl)(\d+)/;
+const detectDropLowestN: RegExp = /\d+d\d+d\d+|\d+d\d+dl\d+/;
+const rollRuleDropLowestN: DiceRule<RollToken> = {
+  regex: detectDropLowestN,
+  typeConstant: "DropLowestN",
+  tokenize: (raw: string): RollToken =>
+    tokeniseKeepDropN(raw.match(dropLowestN)),
   roll: generateRolls,
   calculateValue: calculateValueRemovingLowest,
+};
+
+// Custom dice roll rule for format [XdYdhN]
+// (i.e. Roll X dY's, drop the lowest N)
+const dropHighestN: RegExp = /((\d+)d(\d+))(dh)(\d+)/;
+const detectDropHighestN: RegExp = /\d+d\d+dh\d+/;
+const rollRuleDropHighestN: DiceRule<RollToken> = {
+  regex: detectDropHighestN,
+  typeConstant: "DropHighestN",
+  tokenize: (raw: string): RollToken =>
+    tokeniseKeepDropN(raw.match(dropHighestN)),
+  roll: generateRolls,
+  calculateValue: calculateValueRemovingHighest,
+};
+
+// Custom dice roll rule for formats [XdYvN] and [XdYklN]
+// (i.e. Roll X dY's, keep the lowest N)
+const keepLowestN: RegExp = /((\d+)d(\d+))(v|kl)(\d+)/;
+const detectKeepLowestN: RegExp = /\d+d\d+v\d+|\d+d\d+kl\d+/;
+const rollRuleKeepLowestN: DiceRule<RollToken> = {
+  regex: detectKeepLowestN,
+  typeConstant: "KeepLowestN",
+  tokenize: (raw: string): RollToken =>
+    tokeniseKeepDropN(raw.match(keepLowestN)),
+  roll: generateRolls,
+  calculateValue: calculateValueKeepingLowest,
+};
+
+// Custom dice roll rule for formats [XdY^N], [XdYkN] and [XdYkhN]
+// (i.e.Roll X dY's, keep the highest N)
+const keepHighestN: RegExp = /((\d+)d(\d+))(\^|k|kh)(\d+)/;
+const detectKeepHighestN: RegExp = /\d+d\d+\^\d+|\d+d\d+k\d+|\d+d\d+kh\d+/;
+const rollRuleKeepHighestN: DiceRule<RollToken> = {
+  regex: detectKeepHighestN,
+  typeConstant: "KeepHighestN",
+  tokenize: (raw: string): RollToken =>
+    tokeniseKeepDropN(raw.match(keepHighestN)),
+  roll: generateRolls,
+  calculateValue: calculateVauleKeepingHighest,
 };
 
 // Configure defined roll rules
 const rollRules: DiceRule<RollToken>[] = [
   rollRuleDropLowest,
+  rollRuleDropLowestN,
   rollRuleDropHighest,
+  rollRuleDropHighestN,
   rollRuleKeepLowestN,
   rollRuleKeepHighestN,
 ];
@@ -217,14 +286,39 @@ const tryRoll = (input: string): DiceRollResult | null => {
             };
           } else if (
             token.detailType === "DropLowest" ||
+            token.detailType === "DropLowestN" ||
             token.detailType === "DropHighest" ||
+            token.detailType === "DropHighestN" ||
             token.detailType === "KeepLowestN" ||
             token.detailType === "KeepHighestN"
           ) {
             const rollResuls = result.rolls[index] as number[];
+            let diceType: string = "";
+            switch (token.detailType) {
+              case "DropLowest":
+              case "DropHighest":
+                diceType = token.content.split("-")[0];
+                break;
+              case "KeepLowestN":
+              case "KeepHighestN":
+                diceType = token.content
+                  .split("k")[0]
+                  .split("^")[0]
+                  .split("v")[0];
+                break;
+              case "DropLowestN":
+              case "DropHighestN":
+                diceType = `${token.content.split("d")[0]}d${
+                  token.content.split("d")[1]
+                }`;
+                break;
+              default:
+                diceType = token.content;
+                break;
+            }
             return {
               type: "DiceRoll" as const,
-              content: token.content.split("-")[0].split("v")[0].split("^")[0],
+              content: diceType,
               detail: {
                 min: 1,
                 max: token.detail.numSides as number,
