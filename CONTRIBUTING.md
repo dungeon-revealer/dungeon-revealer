@@ -6,7 +6,7 @@ Install dependencies:
 
 Build the backend & frontend:
 
-- `npm run build` (this is automatically run after the install)
+- `npm run build`
 
 Run the react development server:
 

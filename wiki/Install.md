@@ -33,6 +33,7 @@ Then you can run the app directly in the terminal.
 Then go to `localhost:3000` in your browser and point your players to `<YOUR_IPADDRESS>:3000`.
 This information is also present in the terminal window.
 
+There is also a community maintained [AUR package](https://aur.archlinux.org/packages/dungeon-revealer-bin/).
 
 
 ### Docker
