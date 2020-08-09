@@ -3,11 +3,11 @@
   "version": "1.10.1",
   "description": "dungeon-revealer ================",
   "bugs": {
-    "url": "https://github.com/apclary/dungeon-revealer/issues"
+    "url": "https://github.com/dungeon-revealer/dungeon-revealer/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/apclary/dungeon-revealer.git"
+    "url": "https://github.com/dungeon-revealer/dungeon-revealer.git"
   },
   "license": "ISC",
   "author": "apclary",
