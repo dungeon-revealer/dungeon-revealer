@@ -131,6 +131,9 @@ const decodeMetaData = (records: [string, string][]) =>
     )
   );
 
+const normalizeLineEndings = (content: string) =>
+  content.replace(/\r\n/g, `\n`);
+
 const parseBody = (content: string) =>
   content
     // remove head
@@ -138,12 +141,16 @@ const parseBody = (content: string) =>
     // remove trailing line breaks
     .replace(/^\n*/, "");
 
-export const parseNoteData = (content: string) =>
+const extractMetaData = flow(
+  parseMetaDataLines,
+  sanitizeMetaDataLines,
+  decodeMetaData
+);
+
+export const parseNoteData = flow(normalizeLineEndings, (content) =>
   pipe(
     parseMetaHead(content),
-    E.map(parseMetaDataLines),
-    E.map(sanitizeMetaDataLines),
-    E.chain(decodeMetaData),
+    E.chain(extractMetaData),
     E.map((metadata) => {
       const body = parseBody(content);
       return NoteImportData.encode({
@@ -152,4 +159,5 @@ export const parseNoteData = (content: string) =>
         sanitizedContent: md.markdownToPlainText(body),
       });
     })
-  );
+  )
+);
