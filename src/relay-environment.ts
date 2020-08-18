@@ -7,65 +7,46 @@ import {
   FetchFunction,
   SubscribeFunction,
   Observable,
-  GraphQLResponse,
 } from "relay-runtime";
-import { RelayModernEnvironment } from "relay-runtime/lib/store/RelayModernEnvironment";
-import { Sink } from "relay-runtime/lib/network/RelayObservable";
+import { createSocketIOGraphQLClient } from "@n1ru4l/socket-io-graphql-client";
 
 export const createEnvironment = (socket: SocketIOClient.Socket) => {
-  const responseHandlers = new Map<number, (result: GraphQLResponse) => void>();
-  const subscriptionHandlers = new Map<number, Sink<GraphQLResponse>>();
-  let operationIdCounter = 1;
-
-  socket.on("graphql/result", ({ id, ...result }: any) => {
-    const handler = responseHandlers.get(id);
-    handler?.(result);
-    responseHandlers.delete(id);
-  });
-
-  socket.on("graphql/update", ({ id, ...result }: any) => {
-    const sink = subscriptionHandlers.get(id);
-    if (!sink) return;
-    sink.next(result);
-  });
+  const networkInterface = createSocketIOGraphQLClient(socket);
 
   const fetchQuery: FetchFunction = (request, variables) => {
     if (!request.text) throw new Error("Missing document.");
-    const { text: operation } = request;
-    const operationId = operationIdCounter;
-    operationIdCounter = operationIdCounter + 1;
+    const { text: operation, name } = request;
 
-    return new Promise<GraphQLResponse>((resolve) => {
-      const responseHandler = (response: any) => resolve(response);
-      responseHandlers.set(operationId, responseHandler);
-
-      socket.emit("graphql/execute", {
-        id: operationId,
+    return Observable.create((sink) => {
+      const observable = networkInterface.execute({
         operation,
         variables,
+        operationName: name,
       });
+
+      const subscription = observable.subscribe(sink);
+
+      return () => {
+        subscription.unsubscribe();
+      };
     });
   };
 
   const setupSubscription: SubscribeFunction = (request, variables) => {
     if (!request.text) throw new Error("Missing document.");
-    const { text: operation } = request;
+    const { text: operation, name } = request;
 
     return Observable.create((sink) => {
-      const operationId = operationIdCounter;
-      operationIdCounter = operationIdCounter + 1;
-
-      socket.emit("graphql/subscribe", {
-        id: operationId,
+      const observable = networkInterface.execute({
         operation,
-        variables,
+        variables: variables,
+        operationName: name,
       });
 
-      subscriptionHandlers.set(operationId, sink);
+      const subscription = observable.subscribe(sink);
 
       return () => {
-        socket.emit("graphql/unsubscribe", { id: operationId });
-        subscriptionHandlers.delete(operationId);
+        subscription.unsubscribe();
       };
     });
   };

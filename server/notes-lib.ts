@@ -6,8 +6,9 @@ import sanitizeHtml from "sanitize-html";
 import showdown from "showdown";
 import * as db from "./notes-db";
 import * as noteImport from "./note-import";
+import type { SocketSessionRecord } from "./socket-session-store";
 
-type ViewerRole = "admin" | "user";
+type ViewerRole = "unauthenticated" | "admin" | "user";
 
 export type NoteModelType = db.NoteModelType;
 export const decodeNote = db.decodeNote;
@@ -19,10 +20,10 @@ const isAdmin = (viewerRole: ViewerRole) => viewerRole === "admin";
 
 const checkAdmin = <T>(
   input: T
-): RTE.ReaderTaskEither<{ viewerRole: ViewerRole }, Error, T> => ({
-  viewerRole,
+): RTE.ReaderTaskEither<{ session: SocketSessionRecord }, Error, T> => ({
+  session,
 }) =>
-  isAdmin(viewerRole)
+  isAdmin(session.role)
     ? TE.right(input)
     : TE.left(new Error("Insufficient permissions."));
 
@@ -178,13 +179,15 @@ export const deleteNote = (noteId: string) =>
 
 export const findPublicNotes = (query: string) =>
   pipe(
-    RTE.ask<{ viewerRole: ViewerRole }>(),
+    RTE.ask<{ session: SocketSessionRecord }>(),
     RTE.chainW((d) => {
-      switch (d.viewerRole) {
+      switch (d.session.role) {
         case "admin":
           return db.findAllNotes(query);
         case "user":
           return db.findPublicNotes(query);
+        case "unauthenticated":
+          return RTE.of([]);
       }
     })
   );

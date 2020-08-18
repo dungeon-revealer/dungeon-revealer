@@ -400,7 +400,7 @@ export const mutationFields = [
       input: t.arg(t.NonNullInput(GraphQLChatMessageCreateInputType)),
     },
     resolve: (obj, args, context) => {
-      const user = context.user.get(context.getSessionId());
+      const user = context.user.get(context.session.id);
       if (!user) return null;
       context.chat.addUserMessage({
         authorName: user.name,
@@ -415,7 +415,7 @@ export const mutationFields = [
       input: t.arg(t.NonNullInput(GraphQLShareResourceInputType)),
     },
     resolve: (obj, args, context) => {
-      const user = context.user.get(context.getSessionId());
+      const user = context.user.get(context.session.id);
       if (!user) return null;
       const decodedId = NotesModule.decodeNoteId(args.input.contentId);
       if (E.isLeft(decodedId)) return null;
@@ -435,7 +435,7 @@ export const mutationFields = [
       input: t.arg(t.NonNullInput(GraphQLShareImageInputType)),
     },
     resolve: (obj, args, context) => {
-      const user = context.user.get(context.getSessionId());
+      const user = context.user.get(context.session.id);
       if (!user) return null;
 
       context.chat.addSharedResourceMessage({

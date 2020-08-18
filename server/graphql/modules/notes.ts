@@ -61,7 +61,7 @@ export const GraphQLNoteType = t.objectType<notes.NoteModelType>({
     }),
     t.field("viewerCanEdit", {
       type: t.NonNull(t.Boolean),
-      resolve: (obj, args, context) => context.viewerRole === "admin",
+      resolve: (obj, args, context) => context.session.role === "admin",
     }),
     t.field("viewerCanShare", {
       type: t.NonNull(t.Boolean),
