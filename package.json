@@ -136,7 +136,7 @@
     "react-toast-notifications": "2.4.0",
     "react-use-gesture": "8.0.0-alpha.2",
     "react-virtualized": "9.21.2",
-    "referentiel": "0.0.8",
+    "referentiel": "0.0.10",
     "relay-compiler": "9.1.0",
     "relay-compiler-language-typescript": "12.0.3",
     "relay-config": "9.1.0",
