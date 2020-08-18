@@ -76,7 +76,7 @@ jobs:
         run: |
           docker buildx build -f arm-compile.Dockerfile --platform ${{ matrix.platform }} \
           --build-arg ARCH=${{ matrix.arch }} \
-          --build-arg FETCH_CMD="mkdir -p ~/.pkg-cache/v2.5 && cd ~/.pkg-cache/v2.5 && wget https://github.com/robertsLando/pkg-binaries/releases/download/v1.0.0/fetched-12.18.1-linux-${{ matrix.arch }} -O fetched-v12.18.1-linux-${{ matrix.arch }}" \
+          --build-arg FETCH_CMD="mkdir -p ~/.pkg-cache/v2.5 && cd ~/.pkg-cache/v2.5 && wget https://github.com/robertsLando/pkg-binaries/releases/download/v1.0.0/fetched-12.2.0-linux-${{ matrix.arch }} -O fetched-v12.2.0-linux-${{ matrix.arch }}" \
           --load -t dr/bin:${{ matrix.arch }} .
           APP=$(docker run --rm -it -d dr/bin:${{ matrix.arch }})
           docker cp $APP:/usr/src/build/bin/dungeon-revealer-linux ./bin/
