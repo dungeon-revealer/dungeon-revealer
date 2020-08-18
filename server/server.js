@@ -281,7 +281,7 @@ const bootstrapServer = async () => {
       authenticatedSockets.add(socket);
       socketSessionStore.set(socket, {
         id: socket.id,
-        role: "unauthenticated",
+        role: role === "DM" ? "admin" : "user",
       });
 
       socketIOGraphQLServer.registerSocket(socket);
