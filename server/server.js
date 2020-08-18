@@ -21,6 +21,7 @@ const { FileStorage } = require("./file-storage");
 const { createResourceTaskProcessor } = require("./util");
 const database = require("./database");
 const env = require("./env");
+const { createSocketSessionStore } = require("./socket-session-store");
 
 const bootstrapServer = async () => {
   fs.mkdirpSync(env.DATA_DIRECTORY);
@@ -48,7 +49,9 @@ const bootstrapServer = async () => {
   // Not sure if this is needed, Chrome seems to grab the favicon just fine anyway
   // Maybe for cross-browser support
   app.use(logger("dev"));
-  app.use(favicon(path.resolve(env.PUBLIC_PATH, "images", "icons", "favicon.ico")));
+  app.use(
+    favicon(path.resolve(env.PUBLIC_PATH, "images", "icons", "favicon.ico"))
+  );
 
   // Needed to handle JSON posts, size limit of 50mb
   app.use(bodyParser.json({ limit: "50mb" }));
@@ -182,10 +185,13 @@ const bootstrapServer = async () => {
     roleMiddleware,
     fileStorage,
   });
-  const ioHandler = [];
-  const { router: graphqlRouter } = createGraphQLRouter({
+
+  const socketSessionStore = createSocketSessionStore();
+
+  const { router: graphqlRouter, socketIOGraphQLServer } = createGraphQLRouter({
+    socketServer: io,
+    socketSessionStore,
     roleMiddleware,
-    registerSocketCommand: (handler) => ioHandler.push(handler),
     db,
   });
   const notesImportRouter = createNotesRouter({ db, roleMiddleware });
@@ -251,7 +257,13 @@ const bootstrapServer = async () => {
   io.on("connection", (socket) => {
     console.log(`WS client ${socket.handshake.address} ${socket.id} connected`);
 
+    socketSessionStore.set(socket, {
+      id: socket.id,
+      role: "unauthenticated",
+    });
+
     socket.on("authenticate", ({ password }) => {
+      socketIOGraphQLServer.disposeSocket(socket);
       socket.removeAllListeners();
 
       const role = getRole(password);
@@ -266,11 +278,13 @@ const bootstrapServer = async () => {
         `WS client ${socket.handshake.address} ${socket.id} authenticate ${role}`
       );
 
-      ioHandler.forEach((handler) => {
-        handler(socket, role);
+      authenticatedSockets.add(socket);
+      socketSessionStore.set(socket, {
+        id: socket.id,
+        role: "unauthenticated",
       });
 
-      authenticatedSockets.add(socket);
+      socketIOGraphQLServer.registerSocket(socket);
 
       socket.emit("authenticated");
 

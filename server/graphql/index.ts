@@ -1,15 +1,14 @@
 import { createTypesFactory, buildGraphQLSchema } from "gqtx";
 import type { createChat } from "../chat";
 import type { createUser } from "../user";
+import type { SocketSessionRecord } from "../socket-session-store";
 import type { Database } from "sqlite";
 
 export type GraphQLContextType = {
   chat: ReturnType<typeof createChat>;
   user: ReturnType<typeof createUser>;
   db: Database;
-  getSessionId: () => string;
-  setSessionId: (id: string) => void;
-  viewerRole: "admin" | "user";
+  session: SocketSessionRecord;
 };
 
 export type GraphQLSubscriptionRootType = {};

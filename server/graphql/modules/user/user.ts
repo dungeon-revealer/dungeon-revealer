@@ -82,7 +82,7 @@ export const queryFields = [
   t.field("me", {
     type: t.NonNull(GraphQLUserType),
     resolve: (_, args, ctx) => {
-      const user = ctx.user.get(ctx.getSessionId());
+      const user = ctx.user.get(ctx.session.id);
       if (!user) {
         throw new Error("Invalid state.");
       }
@@ -152,13 +152,14 @@ export const mutationFields = [
           id: args.input.id,
           name: args.input.name,
         });
-        context.setSessionId(args.input.id);
+        // TODO: we are mutating an object; possibly dangerous ;)
+        context.session.id = args.input.id;
         return user;
       } else {
-        let user = context.user.get(context.getSessionId());
+        let user = context.user.get(context.session.id);
         if (user) return user;
         user = context.user.userConnects({
-          id: context.getSessionId(),
+          id: context.session.id,
           name: generateRandomName(),
         });
         return user;
@@ -172,10 +173,10 @@ export const mutationFields = [
     },
     resolve: (obj, args, context) => {
       context.user.update({
-        id: context.getSessionId(),
+        id: context.session.id,
         name: args.input.name,
       });
-      const updatedUser = context.user.get(context.getSessionId());
+      const updatedUser = context.user.get(context.session.id);
       if (!updatedUser) {
         throw new Error("Invalid State.");
       }
