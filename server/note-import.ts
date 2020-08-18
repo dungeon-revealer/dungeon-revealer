@@ -95,7 +95,7 @@ const getTitleRecord = getRecord("title");
 const getIsEntryPointRecord = getRecord("isEntryPoint");
 
 const decodeId = (id: string) =>
-  id.match(/^[-_\w]+$/)
+  id.match(/^[-\w]+$/)
     ? E.right(id)
     : E.left(new Error("Invalid characters in id."));
 
