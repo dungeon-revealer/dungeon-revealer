@@ -10,8 +10,8 @@
    inkscape:export-ydpi="96"
    inkscape:export-xdpi="96"
    inkscape:export-filename="/home/matt/Downloads/dr-favicon-2.png"
-   sodipodi:docname="dr-favicon-2.svg"
-   inkscape:version="1.0 (6e3e5246a0, 2020-05-07)"
+   sodipodi:docname="dr-icon.svg"
+   inkscape:version="1.0 (b51213c273, 2020-08-10)"
    id="svg25"
    version="1.1"
    viewBox="0 0 135.46666 135.46667"
@@ -41,11 +41,11 @@
      units="px"
      showgrid="false"
      inkscape:document-rotation="0"
-     inkscape:current-layer="g61"
+     inkscape:current-layer="layer1"
      inkscape:document-units="mm"
-     inkscape:cy="316.14775"
-     inkscape:cx="-0.70880194"
-     inkscape:zoom="0.95551538"
+     inkscape:cy="248.5567"
+     inkscape:cx="-321.39884"
+     inkscape:zoom="0.48114204"
      inkscape:pageshadow="2"
      inkscape:pageopacity="0.0"
      borderopacity="1.0"
@@ -70,20 +70,20 @@
      inkscape:groupmode="layer"
      inkscape:label="Layer 1">
     <rect
-       ry="10.253784"
-       y="15.233963"
-       x="0.41729647"
-       height="104.99874"
-       width="134.63208"
+       ry="13.136952"
+       y="0.47214249"
+       x="0.47214234"
+       height="134.52238"
+       width="134.52238"
        id="rect64"
-       style="display:inline;fill:#006900;stroke:#006900;stroke-width:0.834593" />
+       style="display:inline;fill:#006900;stroke:#006900;stroke-width:0.944285" />
   </g>
   <g
      inkscape:label="Layer 2"
      id="layer2"
      inkscape:groupmode="layer">
     <g
-       transform="matrix(1,0,0,1.1643948,-2.6513532,-17.678974)"
+       transform="matrix(0.80275566,0,0,0.93472454,11.231581,-0.83187677)"
        id="g61"
        style="display:inline;fill:#ffffff;stroke:none">
       <text
