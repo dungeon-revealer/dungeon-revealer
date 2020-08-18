@@ -94,38 +94,48 @@ const getIdRecord = getRecord("id");
 const getTitleRecord = getRecord("title");
 const getIsEntryPointRecord = getRecord("isEntryPoint");
 
+const decodeId = (id: string) =>
+  id.match(/^[-\w]+$/)
+    ? E.right(id)
+    : E.left(new Error("Invalid characters in id."));
+
 const decodeMetaData = (records: [string, string][]) =>
   pipe(
     getIdRecord(records),
     O.fold(
       () => E.left(new Error("Missing id.")),
-      ([_, id]) =>
+      ([_, rawId]) =>
         pipe(
-          getTitleRecord(records),
-          O.fold(
-            () => E.left(new Error("Missing title.")),
-            ([_, title]) =>
-              pipe(
-                getIsEntryPointRecord(records),
-                O.fold(
-                  () => E.left(new Error("Missing isEntryPoint.")),
-                  ([_, isEntryPoint]) =>
-                    pipe(
-                      BooleanFromString.decode(isEntryPoint),
-                      E.map((isEntryPoint) => ({
-                        id,
-                        title,
-                        isEntryPoint,
-                      })),
-                      E.mapLeft(
-                        () =>
-                          new Error(
-                            "Invalid value provided fro 'isEntryPoint'."
+          decodeId(rawId),
+          E.chain((id) =>
+            pipe(
+              getTitleRecord(records),
+              O.fold(
+                () => E.left(new Error("Missing title.")),
+                ([_, title]) =>
+                  pipe(
+                    getIsEntryPointRecord(records),
+                    O.fold(
+                      () => E.left(new Error("Missing isEntryPoint.")),
+                      ([_, isEntryPoint]) =>
+                        pipe(
+                          BooleanFromString.decode(isEntryPoint),
+                          E.map((isEntryPoint) => ({
+                            id,
+                            title,
+                            isEntryPoint,
+                          })),
+                          E.mapLeft(
+                            () =>
+                              new Error(
+                                "Invalid value provided fro 'isEntryPoint'."
+                              )
                           )
-                      )
+                        )
                     )
-                )
+                  )
               )
+            )
           )
         )
     )
