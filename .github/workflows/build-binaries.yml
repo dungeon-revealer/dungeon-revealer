@@ -2,12 +2,11 @@ name: Build Binaries
 
 on:
   push:
-    branches: [ master ] # Run on master or tags
+    branches: [master] # Run on master or tags
     tags:
       - "v*"
 
 jobs:
-
   build_x64_native:
     name: ${{ matrix.os }} Binaries
     runs-on: ${{ matrix.os }}-latest
@@ -21,7 +20,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v1
         with:
-          node-version: 10
+          node-version: 12
 
       - name: Install Dependencies
         run: |
@@ -51,13 +50,12 @@ jobs:
           name: dungeon-revealer-${{ matrix.os }}
           path: "dungeon-revealer-${{ matrix.os }}/"
 
-
   build_arm:
     name: ${{ matrix.arch }} Binaries
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform: [linux/arm/v7, linux/arm64/v8 ]
+        platform: [linux/arm/v7, linux/arm64/v8]
         include:
           - platform: linux/arm/v7
             arch: armv7
@@ -78,7 +76,7 @@ jobs:
         run: |
           docker buildx build -f arm-compile.Dockerfile --platform ${{ matrix.platform }} \
           --build-arg ARCH=${{ matrix.arch }} \
-          --build-arg FETCH_CMD="mkdir -p ~/.pkg-cache/v2.5 && cd ~/.pkg-cache/v2.5 && wget https://github.com/robertsLando/pkg-binaries/releases/download/v1.0.0/fetched-v10.15.3-linux-${{ matrix.arch }} -O fetched-v10.4.1-linux-${{ matrix.arch }}" \
+          --build-arg FETCH_CMD="mkdir -p ~/.pkg-cache/v2.5 && cd ~/.pkg-cache/v2.5 && wget https://github.com/robertsLando/pkg-binaries/releases/download/v1.0.0/fetched-12.18.1-linux-${{ matrix.arch }} -O fetched-v12.18.1-linux-${{ matrix.arch }}" \
           --load -t dr/bin:${{ matrix.arch }} .
           APP=$(docker run --rm -it -d dr/bin:${{ matrix.arch }})
           docker cp $APP:/usr/src/build/bin/dungeon-revealer-linux ./bin/
@@ -110,7 +108,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v1
         with:
-          node-version: 10
+          node-version: 12
 
       - name: Set environment
         run: |
