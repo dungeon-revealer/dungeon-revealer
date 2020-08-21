@@ -22,6 +22,6 @@ RUN eval $FETCH_CMD
 
 ARG ARCH
 
-RUN npm run compile
+RUN npm run compile:$ARCH
 
 CMD ["sh"]

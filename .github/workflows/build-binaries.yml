@@ -2,7 +2,7 @@ name: Build Binaries
 
 on:
   push:
-    branches: [master, remove-pkg-scripts] # Run on master or tags
+    branches: [master, update-relay] # Run on master or tags
     tags:
       - "v*"
 
