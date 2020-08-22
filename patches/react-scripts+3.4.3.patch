@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-scripts/config/webpack.config.js b/node_modules/react-scripts/config/webpack.config.js
-index 25840d9..64b8e5d 100644
+index 25840d9..32fedb4 100644
 --- a/node_modules/react-scripts/config/webpack.config.js
 +++ b/node_modules/react-scripts/config/webpack.config.js
 @@ -36,6 +36,7 @@ const typescriptFormatter = require('react-dev-utils/typescriptFormatter');
@@ -32,7 +32,7 @@ index 25840d9..64b8e5d 100644
        // Moment.js is an extremely popular library that bundles large locale files
        // by default due to how webpack interprets its code. This is a practical
        // solution that requires the user to opt into importing specific locales.
-@@ -673,7 +682,7 @@ module.exports = function(webpackEnv) {
+@@ -673,13 +682,13 @@ module.exports = function(webpackEnv) {
            ],
          }),
        // TypeScript type checking
@@ -41,3 +41,10 @@ index 25840d9..64b8e5d 100644
          new ForkTsCheckerWebpackPlugin({
            typescript: resolve.sync('typescript', {
              basedir: paths.appNodeModules,
+           }),
+           async: isEnvDevelopment,
+-          useTypescriptIncrementalApi: true,
++          useTypescriptIncrementalApi: isEnvProduction ? false : true,
+           checkSyntacticErrors: true,
+           resolveModuleNameModule: process.versions.pnp
+             ? `${__dirname}/pnpTs.js`
