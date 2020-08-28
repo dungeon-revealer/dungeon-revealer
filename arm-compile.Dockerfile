@@ -12,9 +12,7 @@ RUN npm install
 
 ARG SPACE=4000
 
-RUN export NODE_OPTIONS=--max_old_space_size=$SPACE \
-    && export TERSER_PARALLEL_TASKS=1 \
-    && npm run build
+RUN export NODE_OPTIONS=--max_old_space_size=$SPACE
 
 RUN node ./scripts/copy-node-bindings-path.js
 
