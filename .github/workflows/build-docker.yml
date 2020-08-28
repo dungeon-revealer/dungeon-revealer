@@ -7,8 +7,33 @@ on:
       - "v*"
 
 jobs:
+  build-app:
+    name: Build app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Use Node.js 12.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: "12.x"
+
+      - name: Install
+        run: |
+          npm install
+          npm run build
+
+      - name: Upload Build App
+        uses: actions/upload-artifact@v2
+        with:
+          name: built-app
+          path: |
+            build/**/*
+            server-build/**/*
   build:
     name: Build
+    needs: build-app
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -16,14 +41,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Use Node.js 12.x
-        uses: actions/setup-node@v1
+
+      - name: Download built app
+        uses: actions/download-artifact@v2
         with:
-          node-version: "12.x"
-      - name: Install
-        run: |
-          npm install
-          npm run build
+          name: built-app
 
       - name: Set environment
         run: |
@@ -106,6 +128,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Download built app
+        uses: actions/download-artifact@v2
+        with:
+          name: built-app
 
       - name: Set environment
         run: |
