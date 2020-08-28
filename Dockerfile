@@ -18,7 +18,7 @@ RUN npm install
 
 FROM dependency-builder as application-builder
 
-RUN npm run build
+RUN TERSER_PARALLEL_TASKS=2 npm run build
 
 
 FROM dependency-builder as production-dependency-builder
