@@ -2,12 +2,11 @@ name: Build Docker
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
-
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -17,16 +16,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Use Node.js 12.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: "12.x"
+      - name: Install
+        run: |
+          npm install
+          npm run build
 
       - name: Set environment
         run: |
           export PLATFORM=${{ matrix.platform }}
           echo "::set-env name=PLATFORM_DASH::${PLATFORM////-}"
           echo "::set-env name=BUILD_FAIL::true"
+
         # ${foo////-} replaces slashes with dashes
         # foo='linux/arm/v7'
         # ${foo////-} -> linux-arm-v7
-
       - name: Set up Docker Buildx
         id: buildx
         uses: crazy-max/ghaction-docker-buildx@v1
@@ -46,6 +53,7 @@ jobs:
           docker buildx build \
             --platform ${{ matrix.platform }} \
             --output "type=image,push=false" \
+            --build-arg SKIP_BUILD="true" \
             --cache-from=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH \
             . && echo "::set-env name=BUILD_FAIL::false"
 
@@ -56,6 +64,7 @@ jobs:
           docker buildx build \
             --platform ${{ matrix.platform }} \
             --output "type=image,push=false" \
+            --build-arg SKIP_BUILD="true" \
             . && echo "::set-env name=BUILD_FAIL::false"
 
       - name: Run Buildx no cache
@@ -64,6 +73,7 @@ jobs:
           docker buildx build \
             --platform ${{ matrix.platform }} \
             --output "type=image,push=false" \
+            --build-arg SKIP_BUILD="true" \
             --no-cache .
 
       - name: Cache to registry
@@ -71,6 +81,7 @@ jobs:
         run: |
           docker buildx build \
             --platform ${{ matrix.platform }} \
+            --build-arg SKIP_BUILD="true" \
             --cache-from=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH \
             --cache-to=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH,mode=max .
 
@@ -78,6 +89,7 @@ jobs:
         run: |
           docker buildx build \
             --platform ${{ matrix.platform }} \
+            --build-arg SKIP_BUILD="true" \
             --cache-from=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH \
             --cache-to=type=local,dest=docker-cache/${{ matrix.platform }},mode=max .
 
@@ -86,7 +98,6 @@ jobs:
         with:
           name: docker-cache
           path: docker-cache
-
 
   deploy:
     name: Deploy Images
@@ -127,6 +138,7 @@ jobs:
             --cache-from=type=local,src=docker-cache/linux/386 \
             --cache-from=type=local,src=docker-cache/linux/arm/v7 \
             --cache-from=type=local,src=docker-cache/linux/arm64 \
+            --build-arg SKIP_BUILD="true" \
             -t ${{ secrets.DOCKER_REPO }}:dev .
 
       - name: Run Buildx Release
@@ -139,6 +151,7 @@ jobs:
             --cache-from=type=local,src=docker-cache/linux/386 \
             --cache-from=type=local,src=docker-cache/linux/arm/v7 \
             --cache-from=type=local,src=docker-cache/linux/arm64 \
+            --build-arg SKIP_BUILD="true" \
             -t ${{ secrets.DOCKER_REPO }}:release \
             -t ${{ secrets.DOCKER_REPO }}:$GH_TAG \
             -t ${{ secrets.DOCKER_REPO }}:stable \

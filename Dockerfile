@@ -18,8 +18,9 @@ RUN npm install
 
 FROM dependency-builder as application-builder
 
-RUN TERSER_PARALLEL_TASKS=2 NODE_OPTIONS=--max_old_space_size=6000 npm run build
+ARG SKIP_BUILD
 
+RUN if [ "$SKIP_BUILD" = "true" ]; then echo "SKIP BUILD"; else npm run build; fi
 
 FROM dependency-builder as production-dependency-builder
 
