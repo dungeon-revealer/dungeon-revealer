@@ -143,7 +143,6 @@ const TokenContextMenu = ({
                   value={label}
                   onChange={(ev) => updateToken({ label: ev.target.value })}
                   style={{ marginBottom: 24 }}
-                  maxLength={5}
                 />
               </label>
             </div>
