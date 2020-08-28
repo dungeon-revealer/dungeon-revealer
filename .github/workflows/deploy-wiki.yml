@@ -37,7 +37,7 @@ jobs:
 
 
     - name: Push Wiki Changes
-      uses: docker://decathlon/wiki-page-creator-action:2.0.1
+      uses: docker://decathlon/wiki-page-creator-action:2.0.1@sha256:6cfea340b5003e7cc08d8cd413e295e90ac45e9f0e8dd86dec04b7aa8f58c3a4
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         MD_FOLDER: wiki/
