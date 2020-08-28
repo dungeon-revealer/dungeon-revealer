@@ -128,7 +128,7 @@
     "react-dom": "16.13.1",
     "react-easy-panzoom": "0.4.4",
     "react-focus-lock": "2.4.1",
-    "react-monaco-editor": "0.36.0",
+    "react-monaco-editor": "0.40.0",
     "react-relay": "10.0.1",
     "react-scripts": "3.4.3",
     "react-showdown": "2.1.0",
