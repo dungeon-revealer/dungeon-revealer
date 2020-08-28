@@ -8,6 +8,7 @@ import type {
   SocketSessionRecord,
 } from "../socket-session-store";
 import { registerSocketIOGraphQLServer } from "@n1ru4l/socket-io-graphql-server";
+import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
 
 type Dependencies = {
   roleMiddleware: any;
@@ -35,10 +36,13 @@ export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
     return session;
   };
 
+  const liveQueryStore = new InMemoryLiveQueryStore();
+
   const socketIOGraphQLServer = registerSocketIOGraphQLServer({
     socketServer,
     isLazy: true,
     getExecutionParameter: ({ socket }) => ({
+      liveQueryStore,
       graphQLExecutionParameter: {
         schema,
         contextValue: {
@@ -46,6 +50,7 @@ export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
           user,
           db,
           session: getSession(socket),
+          liveQueryStore,
         } as GraphQLContextType,
       },
     }),

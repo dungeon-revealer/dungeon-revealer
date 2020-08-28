@@ -3,15 +3,15 @@ import type { createChat } from "../chat";
 import type { createUser } from "../user";
 import type { SocketSessionRecord } from "../socket-session-store";
 import type { Database } from "sqlite";
+import type { LiveQueryStore } from "@n1ru4l/graphql-live-query";
 
 export type GraphQLContextType = {
   chat: ReturnType<typeof createChat>;
   user: ReturnType<typeof createUser>;
   db: Database;
   session: SocketSessionRecord;
+  liveQueryStore: LiveQueryStore;
 };
-
-export type GraphQLSubscriptionRootType = {};
 
 export const t = createTypesFactory<GraphQLContextType>();
 

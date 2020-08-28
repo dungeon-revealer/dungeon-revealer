@@ -1,4 +1,3 @@
-import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
 import { useMutation } from "relay-hooks";
 
