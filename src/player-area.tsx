@@ -16,7 +16,7 @@ import debounce from "lodash/debounce";
 import { animated, useSpring, to } from "react-spring";
 import { MapView, MapControlInterface } from "./map-view";
 import { useGesture } from "react-use-gesture";
-import uuid from "uuid/v4";
+import { v4 as uuid } from "uuid";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
 
 const ToolbarContainer = styled(animated.div)`

@@ -4,7 +4,7 @@ import debounce from "lodash/debounce";
 import createPersistedState from "use-persisted-state";
 import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
-import uuid from "uuid/v4";
+import { v4 as uuid } from "uuid";
 import { AlphaPicker, HuePicker } from "react-color";
 import parseColor from "parse-color";
 import { loadImage, getOptimalDimensions, ConditionalWrap } from "./../util";
