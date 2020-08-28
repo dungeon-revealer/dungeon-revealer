@@ -3,7 +3,7 @@
 const path = require("path");
 const fs = require("fs-extra");
 const junk = require("junk");
-const uuid = require("uuid/v4");
+const { v4: uuid } = require("uuid");
 
 const isDirectory = (source) => fs.lstatSync(source).isDirectory();
 

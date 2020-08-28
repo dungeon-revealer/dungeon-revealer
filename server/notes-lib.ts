@@ -1,7 +1,7 @@
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as TE from "fp-ts/lib/TaskEither";
 import { flow, pipe } from "fp-ts/lib/function";
-import uuid from "uuid/v4";
+import { v4 as uuid } from "uuid";
 import sanitizeHtml from "sanitize-html";
 import showdown from "showdown";
 import * as db from "./notes-db";
