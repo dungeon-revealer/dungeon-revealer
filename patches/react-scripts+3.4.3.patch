@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-scripts/config/webpack.config.js b/node_modules/react-scripts/config/webpack.config.js
-index 25840d9..434363b 100644
+index 25840d9..d65a8a6 100644
 --- a/node_modules/react-scripts/config/webpack.config.js
 +++ b/node_modules/react-scripts/config/webpack.config.js
 @@ -36,6 +36,7 @@ const typescriptFormatter = require('react-dev-utils/typescriptFormatter');
@@ -21,14 +21,14 @@ index 25840d9..434363b 100644
  // style files regexes
  const cssRegex = /\.css$/;
  const cssModuleRegex = /\.module\.css$/;
-@@ -209,6 +214,7 @@ module.exports = function(webpackEnv) {
+@@ -208,6 +213,7 @@ module.exports = function(webpackEnv) {
+       minimizer: [
          // This is only used in production mode
          new TerserPlugin({
++          parallel: process.env.TERSER_PARALLEL_TASKS ? parseInt(process.env.TERSER_PARALLEL_TASKS, 10) : undefined,
            terserOptions: {
-+            parallel: process.env.TERSER_PARALLEL_TASKS ? parseInt(process.env.TERSER_PARALLEL_TASKS, 10) : undefined,
              parse: {
                // We want terser to parse ecma 8 code. However, we don't want it
-               // to apply any minification steps that turns valid ecma 5 code
 @@ -648,6 +654,10 @@ module.exports = function(webpackEnv) {
            };
          },
