@@ -90,7 +90,7 @@
     "@types/jest": "26.0.8",
     "@types/lodash": "4.14.161",
     "@types/node": "13.13.15",
-    "@types/react": "16.9.44",
+    "@types/react": "16.9.48",
     "@types/react-dom": "16.9.8",
     "@types/react-relay": "7.0.9",
     "@types/react-toast-notifications": "2.4.0",
