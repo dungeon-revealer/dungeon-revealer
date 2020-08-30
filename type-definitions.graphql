@@ -1,5 +1,10 @@
 ### THIS FILE IS AUTO GENERATED
 
+"""
+Instruction for establishing a live connection that is updated once the underlying data changes.
+"""
+directive @live on QUERY
+
 type DiceRollOperatorNode implements DiceRollDetail {
   content: String!
 }
@@ -52,7 +57,7 @@ interface ChatMessage {
   id: ID!
 }
 
-interface TextChatMessage {
+interface TextChatMessage implements ChatMessage {
   id: ID!
   content: String!
   createdAt: String!
@@ -104,6 +109,7 @@ type Image implements Node {
 
 type Query {
   chat(first: Int, after: ID): ChatMessageConnection!
+  sharedSplashImage: Image
   users(first: Int, after: ID): ConnectedUserConnection!
   usersCount: Int!
   me: User!
@@ -178,6 +184,7 @@ type Mutation {
   chatMessageCreate(input: ChatMessageCreateInput!): Boolean
   shareResource(input: ShareResourceInput!): Boolean
   shareImage(input: ShareImageInput!): Boolean
+  splashShareImage(input: SplashShareImageInput!): Boolean
   noteCreate(input: NoteCreateInput!): NoteCreateResult!
   noteDelete(input: NoteDeleteInput!): NoteDeleteResult!
   noteUpdateContent(input: NoteUpdateContentInput!): NoteUpdateResult!
@@ -212,6 +219,10 @@ input ShareResourceInput {
 
 input ShareImageInput {
   imageId: ID!
+}
+
+input SplashShareImageInput {
+  imageId: ID
 }
 
 type NoteCreateResult {

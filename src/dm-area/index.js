@@ -420,6 +420,7 @@ const DmAreaRenderer = ({ password }) => {
           socket={socket}
           password={password}
           isMapOnly={false}
+          role="DM"
         >
           <Content socket={socket} password={password} />
         </AuthenticatedAppShell>

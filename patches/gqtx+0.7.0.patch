@@ -1,0 +1,25 @@
+diff --git a/node_modules/gqtx/dist/build.js b/node_modules/gqtx/dist/build.js
+index fb174fb..08d682a 100644
+--- a/node_modules/gqtx/dist/build.js
++++ b/node_modules/gqtx/dist/build.js
+@@ -15,7 +15,8 @@ function buildGraphQLSchema(schema) {
+         mutation: schema.mutation &&
+             toGraphQLOutputType(schema.mutation, typeMap),
+         subscription: schema.subscription && toGraphQLSubscriptionObject(schema.subscription, typeMap),
+-        types: schema.types && schema.types.map((type) => toGraphQLOutputType(type, typeMap))
++        types: schema.types && schema.types.map((type) => toGraphQLOutputType(type, typeMap)),
++        directives: schema.directives,
+     });
+ }
+ exports.buildGraphQLSchema = buildGraphQLSchema;
+diff --git a/node_modules/gqtx/dist/types.d.ts b/node_modules/gqtx/dist/types.d.ts
+index 1e56fdb..2856acf 100644
+--- a/node_modules/gqtx/dist/types.d.ts
++++ b/node_modules/gqtx/dist/types.d.ts
+@@ -137,5 +137,6 @@ export declare type Schema<Ctx, RootSrc = undefined> = {
+     mutation?: ObjectType<Ctx, RootSrc>;
+     subscription?: SubscriptionObject<Ctx, RootSrc>;
+     types?: ObjectType<Ctx, any>[];
++    directives?: graphql.GraphQLDirective[];
+ };
+ export {};

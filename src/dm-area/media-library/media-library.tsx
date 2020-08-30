@@ -333,6 +333,7 @@ const Item: React.FC<{
   const [showLightboxImage, setShowLightBoxImage] = React.useState(false);
   const [showEditModal, setShowEditModal] = React.useState(false);
   const shareImage = useShareImageAction();
+  const splashShareImage = useShareImageAction();
 
   return (
     <ListItem>
@@ -351,11 +352,19 @@ const Item: React.FC<{
         </Button.Primary>
         <Button.Primary
           small
-          title="Share with Players"
+          title="Splash Share"
+          iconOnly
+          onClick={() => splashShareImage(item.id)}
+        >
+          <Icon.Share height={16} />
+        </Button.Primary>
+        <Button.Primary
+          small
+          title="Share To Chat"
           iconOnly
           onClick={() => shareImage(item.id)}
         >
-          <Icon.Share height={16} />
+          <Icon.MessageCircleIcon size={16} />
         </Button.Primary>
         <Button.Primary
           small

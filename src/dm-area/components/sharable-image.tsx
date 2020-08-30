@@ -6,6 +6,8 @@ import * as Icon from "../../feather-icons";
 import * as Button from "../../button";
 import { ImageLightBoxModal } from "../../image-lightbox-modal";
 import { useCellMeasure } from "../../cell-measure-context";
+import { useSplashShareImageAction } from "../../hooks/use-splash-share-image-action";
+import { useViewerRole } from "../../authenticated-app-shell";
 
 const Container = styled.span`
   display: block;
@@ -36,7 +38,9 @@ const Menu = styled.span`
 export const SharableImage: React.FC<{ id: string }> = (props) => {
   const [showLightboxImage, setShowLightBoxImage] = React.useState(false);
   const shareImage = useShareImageAction();
+  const splashShareImage = useSplashShareImageAction();
   const measure = useCellMeasure();
+  const role = useViewerRole();
 
   return (
     <Container>
@@ -49,13 +53,23 @@ export const SharableImage: React.FC<{ id: string }> = (props) => {
         onLoad={measure}
       />
       <Menu data-menu>
+        {role === "DM" ? (
+          <Button.Primary
+            small
+            title="Splash Share"
+            iconOnly
+            onClick={() => splashShareImage(props.id)}
+          >
+            <Icon.Share height={16} />
+          </Button.Primary>
+        ) : null}
         <Button.Primary
           small
-          title="Share with Players"
+          title="Share to Chat"
           iconOnly
           onClick={() => shareImage(props.id)}
         >
-          <Icon.Share height={16} />
+          <Icon.MessageCircleIcon size={16} />
         </Button.Primary>
         <Button.Primary
           small

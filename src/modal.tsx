@@ -69,13 +69,25 @@ const Provider: React.FC<{}> = ({ children }) => {
   );
 };
 
+export const StyledModalBackdrop = styled.div`
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 const ModalBackground: React.FC<
   React.HTMLAttributes<HTMLDivElement> & {
     styles?: React.CSSProperties;
   } & { focus: boolean; onPressEscape: () => void }
 > = ({ children, styles, focus = true, onClick, onPressEscape, ...props }) => {
   const inner = (
-    <div
+    <StyledModalBackdrop
       onClick={(ev) => {
         ev.stopPropagation();
         if (onClick) onClick(ev);
@@ -96,23 +108,11 @@ const ModalBackground: React.FC<
       onTouchStart={(ev) => {
         ev.stopPropagation();
       }}
-      style={{
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        position: "fixed",
-        height: "100%",
-        width: "100%",
-        top: 0,
-        left: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 200,
-        ...styles,
-      }}
+      style={{ zIndex: 200, ...styles }}
       {...props}
     >
       {children}
-    </div>
+    </StyledModalBackdrop>
   );
 
   if (focus) return <FocusLock returnFocus={true}>{inner}</FocusLock>;

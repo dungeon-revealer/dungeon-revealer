@@ -364,6 +364,18 @@ export const queryFields = [
     },
     resolve: (_, args, ctx) => ctx.chat.getMessages(),
   }),
+  t.field("sharedSplashImage", {
+    type: ImageModule.GraphQLImageType,
+    resolve: (_, args, context) => {
+      const id = context.splashImageState.get();
+
+      if (id === null) {
+        return null;
+      }
+
+      return RT.run(ImageModule.resolveImage(id), context);
+    },
+  }),
 ];
 
 const GraphQLChatMessageCreateInputType = t.inputObjectType({
@@ -389,6 +401,15 @@ const GraphQLShareImageInputType = t.inputObjectType({
   fields: () => ({
     imageId: {
       type: t.NonNullInput(t.ID),
+    },
+  }),
+});
+
+const GraphQLSplashShareImageInputType = t.inputObjectType({
+  name: "SplashShareImageInput",
+  fields: () => ({
+    imageId: {
+      type: t.ID,
     },
   }),
 });
@@ -445,6 +466,22 @@ export const mutationFields = [
           id: args.input.imageId,
         },
       });
+    },
+  }),
+  t.field("splashShareImage", {
+    type: t.Boolean,
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLSplashShareImageInputType)),
+    },
+    resolve: (obj, args, context) => {
+      const user = context.user.get(context.session.id);
+      if (!user || context.session.role !== "admin") {
+        return null;
+      }
+      context.splashImageState.set(args.input.imageId);
+      context.liveQueryStore.triggerUpdate("Query.sharedSplashImage");
+
+      return null;
     },
   }),
 ];

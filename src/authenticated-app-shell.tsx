@@ -19,6 +19,7 @@ import * as Icon from "./feather-icons";
 import { SoundSettingsProvider } from "./sound-settings";
 import { animated, useSpring } from "react-spring";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
+import { SplashShareImage } from "./splash-share-image";
 
 const useShowChatState = createPersistedState("chat.state");
 const useShowDiceRollNotesState = createPersistedState(
@@ -109,6 +110,7 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
           {children}
         </div>
+        <SplashShareImage />
         {isMapOnly === false ? (
           <React.Fragment>
             <animated.div
@@ -176,11 +178,19 @@ type ConnectionMode =
   | "connecting"
   | "disconnected";
 
+export type AuthenticatedRole = "DM" | "Player";
+
+const RoleContext = React.createContext<AuthenticatedRole>("Player");
+
+export const useViewerRole = (): AuthenticatedRole =>
+  React.useContext(RoleContext);
+
 export const AuthenticatedAppShell: React.FC<{
   socket: SocketIOClient.Socket;
   password: string;
   isMapOnly: boolean;
-}> = ({ socket, password, isMapOnly, children }) => {
+  role: AuthenticatedRole;
+}> = ({ socket, password, isMapOnly, role, children }) => {
   const relayEnvironment = useStaticRef(() => createEnvironment(socket));
   // WebSocket connection state
   const [connectionMode, setConnectionMode] = React.useState<ConnectionMode>(
@@ -252,12 +262,14 @@ export const AuthenticatedAppShell: React.FC<{
   }
 
   return (
-    <SoundSettingsProvider>
-      <RelayEnvironmentProvider environment={relayEnvironment}>
-        <AuthenticatedAppShellRenderer isMapOnly={isMapOnly}>
-          {children}
-        </AuthenticatedAppShellRenderer>
-      </RelayEnvironmentProvider>
-    </SoundSettingsProvider>
+    <RoleContext.Provider value={role}>
+      <SoundSettingsProvider>
+        <RelayEnvironmentProvider environment={relayEnvironment}>
+          <AuthenticatedAppShellRenderer isMapOnly={isMapOnly}>
+            {children}
+          </AuthenticatedAppShellRenderer>
+        </RelayEnvironmentProvider>
+      </SoundSettingsProvider>
+    </RoleContext.Provider>
   );
 };
