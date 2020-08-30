@@ -142,7 +142,7 @@
     "relay-hooks": "3.5.2",
     "relay-runtime": "10.0.1",
     "socket.io-client": "2.3.0",
-    "three": "0.120.0",
+    "three": "0.120.1",
     "troika-three-text": "0.31.0",
     "ts-jest": "26.3.0",
     "ts-node-dev": "1.0.0-pre.61",
