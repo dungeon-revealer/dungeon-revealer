@@ -10,6 +10,7 @@ import { useInvokeOnScrollEnd } from "../../hooks/use-invoke-on-scroll-end";
 import styled from "@emotion/styled/macro";
 import { ImageLightBoxModal } from "../../image-lightbox-modal";
 import { useShareImageAction } from "../../hooks/use-share-image-action";
+import { useSplashShareImageAction } from "../../hooks/use-splash-share-image-action";
 import { InputGroup } from "../../input";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
 import { useAccessToken } from "../../hooks/use-access-token";
@@ -333,7 +334,7 @@ const Item: React.FC<{
   const [showLightboxImage, setShowLightBoxImage] = React.useState(false);
   const [showEditModal, setShowEditModal] = React.useState(false);
   const shareImage = useShareImageAction();
-  const splashShareImage = useShareImageAction();
+  const splashShareImage = useSplashShareImageAction();
 
   return (
     <ListItem>
