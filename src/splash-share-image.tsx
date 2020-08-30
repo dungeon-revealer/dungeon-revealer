@@ -38,6 +38,7 @@ export const SplashShareImage = (): React.ReactElement | null => {
           if (role === "Player") {
             addToast("Only a DM can dismiss this view.", {
               appearance: "info",
+              autoDismiss: true,
             });
           } else if (role === "DM") {
             splashShareImage(null);
