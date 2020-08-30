@@ -1,4 +1,4 @@
-import uuid from "uuid";
+import { v4 as uuid } from "uuid";
 import { PubSub } from "graphql-subscriptions";
 import { roll } from "@airjp73/dice-notation";
 
@@ -167,7 +167,7 @@ export const createChat = () => {
   const addUserMessage = (args: { authorName: string; rawContent: string }) => {
     const { content, diceRolls } = processRawContent(args.rawContent);
     const message: ApplicationRecordSchema = {
-      id: uuid.v4(),
+      id: uuid(),
       type: "USER_MESSAGE",
       createdAt: new Date().getTime(),
       ...args,
@@ -182,7 +182,7 @@ export const createChat = () => {
     resource: SharedResourceType;
   }) => {
     const message: ApplicationRecordSchema = {
-      id: uuid.v4(),
+      id: uuid(),
       type: "SHARED_RESOURCE",
       createdAt: new Date().getTime(),
       ...args,
@@ -192,7 +192,7 @@ export const createChat = () => {
 
   const addOperationalMessage = (args: { content: string }) => {
     const message: ApplicationRecordSchema = {
-      id: uuid.v4(),
+      id: uuid(),
       type: "OPERATIONAL_MESSAGE",
       createdAt: new Date().getTime(),
       content: args.content,

@@ -2,7 +2,7 @@ import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
 
-import * as uuid from "uuid";
+import { v4 as uuid } from "uuid";
 import once from "lodash/once";
 import * as express from "express";
 
@@ -22,7 +22,7 @@ export const getDefaultDataDirectory = () => {
 export const getTmpDirectory = once(() => fs.realpathSync(os.tmpdir()));
 
 export const getTmpFile = (extension = "") =>
-  path.join(getTmpDirectory(), uuid.v4() + extension);
+  path.join(getTmpDirectory(), uuid() + extension);
 
 export const parseFileExtension = (fileName: string) => {
   const parts = fileName.split(".");
