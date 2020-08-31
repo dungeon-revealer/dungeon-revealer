@@ -16,6 +16,7 @@ import debounce from "lodash/debounce";
 import { animated, useSpring, to } from "react-spring";
 import { MapView, MapControlInterface } from "./map-view";
 import { useGesture } from "react-use-gesture";
+import { ToastProvider } from "react-toast-notifications";
 import { v4 as uuid } from "uuid";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
 
@@ -500,6 +501,7 @@ const AuthenticatedContent: React.FC<{
       password={props.pcPassword}
       socket={socket}
       isMapOnly={props.isMapOnly}
+      role="Player"
     >
       <PlayerMap
         fetch={props.localFetch}
@@ -573,11 +575,13 @@ export const PlayerArea: React.FC<{
 
   if (mode === "READY") {
     return (
-      <AuthenticatedContent
-        localFetch={localFetch}
-        pcPassword={usedPassword}
-        isMapOnly={props.isMapOnly}
-      />
+      <ToastProvider placement="bottom-right">
+        <AuthenticatedContent
+          localFetch={localFetch}
+          pcPassword={usedPassword}
+          isMapOnly={props.isMapOnly}
+        />
+      </ToastProvider>
     );
   }
 

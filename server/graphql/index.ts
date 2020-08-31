@@ -4,6 +4,7 @@ import type { createUser } from "../user";
 import type { SocketSessionRecord } from "../socket-session-store";
 import type { Database } from "sqlite";
 import type { LiveQueryStore } from "@n1ru4l/graphql-live-query";
+import type { SplashImageState } from "../splash-image-state";
 
 export type GraphQLContextType = {
   chat: ReturnType<typeof createChat>;
@@ -11,6 +12,7 @@ export type GraphQLContextType = {
   db: Database;
   session: SocketSessionRecord;
   liveQueryStore: LiveQueryStore;
+  splashImageState: SplashImageState;
 };
 
 export const t = createTypesFactory<GraphQLContextType>();
@@ -22,6 +24,7 @@ import * as NotesModule from "./modules/notes";
 import { pipe } from "fp-ts/lib/pipeable";
 import * as E from "fp-ts/lib/Either";
 import * as RT from "fp-ts/lib/ReaderTask";
+import { GraphQLLiveDirective } from "@n1ru4l/graphql-live-query";
 
 const nodeField = t.field("node", {
   type: RelaySpecModule.GraphQLNodeInterface,
@@ -78,4 +81,5 @@ export const schema = buildGraphQLSchema({
   subscription: Subscription,
   mutation: Mutation,
   types: [...DiceRollerChatModule.objectTypesNotDirectlyExposedOnFields],
+  directives: [GraphQLLiveDirective],
 });
