@@ -1,8 +1,9 @@
 import * as React from "react";
 import produce from "immer";
+import once from "lodash/once";
 import createPersistedState from "use-persisted-state";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
-import { loadImage } from "./util";
+import { loadImage, getOptimalDimensions } from "./util";
 import { Toolbar } from "./toolbar";
 import styled from "@emotion/styled/macro";
 import * as Icons from "./feather-icons";
@@ -73,6 +74,15 @@ type MarkedArea = {
 const createCacheBusterString = () =>
   encodeURIComponent(`${Date.now()}_${uuid()}`);
 
+const getWebGLMaximumTextureSize = once(() => {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("webgl");
+  if (!context) {
+    throw new Error("Invalid state.");
+  }
+  return context.getParameter(context.MAX_TEXTURE_SIZE);
+});
+
 const PlayerMap: React.FC<{
   fetch: typeof fetch;
   pcPassword: string;
@@ -131,16 +141,23 @@ const PlayerMap: React.FC<{
 
           task.promise.then((fogImage) => {
             const context = fogCanvasRef.current?.getContext("2d");
-            if (!context) {
+            if (!context || !fogCanvasRef.current) {
               throw new Error("Invalid state.");
             }
             context.clearRect(
               0,
               0,
-              fogImage.naturalWidth,
-              fogImage.naturalHeight
+              fogCanvasRef.current.width,
+              fogCanvasRef.current.height
             );
-            context.drawImage(fogImage, 0, 0);
+
+            context.drawImage(
+              fogImage,
+              0,
+              0,
+              fogCanvasRef.current.width,
+              fogCanvasRef.current.height
+            );
             mapNeedsUpdateRef.current = true;
           });
           return;
@@ -161,13 +178,24 @@ const PlayerMap: React.FC<{
 
         task.promise.then((fogImage) => {
           const canvas = document.createElement("canvas");
-          canvas.width = fogImage.naturalWidth;
-          canvas.height = fogImage.naturalHeight;
+
+          // For some reason the fog is not rendered on Safari for bigger maps (despite being downsized)
+          // However, if down-scaled before being passed to the texture loader everything seems to be fine.
+          const maximumTextureSize = getWebGLMaximumTextureSize();
+          const { width, height } = getOptimalDimensions(
+            fogImage.naturalWidth,
+            fogImage.naturalHeight,
+            maximumTextureSize,
+            maximumTextureSize
+          );
+          canvas.width = width;
+          canvas.height = height;
+
           const context = canvas.getContext("2d");
           if (!context) {
             throw new Error("Invalid state.");
           }
-          context.drawImage(fogImage, 0, 0);
+          context.drawImage(fogImage, 0, 0, width, height);
           setFogCanvas(canvas);
           setCurrentMap(data.map);
           fogCanvasRef.current = canvas;
