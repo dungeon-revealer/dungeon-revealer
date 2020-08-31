@@ -1,14 +1,20 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
+import {
+  List,
+  AutoSizer,
+  CellMeasurerCache,
+  CellMeasurer,
+} from "react-virtualized";
 import * as Button from "../button";
 import { Modal } from "../modal";
 import { useAsyncTask } from "../hooks/use-async-task";
 import { sendRequest, ISendRequestTask } from "../http-request";
 import { buildApiUrl } from "../public-url";
 import { useAccessToken } from "../hooks/use-access-token";
-import throttle from "lodash/throttle";
 import { LoadingSpinner } from "../loading-spinner";
 import { AnimatedDotDotDot } from "../animated-dot-dot-dot";
+import { useStaticRef } from "../hooks/use-static-ref";
 
 const OrSeperator = styled.span`
   padding-left: 18px;
@@ -145,13 +151,115 @@ const ImageImportModal: React.FC<{
   );
 };
 
+type ImportFileLogRecord = { type: "error" | "success"; message: string };
+
+const NoteImportLogRow = styled.div`
+  text-align: left;
+  padding: 4px;
+  background-color: black;
+  color: white;
+`;
+
+const NoteImportLogFilter = styled.div`
+  text-align: right;
+  padding-top: 8px;
+`;
+
+const NoteImportLogRenderer = (props: {
+  logs: ImportFileLogRecord[];
+}): React.ReactElement => {
+  const listRef = React.useRef<List | null>(null);
+
+  const [filter, setFilter] = React.useState(
+    "failure" as "none" | "success" | "failure"
+  );
+
+  const logs = React.useMemo(() => {
+    switch (filter) {
+      case "none":
+        return props.logs;
+      case "success":
+        return props.logs.filter((log) => log.type === "success");
+      case "failure":
+        return props.logs.filter((log) => log.type === "error");
+    }
+  }, [props.logs, filter]);
+
+  const cache = useStaticRef(
+    () =>
+      new CellMeasurerCache({
+        fixedWidth: true,
+      })
+  );
+
+  // TODO: Is there a better way to start the list at the end?
+  React.useEffect(() => {
+    setTimeout(() => listRef.current?.scrollToRow(logs.length - 1));
+  }, [logs]);
+
+  return (
+    <React.Fragment>
+      <AutoSizer disableHeight>
+        {({ width }) => (
+          <List
+            ref={listRef}
+            style={{ background: "black" }}
+            height={300}
+            width={width}
+            rowCount={logs.length}
+            rowHeight={cache.rowHeight}
+            rowRenderer={(rowProps) => (
+              <CellMeasurer
+                cache={cache}
+                columnIndex={0}
+                key={rowProps.key}
+                rowIndex={rowProps.index}
+                parent={rowProps.parent}
+              >
+                {(cellMeasurerProps) => (
+                  <NoteImportLogRow
+                    style={rowProps.style}
+                    // @ts-ignore
+                    ref={cellMeasurerProps.registerChild}
+                  >
+                    {logs[rowProps.index].message}
+                  </NoteImportLogRow>
+                )}
+              </CellMeasurer>
+            )}
+          />
+        )}
+      </AutoSizer>
+      <NoteImportLogFilter>
+        <label>
+          <strong>Filter </strong>
+          <select
+            value={filter}
+            onChange={(ev) => {
+              setFilter(ev.target.value as any);
+            }}
+          >
+            <option value="none">All</option>
+            <option value="success">Successful</option>
+            <option value="failure">Failed</option>
+          </select>
+        </label>
+      </NoteImportLogFilter>
+    </React.Fragment>
+  );
+};
+
 const NoteImportModal: React.FC<{ file: File; close: () => void }> = (
   props
 ) => {
   const [state, setState] = React.useState<
     "notStarted" | "inProgress" | "finished"
   >("notStarted");
+  const [logs, setLogs] = React.useState([] as ImportFileLogRecord[]);
   const [importedFilesCount, setImportedFilesCount] = React.useState(0);
+  const [failedFilesCount, setFailedFilesCount] = React.useState(0);
+  const [showLogs, setShowLogs] = React.useState(false);
+
   const accessToken = useAccessToken();
   const onClose = () => {
     if (state === "inProgress") {
@@ -183,15 +291,39 @@ const NoteImportModal: React.FC<{ file: File; close: () => void }> = (
       headers: {
         Authorization: accessToken ? `Bearer ${accessToken}` : null,
       },
-      onProgress: throttle((data: string) => {
-        const lastLine = data.split("\n").pop();
+      onProgress: (data: string) => {
+        const lines = data.split("\n").filter(Boolean);
+        lines.forEach((line) => {
+          const data = JSON.parse(line);
+          if (data.latest.error) {
+            setLogs((logs) => [
+              ...logs,
+              {
+                type: "error",
+                message: data.latest.error.message,
+              },
+            ]);
+          } else {
+            setLogs((logs) => [
+              ...logs,
+              {
+                type: "success",
+                message: data.latest.data.message,
+              },
+            ]);
+          }
+        });
+        const lastLine = lines.pop();
         if (lastLine?.trim()) {
           const data = JSON.parse(lastLine.trim());
           if (data.amountOfImportedRecords) {
             setImportedFilesCount(data.amountOfImportedRecords);
           }
+          if (data.amountOfFailedRecords) {
+            setFailedFilesCount(data.amountOfFailedRecords);
+          }
         }
-      }, 100),
+      },
     });
     request.current.done.then(() => {
       setState("finished");
@@ -211,40 +343,55 @@ const NoteImportModal: React.FC<{ file: File; close: () => void }> = (
             ) : (
               <h2>
                 Successfully imported {importedFilesCount} note
-                {importedFilesCount === 1 ? "" : "s"}
+                {importedFilesCount === 1 ? "" : "s"}{" "}
+                {failedFilesCount > 0 ? ` (${failedFilesCount} failed)` : null}
               </h2>
             )}
-            <FileTitle>File: {props.file.name}</FileTitle>
-            <div style={{ height: 200, position: "relative", marginTop: 12 }}>
-              <LoadingSpinner state={state} />
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                {state === "notStarted" ? null : importedFilesCount === 0 &&
-                  state === "inProgress" ? (
-                  <strong>
-                    Uploading
-                    <AnimatedDotDotDot />
-                  </strong>
-                ) : state === "finished" ? (
-                  <strong>Done.</strong>
-                ) : (
-                  <strong>
-                    Importing
-                    <AnimatedDotDotDot />
-                  </strong>
-                )}
-              </div>
-            </div>
+            {showLogs ? (
+              <React.Fragment>
+                <NoteImportLogRenderer logs={logs} />
+              </React.Fragment>
+            ) : (
+              <React.Fragment>
+                <FileTitle>File: {props.file.name}</FileTitle>
+                <div
+                  style={{
+                    height: 200,
+                    position: "relative",
+                    marginTop: 12,
+                  }}
+                >
+                  <LoadingSpinner state={state} />
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    {state === "notStarted" ? null : importedFilesCount === 0 &&
+                      state === "inProgress" ? (
+                      <strong>
+                        Uploading
+                        <AnimatedDotDotDot />
+                      </strong>
+                    ) : state === "finished" ? (
+                      <strong>Done.</strong>
+                    ) : (
+                      <strong>
+                        Importing
+                        <AnimatedDotDotDot />
+                      </strong>
+                    )}
+                  </div>
+                </div>
+              </React.Fragment>
+            )}
           </div>
         </Modal.Body>
         <Modal.Footer>
@@ -278,6 +425,17 @@ const NoteImportModal: React.FC<{ file: File; close: () => void }> = (
             ) : (
               <>
                 <Modal.ActionGroup>
+                  <div>
+                    {showLogs ? (
+                      <Button.Primary onClick={() => setShowLogs(false)}>
+                        Hide logs
+                      </Button.Primary>
+                    ) : (
+                      <Button.Primary onClick={() => setShowLogs(true)}>
+                        Show logs
+                      </Button.Primary>
+                    )}
+                  </div>
                   <div>
                     <Button.Primary onClick={onClose}>Close</Button.Primary>
                   </div>
