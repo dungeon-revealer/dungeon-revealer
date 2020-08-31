@@ -128,7 +128,7 @@ const decodeMetaData = (records: [string, string][]) =>
                           E.mapLeft(
                             () =>
                               new Error(
-                                "Invalid value provided fro 'isEntryPoint'."
+                                "Invalid value provided for 'isEntryPoint'."
                               )
                           )
                         )

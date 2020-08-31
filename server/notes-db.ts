@@ -212,9 +212,7 @@ export const updateOrInsertNote = (record: {
   sanitizedContent: string;
   access: "public" | "admin";
   isEntryPoint: boolean;
-}): RTE.ReaderTaskEither<{ db: Database }, Error | t.Errors, string> => ({
-  db,
-}) =>
+}): RTE.ReaderTaskEither<{ db: Database }, Error, string> => ({ db }) =>
   pipe(
     TE.tryCatch(async () => {
       await db.run(

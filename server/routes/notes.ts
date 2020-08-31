@@ -10,17 +10,34 @@ import * as util from "../util";
 import { iterateStream } from "../iterate-stream";
 import { Readable } from "stream";
 
+type ImportNoteResult =
+  | {
+      data: null;
+      error: {
+        code: string;
+        message: string;
+      };
+    }
+  | { data: { message: string }; error: null };
+
 const importNoteWithReport = (name: string) =>
   flow(
     notes.importNote,
     RTE.fold(
       (err) => {
-        console.log(`note-import error ${name}`);
-        return RT.of(null);
+        return RT.of({
+          data: null,
+          error: {
+            code: "FAILED_IMPORT",
+            message: `Failed importing '${name}': ` + err.message,
+          },
+        } as ImportNoteResult);
       },
       () => {
-        console.error(`note-import success ${name}`);
-        return RT.of(null);
+        return RT.of({
+          data: { message: `Successfully imported ${name}.` },
+          error: null,
+        } as ImportNoteResult);
       }
     )
   );
@@ -62,6 +79,8 @@ export default ({ db, roleMiddleware }: Dependencies) => {
     request.busboy.once("file", (_, file: fs.ReadStream, filename: string) => {
       hasFile = true;
       let amountOfImportedRecords = 0;
+      let amountOfFailedRecords = 0;
+
       if (filename.endsWith(".md")) {
         const chunks = [] as Uint8Array[];
         file.on("data", (chunk) => {
@@ -74,11 +93,21 @@ export default ({ db, roleMiddleware }: Dependencies) => {
 
         file.on("end", () => {
           const noteContents = Buffer.concat(chunks).toString();
-          importNoteWithReport("Single File")(noteContents)({ db })().then(
-            () => {
-              amountOfImportedRecords = amountOfImportedRecords + 1;
+          importNoteWithReport(filename)(noteContents)({ db })().then(
+            (result) => {
+              if (result.error === null) {
+                amountOfImportedRecords = amountOfImportedRecords + 1;
+              } else {
+                amountOfFailedRecords = amountOfFailedRecords + 1;
+              }
+
               response.write(
-                `\n` + JSON.stringify({ amountOfImportedRecords })
+                `\n` +
+                  JSON.stringify({
+                    amountOfImportedRecords,
+                    amountOfFailedRecords,
+                    latest: result,
+                  })
               );
               response.end();
             }
@@ -97,10 +126,21 @@ export default ({ db, roleMiddleware }: Dependencies) => {
             if (entry.type === "File" && entry.path.endsWith(".md")) {
               const noteContents = await resolveStreamContentString(entry);
 
-              await importNoteWithReport(entry.path)(noteContents)({ db })();
-              amountOfImportedRecords = amountOfImportedRecords + 1;
+              const result = await importNoteWithReport(entry.path)(
+                noteContents
+              )({ db })();
+              if (result.error === null) {
+                amountOfImportedRecords = amountOfImportedRecords + 1;
+              } else {
+                amountOfFailedRecords = amountOfFailedRecords + 1;
+              }
               response.write(
-                `\n` + JSON.stringify({ amountOfImportedRecords })
+                `\n` +
+                  JSON.stringify({
+                    amountOfImportedRecords,
+                    amountOfFailedRecords,
+                    latest: result,
+                  })
               );
             } else {
               entry.autodrain();
