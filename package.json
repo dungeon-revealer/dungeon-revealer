@@ -84,7 +84,7 @@
     "@n1ru4l/use-async-effect": "1.2.4",
     "@types/body-scroll-lock": "2.6.1",
     "@types/connect-busboy": "0.0.2",
-    "@types/express": "4.17.7",
+    "@types/express": "4.17.8",
     "@types/fs-extra": "9.0.1",
     "@types/howler": "2.2.1",
     "@types/jest": "26.0.12",
