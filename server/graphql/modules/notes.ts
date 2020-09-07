@@ -1,6 +1,4 @@
 import { t } from "..";
-import last from "lodash/last";
-import first from "lodash/first";
 import * as io from "io-ts";
 import * as Relay from "./relay-spec";
 import { flow } from "fp-ts/lib/function";
@@ -11,6 +9,7 @@ import * as notes from "../../notes-lib";
 import { pipe } from "fp-ts/lib/pipeable";
 import * as util from "../../markdown-to-plain-text";
 import * as O from "fp-ts/lib/Option";
+import * as StringUtilities from "../../string-utilities";
 
 export const NOTE_URI = "Note" as const;
 
@@ -124,28 +123,13 @@ const GraphQLNoteConnectionType = t.objectType<NoteConnectionType>({
 const resolvePaginatedNotes = (amount: number) =>
   pipe(
     notes.getPaginatedNotes({ first: amount + 1 }),
-    RTE.map((notes) => {
-      let hasNextPage = false;
-      if (notes.length > amount) {
-        notes.pop();
-        hasNextPage = true;
-      }
-
-      const edges = notes.map((node) => ({
-        cursor: encodeNotesConnectionCursor(node),
-        node: node,
-      }));
-
-      return {
-        edges,
-        pageInfo: {
-          hasNextPage,
-          hasPreviousPage: false,
-          startCursor: first(edges)?.cursor || "",
-          endCursor: last(edges)?.cursor || "",
-        },
-      };
-    }),
+    RTE.map((listData) =>
+      Relay.buildConnectionObject({
+        listData,
+        amount,
+        encodeCursor: encodeNotesConnectionCursor,
+      })
+    ),
     RTE.fold(
       (err) => {
         throw err;
@@ -161,28 +145,13 @@ const resolveMorePaginatedNotes = (
 ) =>
   pipe(
     notes.getMorePaginatedNotes({ first: amount + 1, lastCreatedAt, lastId }),
-    RTE.map((notes) => {
-      let hasNextPage = false;
-      if (notes.length > amount) {
-        notes.pop();
-        hasNextPage = true;
-      }
-
-      const edges = notes.map((node) => ({
-        cursor: encodeNotesConnectionCursor(node),
-        node: node,
-      }));
-
-      return {
-        edges,
-        pageInfo: {
-          hasNextPage,
-          hasPreviousPage: true,
-          startCursor: first(edges)?.cursor || "",
-          endCursor: last(edges)?.cursor || "",
-        },
-      };
-    }),
+    RTE.map((listData) =>
+      Relay.buildConnectionObject({
+        listData,
+        amount,
+        encodeCursor: encodeNotesConnectionCursor,
+      })
+    ),
     RTE.fold(
       (err) => {
         throw err;
@@ -280,22 +249,8 @@ const NotesConnectionCursorModel = io.tuple([
   NotesConnectionNoteId,
 ]);
 
-const StringUtilities = {
-  split1: (delimiter: string) => (
-    input: string
-  ): O.Option<[string, string]> => {
-    const index = input.indexOf(delimiter);
-    if (index === -1) {
-      return O.none;
-    }
-
-    return O.some([input.substring(0, index), input.substring(index + 1)]);
-  },
-};
-
 const parseIntegerSafe = (input: string) => parseInt(input, 10);
 
-// TODO: investigate how we can do this with less noise :)
 const decodeNotesConnectionCursor = flow(
   Relay.base64Decode,
   StringUtilities.split1(":"),
@@ -435,7 +390,6 @@ const resolveNoteDelete = flow(
   RTE.map((id) => encodeNoteId(id)),
   RTE.fold(
     (err) => {
-      console.log(JSON.stringify(err, null, 2));
       throw err;
     },
     (deletedNoteId) => RT.of({ deletedNoteId })

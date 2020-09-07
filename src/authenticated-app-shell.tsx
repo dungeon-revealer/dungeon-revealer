@@ -20,6 +20,8 @@ import { SoundSettingsProvider } from "./sound-settings";
 import { animated, useSpring } from "react-spring";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
 import { SplashShareImage } from "./splash-share-image";
+import useAsyncEffect from "@n1ru4l/use-async-effect";
+import { createSocketIOGraphQLClient } from "@n1ru4l/socket-io-graphql-client";
 
 const useShowChatState = createPersistedState("chat.state");
 const useShowDiceRollNotesState = createPersistedState(
@@ -185,17 +187,43 @@ const RoleContext = React.createContext<AuthenticatedRole>("Player");
 export const useViewerRole = (): AuthenticatedRole =>
   React.useContext(RoleContext);
 
+const AsyncLoadedGraphiQL = (props: {
+  fetcher: any;
+}): React.ReactElement | null => {
+  const [Component, setComponent] = React.useState<null | any>(null);
+
+  useAsyncEffect(function* (onCancel, c) {
+    const { GraphiQLRoute } = yield* c(import("./graphiql"));
+    setComponent(() => GraphiQLRoute);
+  }, []);
+
+  if (Component === null) {
+    return null;
+  }
+  return (
+    <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, right: 0 }}>
+      <Component fetcher={props.fetcher} />
+    </div>
+  );
+};
+
 export const AuthenticatedAppShell: React.FC<{
   socket: SocketIOClient.Socket;
   password: string;
   isMapOnly: boolean;
   role: AuthenticatedRole;
 }> = ({ socket, password, isMapOnly, role, children }) => {
-  const relayEnvironment = useStaticRef(() => createEnvironment(socket));
+  const networkInterface = useStaticRef(() =>
+    createSocketIOGraphQLClient(socket)
+  );
+  const relayEnvironment = useStaticRef(() =>
+    createEnvironment(networkInterface)
+  );
   // WebSocket connection state
   const [connectionMode, setConnectionMode] = React.useState<ConnectionMode>(
     "connecting"
   );
+  const [showGraphiQL, setShowGraphiQL] = React.useState(false);
 
   /**
    * We only use one tab at a time. The others will be disconnected automatically upon opening dungeon-revealer in another tab.
@@ -248,12 +276,21 @@ export const AuthenticatedAppShell: React.FC<{
       }
     });
 
+    const onKeyDown = (ev: KeyboardEvent) => {
+      if (ev.key === "F12") {
+        setShowGraphiQL((state) => !state);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
     return () => {
       socket.off("connect");
       socket.off("reconnecting");
       socket.off("reconnect");
       socket.off("reconnect_failed");
       socket.off("disconnect");
+      window.removeEventListener("keydown", onKeyDown);
     };
   }, [socket, password]);
 
@@ -268,6 +305,17 @@ export const AuthenticatedAppShell: React.FC<{
           <AuthenticatedAppShellRenderer isMapOnly={isMapOnly}>
             {children}
           </AuthenticatedAppShellRenderer>
+          {showGraphiQL ? (
+            <AsyncLoadedGraphiQL
+              fetcher={({ query: operation, ...execRest }: any) =>
+                networkInterface.execute({
+                  operation,
+                  variables: {},
+                  ...execRest,
+                })
+              }
+            />
+          ) : null}
         </RelayEnvironmentProvider>
       </SoundSettingsProvider>
     </RoleContext.Provider>

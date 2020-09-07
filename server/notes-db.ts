@@ -1,12 +1,12 @@
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as E from "fp-ts/lib/Either";
+import * as A from "fp-ts/lib/Array";
 import { flow } from "fp-ts/lib/function";
 import { pipe } from "fp-ts/lib/pipeable";
-import toCamelCase from "lodash/camelCase";
-import isObject from "lodash/isObject";
 import * as t from "io-ts";
 import type { Database } from "sqlite";
+import { camelCaseKeys } from "./utilities/camel-case-keys";
 
 const BooleanFromNumber = new t.Type(
   "BooleanFromNumber",
@@ -37,27 +37,20 @@ export const NoteModel = t.type({
 });
 
 export type NoteModelType = t.TypeOf<typeof NoteModel>;
-const NoteModelList = t.array(NoteModel);
 
 const getTimestamp = () => new Date().getTime();
 
-const camelCaseKeys = flow(
-  Object.entries,
-  (entries) => entries.map(([key, value]) => [toCamelCase(key), value]),
-  Object.fromEntries
-);
-
 export const decodeNote = flow(
-  (obj) => (isObject(obj) ? camelCaseKeys(obj) : obj),
-  NoteModel.decode
+  t.UnknownRecord.decode,
+  E.map(camelCaseKeys),
+  E.chain(NoteModel.decode)
 );
 
 const decodeNoteList = flow(
-  (sth) =>
-    Array.isArray(sth)
-      ? sth.map((obj) => (isObject(obj) ? camelCaseKeys(obj) : obj))
-      : sth,
-  NoteModelList.decode,
+  t.UnknownArray.decode,
+  E.chain((records) =>
+    A.sequence(E.either)(records.map((record) => decodeNote(record)))
+  ),
   TE.fromEither
 );
 
@@ -282,16 +275,19 @@ export const NoteSearchMatch = t.type(
 
 export type NoteSearchMatchType = t.TypeOf<typeof NoteSearchMatch>;
 
-export const NoteSearchMatchList = t.array(NoteSearchMatch);
-
-type NoteSearchMatchListType = t.TypeOf<typeof NoteSearchMatchList>;
-
 export const decodeNoteSearchMatchList = flow(
-  (obj) =>
-    Array.isArray(obj)
-      ? obj.map((obj) => (isObject(obj) ? camelCaseKeys(obj) : obj))
-      : obj,
-  NoteSearchMatchList.decode
+  t.UnknownArray.decode,
+  E.chain((records) =>
+    A.sequence(E.either)(
+      records.map((record) =>
+        pipe(
+          t.UnknownRecord.decode(record),
+          E.map(camelCaseKeys),
+          E.chain(NoteSearchMatch.decode)
+        )
+      )
+    )
+  )
 );
 
 export const findAllNotes = (
@@ -299,7 +295,7 @@ export const findAllNotes = (
 ): RTE.ReaderTaskEither<
   { db: Database },
   Error | t.Errors,
-  NoteSearchMatchListType
+  NoteSearchMatchType[]
 > => ({ db }) =>
   pipe(
     TE.tryCatch(
@@ -329,7 +325,7 @@ export const findPublicNotes = (
 ): RTE.ReaderTaskEither<
   { db: Database },
   Error | t.Errors,
-  NoteSearchMatchListType
+  NoteSearchMatchType[]
 > => ({ db }) =>
   pipe(
     TE.tryCatch(

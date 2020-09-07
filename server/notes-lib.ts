@@ -1,31 +1,20 @@
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
-import * as TE from "fp-ts/lib/TaskEither";
+import * as RE from "fp-ts/lib/ReaderEither";
+
 import { flow, pipe } from "fp-ts/lib/function";
 import { v4 as uuid } from "uuid";
 import sanitizeHtml from "sanitize-html";
 import showdown from "showdown";
 import * as db from "./notes-db";
+import * as permissions from "./permissions";
 import * as noteImport from "./note-import";
 import type { SocketSessionRecord } from "./socket-session-store";
-
-type ViewerRole = "unauthenticated" | "admin" | "user";
 
 export type NoteModelType = db.NoteModelType;
 export const decodeNote = db.decodeNote;
 export const NoteModel = db.NoteModel;
 
 export type NoteSearchMatchType = db.NoteSearchMatchType;
-
-const isAdmin = (viewerRole: ViewerRole) => viewerRole === "admin";
-
-const checkAdmin = <T>(
-  input: T
-): RTE.ReaderTaskEither<{ session: SocketSessionRecord }, Error, T> => ({
-  session,
-}) =>
-  isAdmin(session.role)
-    ? TE.right(input)
-    : TE.left(new Error("Insufficient permissions."));
 
 const sanitizeNoteContent = (content: string) => {
   const [, ...contentLines] = content.split("\n");
@@ -46,21 +35,24 @@ const sanitizeNoteContent = (content: string) => {
 export const getNoteById = (id: string) =>
   pipe(
     db.getNoteById(id),
-    RTE.chainW((note) => {
-      switch (note.type) {
-        case "admin":
-          return checkAdmin(note);
-        case "public":
-          return RTE.right(note);
-        default:
-          return RTE.left(new Error("Insufficient permissions."));
-      }
-    })
+    RTE.chainW(
+      flow((note) => {
+        switch (note.type) {
+          case "admin":
+            return permissions.checkAdmin(note);
+          case "public":
+            return RE.right(note);
+          default:
+            return RE.left(new Error("Insufficient permissions."));
+        }
+      }, RTE.fromReaderEither)
+    )
   );
 
 export const getPaginatedNotes = ({ first }: { first: number }) =>
   pipe(
-    checkAdmin(null),
+    permissions.checkAdmin(null),
+    RTE.fromReaderEither,
     RTE.chainW(() => db.getPaginatedNotes({ maximumAmountOfRecords: first }))
   );
 
@@ -74,7 +66,8 @@ export const getMorePaginatedNotes = ({
   lastId: string;
 }) =>
   pipe(
-    checkAdmin(null),
+    permissions.checkAdmin(null),
+    RTE.fromReaderEither,
     RTE.chainW(() =>
       db.getMorePaginatedNotes({
         lastCreatedAt,
@@ -94,7 +87,8 @@ export const createNote = ({
   isEntryPoint: boolean;
 }) =>
   pipe(
-    checkAdmin({ title, content }),
+    permissions.checkAdmin({ title, content }),
+    RTE.fromReaderEither,
     RTE.chainW(() =>
       db.updateOrInsertNote({
         id: uuid(),
@@ -115,7 +109,8 @@ export const updateNoteContent = ({
   content: string;
 }) =>
   pipe(
-    checkAdmin(null),
+    permissions.checkAdmin(null),
+    RTE.fromReaderEither,
     RTE.chainW(() => db.getNoteById(id)),
     RTE.chainW((note) =>
       db.updateOrInsertNote({
@@ -137,7 +132,8 @@ export const updateNoteAccess = ({
   access: string;
 }) =>
   pipe(
-    checkAdmin(null),
+    permissions.checkAdmin(null),
+    RTE.fromReaderEither,
     RTE.chainW(() =>
       pipe(db.NoteAccessTypeModel.decode(access), RTE.fromEither)
     ),
@@ -160,7 +156,8 @@ export const updateNoteAccess = ({
 
 export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
   pipe(
-    checkAdmin(null),
+    permissions.checkAdmin(null),
+    RTE.fromReaderEither,
     RTE.chainW(() => db.getNoteById(id)),
     RTE.chainW((note) =>
       db.updateOrInsertNote({
@@ -175,7 +172,11 @@ export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
   );
 
 export const deleteNote = (noteId: string) =>
-  pipe(checkAdmin(noteId), RTE.chainW(db.deleteNote));
+  pipe(
+    permissions.checkAdmin(noteId),
+    RTE.fromReaderEither,
+    RTE.chainW(db.deleteNote)
+  );
 
 export const findPublicNotes = (query: string) =>
   pipe(
