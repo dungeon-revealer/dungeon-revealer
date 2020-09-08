@@ -1,5 +1,4 @@
 import * as E from "fp-ts/lib/Either";
-import * as R from "fp-ts/lib/Reader";
 import * as RT from "fp-ts/lib/ReaderTask";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as O from "fp-ts/lib/Option";
@@ -19,7 +18,8 @@ export const decodeMapId = flow(
   Relay.decodeId,
   E.chainW(([, resource, id]) =>
     resource === MAP_URI ? E.right(id) : E.left(new Error("Invalid resource."))
-  )
+  ),
+  E.mapLeft(() => new Error("Invalid resource."))
 );
 
 const GraphQLMapGridType = t.objectType<lib.MapGridType>({
@@ -93,7 +93,7 @@ const GraphQLMapType = t.objectType<lib.MapRecordType>({
     }),
     t.field("objects", {
       type: t.NonNull(t.List(t.NonNull(GraphQLMapTokenType))),
-      resolve: (map) => map.objects,
+      resolve: (map) => Object.values(map.objects),
     }),
   ],
 });
@@ -288,18 +288,23 @@ export const queryFields = [
 
   t.field("activeMap", {
     type: GraphQLMapType,
-    resolve: (_obj, _args, context) => {
-      return pipe(
-        lib.getActiveMap(),
-        R.map((map) => map),
-        R.map(
-          O.fold(
-            () => null,
-            (map) => map
+    resolve: (_obj, _args, context) =>
+      RT.run(
+        pipe(
+          lib.getActiveMap(),
+          RTE.map(
+            O.fold(
+              () => null,
+              (map) => map
+            )
+          ),
+          RTE.fold(
+            () => RT.of(null as lib.MapRecordType | null),
+            (map) => RT.of(map)
           )
-        )
-      )(context);
-    },
+        ),
+        context
+      ),
   }),
 ];
 
@@ -312,8 +317,43 @@ const GraphQLSetActiveMapInputType = t.inputObjectType({
   }),
 });
 
+const GraphQLMapSetTitleInputType = t.inputObjectType({
+  name: "MapSetTitleInput",
+  fields: () => ({
+    mapId: { type: t.NonNullInput(t.ID) },
+    newTitle: { type: t.NonNullInput(t.String) },
+  }),
+});
+
+const GraphQLNewMapTokenInputType = t.inputObjectType({
+  name: "NewMapTokenInput",
+  fields: () => ({
+    label: { type: t.NonNullInput(t.String) },
+    x: { type: t.NonNullInput(t.Float) },
+    y: { type: t.NonNullInput(t.Float) },
+    color: { type: t.NonNullInput(t.String) },
+    radius: { type: t.NonNullInput(t.Float) },
+  }),
+});
+
+const GraphQLMapAddTokenInputType = t.inputObjectType({
+  name: "MapAddTokenInput",
+  fields: () => ({
+    mapId: { type: t.NonNullInput(t.ID) },
+    newToken: { type: t.NonNullInput(GraphQLNewMapTokenInputType) },
+  }),
+});
+
+const GraphQLMapRemoveTokenInputType = t.inputObjectType({
+  name: "MapRemoveTokenInput",
+  fields: () => ({
+    mapId: { type: t.NonNullInput(t.ID) },
+    tokenId: { type: t.NonNullInput(t.ID) },
+  }),
+});
+
 export const mutationFields = [
-  t.field("setActiveMap", {
+  t.field("activeMapSet", {
     type: t.Boolean,
     args: {
       input: t.arg(t.NonNullInput(GraphQLSetActiveMapInputType)),
@@ -323,7 +363,76 @@ export const mutationFields = [
         pipe(
           decodeMapId(args.input.mapId),
           RTE.fromEither,
-          RTE.chainW((mapId) => lib.setActiveMap({ mapId })),
+          RTE.chainW((mapId) => lib.setActiveMapId({ mapId })),
+          RTE.fold(
+            (err) => {
+              throw err;
+            },
+            () => RT.of(null)
+          )
+        ),
+        context
+      ),
+  }),
+  t.field("mapSetTitle", {
+    type: t.Boolean,
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapSetTitleInputType)),
+    },
+    resolve: (_obj, args, context) =>
+      RT.run(
+        pipe(
+          decodeMapId(args.input.mapId),
+          RTE.fromEither,
+          RTE.chainW((mapId) =>
+            lib.changeMapTitle({ mapId, newTitle: args.input.newTitle })
+          ),
+          RTE.fold(
+            (err) => {
+              throw err;
+            },
+            () => RT.of(null)
+          )
+        ),
+        context
+      ),
+  }),
+  t.field("mapAddToken", {
+    type: t.Boolean,
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapAddTokenInputType)),
+    },
+    resolve: (_obj, args, context) =>
+      RT.run(
+        pipe(
+          decodeMapId(args.input.mapId),
+          RTE.fromEither,
+          RTE.chainW((mapId) =>
+            lib.addMapToken({ mapId, token: args.input.newToken })
+          ),
+          RTE.fold(
+            (err) => {
+              throw err;
+            },
+            () => RT.of(null)
+          )
+        ),
+        context
+      ),
+  }),
+  t.field("mapRemoveToken", {
+    type: t.Boolean,
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapRemoveTokenInputType)),
+    },
+    resolve: (_obj, args, context) =>
+      RT.run(
+        pipe(
+          decodeMapId(args.input.mapId),
+          RTE.fromEither,
+          RTE.chainW((mapId) =>
+            lib.deleteMapToken({ mapId, tokenId: args.input.tokenId })
+          ),
           RTE.fold(
             (err) => {
               throw err;

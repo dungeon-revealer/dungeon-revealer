@@ -6,6 +6,7 @@ import type { Database } from "sqlite";
 import type { LiveQueryStore } from "@n1ru4l/graphql-live-query";
 import type { SplashImageState } from "../splash-image-state";
 import type { ActiveMapStore } from "../maps-lib";
+import type { ResourceTaskProcessor } from "../util";
 
 export type GraphQLContextType = {
   chat: ReturnType<typeof createChat>;
@@ -15,6 +16,7 @@ export type GraphQLContextType = {
   liveQueryStore: LiveQueryStore;
   splashImageState: SplashImageState;
   activeMapStore: ActiveMapStore;
+  resourceTaskProcessor: ResourceTaskProcessor;
 };
 
 export const t = createTypesFactory<GraphQLContextType>();

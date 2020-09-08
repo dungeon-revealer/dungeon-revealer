@@ -48,7 +48,7 @@ export const MapToken = t.type(
 
 export type MapTokenType = t.TypeOf<typeof MapToken>;
 
-export const MapObjects = t.array(MapToken, "MapObjects");
+export const MapObjects = t.record(t.string, MapToken, "MapObjects");
 
 export type MapObjectsType = t.TypeOf<typeof MapObjects>;
 
@@ -267,4 +267,37 @@ export const loadMorePaginatedMaps = (params: {
       E.toError
     ),
     TE.chain(decodeMapList)
+  );
+
+export const persistMap = (params: {
+  map: MapRecordType;
+}): RTE.ReaderTaskEither<{ db: Database }, Error, unknown> => (deps) =>
+  pipe(
+    sequenceT(E.either)(
+      E.stringifyJSON(params.map.grid, E.toError),
+      E.stringifyJSON(params.map.objects, E.toError)
+    ),
+    TE.fromEither,
+    TE.chain(([grid, objects]) =>
+      TE.tryCatch(
+        () =>
+          deps.db.run(
+            /* SQL */ `
+               UPDATE "maps"
+               SET
+                 "title" = ?,
+                 "grid" = ?,
+                 "objects" = ?
+               WHERE
+                "id" = ?
+               ;
+            `,
+            params.map.title,
+            grid,
+            objects,
+            params.map.id
+          ),
+        E.toError
+      )
+    )
   );

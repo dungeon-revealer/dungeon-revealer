@@ -103,7 +103,7 @@ const MapToken = t.type(
   "MapToken"
 );
 
-export const MapObjects = t.array(MapToken, "MapObjects");
+export const MapObjects = t.record(t.string, MapToken, "MapObjects");
 
 const MapModel = t.type(
   {
@@ -190,23 +190,31 @@ const MapRecordFromSettings = new t.Type(
                     isVisibleForDungeonMaster: showGrid,
                   }
                 : null,
-              objects: tokens.map((token) => ({
-                id: token.id,
-                type: "MapToken",
-                x: token.x,
-                y: token.y,
-                radius: token.radius,
-                label: token.label,
-                isLockedForDungeonMaster: token.isLocked,
-                isLockedForPlayers: token.isMovableByPlayers,
-                isVisibleForPlayers: token.isVisibleForPlayers,
-                reference: token.reference
-                  ? {
-                      type: "NoteReference",
-                      id: token.reference.id,
-                    }
-                  : null,
-              })),
+              objects: Object.fromEntries(
+                tokens.map(
+                  (token) =>
+                    [
+                      token.id,
+                      {
+                        id: token.id,
+                        type: "MapToken",
+                        x: token.x,
+                        y: token.y,
+                        radius: token.radius,
+                        label: token.label,
+                        isLockedForDungeonMaster: token.isLocked,
+                        isLockedForPlayers: token.isMovableByPlayers,
+                        isVisibleForPlayers: token.isVisibleForPlayers,
+                        reference: token.reference
+                          ? {
+                              type: "NoteReference" as const,
+                              id: token.reference.id,
+                            }
+                          : null,
+                      },
+                    ] as const
+                )
+              ),
             })
           )
       )
@@ -235,6 +243,11 @@ export const migrate = async ({
       "map_fog_live_asset_file_path" TEXT,
       "map_fog_progress_asset_file_path" TEXT,
       "created_at" INT NOT NULL
+    );
+    DROP TABLE IF EXISTS "json_key_value";
+    CREATE TABLE "json_key_value" (
+      "key" TEXT PRIMARY KEY NOT NULL,
+      "value" TEXT NOT NULL
     );
     COMMIT;
   `);
@@ -379,6 +392,6 @@ export const migrate = async ({
     )();
 
     await fs.move(legacyNoteDirectory, path.join(dataPath, ".old_maps"));
-    await fs.unlink(legacyNoteDirectory);
+    await fs.unlink(legacyNoteDirectory).catch(() => undefined);
   }
 };
