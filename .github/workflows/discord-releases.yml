@@ -11,19 +11,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Discord notification
-        if: ${{ ! github.event.release.prerelease }} # Only releases
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_RELEASES }}
-        uses: Ilshidur/action-discord@759f6ea
-        with:
-          args: "@everyone ${{ github.event.repository.name }}@${{ github.event.release.tag_name }} has been deployed! Check out the release at ${{ github.event.release.html_url }}."
+      - name: "Set environment: release"
+        if: ${{ ! github.event.release.prerelease }} # Only prereleases
+        run: |
+          # Template json to send as an embed
+          # jq replaces $var with `jq --arg var <value> "$TEMPLATE"`
+          TEMPLATE='[{"title": $title, "url": $url, "color": $color, "description": $desc}]'
 
 
-      - name: Discord notification
+          DESC="@everyone [${{ github.event.repository.name }}@${{ github.event.release.tag_name }}](${{ github.event.release.html_url }}) release has been deployed!"$'\n'
+          echo "::set-env name=DISCORD_EMBEDS::$(jq -nc --arg title "${{ github.event.release.name }} release" --arg url "${{ github.event.release.html_url }}" --arg color "26880" --arg desc "$DESC" "$TEMPLATE")"
+
+      - name: "Set environment: prerelease"
         if: ${{ github.event.release.prerelease }} # Only prereleases
+        run: |
+          # Template json to send as an embed
+          # jq replaces $var with `jq --arg var <value> "$TEMPLATE"`
+          TEMPLATE='[{"title": $title, "url": $url, "color": $color, "description": $desc}]'
+
+          # <#channel_id> is the mention syntax for channels
+          # <#730140681581887528> mentions #feedback
+          DESC="@everyone [${{ github.event.repository.name }}@${{ github.event.release.tag_name }}](${{ github.event.release.html_url }}) prerelease has been deployed! Help us test before the release is finalized. Join the discussion in <#730140681581887528>"$'\n'
+          echo "::set-env name=DISCORD_EMBEDS::$(jq -nc --arg title "${{ github.event.release.name }} prerelease" --arg url "${{ github.event.release.html_url }}" --arg color "10027212" --arg desc "$DESC" "$TEMPLATE")"
+
+      - name: Discord notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_RELEASES }}
-        uses: Ilshidur/action-discord@759f6ea
-        with:
-          args: "@everyone ${{ github.event.repository.name }}@${{ github.event.release.tag_name }} has been deployed! Check out the prerelease at ${{ github.event.release.html_url }}. Help us test before the release is finalized. Join the discussion in #feedback"
+        uses: Ilshidur/action-discord@0.3.0

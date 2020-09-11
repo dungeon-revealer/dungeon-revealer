@@ -212,10 +212,35 @@ jobs:
           asset_name: dungeon-revealer-linux-arm64-${{ env.GH_TAG }}.zip
           asset_content_type: application/zip
 
+      - name: "Set environment for discord"
+        if: success() && startsWith( github.ref, 'refs/heads')
+        run: |
+          # Template json to send as an embed
+          # jq replaces $var with `jq --arg var <value> "$TEMPLATE"`
+          TEMPLATE='[{"title": $title, "url": $url, "color": $color, "description": $desc}]'
+
+          # Grab the list of commits from event.json
+          COMMITS=$(cat $GITHUB_EVENT_PATH | jq -c '.commits')
+
+          # Iterate through each commit and create the formatted string:
+          # [`<commit_sha_short>`](<commit_url>) <commit_message>\n <other_commits>
+          DESC=''
+          for row in $(echo "${COMMITS}" | jq -r '.[] | @base64'); do
+              _jq() {
+               echo ${row} | base64 --decode | jq -r ${1}
+              }
+             DESC=$DESC$(printf "[%s](%s) %s" $'`'"$(_jq '.id' | cut -c -7)"$'`' "$(_jq '.url')" "$(_jq '.message')")$'\n'
+          done
+
+          # Check if description is longer than the character limit
+          if [ ${#DESC} -gt 2048 ]; then
+            DESC=$(echo $DESC | cut -c -2045)"..."
+          fi
+          echo "$DESC"
+          echo "::set-env name=DISCORD_EMBEDS::$(jq -nc --arg title "[${{ github.event.repository.name }}:${GITHUB_REF##*/}] binary build" --arg url "${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}" --arg color "16750848" --arg desc "$DESC" "$TEMPLATE")"
+
       - name: Discord notification
         if: success() && startsWith( github.ref, 'refs/heads')
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
-        uses: Ilshidur/action-discord@759f6ea
-        with:
-          args: "New binary build finished, master@${{ env.COMMIT_SHORT }}: *${{ github.event.head_commit.message }}*\n <${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}>"
+        uses: Ilshidur/action-discord@0.3.0

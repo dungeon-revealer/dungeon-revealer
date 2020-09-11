@@ -11,13 +11,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: "Set environment: master"
+      - name: "Set environment for discord"
         run: |
-          echo "::set-env name=COMMIT_SHORT::$(git rev-parse --short HEAD)"
+          # Template json to send as an embed
+          # jq replaces $var with `jq --arg var <value> "$TEMPLATE"`
+          TEMPLATE='[{"title": $title, "url": $url, "color": $color, "description": $desc}]'
+
+          # Grab the list of commits from event.json
+          COMMITS=$(cat $GITHUB_EVENT_PATH | jq -c '.commits')
+
+          # Iterate through each commit and create the formatted string:
+          # [`<commit_sha_short>`](<commit_url>) <commit_message>\n <other_commits>
+          DESC=''
+          for row in $(echo "${COMMITS}" | jq -r '.[] | @base64'); do
+              _jq() {
+               echo ${row} | base64 --decode | jq -r ${1}
+              }
+             DESC=$DESC$(printf "[%s](%s) %s" $'`'"$(_jq '.id' | cut -c -7)"$'`' "$(_jq '.url')" "$(_jq '.message')")$'\n'
+          done
+
+          # Check if description is longer than the character limit
+          if [ ${#DESC} -gt 2048 ]; then
+            DESC=$(echo $DESC | cut -c -2045)"..."
+          fi
+          echo "$DESC"
+          echo "::set-env name=DISCORD_EMBEDS::$(jq -nc --arg title "[${{ github.event.repository.name }}:${GITHUB_REF##*/}] new commit" --arg url "${{ github.event.compare }}" --arg color "13260" --arg desc "$DESC" "$TEMPLATE")"
 
       - name: Discord notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
-        uses: Ilshidur/action-discord@759f6ea
-        with:
-          args: "New commit pushed, master@${{ env.COMMIT_SHORT }}: *${{ github.event.head_commit.message }}*\n <${{ github.event.head_commit.url }}>"
+        uses: Ilshidur/action-discord@0.3.0
