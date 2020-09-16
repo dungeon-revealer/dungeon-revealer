@@ -146,7 +146,7 @@ const TokenRenderer: React.FC<{
 
         return memo;
       },
-      onPointerDown: (event) => {
+      onPointerDown: ({ event }) => {
         if (isLocked === false) {
           setIsHover(true);
           event.stopPropagation();
@@ -458,7 +458,7 @@ const getTranslateOffsetsFromScale = ({
   imageHeight,
   scale,
   pinchDelta,
-  touchOrigin: [touchOriginX, touchOriginY],
+  origin: [touchOriginX, touchOriginY],
   currentTranslate: [translateX, translateY],
   aspect,
 }: {
@@ -468,7 +468,7 @@ const getTranslateOffsetsFromScale = ({
   imageHeight: number;
   scale: number;
   pinchDelta: number;
-  touchOrigin: [number, number];
+  origin: [number, number];
   currentTranslate: [number, number];
   aspect: number;
 }) => {
@@ -536,85 +536,6 @@ export const MapView: React.FC<{
 
     return null;
   }, [mapImageTexture, viewport]);
-
-  const wheelHandlerRef = React.useRef({ viewport, dimensions });
-  React.useEffect(() => {
-    wheelHandlerRef.current = {
-      viewport,
-      dimensions,
-    };
-  });
-
-  React.useEffect(() => {
-    const wheelHandler = (event: WheelEvent) => {
-      if (event.target instanceof HTMLCanvasElement === false) {
-        return;
-      }
-      event.preventDefault();
-
-      const { viewport, dimensions } = wheelHandlerRef.current;
-      if (!viewport || !dimensions) {
-        return;
-      }
-
-      const [scale] = spring.scale.get();
-
-      const { clientX, clientY } = event;
-
-      const position = spring.position.get();
-
-      const wheel = event.deltaY < 0 ? 1 : -1;
-      const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
-      const pinchDelta = pinchScale - scale;
-
-      const {
-        imageWidth,
-        imageHeight,
-        imageTopLeftY,
-        imageTopLeftX,
-      } = calculateScreenPosition({
-        imageDimensions: dimensions,
-        viewportDimensions: {
-          width: viewport.width * viewport.factor,
-          height: viewport.height * viewport.factor,
-        },
-        scale,
-        translateX: position[0],
-        translateY: position[1],
-        aspect: viewport.factor,
-      });
-
-      // Calculate the amount of x, y translate offset needed to
-      // zoom-in to point as image scale grows
-      const [newTranslateX, newTranslateY] = getTranslateOffsetsFromScale({
-        imageTopLeftY,
-        imageTopLeftX,
-        imageWidth,
-        imageHeight,
-        scale,
-        aspect: viewport.factor,
-        pinchDelta: pinchDelta,
-        currentTranslate: [position[0], position[1]],
-        touchOrigin: [clientX, clientY],
-      });
-
-      set({
-        scale: [pinchScale, pinchScale, 1],
-        position: [newTranslateX, newTranslateY, 0],
-      });
-    };
-    // without this the pinch-zoom on desktop (chrome osx) is interfered by wheel events
-    document.addEventListener("wheel", wheelHandler, { passive: false });
-
-    const gestureStartHandler = (ev: Event) => ev.preventDefault();
-    const gestureChangeHandler = (ev: Event) => ev.preventDefault();
-
-    return () => {
-      document.removeEventListener("wheel", wheelHandler);
-      document.removeEventListener("gesturestart", gestureStartHandler);
-      document.removeEventListener("gesturestart", gestureChangeHandler);
-    };
-  }, []);
 
   React.useEffect(() => {
     if (props.controlRef) {
@@ -711,6 +632,59 @@ export const MapView: React.FC<{
     {}
   );
 
+  const updateZoom = ({
+    pinchDelta,
+    pinchScale,
+    origin,
+  }: {
+    pinchDelta: number;
+    pinchScale: number;
+    origin: [number, number];
+  }) => {
+    if (!viewport || !dimensions) {
+      return;
+    }
+
+    const position = spring.position.get();
+    const [scale] = spring.scale.get();
+
+    const {
+      imageWidth,
+      imageHeight,
+      imageTopLeftY,
+      imageTopLeftX,
+    } = calculateScreenPosition({
+      imageDimensions: dimensions,
+      viewportDimensions: {
+        width: viewport.width * viewport.factor,
+        height: viewport.height * viewport.factor,
+      },
+      scale,
+      translateX: position[0],
+      translateY: position[1],
+      aspect: viewport.factor,
+    });
+
+    // Calculate the amount of x, y translate offset needed to
+    // zoom-in to point as image scale grows
+    const [newTranslateX, newTranslateY] = getTranslateOffsetsFromScale({
+      imageTopLeftY,
+      imageTopLeftX,
+      imageWidth,
+      imageHeight,
+      scale,
+      aspect: viewport.factor,
+      pinchDelta: pinchDelta,
+      currentTranslate: [position[0], position[1]],
+      origin,
+    });
+
+    set({
+      scale: [pinchScale, pinchScale, 1],
+      position: [newTranslateX, newTranslateY, 0],
+    });
+  };
+
   useGesture(
     {
       onPinchEnd: () => {
@@ -718,19 +692,40 @@ export const MapView: React.FC<{
           isDragDisabledRef.current = false;
         }, 100);
       },
-      onPinch: ({ movement, event, origin, ctrlKey, last, cancel }) => {
-        if (!viewport || !event || !dimensions) {
+      onWheel: ({ event }) => {
+        if (!event) {
           return;
         }
-        if (event?.target instanceof HTMLCanvasElement === false) {
+        if (event.target instanceof HTMLCanvasElement === false) {
           return;
         }
+        let wheelEvent = event as React.WheelEvent;
 
+        event.preventDefault();
+
+        const [scale] = spring.scale.get();
+        const origin = [wheelEvent.clientX, wheelEvent.clientY] as [
+          number,
+          number
+        ];
+
+        const wheel = wheelEvent.deltaY < 0 ? 1 : -1;
+        const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
+        const pinchDelta = pinchScale - scale;
+
+        updateZoom({ pinchDelta, pinchScale, origin });
+      },
+      onPinch: ({ movement, event, origin, last, cancel }) => {
+        if (!event || !origin) {
+          return;
+        }
+        if (event.target instanceof HTMLCanvasElement === false) {
+          return;
+        }
+        event.preventDefault();
         isDragDisabledRef.current = true;
 
-        const position = spring.position.get();
         const [scale] = spring.scale.get();
-        let [touchOriginX, touchOriginY] = origin;
 
         // Don't calculate new translate offsets on final frame
         if (last) {
@@ -744,54 +739,7 @@ export const MapView: React.FC<{
         const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
         const pinchDelta = pinchScale - scale;
 
-        const clientX =
-          "clientX" in event ? event.clientX : event?.touches?.[0]?.clientX;
-        const clientY =
-          "clientX" in event ? event.clientY : event?.touches?.[0]?.clientY;
-
-        if (clientX === undefined || clientY === undefined) {
-          return;
-        }
-
-        const {
-          imageWidth,
-          imageHeight,
-          imageTopLeftY,
-          imageTopLeftX,
-        } = calculateScreenPosition({
-          imageDimensions: dimensions,
-          viewportDimensions: {
-            width: viewport.width * viewport.factor,
-            height: viewport.height * viewport.factor,
-          },
-          scale,
-          translateX: position[0],
-          translateY: position[1],
-          aspect: viewport.factor,
-        });
-
-        // Calculate the amount of x, y translate offset needed to
-        // zoom-in to point as image scale grows
-        const [newTranslateX, newTranslateY] = getTranslateOffsetsFromScale({
-          imageTopLeftY,
-          imageTopLeftX,
-          imageWidth,
-          imageHeight,
-          scale,
-          aspect: viewport.factor,
-          pinchDelta: pinchDelta,
-          currentTranslate: [position[0], position[1]],
-          // Use the [x, y] coords of mouse if a track-pad or ctrl + wheel event
-          // Otherwise use touch origin
-          touchOrigin: ctrlKey
-            ? [clientX, clientY]
-            : [touchOriginX, touchOriginY],
-        });
-
-        set({
-          scale: [pinchScale, pinchScale, 1],
-          position: [newTranslateX, newTranslateY, 0],
-        });
+        updateZoom({ pinchDelta, pinchScale, origin });
       },
     },
     {
