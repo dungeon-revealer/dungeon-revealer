@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as THREE from "three";
-import { Canvas, useLoader, useFrame, useUpdate } from "react-three-fiber";
+import { Canvas, useLoader, useFrame, PointerEvent } from "react-three-fiber";
 import { getOptimalDimensions } from "./util";
 import { animated, useSpring, SpringValue } from "@react-spring/three";
 import { useGesture } from "react-use-gesture";
@@ -566,14 +566,11 @@ export const MapView: React.FC<{
 
   const bind = useGesture(
     {
-      onPointerDown: (state) => {
+      onPointerDown: ({ event }) => {
         if (pointerTimer.current) {
           clearTimeout(pointerTimer.current);
         }
-
-        // TODO: figure out why the typing do not show our point
-        // @ts-ignore
-        const point = (state as any).point as Vector3;
+        const pointerEvent = (event as any) as PointerEvent;
 
         pointerTimer.current = setTimeout(() => {
           if (dimensions) {
@@ -581,13 +578,15 @@ export const MapView: React.FC<{
               dimensions.width / mapImageTexture.image.naturalWidth;
             const x = calculateRealX(
               // We need to convert the point to the point local to our element.
-              (point.x - spring.position.get()[0]) / spring.scale.get()[0],
+              (pointerEvent.point.x - spring.position.get()[0]) /
+                spring.scale.get()[0],
               factor,
               dimensions.width
             );
             const y = calculateRealY(
               // We need to convert the point to the point local to our element.
-              (point.y - spring.position.get()[1]) / spring.scale.get()[1],
+              (pointerEvent.point.y - spring.position.get()[1]) /
+                spring.scale.get()[1],
               factor,
               dimensions.height
             );
@@ -627,6 +626,17 @@ export const MapView: React.FC<{
           immediate: true,
         });
         return memo;
+      },
+      onMouseDown: ({ event }) => {
+        if (event.target instanceof HTMLCanvasElement) {
+          window.document.body.classList.add("user-select-disabled");
+          const onUnmount = () => {
+            window.document.body.classList.remove("user-select-disabled");
+            window.removeEventListener("mouseup", onUnmount);
+          };
+          window.addEventListener("mouseup", onUnmount);
+          onUnmountRef.current = onUnmount;
+        }
       },
     },
     {}
@@ -693,30 +703,22 @@ export const MapView: React.FC<{
         }, 100);
       },
       onWheel: ({ event }) => {
-        if (!event) {
-          return;
-        }
         if (event.target instanceof HTMLCanvasElement === false) {
           return;
         }
-        let wheelEvent = event as React.WheelEvent;
-
         event.preventDefault();
 
         const [scale] = spring.scale.get();
-        const origin = [wheelEvent.clientX, wheelEvent.clientY] as [
-          number,
-          number
-        ];
+        const origin = [event.clientX, event.clientY] as [number, number];
 
-        const wheel = wheelEvent.deltaY < 0 ? 1 : -1;
+        const wheel = event.deltaY < 0 ? 1 : -1;
         const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
         const pinchDelta = pinchScale - scale;
 
         updateZoom({ pinchDelta, pinchScale, origin });
       },
       onPinch: ({ movement, event, origin, last, cancel }) => {
-        if (!event || !origin) {
+        if (!origin) {
           return;
         }
         if (event.target instanceof HTMLCanvasElement === false) {

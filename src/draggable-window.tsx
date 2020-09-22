@@ -87,8 +87,10 @@ export const DraggableWindow = ({
     },
     onMouseDown: ({ event }) => {
       // on desktop we want to disable user-select while dragging
-      if (event.target && event.target instanceof HTMLElement) {
-        event.target.hasAttribute("data-draggable");
+      if (
+        event.target instanceof HTMLElement &&
+        event.target.hasAttribute("data-draggable")
+      ) {
         window.document.body.classList.add("user-select-disabled");
         const onUnmount = () => {
           window.document.body.classList.remove("user-select-disabled");
