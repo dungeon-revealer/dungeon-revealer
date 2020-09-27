@@ -564,13 +564,12 @@ export const MapView: React.FC<{
   const isDragDisabledRef = React.useRef(false);
   const pointerTimer = React.useRef<NodeJS.Timeout>();
 
-  const bind = useGesture(
+  const bind = useGesture<{ onPointerDown: PointerEvent }>(
     {
       onPointerDown: ({ event }) => {
         if (pointerTimer.current) {
           clearTimeout(pointerTimer.current);
         }
-        const pointerEvent = (event as any) as PointerEvent;
 
         pointerTimer.current = setTimeout(() => {
           if (dimensions) {
@@ -578,14 +577,14 @@ export const MapView: React.FC<{
               dimensions.width / mapImageTexture.image.naturalWidth;
             const x = calculateRealX(
               // We need to convert the point to the point local to our element.
-              (pointerEvent.point.x - spring.position.get()[0]) /
+              (event.point.x - spring.position.get()[0]) /
                 spring.scale.get()[0],
               factor,
               dimensions.width
             );
             const y = calculateRealY(
               // We need to convert the point to the point local to our element.
-              (pointerEvent.point.y - spring.position.get()[1]) /
+              (event.point.y - spring.position.get()[1]) /
                 spring.scale.get()[1],
               factor,
               dimensions.height
@@ -718,9 +717,6 @@ export const MapView: React.FC<{
         updateZoom({ pinchDelta, pinchScale, origin });
       },
       onPinch: ({ movement, event, origin, last, cancel }) => {
-        if (!origin) {
-          return;
-        }
         if (event.target instanceof HTMLCanvasElement === false) {
           return;
         }
