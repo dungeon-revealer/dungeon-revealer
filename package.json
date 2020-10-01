@@ -134,7 +134,7 @@
     "react-spring": "9.0.0-rc.3",
     "react-three-fiber": "4.2.21",
     "react-toast-notifications": "2.4.0",
-    "react-use-gesture": "8.0.0-alpha.7",
+    "react-use-gesture": "8.0.0-alpha.8",
     "react-virtualized": "9.22.2",
     "referentiel": "0.0.8",
     "relay-compiler": "10.0.1",
