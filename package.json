@@ -76,7 +76,7 @@
     "sqlite": "4.0.12",
     "sqlite3": "4.2.0",
     "unzipper": "0.10.11",
-    "uuid": "8.3.0"
+    "uuid": "8.3.1"
   },
   "devDependencies": {
     "@emotion/core": "10.0.35",
