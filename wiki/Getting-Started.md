@@ -26,3 +26,9 @@ You can add a [token](https://github.com/maxb2/dungeon-revealer/wiki/Tokens) wit
 ## Players
 
 Navigate to the server using a web browser and wait at the home page. (The connection information is displayed in command prompt for convenience.) When the dungeon master is ready, they will push a map to your webpage. You will see either a black screen or a partially covered image. You can zoom in/out and pan the map. On a long click you will place a "point of interest" on the map that will show as a red circle.
+
+### Hide Chat & Note UI
+
+Append "?map_only" to the URL in order to hide chat & note UI. E.g. `http://localhost:3000/?map_only`. This could be useful in a setup where all players are around a table with a single monitor, for example.
+
+This can also be used with the password parameter: `http://localhost:3000/?map_only&password=foobar123`.
