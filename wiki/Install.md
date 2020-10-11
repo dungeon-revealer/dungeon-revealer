@@ -38,7 +38,7 @@ There is also a community maintained [AUR package](https://aur.archlinux.org/pac
 
 ### Docker
 
-We provide docker images for x64, x86, and arm architectures.
+We provide docker images for x64 and arm architectures.
 An up to date version of docker is required to make sure the correct image architecture is pulled for your host machine.
 To create an instance, run the following:
 
