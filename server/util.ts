@@ -30,12 +30,21 @@ export const parseFileExtension = (fileName: string) => {
   return parts.pop() || null;
 };
 
+export type ResourceTaskProcessor = <T>(
+  operationIdentifier: string,
+  process: () => T | Promise<T>
+) => Promise<T>;
+
 /**
  * utility that ensures tasks on a given resource are executed in sequence in order to prevent race conditions etc.
  */
-export const createResourceTaskProcessor = () => {
-  const queueMap = new Map();
-  return (operationIdentifier: string, process: () => unknown) => {
+export const createResourceTaskProcessor = (): ResourceTaskProcessor => {
+  const queueMap = new Map<string, Promise<any>>();
+
+  return <T>(
+    operationIdentifier: string,
+    process: () => T | Promise<T>
+  ): Promise<T> => {
     const queue = (queueMap.get(operationIdentifier) || Promise.resolve())
       .catch(() => undefined)
       .then(process);

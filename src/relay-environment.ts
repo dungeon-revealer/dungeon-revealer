@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Environment,
   Network,
@@ -8,11 +7,9 @@ import {
   SubscribeFunction,
   Observable,
 } from "relay-runtime";
-import { createSocketIOGraphQLClient } from "@n1ru4l/socket-io-graphql-client";
+import type { SocketIOGraphQLClient } from "@n1ru4l/socket-io-graphql-client";
 
-export const createEnvironment = (socket: SocketIOClient.Socket) => {
-  const networkInterface = createSocketIOGraphQLClient(socket);
-
+export const createEnvironment = (networkInterface: SocketIOGraphQLClient) => {
   const fetchQuery: FetchFunction = (request, variables) => {
     if (!request.text) throw new Error("Missing document.");
     const { text: operation, name } = request;

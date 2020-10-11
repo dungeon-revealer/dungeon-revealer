@@ -10,6 +10,8 @@ import type {
 import { registerSocketIOGraphQLServer } from "@n1ru4l/socket-io-graphql-server";
 import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
 import { createSplashImageState } from "../splash-image-state";
+import { createActiveMapStore } from "../maps-lib";
+import { createResourceTaskProcessor } from "../util";
 
 type Dependencies = {
   roleMiddleware: any;
@@ -26,6 +28,9 @@ export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
     sendUserDisconnectedMessage: ({ name }) =>
       chat.addOperationalMessage({ content: `**${name}** disconnected.` }),
   });
+  const activeMapStore = createActiveMapStore(null);
+  const resourceTaskProcessor = createResourceTaskProcessor();
+
   const splashImageState = createSplashImageState();
 
   const router = Router();
@@ -54,6 +59,8 @@ export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
           session: getSession(socket),
           liveQueryStore,
           splashImageState,
+          activeMapStore,
+          resourceTaskProcessor,
         } as GraphQLContextType,
       },
     }),
