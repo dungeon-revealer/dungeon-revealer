@@ -60,7 +60,7 @@
     "connect-busboy": "0.0.2",
     "debug": "4.2.0",
     "express": "4.17.1",
-    "fp-ts": "2.8.3",
+    "fp-ts": "2.8.4",
     "fs-extra": "9.0.1",
     "gqtx": "0.7.0",
     "graphql": "15.3.0",
