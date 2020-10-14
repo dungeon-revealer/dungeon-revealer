@@ -83,6 +83,10 @@ const getWebGLMaximumTextureSize = once(() => {
   return context.getParameter(context.MAX_TEXTURE_SIZE);
 });
 
+const isFirefoxOnWindows = () =>
+  window.navigator.userAgent.toLowerCase().includes("firefox") &&
+  window.navigator.platform.toLowerCase().startsWith("win");
+
 const PlayerMap: React.FC<{
   fetch: typeof fetch;
   pcPassword: string;
@@ -188,8 +192,16 @@ const PlayerMap: React.FC<{
             maximumTextureSize,
             maximumTextureSize
           );
-          canvas.width = width;
-          canvas.height = height;
+
+          const isMaximum =
+            maximumTextureSize === width || maximumTextureSize === height;
+
+          canvas.width =
+            isFirefoxOnWindows() && isMaximum ? Math.floor(width * 0.7) : width;
+          canvas.height =
+            isFirefoxOnWindows() && isMaximum
+              ? Math.floor(height * 0.7)
+              : height;
 
           const context = canvas.getContext("2d");
           if (!context) {
