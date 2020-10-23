@@ -96,7 +96,7 @@
     "@types/react-relay": "7.0.13",
     "@types/react-toast-notifications": "2.4.0",
     "@types/react-virtualized": "9.21.10",
-    "@types/relay-runtime": "10.0.4",
+    "@types/relay-runtime": "10.0.9",
     "@types/sanitize-html": "1.27.0",
     "@types/showdown": "1.9.3",
     "@types/socket.io": "2.1.11",
