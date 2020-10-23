@@ -479,7 +479,7 @@ export const mutationFields = [
         return null;
       }
       context.splashImageState.set(args.input.imageId);
-      context.liveQueryStore.triggerUpdate("Query.sharedSplashImage");
+      context.liveQueryStore.invalidate("Query.sharedSplashImage");
 
       return null;
     },

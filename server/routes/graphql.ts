@@ -43,8 +43,8 @@ export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
   const socketIOGraphQLServer = registerSocketIOGraphQLServer({
     socketServer,
     isLazy: true,
-    getExecutionParameter: ({ socket }) => ({
-      liveQueryStore,
+    getParameter: ({ socket }) => ({
+      execute: liveQueryStore.execute,
       graphQLExecutionParameter: {
         schema,
         contextValue: {
