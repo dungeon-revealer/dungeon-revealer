@@ -93,7 +93,7 @@
     "@types/node": "13.13.28",
     "@types/react": "16.9.53",
     "@types/react-dom": "16.9.8",
-    "@types/react-relay": "7.0.13",
+    "@types/react-relay": "7.0.15",
     "@types/react-toast-notifications": "2.4.0",
     "@types/react-virtualized": "9.21.10",
     "@types/relay-runtime": "10.0.9",
