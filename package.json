@@ -115,7 +115,7 @@
     "htmlparser2": "5.0.1",
     "husky": "4.3.0",
     "immer": "7.0.14",
-    "lint-staged": "10.5.0",
+    "lint-staged": "10.5.1",
     "monaco-editor-webpack-plugin": "1.9.1",
     "parse-color": "1.0.0",
     "patch-package": "6.2.2",
