@@ -86,7 +86,7 @@
     "@types/body-scroll-lock": "2.6.1",
     "@types/connect-busboy": "0.0.2",
     "@types/express": "4.17.8",
-    "@types/fs-extra": "9.0.2",
+    "@types/fs-extra": "9.0.3",
     "@types/howler": "2.2.1",
     "@types/jest": "26.0.15",
     "@types/lodash": "4.14.164",
