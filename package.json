@@ -53,8 +53,8 @@
   ],
   "dependencies": {
     "@airjp73/dice-notation": "1.1.1",
-    "@n1ru4l/socket-io-graphql-server": "0.6.0",
-    "@n1ru4l/in-memory-live-query-store": "0.5.1",
+    "@n1ru4l/in-memory-live-query-store": "0.5.2",
+    "@n1ru4l/socket-io-graphql-server": "0.7.0",
     "body-parser": "1.19.0",
     "connect-busboy": "0.0.2",
     "debug": "4.2.0",
@@ -80,8 +80,8 @@
   "devDependencies": {
     "@emotion/core": "10.1.1",
     "@emotion/styled": "10.0.27",
-    "@n1ru4l/socket-io-graphql-client": "0.6.0",
-    "@n1ru4l/graphql-live-query": "0.5.0",
+    "@n1ru4l/graphql-live-query": "0.6.0",
+    "@n1ru4l/socket-io-graphql-client": "0.7.0",
     "@n1ru4l/use-async-effect": "1.2.4",
     "@types/body-scroll-lock": "2.6.1",
     "@types/connect-busboy": "0.0.2",
