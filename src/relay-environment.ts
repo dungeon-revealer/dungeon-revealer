@@ -1,58 +1,41 @@
-import React from "react";
 import {
   Environment,
   Network,
   RecordSource,
   Store,
-  FetchFunction,
-  SubscribeFunction,
   Observable,
+  GraphQLResponse,
+  RequestParameters,
 } from "relay-runtime";
 import { createSocketIOGraphQLClient } from "@n1ru4l/socket-io-graphql-client";
+import { Variables } from "react-relay";
 
 export const createEnvironment = (socket: SocketIOClient.Socket) => {
-  const networkInterface = createSocketIOGraphQLClient(socket);
+  const networkInterface = createSocketIOGraphQLClient<GraphQLResponse, Error>(
+    socket
+  );
 
-  const fetchQuery: FetchFunction = (request, variables) => {
+  const executeOperation = (
+    request: RequestParameters,
+    variables: Variables
+  ): Observable<GraphQLResponse> => {
     if (!request.text) throw new Error("Missing document.");
     const { text: operation, name } = request;
 
-    return Observable.create((sink) => {
-      const observable = networkInterface.execute({
-        operation,
-        variables,
-        operationName: name,
-      });
-
-      const subscription = observable.subscribe(sink);
-
-      return () => {
-        subscription.unsubscribe();
-      };
-    });
-  };
-
-  const setupSubscription: SubscribeFunction = (request, variables) => {
-    if (!request.text) throw new Error("Missing document.");
-    const { text: operation, name } = request;
-
-    return Observable.create((sink) => {
-      const observable = networkInterface.execute({
-        operation,
-        variables: variables,
-        operationName: name,
-      });
-
-      const subscription = observable.subscribe(sink);
-
-      return () => {
-        subscription.unsubscribe();
-      };
-    });
+    return Observable.create((sink) =>
+      networkInterface.execute(
+        {
+          operation,
+          variables,
+          operationName: name,
+        },
+        sink
+      )
+    );
   };
 
   const environment = new Environment({
-    network: Network.create(fetchQuery, setupSubscription),
+    network: Network.create(executeOperation, executeOperation),
     store: new Store(new RecordSource()),
   });
 
