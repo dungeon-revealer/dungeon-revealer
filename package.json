@@ -89,7 +89,7 @@
     "@types/fs-extra": "9.0.3",
     "@types/howler": "2.2.1",
     "@types/jest": "26.0.15",
-    "@types/lodash": "4.14.164",
+    "@types/lodash": "4.14.165",
     "@types/node": "13.13.30",
     "@types/react": "16.9.56",
     "@types/react-dom": "16.9.9",
