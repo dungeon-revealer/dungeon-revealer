@@ -80,7 +80,7 @@
   "devDependencies": {
     "@emotion/core": "10.1.1",
     "@emotion/styled": "10.0.27",
-    "@n1ru4l/graphql-live-query": "0.6.0",
+    "@n1ru4l/graphql-live-query": "0.7.0",
     "@n1ru4l/socket-io-graphql-client": "0.7.0",
     "@n1ru4l/use-async-effect": "1.2.4",
     "@types/body-scroll-lock": "2.6.1",
