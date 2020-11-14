@@ -55,6 +55,7 @@ export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
           session: getSession(socket),
           liveQueryStore,
           splashImageState,
+          socket,
         } as GraphQLContextType,
       },
     }),

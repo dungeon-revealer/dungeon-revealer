@@ -71,7 +71,7 @@ export const createUser = ({
         if (user) {
           sendUserDisconnectedMessage({ name: user.name });
         }
-      }, 3000).unref();
+      }, 10000).unref();
       disconnectTimeouts.set(id, timeout);
     },
     get: (id: string) => users.get(id) || null,
