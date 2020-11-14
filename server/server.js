@@ -8,7 +8,7 @@ const bodyParser = require("body-parser");
 const { v4: createUniqueId } = require("uuid");
 const fs = require("fs-extra");
 const http = require("http");
-const createSocketIOServer = require("socket.io");
+const { Server: SocketIOServer } = require("socket.io");
 const busboy = require("connect-busboy");
 const createFilesRouter = require("./routes/files");
 const createMapRouter = require("./routes/map");
@@ -31,7 +31,7 @@ const bootstrapServer = async () => {
   const app = express();
   const apiRouter = express.Router();
   const httpServer = http.createServer(app);
-  const io = createSocketIOServer(httpServer, {
+  const io = new SocketIOServer(httpServer, {
     path: "/api/socket.io",
   });
 

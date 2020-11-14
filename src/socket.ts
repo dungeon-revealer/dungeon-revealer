@@ -1,4 +1,4 @@
-import io from "socket.io-client";
+import { io } from "socket.io-client";
 import { useRef, useEffect } from "react";
 import { buildApiUrl, getPublicHost } from "./public-url";
 
