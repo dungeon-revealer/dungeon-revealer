@@ -1,4 +1,4 @@
-import { css } from "@emotion/core";
+import { css } from "@emotion/react";
 import { buildUrl } from "./public-url";
 
 export const globalStyles = css`

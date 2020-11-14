@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Global } from "@emotion/core";
+import { Global } from "@emotion/react";
 import { render } from "react-dom";
 import { getUrlPrefix } from "./public-url";
 import { globalStyles } from "./global-styles";
