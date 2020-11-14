@@ -1,4 +1,5 @@
 import { createTypesFactory, buildGraphQLSchema } from "gqtx";
+import type { Socket as IOSocket } from "socket.io";
 import type { createChat } from "../chat";
 import type { createUser } from "../user";
 import type { SocketSessionRecord } from "../socket-session-store";
@@ -14,6 +15,7 @@ export type GraphQLContextType = {
   session: SocketSessionRecord;
   liveQueryStore: InMemoryLiveQueryStore;
   splashImageState: SplashImageState;
+  socket: IOSocket;
 };
 
 export const t = createTypesFactory<GraphQLContextType>();

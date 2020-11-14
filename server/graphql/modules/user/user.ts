@@ -154,6 +154,9 @@ export const mutationFields = [
         });
         // TODO: we are mutating an object; possibly dangerous ;)
         context.session.id = args.input.id;
+        context.socket.once("disconnect", () => {
+          context.user.userDisconnects(context.session.id);
+        });
         return user;
       } else {
         let user = context.user.get(context.session.id);
@@ -162,6 +165,11 @@ export const mutationFields = [
           id: context.session.id,
           name: generateRandomName(),
         });
+        if (user) {
+          context.socket.once("disconnect", () => {
+            context.user.userDisconnects(context.session.id);
+          });
+        }
         return user;
       }
     },
