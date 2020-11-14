@@ -7,10 +7,11 @@ import {
   GraphQLResponse,
   RequestParameters,
 } from "relay-runtime";
+import { Socket as IOSocket } from "socket.io-client";
 import { createSocketIOGraphQLClient } from "@n1ru4l/socket-io-graphql-client";
 import { Variables } from "react-relay";
 
-export const createEnvironment = (socket: SocketIOClient.Socket) => {
+export const createEnvironment = (socket: IOSocket) => {
   const networkInterface = createSocketIOGraphQLClient<GraphQLResponse, Error>(
     socket
   );
