@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Socket as IOSocket } from "socket.io-client";
 import { createEnvironment } from "./relay-environment";
 import { RelayEnvironmentProvider } from "relay-hooks";
 import createPersistedState from "use-persisted-state";
@@ -186,7 +187,7 @@ export const useViewerRole = (): AuthenticatedRole =>
   React.useContext(RoleContext);
 
 export const AuthenticatedAppShell: React.FC<{
-  socket: SocketIOClient.Socket;
+  socket: IOSocket;
   password: string;
   isMapOnly: boolean;
   role: AuthenticatedRole;

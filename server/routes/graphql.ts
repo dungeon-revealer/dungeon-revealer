@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Server as IOServer, Socket as IOSocket } from "socket.io";
 import { schema, GraphQLContextType } from "../graphql";
 import { createChat } from "../chat";
 import { createUser } from "../user";
@@ -15,7 +16,7 @@ type Dependencies = {
   roleMiddleware: any;
   socketSessionStore: SocketSessionStore;
   db: Database;
-  socketServer: SocketIO.Server;
+  socketServer: IOServer;
 };
 
 export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
@@ -30,7 +31,7 @@ export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
 
   const router = Router();
 
-  const getSession = (socket: SocketIO.Socket): SocketSessionRecord => {
+  const getSession = (socket: IOSocket): SocketSessionRecord => {
     const session = socketSessionStore.get(socket);
     if (!session) {
       throw new Error("Unexpected error occurred. WebSocket has no session.");
