@@ -3,12 +3,13 @@ import styled from "@emotion/styled/macro";
 import * as Icon from "./feather-icons";
 import { darken } from "polished";
 
-export const IconButton = styled.button`
+export const IconButton = styled.button<{ colorVariant?: "white" | "green" }>`
   position: relative;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
   height: 30px;
   width: 30px;
-  background-color: white;
+  background-color: ${(p) =>
+    p.colorVariant === "green" ? "#044e54" : "white"};
   z-index: 20;
   padding: 0;
   display: flex;
@@ -18,8 +19,13 @@ export const IconButton = styled.button`
   border: none;
   cursor: pointer;
 
+  color: ${(p) => (p.colorVariant === "green" ? "white" : null)};
+
   &:hover {
-    background-color: ${darken(0.1, "white")};
+    background-color: ${(p) =>
+      p.colorVariant === "green"
+        ? darken(0.1, "#044e54")
+        : darken(0.1, "white")};
   }
 `;
 

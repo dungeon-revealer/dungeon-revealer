@@ -7,6 +7,8 @@ import { chatMessages_chat } from "./__generated__/chatMessages_chat.graphql";
 import { ChatMessage } from "./chat-message";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { CellMeasureContext } from "../cell-measure-context";
+import { IconButton } from "../chat-toggle-button";
+import { ChevronDownIcon } from "../feather-icons";
 
 const ChatMessageContainer = styled.div<{ disableScrollbar: boolean }>`
   position: relative;
@@ -15,6 +17,13 @@ const ChatMessageContainer = styled.div<{ disableScrollbar: boolean }>`
   .react-virtualized-list::-webkit-scrollbar {
     width: ${(p) => (p.disableScrollbar ? "0 !important" : null)};
   }
+`;
+
+const FollowButtonContainer = styled.div<{ isVisible: boolean }>`
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  opacity: ${(p) => (p.isVisible ? "1" : "0")};
 `;
 
 const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
@@ -53,59 +62,71 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
           // }
 
           return (
-            <ReactVirtualized.List
-              className="react-virtualized-list"
-              ref={listRef}
-              deferredMeasurementCache={cache}
-              height={autoSizerParams.height}
-              rowCount={chat.edges.length}
-              rowHeight={cache.rowHeight}
-              width={autoSizerParams.width}
-              // TODO: Why do I need to add the type definition
-              onScroll={(target: ReactVirtualized.OnScrollParams) => {
-                if (target.scrollTop === 0) {
-                  return;
-                }
-                if (
-                  target.scrollTop !==
-                  target.scrollHeight - target.clientHeight
-                ) {
-                  setFollow(false);
-                } else {
-                  setFollow(true);
-                }
-              }}
-              rowRenderer={(params) => {
-                return (
-                  <ReactVirtualized.CellMeasurer
-                    cache={cache}
-                    columnIndex={0}
-                    key={params.key}
-                    parent={params.parent}
-                    rowIndex={params.index}
-                    width={undefined}
-                  >
-                    {({ measure }) => (
-                      <CellMeasureContext.Provider
-                        key={params.key}
-                        value={() => {
-                          measure();
-                          if (follow) {
-                            listRef.current?.scrollToRow(chat.edges.length - 1);
-                          }
-                        }}
-                      >
-                        <div style={params.style}>
-                          <ChatMessage
-                            message={chat.edges[params.index].node}
-                          />
-                        </div>
-                      </CellMeasureContext.Provider>
-                    )}
-                  </ReactVirtualized.CellMeasurer>
-                );
-              }}
-            />
+            <>
+              <FollowButtonContainer isVisible={follow === false}>
+                <IconButton
+                  colorVariant="green"
+                  onClick={() => setFollow(true)}
+                >
+                  <ChevronDownIcon />
+                </IconButton>
+              </FollowButtonContainer>
+              <ReactVirtualized.List
+                className="react-virtualized-list"
+                ref={listRef}
+                deferredMeasurementCache={cache}
+                height={autoSizerParams.height}
+                rowCount={chat.edges.length}
+                rowHeight={cache.rowHeight}
+                width={autoSizerParams.width}
+                // TODO: Why do I need to add the type definition
+                onScroll={(target: ReactVirtualized.OnScrollParams) => {
+                  if (target.scrollTop === 0) {
+                    return;
+                  }
+                  if (
+                    target.scrollTop !==
+                    target.scrollHeight - target.clientHeight
+                  ) {
+                    setFollow(false);
+                  } else {
+                    setFollow(true);
+                  }
+                }}
+                rowRenderer={(params) => {
+                  return (
+                    <ReactVirtualized.CellMeasurer
+                      cache={cache}
+                      columnIndex={0}
+                      key={params.key}
+                      parent={params.parent}
+                      rowIndex={params.index}
+                      width={undefined}
+                    >
+                      {({ measure }) => (
+                        <CellMeasureContext.Provider
+                          key={params.key}
+                          value={() => {
+                            measure();
+                            if (follow) {
+                              listRef.current?.scrollToRow(
+                                chat.edges.length - 1
+                              );
+                            }
+                          }}
+                        >
+                          <div style={params.style}>
+                            <ChatMessage
+                              message={chat.edges[params.index].node}
+                            />
+                          </div>
+                        </CellMeasureContext.Provider>
+                      )}
+                    </ReactVirtualized.CellMeasurer>
+                  );
+                }}
+              />
+            </>
           );
         }}
       </ReactVirtualized.AutoSizer>
@@ -120,10 +141,10 @@ export const ChatMessages = createPaginationContainer(
   {
     chat: graphql`
       fragment chatMessages_chat on Query
-        @argumentDefinitions(
-          count: { type: "Int", defaultValue: 10 }
-          cursor: { type: "ID" }
-        ) {
+      @argumentDefinitions(
+        count: { type: "Int", defaultValue: 10 }
+        cursor: { type: "ID" }
+      ) {
         chat(first: $count, after: $cursor)
           @connection(key: "chatMessages_chat") {
           edges {
