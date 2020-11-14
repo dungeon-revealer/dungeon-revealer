@@ -54,7 +54,7 @@ export const DraggableWindow = ({
   headerContent: React.ReactNode;
   bodyContent: React.ReactNode;
   onKeyDown: React.ComponentProps<"div">["onKeyDown"];
-  onMouseDown: React.ComponentProps<"div">["onMouseDown"];
+  onMouseDown?: React.ComponentProps<"div">["onMouseDown"];
   close: () => void;
   style?: Pick<React.CSSProperties, "top" | "left" | "right">;
   headerLeftContent?: React.ReactNode;
@@ -76,6 +76,8 @@ export const DraggableWindow = ({
   const onUnmountRef = React.useRef<() => void>();
   React.useEffect(() => () => onUnmountRef.current?.(), []);
 
+  const windowHeaderRef = React.useRef<HTMLDivElement | null>(null);
+
   const bind = useGesture({
     onDrag: ({ offset: [mx, my], memo = [props.x.get(), props.y.get()] }) => {
       set({
@@ -86,10 +88,12 @@ export const DraggableWindow = ({
       return memo;
     },
     onMouseDown: ({ event }) => {
+      const headerElement = windowHeaderRef.current;
       // on desktop we want to disable user-select while dragging
       if (
-        event.target instanceof HTMLElement &&
-        event.target.hasAttribute("data-draggable")
+        headerElement &&
+        event.target instanceof Node &&
+        (event.target === headerElement || headerElement.contains(event.target))
       ) {
         window.document.body.classList.add("user-select-disabled");
         const onUnmount = () => {
@@ -132,7 +136,7 @@ export const DraggableWindow = ({
         width: props.width,
       }}
     >
-      <WindowHeader {...bind()} data-draggable>
+      <WindowHeader {...bind()} ref={windowHeaderRef}>
         {headerLeftContent ? (
           <div style={{ flexShrink: 0 }}>{headerLeftContent}</div>
         ) : null}
