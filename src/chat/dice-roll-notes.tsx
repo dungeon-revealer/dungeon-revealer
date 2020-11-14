@@ -109,10 +109,10 @@ export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
         {
           onClick: () =>
             setMode((mode) => (mode === "read" ? "write" : "read")),
-          title: mode === "read" ? "Save" : "Edit",
+          title: mode === "read" ? "Edit" : "Save",
           //TODO: Make types more strict
           Icon:
-            mode === "read" ? (Icon.SaveIcon as any) : (Icon.EditIcon as any),
+            mode === "read" ? (Icon.EditIcon as any) : (Icon.SaveIcon as any),
         },
       ]}
       bodyContent={
