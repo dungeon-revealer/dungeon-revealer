@@ -6,7 +6,6 @@
 [![Docker](https://img.shields.io/static/v1?label=docker&message=latest&color=blue&logo=Docker&style=plastic)](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer)
 [![Discord](https://img.shields.io/discord/709687178422386708?style=plastic)](https://discord.gg/dS5khqk)
 
-
 A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
 Join the [discord server](https://discord.gg/dS5khqk).
 Check out the [wiki](https://github.com/dungeon-revealer/dungeon-revealer/wiki) for a detailed walkthrough!
@@ -86,7 +85,7 @@ In your browser, go to `<YOUR_IPADDRESS>:<PORT>/dm`. If your players are on the 
 
 Heroku is a platform supporting one-click deployments and includes a free usage tier. Sign up for a free account then click the button below. Give your app a unique name, set any required passwords, and click `Deploy App` to start the build process.
 
-[![button](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/dungeon-revealer/dungeon-revealer/tree/v1.10.3)
+[![button](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/dungeon-revealer/dungeon-revealer/tree/v1.10.4)
 
 ### Using the app
 
