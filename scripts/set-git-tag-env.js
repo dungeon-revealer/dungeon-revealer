@@ -6,4 +6,4 @@
 // For example, GITHUB_REF='refs/tags/v1.5'.
 const tag = process.env.GITHUB_REF.replace("refs/tags/", "");
 console.log("Setting GitHub Environment Variable.");
-console.log(`::set-env name=GH_TAG::${tag}`);
+console.log(`echo GH_TAG=${tag} >> $GITHUB_ENV`);

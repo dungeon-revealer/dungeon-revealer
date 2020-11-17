@@ -30,9 +30,9 @@ jobs:
           CMD='git log -n 1'
         fi
         # Set the author name, author email, and message from the pull request
-        echo "::set-env name=ACTION_MAIL::$(eval $CMD --pretty=format:%ae)"
-        echo "::set-env name=ACTION_NAME::$(eval $CMD --pretty=format:%an)"
-        echo "::set-env name=WIKI_PUSH_MESSAGE::$(eval $CMD --pretty=format:%s)"
+        echo "ACTION_MAIL=$(eval $CMD --pretty=format:%ae)" >> $GITHUB_ENV
+        echo "ACTION_NAME=$(eval $CMD --pretty=format:%an)" >> $GITHUB_ENV
+        echo "WIKI_PUSH_MESSAGE=$(eval $CMD --pretty=format:%s)" >> $GITHUB_ENV
 
 
 

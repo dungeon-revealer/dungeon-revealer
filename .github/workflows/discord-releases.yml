@@ -20,7 +20,7 @@ jobs:
 
 
           DESC="@everyone [${{ github.event.repository.name }}@${{ github.event.release.tag_name }}](${{ github.event.release.html_url }}) release has been deployed!"$'\n'
-          echo "::set-env name=DISCORD_EMBEDS::$(jq -nc --arg title "${{ github.event.release.name }} release" --arg url "${{ github.event.release.html_url }}" --arg color "26880" --arg desc "$DESC" "$TEMPLATE")"
+          echo "DISCORD_EMBEDS=$(jq -nc --arg title "${{ github.event.release.name }} release" --arg url "${{ github.event.release.html_url }}" --arg color "26880" --arg desc "$DESC" "$TEMPLATE")" >> $GITHUB_ENV
 
       - name: "Set environment: prerelease"
         if: ${{ github.event.release.prerelease }} # Only prereleases
@@ -32,7 +32,7 @@ jobs:
           # <#channel_id> is the mention syntax for channels
           # <#730140681581887528> mentions #feedback
           DESC="@everyone [${{ github.event.repository.name }}@${{ github.event.release.tag_name }}](${{ github.event.release.html_url }}) prerelease has been deployed! Help us test before the release is finalized. Join the discussion in <#730140681581887528>"$'\n'
-          echo "::set-env name=DISCORD_EMBEDS::$(jq -nc --arg title "${{ github.event.release.name }} prerelease" --arg url "${{ github.event.release.html_url }}" --arg color "10027212" --arg desc "$DESC" "$TEMPLATE")"
+          echo "DISCORD_EMBEDS=$(jq -nc --arg title "${{ github.event.release.name }} prerelease" --arg url "${{ github.event.release.html_url }}" --arg color "10027212" --arg desc "$DESC" "$TEMPLATE")" >> $GITHUB_ENV
 
       - name: Discord notification
         env:
