@@ -50,8 +50,8 @@ jobs:
       - name: Set environment
         run: |
           export PLATFORM=${{ matrix.platform }}
-          echo "::set-env name=PLATFORM_DASH::${PLATFORM////-}"
-          echo "::set-env name=BUILD_FAIL::true"
+          echo "PLATFORM_DASH=${PLATFORM////-}" >> $GITHUB_ENV
+          echo "BUILD_FAIL=true" >> $GITHUB_ENV
 
         # ${foo////-} replaces slashes with dashes
         # foo='linux/arm/v7'
@@ -77,7 +77,7 @@ jobs:
             --output "type=image,push=false" \
             --build-arg SKIP_BUILD="true" \
             --cache-from=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH \
-            . && echo "::set-env name=BUILD_FAIL::false"
+            . && echo "BUILD_FAIL=false" >> $GITHUB_ENV
 
       - name: Run Buildx local build cache
         if: env.BUILD_FAIL == 'true'
@@ -87,7 +87,7 @@ jobs:
             --platform ${{ matrix.platform }} \
             --output "type=image,push=false" \
             --build-arg SKIP_BUILD="true" \
-            . && echo "::set-env name=BUILD_FAIL::false"
+            . && echo "BUILD_FAIL=false" >> $GITHUB_ENV
 
       - name: Run Buildx no cache
         if: env.BUILD_FAIL == 'true'
@@ -137,7 +137,7 @@ jobs:
       - name: Set environment
         run: |
           export TAG="${GITHUB_REF#'refs/tags/'}"
-          echo "::set-env name=GH_TAG::$TAG"
+          echo "GH_TAG=$TAG" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         id: buildx

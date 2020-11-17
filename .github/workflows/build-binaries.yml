@@ -116,7 +116,7 @@ jobs:
 
       - name: Set environment
         run: |
-          echo "::set-env name=COMMIT_SHORT::$(git rev-parse --short HEAD)"
+          echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           node ./scripts/set-git-tag-env.js
 
       - name: Download Artifacts
@@ -237,7 +237,7 @@ jobs:
             DESC=$(echo $DESC | cut -c -2045)"..."
           fi
           echo "$DESC"
-          echo "::set-env name=DISCORD_EMBEDS::$(jq -nc --arg title "[${{ github.event.repository.name }}:${GITHUB_REF##*/}] binary build" --arg url "${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}" --arg color "16750848" --arg desc "$DESC" "$TEMPLATE")"
+          echo "DISCORD_EMBEDS=$(jq -nc --arg title "[${{ github.event.repository.name }}:${GITHUB_REF##*/}] binary build" --arg url "${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}" --arg color "16750848" --arg desc "$DESC" "$TEMPLATE")" >> $GITHUB_ENV
 
       - name: Discord notification
         if: success() && startsWith( github.ref, 'refs/heads')
