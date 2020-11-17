@@ -135,7 +135,7 @@
     "react-use-gesture": "8.0.1",
     "react-virtualized": "9.22.2",
     "referentiel": "0.0.8",
-    "relay-compiler": "10.0.1",
+    "relay-compiler": "10.1.0",
     "relay-compiler-language-typescript": "13.0.2",
     "relay-config": "10.1.0",
     "relay-hooks": "3.7.0",
