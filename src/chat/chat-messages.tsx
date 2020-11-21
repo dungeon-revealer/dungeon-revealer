@@ -37,7 +37,6 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
   const [hasNewMessage, setHasNewMessages] = React.useState(false);
 
   React.useEffect(() => {
-    console.log(chat.edges.length > initialEdgeLength.current);
     if (follow === true) {
       listRef.current?.scrollToRow(chat.edges.length - 1);
       setHasNewMessages(false);
