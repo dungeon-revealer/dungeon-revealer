@@ -4,10 +4,10 @@ import MonacoEditor from "react-monaco-editor";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import * as Icon from "../feather-icons";
 import { HtmlContainer } from "../dm-area/components/html-container";
-import createPersistedState from "use-persisted-state";
 import debounce from "lodash/debounce";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { DraggableWindow } from "../draggable-window";
+import { usePersistedState } from "../hooks/use-persisted-state";
 
 const WindowContent = styled.div`
   overflow-y: scroll;
@@ -88,14 +88,28 @@ It is also possible to declare re-usable templates.
 </ChatMacro>
 `;
 
-const usePersitedDiceNotesValue = createPersistedState("peristedDiceNotes");
+const usePersitedDiceNotesValue = () =>
+  usePersistedState<string>("peristedDiceNotes", {
+    encode: (value) => JSON.stringify(value),
+    decode: (value) => {
+      try {
+        if (typeof value === "string") {
+          const parsedValue = JSON.parse(value);
+          if (typeof parsedValue === "string") {
+            return parsedValue;
+          }
+        }
+      } catch (e) {}
+      return INITIAL_CONTENT;
+    },
+  });
 
 export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
   const [mode, setMode] = React.useState<"read" | "write">("read");
   const editorRef = React.useRef<monacoEditor.editor.IStandaloneCodeEditor | null>(
     null
   );
-  const [content, _setContent] = usePersitedDiceNotesValue(INITIAL_CONTENT);
+  const [content, _setContent] = usePersitedDiceNotesValue();
   const setContent = useStaticRef(() => debounce(_setContent, 200));
 
   return (

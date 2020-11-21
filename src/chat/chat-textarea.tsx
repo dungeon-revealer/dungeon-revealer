@@ -1,7 +1,7 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
-import createPersistedState from "use-persisted-state";
 import { useMessageAddMutation } from "./message-add-mutation";
+import { usePersistedState } from "../hooks/use-persisted-state";
 
 const Container = styled.form`
   display: flex;
@@ -19,17 +19,35 @@ const TextArea = styled.textarea`
   padding: 4px;
 `;
 
-const useRawChatHistory = createPersistedState("chat.history");
+const useRawChatHistory = () =>
+  usePersistedState<Array<string>>("chat.history", {
+    encode: (value) => JSON.stringify(value),
+    decode: (rawValue) => {
+      if (typeof rawValue !== "string") {
+        return [];
+      }
+      try {
+        const value = JSON.parse(rawValue);
+        if (
+          Array.isArray(value) &&
+          value.every((value) => typeof value === "string")
+        ) {
+          return value;
+        }
+      } catch (err) {}
+      return [];
+    },
+  });
 
 const useChatHistory = (size = 10): [string[], (text: string) => void] => {
-  const [data, setData] = useRawChatHistory(() => [] as unknown);
+  const [data, setData] = useRawChatHistory();
 
   const pushValue = React.useCallback(
     (text) => {
-      setData((data: unknown) => {
-        const newData = Array.isArray(data) ? [text, ...data] : [text];
+      setData((data) => {
+        const newData = [text, ...data];
         if (newData.length > size) {
-          newData.slice(0, newData.length - size);
+          newData.splice(size, newData.length - size);
         }
         return newData;
       });
@@ -37,10 +55,7 @@ const useChatHistory = (size = 10): [string[], (text: string) => void] => {
     [size]
   );
 
-  return React.useMemo(() => {
-    const history = Array.isArray(data) ? data : [];
-    return [history, pushValue];
-  }, [data, pushValue]);
+  return [data, pushValue];
 };
 
 export const ChatTextArea: React.FC<{}> = () => {

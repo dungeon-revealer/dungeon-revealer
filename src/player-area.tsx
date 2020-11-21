@@ -1,7 +1,6 @@
 import * as React from "react";
 import produce from "immer";
 import once from "lodash/once";
-import createPersistedState from "use-persisted-state";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import { loadImage, getOptimalDimensions } from "./util";
 import { Toolbar } from "./toolbar";
@@ -20,6 +19,7 @@ import { useGesture } from "react-use-gesture";
 import { ToastProvider } from "react-toast-notifications";
 import { v4 as uuid } from "uuid";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
+import { usePersistedState } from "./hooks/use-persisted-state";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -527,7 +527,16 @@ const PlayerMap: React.FC<{
   );
 };
 
-const usePcPassword = createPersistedState("pcPassword");
+const usePcPassword = () =>
+  usePersistedState<string>("pcPassword", {
+    encode: (value) => value,
+    decode: (value) => {
+      if (typeof value !== "string") {
+        return "";
+      }
+      return value;
+    },
+  });
 
 const AuthenticatedContent: React.FC<{
   pcPassword: string;
@@ -556,7 +565,7 @@ export const PlayerArea: React.FC<{
   password: string | null;
   isMapOnly: boolean;
 }> = (props) => {
-  const [pcPassword, setPcPassword] = usePcPassword("");
+  const [pcPassword, setPcPassword] = usePcPassword();
   const initialPcPassword = React.useRef(pcPassword);
   let usedPassword = pcPassword;
   // the password in the query parameters has priority.

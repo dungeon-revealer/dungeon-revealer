@@ -2,7 +2,6 @@ import * as React from "react";
 import { Socket as IOSocket } from "socket.io-client";
 import { createEnvironment } from "./relay-environment";
 import { RelayEnvironmentProvider } from "relay-hooks";
-import createPersistedState from "use-persisted-state";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { SplashScreen } from "./splash-screen";
 import { ChatToggleButton, IconButton } from "./chat-toggle-button";
@@ -21,11 +20,35 @@ import { SoundSettingsProvider } from "./sound-settings";
 import { animated, useSpring } from "react-spring";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
 import { SplashShareImage } from "./splash-share-image";
+import { usePersistedState } from "./hooks/use-persisted-state";
 
-const useShowChatState = createPersistedState("chat.state");
-const useShowDiceRollNotesState = createPersistedState(
-  "chat.showDiceRollNotes"
-);
+const useShowChatState = () =>
+  usePersistedState<"show" | "hidden">("chat.state", {
+    encode: (value) => value,
+    decode: (value) => {
+      if (
+        typeof value !== "string" ||
+        ["show", "hidden"].includes(value) === false
+      ) {
+        return "show";
+      }
+      return value as "show" | "hidden";
+    },
+  });
+
+const useShowDiceRollNotesState = () =>
+  usePersistedState<"show" | "hidden">("chat.showDiceRollNotes", {
+    encode: (value) => value,
+    decode: (value) => {
+      if (
+        typeof value !== "string" ||
+        ["show", "hidden"].includes(value) === false
+      ) {
+        return "hidden";
+      }
+      return value as "show" | "hidden";
+    },
+  });
 
 const Container = styled.div`
   display: flex;
@@ -58,12 +81,11 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
   isMapOnly,
   children,
 }) => {
-  const [chatState, setShowChatState] = useShowChatState<"show" | "hidden">(
-    "hidden"
-  );
-  const [diceRollNotesState, setDiceRollNotesState] = useShowDiceRollNotesState<
-    "show" | "hidden"
-  >("hidden");
+  const [chatState, setShowChatState] = useShowChatState();
+  const [
+    diceRollNotesState,
+    setDiceRollNotesState,
+  ] = useShowDiceRollNotesState();
 
   const toggleShowDiceRollNotes = React.useCallback(() => {
     setDiceRollNotesState((state) => (state === "show" ? "hidden" : "show"));
