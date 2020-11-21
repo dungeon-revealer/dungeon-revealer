@@ -40,7 +40,7 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
 
   // TODO: Is there a better way to start the list at the end?
   React.useEffect(() => {
-    setTimeout(() => listRef.current?.scrollToRow(chat.edges.length - 1));
+    listRef.current?.scrollToRow(chat.edges.length - 1);
   }, []);
 
   const cache = useStaticRef(
@@ -72,6 +72,7 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
                 </IconButton>
               </FollowButtonContainer>
               <ReactVirtualized.List
+                scrollToAlignment="end"
                 className="react-virtualized-list"
                 ref={listRef}
                 deferredMeasurementCache={cache}
