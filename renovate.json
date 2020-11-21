@@ -20,10 +20,10 @@
     {
       "groupName": "react",
       "packagePatterns": [
-        "@types/react",
-        "@types/react-dom",
-        "react",
-        "react-dom"
+        "^@types/react$",
+        "^@types/react-dom$",
+        "^react$",
+        "^react-dom$"
       ]
     }
   ]
