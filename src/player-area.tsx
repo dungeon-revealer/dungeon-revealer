@@ -253,7 +253,7 @@ const PlayerMap: React.FC<{
         }
       };
     },
-    [socket, fetch, pcPassword, refetchTrigger]
+    [socket, pcPassword, refetchTrigger]
   );
 
   React.useEffect(() => {
@@ -301,11 +301,15 @@ const PlayerMap: React.FC<{
 
   React.useEffect(() => {
     const listener = () => {
-      setRefetchTrigger((i) => i + 1);
+      if (document.hidden === false) {
+        setRefetchTrigger((i) => i + 1);
+      }
     };
 
-    window.addEventListener("focus", listener);
-    return () => window.removeEventListener("focus", listener);
+    window.document.addEventListener("visibilitychange", listener, false);
+
+    return () =>
+      window.document.removeEventListener("visibilitychange", listener, false);
   }, []);
 
   const persistTokenChanges = useStaticRef(() =>
