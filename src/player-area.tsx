@@ -115,146 +115,169 @@ const PlayerMap: React.FC<{
 
   const [refetchTrigger, setRefetchTrigger] = React.useState(0);
 
-  useAsyncEffect(
-    function* (_, cast) {
-      const onReceiveMap = async (data: { map: Map }) => {
-        if (!data) {
-          return;
-        }
+  const onReceiveMap = React.useCallback((data: { map: Map }) => {
+    if (!data) {
+      return;
+    }
+    if (window.document.visibilityState === "hidden") {
+      return;
+    }
 
-        /**
-         * Hide map (show splashscreen)
-         */
-        if (!data.map) {
-          currentMapRef.current = null;
-          setCurrentMap(null);
-          setFogCanvas(null);
-          return;
-        }
-        /**
-         * Fog has updated
-         */
-        if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
-          const imageUrl = buildApiUrl(
-            // prettier-ignore
-            `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
-          );
+    if (pendingFogImageLoad.current) {
+      pendingFogImageLoad.current.cancel();
+      pendingFogImageLoad.current = null;
+    }
 
-          const task = loadImage(imageUrl);
-          pendingFogImageLoad.current = task;
+    /**
+     * Hide map (show splashscreen)
+     */
+    if (!data.map) {
+      currentMapRef.current = null;
+      setCurrentMap(null);
+      setFogCanvas(null);
+      return;
+    }
+    /**
+     * Fog has updated
+     */
+    if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
+      const imageUrl = buildApiUrl(
+        // prettier-ignore
+        `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
+      );
 
-          task.promise.then((fogImage) => {
-            const context = fogCanvasRef.current?.getContext("2d");
-            if (!context || !fogCanvasRef.current) {
-              throw new Error("Invalid state.");
-            }
-            context.clearRect(
-              0,
-              0,
-              fogCanvasRef.current.width,
-              fogCanvasRef.current.height
-            );
+      const task = loadImage(imageUrl);
+      pendingFogImageLoad.current = task;
 
-            context.drawImage(
-              fogImage,
-              0,
-              0,
-              fogCanvasRef.current.width,
-              fogCanvasRef.current.height
-            );
-            mapNeedsUpdateRef.current = true;
-          });
-          return;
-        }
-
-        /**
-         * Load new map
-         */
-        currentMapRef.current = data.map;
-
-        const imageUrl = buildApiUrl(
-          // prettier-ignore
-          `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
-        );
-
-        const task = loadImage(imageUrl);
-        pendingFogImageLoad.current = task;
-
-        task.promise.then((fogImage) => {
-          const canvas = document.createElement("canvas");
-
-          // For some reason the fog is not rendered on Safari for bigger maps (despite being downsized)
-          // However, if down-scaled before being passed to the texture loader everything seems to be fine.
-          const maximumTextureSize = getWebGLMaximumTextureSize();
-          const { width, height } = getOptimalDimensions(
-            fogImage.naturalWidth,
-            fogImage.naturalHeight,
-            maximumTextureSize,
-            maximumTextureSize
-          );
-
-          const isMaximum =
-            maximumTextureSize === width || maximumTextureSize === height;
-
-          canvas.width =
-            isFirefoxOnWindows() && isMaximum ? Math.floor(width * 0.7) : width;
-          canvas.height =
-            isFirefoxOnWindows() && isMaximum
-              ? Math.floor(height * 0.7)
-              : height;
-
-          const context = canvas.getContext("2d");
-          if (!context) {
+      task.promise
+        .then((fogImage) => {
+          const context = fogCanvasRef.current?.getContext("2d");
+          if (!context || !fogCanvasRef.current) {
             throw new Error("Invalid state.");
           }
-          context.drawImage(fogImage, 0, 0, width, height);
-          setFogCanvas(canvas);
-          setCurrentMap(data.map);
-          fogCanvasRef.current = canvas;
-          mapNeedsUpdateRef.current = true;
-        });
-      };
+          context.clearRect(
+            0,
+            0,
+            fogCanvasRef.current.width,
+            fogCanvasRef.current.height
+          );
 
+          context.drawImage(
+            fogImage,
+            0,
+            0,
+            fogCanvasRef.current.width,
+            fogCanvasRef.current.height
+          );
+          mapNeedsUpdateRef.current = true;
+        })
+        .catch((err) => {
+          console.log("Cancel loading image.");
+        });
+      return;
+    }
+
+    /**
+     * Load new map
+     */
+    currentMapRef.current = data.map;
+
+    const imageUrl = buildApiUrl(
+      // prettier-ignore
+      `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
+    );
+
+    const task = loadImage(imageUrl);
+    pendingFogImageLoad.current = task;
+
+    task.promise
+      .then((fogImage) => {
+        const canvas = window.document.createElement("canvas");
+
+        // For some reason the fog is not rendered on Safari for bigger maps (despite being downsized)
+        // However, if down-scaled before being passed to the texture loader everything seems to be fine.
+        const maximumTextureSize = getWebGLMaximumTextureSize();
+        const { width, height } = getOptimalDimensions(
+          fogImage.naturalWidth,
+          fogImage.naturalHeight,
+          maximumTextureSize,
+          maximumTextureSize
+        );
+
+        const isMaximum =
+          maximumTextureSize === width || maximumTextureSize === height;
+
+        canvas.width =
+          isFirefoxOnWindows() && isMaximum ? Math.floor(width * 0.7) : width;
+        canvas.height =
+          isFirefoxOnWindows() && isMaximum ? Math.floor(height * 0.7) : height;
+
+        const context = canvas.getContext("2d");
+        if (!context) {
+          throw new Error("Invalid state.");
+        }
+        context.drawImage(fogImage, 0, 0, width, height);
+        setFogCanvas(canvas);
+        setCurrentMap(data.map);
+        fogCanvasRef.current = canvas;
+        mapNeedsUpdateRef.current = true;
+      })
+      .catch((err) => {
+        console.log("Cancel loading image.");
+      });
+  }, []);
+
+  useAsyncEffect(
+    function* (_, cast) {
       const result = yield* cast(
         fetch("/active-map").then((res) => res.json())
       );
       const activeMap = result.data.activeMap;
 
       if (activeMap) {
-        yield onReceiveMap({ map: activeMap });
+        onReceiveMap({ map: activeMap });
       }
 
-      socket.on("mark area", (data: { id: string; x: number; y: number }) => {
-        setMarkedAreas((markedAreas) => [
-          ...markedAreas,
-          {
-            id: data.id,
-            x: data.x,
-            y: data.y,
-          },
-        ]);
-      });
-
-      socket.on("map update", onReceiveMap);
-
-      const contextmenuListener = (ev: Event) => {
-        ev.preventDefault();
-      };
-      window.addEventListener("contextmenu", contextmenuListener);
-
       return () => {
-        socket.off("mark area");
-        socket.off("map update");
-
-        window.removeEventListener("contextmenu", contextmenuListener);
         if (pendingFogImageLoad.current) {
           pendingFogImageLoad.current.cancel();
           pendingFogImageLoad.current = null;
         }
       };
     },
-    [socket, fetch, pcPassword, refetchTrigger]
+    [socket, pcPassword, refetchTrigger]
   );
+
+  React.useEffect(() => {
+    socket.on("map update", onReceiveMap);
+    socket.on("mark area", (data: { id: string; x: number; y: number }) => {
+      if (window.document.visibilityState === "hidden") {
+        return;
+      }
+      setMarkedAreas((markedAreas) => [
+        ...markedAreas,
+        {
+          id: data.id,
+          x: data.x,
+          y: data.y,
+        },
+      ]);
+    });
+    return () => {
+      socket.off("map update");
+      socket.off("mark area");
+    };
+  }, [socket]);
+
+  React.useEffect(() => {
+    const contextmenuListener = (ev: Event) => {
+      ev.preventDefault();
+    };
+    return () => {
+      window.addEventListener("contextmenu", contextmenuListener);
+      window.removeEventListener("contextmenu", contextmenuListener);
+    };
+  }, []);
 
   React.useEffect(() => {
     if (!mapId) return;
@@ -301,11 +324,15 @@ const PlayerMap: React.FC<{
 
   React.useEffect(() => {
     const listener = () => {
-      setRefetchTrigger((i) => i + 1);
+      if (document.hidden === false) {
+        setRefetchTrigger((i) => i + 1);
+      }
     };
 
-    window.addEventListener("focus", listener);
-    return () => window.removeEventListener("focus", listener);
+    window.document.addEventListener("visibilitychange", listener, false);
+
+    return () =>
+      window.document.removeEventListener("visibilitychange", listener, false);
   }, []);
 
   const persistTokenChanges = useStaticRef(() =>
