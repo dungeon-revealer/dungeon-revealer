@@ -1,5 +1,30 @@
 {
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:base"
+  ],
+  "packageRules": [
+    {
+      "groupName": "GraphQL Live Query Packages",
+      "packagePatterns": [
+        "@n1ru4l/socket-io-graphql-server",
+        "@n1ru4l/socket-io-graphql-client",
+        "@n1ru4l/graphql-live-query",
+        "@n1ru4l/in-memory-live-query-store"
+      ]
+    },
+    {
+      "groupName": "testing library",
+      "packagePatterns": ["^@testing-library/"]
+    },
+    {
+      "groupName": "react",
+      "packagePatterns": [
+        "@types/react",
+        "@types/react-dom",
+        "react",
+        "react-dom"
+      ]
+    }
   ]
 }
