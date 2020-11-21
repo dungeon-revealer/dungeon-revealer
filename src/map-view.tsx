@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as THREE from "three";
-import { Canvas, useLoader, useFrame, PointerEvent } from "react-three-fiber";
+import { Canvas, PointerEvent } from "react-three-fiber";
 import { getOptimalDimensions } from "./util";
 import { animated, useSpring, SpringValue } from "@react-spring/three";
 import { useGesture } from "react-use-gesture";
@@ -342,6 +342,7 @@ const GridRenderer: React.FC<{
 };
 
 const MapRenderer: React.FC<{
+  mapImage: HTMLImageElement;
   mapImageTexture: THREE.Texture;
   fogTexture: THREE.Texture;
   viewport: Viewport;
@@ -352,7 +353,6 @@ const MapRenderer: React.FC<{
   scale: SpringValue<[number, number, number]>;
   updateTokenPosition: (id: string, position: { x: number; y: number }) => void;
   hoveredElementRef: React.MutableRefObject<null | unknown>;
-  mapTextureNeedsUpdateRef: React.MutableRefObject<boolean>;
   factor: number;
   dimensions: Dimensions;
 }> = (props) => {
@@ -371,8 +371,8 @@ const MapRenderer: React.FC<{
             grid={props.grid}
             dimensions={props.dimensions}
             factor={props.factor}
-            imageHeight={props.mapImageTexture.image.naturalHeight}
-            imageWidth={props.mapImageTexture.image.naturalWidth}
+            imageHeight={props.mapImage.naturalHeight}
+            imageWidth={props.mapImage.naturalWidth}
           />
         ) : null}
         <mesh>
@@ -491,8 +491,8 @@ export type MapControlInterface = {
 };
 
 export const MapView: React.FC<{
-  mapImageUrl: string;
-  fogCanvas: HTMLCanvasElement;
+  mapImage: HTMLImageElement;
+  fogImage: HTMLImageElement | null;
   tokens: Token[];
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
   updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
@@ -500,7 +500,6 @@ export const MapView: React.FC<{
   markArea: (coordinates: { x: number; y: number }) => void;
   removeMarkedArea: (id: string) => void;
   grid: Grid | null;
-  mapTextureNeedsUpdateRef: React.MutableRefObject<boolean>;
 }> = (props) => {
   const [viewport, setViewport] = React.useState<Viewport | null>(null);
   const hoveredElementRef = React.useRef(null);
@@ -510,23 +509,101 @@ export const MapView: React.FC<{
     position: [0, 0, 0] as [number, number, number],
   }));
 
-  const mapImageTexture = useLoader(THREE.TextureLoader, props.mapImageUrl);
-  const fogTexture = React.useMemo(() => new THREE.Texture(props.fogCanvas), [
-    props.fogCanvas,
-  ]);
+  const [mapCanvas] = React.useState(() =>
+    window.document.createElement("canvas")
+  );
+  const [fogCanvas] = React.useState(() =>
+    window.document.createElement("canvas")
+  );
+
+  const [mapTexture, setMapTexture] = React.useState(
+    () => new THREE.Texture(mapCanvas)
+  );
+  const [fogTexture, setFogTexture] = React.useState(
+    () => new THREE.Texture(fogCanvas)
+  );
+  const [maximumTextureSize, setMaximumTextureSize] = React.useState<
+    number | null
+  >(null);
+  console.log(maximumTextureSize);
 
   React.useEffect(() => {
     set({
       scale: [1, 1, 1],
       position: [0, 0, 0],
     });
-  }, [mapImageTexture, set]);
+  }, [mapTexture, set]);
+
+  React.useEffect(() => {
+    if (!maximumTextureSize) {
+      return;
+    }
+    if (props.fogImage) {
+      const { width, height } = getOptimalDimensions(
+        props.fogImage.naturalWidth,
+        props.fogImage.naturalHeight,
+        maximumTextureSize,
+        maximumTextureSize
+      );
+      fogCanvas.width = width;
+      fogCanvas.height = height;
+      const context = fogCanvas.getContext("2d");
+      if (!context) {
+        return;
+      }
+      context.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
+      context.drawImage(
+        props.fogImage,
+        0,
+        0,
+        fogCanvas.width,
+        fogCanvas.height
+      );
+      fogTexture.dispose();
+      const newTexture = new THREE.Texture(fogCanvas);
+      newTexture.needsUpdate = true;
+      setFogTexture(newTexture);
+    } else {
+      const context = fogCanvas.getContext("2d");
+      if (!context) {
+        alert("NO");
+        return;
+      }
+      context.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
+      fogTexture.needsUpdate = true;
+    }
+  }, [props.fogImage, fogCanvas, maximumTextureSize]);
+
+  React.useEffect(() => {
+    if (!maximumTextureSize) {
+      return;
+    }
+    const { width, height } = getOptimalDimensions(
+      props.mapImage.naturalWidth,
+      props.mapImage.naturalHeight,
+      maximumTextureSize,
+      maximumTextureSize
+    );
+
+    mapCanvas.width = width;
+    mapCanvas.height = height;
+    const context = mapCanvas.getContext("2d");
+    if (!context) {
+      alert("NO");
+      return;
+    }
+    context.drawImage(props.mapImage, 0, 0, mapCanvas.width, mapCanvas.height);
+    mapTexture.dispose();
+    const newTexture = new THREE.Texture(mapCanvas);
+    newTexture.needsUpdate = true;
+    setMapTexture(newTexture);
+  }, [props.mapImage, mapCanvas, maximumTextureSize]);
 
   const dimensions = React.useMemo(() => {
-    if (mapImageTexture.image instanceof HTMLImageElement && viewport) {
+    if (viewport) {
       const optimalDimensions = getOptimalDimensions(
-        mapImageTexture.image.naturalWidth,
-        mapImageTexture.image.naturalHeight,
+        props.mapImage.naturalWidth,
+        props.mapImage.naturalHeight,
         viewport.width * 0.95,
         viewport.height * 0.95
       );
@@ -535,7 +612,7 @@ export const MapView: React.FC<{
     }
 
     return null;
-  }, [mapImageTexture, viewport]);
+  }, [props.mapImage, viewport, maximumTextureSize]);
 
   React.useEffect(() => {
     if (props.controlRef) {
@@ -573,8 +650,7 @@ export const MapView: React.FC<{
 
         pointerTimer.current = setTimeout(() => {
           if (dimensions) {
-            const factor =
-              dimensions.width / mapImageTexture.image.naturalWidth;
+            const factor = dimensions.width / props.mapImage.naturalWidth;
             const x = calculateRealX(
               // We need to convert the point to the point local to our element.
               (event.point.x - spring.position.get()[0]) /
@@ -769,56 +845,35 @@ export const MapView: React.FC<{
           onUnmountRef.current = () =>
             window.removeEventListener("resize", listener);
           syncViewport();
+          setMaximumTextureSize(props.gl.capabilities.maxTextureSize);
         }}
         // we wanna have the best quality available on retina displays
         // https://discourse.threejs.org/t/render-looks-blurry-and-pixelated-even-with-antialias-true-why/12381
         pixelRatio={window.devicePixelRatio}
       >
-        <UseTextureUpdater
-          fogTexture={fogTexture}
-          mapTextureNeedsUpdateRef={props.mapTextureNeedsUpdateRef}
-        >
-          <React.Suspense fallback={null}>
-            <ambientLight intensity={1} />
-            {dimensions && viewport ? (
-              <Plane
-                position={spring.position}
+        <React.Suspense fallback={null}>
+          <ambientLight intensity={1} />
+          {dimensions && viewport ? (
+            <Plane position={spring.position} scale={spring.scale} {...bind()}>
+              <MapRenderer
+                mapImage={props.mapImage}
+                mapImageTexture={mapTexture}
+                fogTexture={fogTexture}
+                viewport={viewport}
+                tokens={props.tokens}
+                markedAreas={props.markedAreas}
+                removeMarkedArea={props.removeMarkedArea}
+                grid={props.grid}
+                updateTokenPosition={props.updateTokenPosition}
                 scale={spring.scale}
-                {...bind()}
-              >
-                <MapRenderer
-                  mapImageTexture={mapImageTexture}
-                  fogTexture={fogTexture}
-                  viewport={viewport}
-                  tokens={props.tokens}
-                  markedAreas={props.markedAreas}
-                  removeMarkedArea={props.removeMarkedArea}
-                  grid={props.grid}
-                  updateTokenPosition={props.updateTokenPosition}
-                  scale={spring.scale}
-                  hoveredElementRef={hoveredElementRef}
-                  mapTextureNeedsUpdateRef={props.mapTextureNeedsUpdateRef}
-                  dimensions={dimensions}
-                  factor={dimensions.width / mapImageTexture.image.naturalWidth}
-                />
-              </Plane>
-            ) : null}
-          </React.Suspense>
-        </UseTextureUpdater>
+                hoveredElementRef={hoveredElementRef}
+                dimensions={dimensions}
+                factor={dimensions.width / props.mapImage.width}
+              />
+            </Plane>
+          ) : null}
+        </React.Suspense>
       </Canvas>
     </div>
   );
-};
-
-const UseTextureUpdater: React.FC<{
-  fogTexture: THREE.Texture;
-  mapTextureNeedsUpdateRef: React.MutableRefObject<boolean>;
-}> = (props) => {
-  useFrame(() => {
-    if (props.mapTextureNeedsUpdateRef.current) {
-      props.fogTexture.needsUpdate = true;
-      props.mapTextureNeedsUpdateRef.current = false;
-    }
-  });
-  return <React.Fragment>{props.children}</React.Fragment>;
 };
