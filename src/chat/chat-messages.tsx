@@ -7,7 +7,7 @@ import { chatMessages_chat } from "./__generated__/chatMessages_chat.graphql";
 import { ChatMessage } from "./chat-message";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { CellMeasureContext } from "../cell-measure-context";
-import { IconButton } from "../chat-toggle-button";
+import { ButtonBadge, IconButton } from "../chat-toggle-button";
 import { ChevronDownIcon } from "../feather-icons";
 
 const ChatMessageContainer = styled.div<{ disableScrollbar: boolean }>`
@@ -32,15 +32,29 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
   const [follow, setFollow] = React.useState(true);
   const listRef = React.useRef<ReactVirtualized.List | null>(null);
 
+  const initialEdgeLength = React.useRef(chat.edges.length);
+
+  const [hasNewMessage, setHasNewMessages] = React.useState(false);
+
   React.useEffect(() => {
+    console.log(chat.edges.length > initialEdgeLength.current);
     if (follow === true) {
       listRef.current?.scrollToRow(chat.edges.length - 1);
+      setHasNewMessages(false);
+    } else {
+      setHasNewMessages(chat.edges.length > initialEdgeLength.current);
     }
   }, [chat.edges, follow]);
 
+  React.useEffect(() => {
+    if (follow) {
+      initialEdgeLength.current = chat.edges.length;
+    }
+  });
+
   // TODO: Is there a better way to start the list at the end?
   React.useEffect(() => {
-    setTimeout(() => listRef.current?.scrollToRow(chat.edges.length - 1));
+    listRef.current?.scrollToRow(chat.edges.length - 1);
   }, []);
 
   const cache = useStaticRef(
@@ -69,9 +83,11 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
                   onClick={() => setFollow(true)}
                 >
                   <ChevronDownIcon />
+                  {hasNewMessage ? <ButtonBadge /> : null}
                 </IconButton>
               </FollowButtonContainer>
               <ReactVirtualized.List
+                scrollToAlignment="end"
                 className="react-virtualized-list"
                 ref={listRef}
                 deferredMeasurementCache={cache}
@@ -84,14 +100,10 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
                   if (target.scrollTop === 0) {
                     return;
                   }
-                  if (
-                    target.scrollTop !==
-                    target.scrollHeight - target.clientHeight
-                  ) {
-                    setFollow(false);
-                  } else {
-                    setFollow(true);
-                  }
+                  setFollow(
+                    target.scrollTop ===
+                      target.scrollHeight - target.clientHeight
+                  );
                 }}
                 rowRenderer={(params) => {
                   return (
