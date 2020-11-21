@@ -529,12 +529,17 @@ const PlayerMap: React.FC<{
 
 const usePcPassword = () =>
   usePersistedState<string>("pcPassword", {
-    encode: (value) => value,
-    decode: (value) => {
-      if (typeof value !== "string") {
-        return "";
+    encode: (value) => JSON.stringify(value),
+    decode: (rawValue) => {
+      if (typeof rawValue === "string") {
+        try {
+          const parsedValue = JSON.parse(rawValue);
+          if (typeof parsedValue === "string") {
+            return parsedValue;
+          }
+        } catch (e) {}
       }
-      return value;
+      return "";
     },
   });
 
