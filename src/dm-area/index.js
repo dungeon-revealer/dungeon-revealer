@@ -9,7 +9,6 @@ import React, {
 import produce from "immer";
 import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
-import createPersistedState from "use-persisted-state";
 import { DmMap } from "./dm-map";
 import { SelectMapModal } from "./select-map-modal";
 import { ImportFileModal } from "./import-file-modal";
@@ -26,9 +25,42 @@ import { ToastProvider } from "react-toast-notifications";
 import { sendRequest } from "../http-request";
 import { AuthenticatedAppShell } from "../authenticated-app-shell";
 import { AccessTokenProvider } from "../hooks/use-access-token";
+import { usePersistedState } from "../hooks/use-persisted-state";
 
-const useLoadedMapId = createPersistedState("loadedMapId");
-const useDmPassword = createPersistedState("dmPassword");
+const useLoadedMapId = () =>
+  usePersistedState("loadedMapId", {
+    encode: (value) => JSON.stringify(value),
+    decode: (rawValue) => {
+      if (typeof rawValue === "string") {
+        try {
+          const parsedValue = JSON.parse(rawValue);
+          if (typeof parsedValue === "string") {
+            return parsedValue;
+          }
+          // eslint-disable-next-line no-empty
+        } catch (e) {}
+      }
+
+      return null;
+    },
+  });
+
+const useDmPassword = () =>
+  usePersistedState("dmPassword", {
+    encode: (value) => JSON.stringify(value),
+    decode: (value) => {
+      try {
+        if (typeof value === "string") {
+          const parsedValue = JSON.parse(value);
+          if (typeof parsedValue === "string") {
+            return parsedValue;
+          }
+        }
+        // eslint-disable-next-line no-empty
+      } catch (e) {}
+      return "";
+    },
+  });
 
 const INITIAL_MODE = {
   title: "LOADING",
@@ -37,7 +69,7 @@ const INITIAL_MODE = {
 
 const Content = ({ socket, password: dmPassword }) => {
   const [data, setData] = useState(null);
-  const [loadedMapId, setLoadedMapId] = useLoadedMapId(null);
+  const [loadedMapId, setLoadedMapId] = useLoadedMapId();
   const loadedMapIdRef = useRef(loadedMapId);
   const [liveMapId, setLiveMapId] = useState(null);
   // EDIT_MAP, SET_MAP_GRID, SHOW_MAP_LIBRARY
@@ -430,7 +462,7 @@ const DmAreaRenderer = ({ password }) => {
 };
 
 export const DmArea = () => {
-  const [dmPassword, setDmPassword] = useDmPassword("");
+  const [dmPassword, setDmPassword] = useDmPassword();
   // "authenticate" | "authenticated"
   const [mode, setMode] = React.useState("loading");
 

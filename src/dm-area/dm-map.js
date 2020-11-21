@@ -1,7 +1,6 @@
 import * as React from "react";
 
 import debounce from "lodash/debounce";
-import createPersistedState from "use-persisted-state";
 import { PanZoom } from "react-easy-panzoom";
 import Referentiel from "referentiel";
 import { v4 as uuid } from "uuid";
@@ -27,6 +26,7 @@ import { useToasts } from "react-toast-notifications";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
 import { useConfirmationDialog } from "../hooks/use-confirmation-dialog";
 import { useNoteWindowActions } from "./token-info-aside";
+import { usePersistedState } from "../hooks/use-persisted-state";
 
 const ShapeButton = styled.button`
   border: none;
@@ -195,10 +195,58 @@ const panZoomContainerStyles = {
   width: "100vw",
 };
 
-const useModeState = createPersistedState("dm.settings.mode");
-const useBrushShapeState = createPersistedState("dm.settings.brushShape");
-const useToolState = createPersistedState("dm.settings.tool");
-const useLineWidthState = createPersistedState("dm.settings.lineWidth");
+const useModeState = () =>
+  usePersistedState("dm.settings.mode", {
+    encode: (value) => value,
+    decode: (value) => {
+      if (typeof value === "string" && ["clear", "shroud"].includes(value)) {
+        return value;
+      }
+
+      return "clear";
+    },
+  });
+
+const useBrushShapeState = () =>
+  usePersistedState("dm.settings.brushShape", {
+    encode: (value) => value,
+    decode: (value) => {
+      if (typeof value === "string" && ["square", "round"].includes(value)) {
+        return value;
+      }
+
+      return "square";
+    },
+  });
+
+const useToolState = () =>
+  usePersistedState("dm.settings.tool", {
+    encode: (value) => value,
+    decode: (value) => {
+      if (
+        typeof value === "string" &&
+        ["move", "brush", "area", "mark", "tokens"].includes(value)
+      ) {
+        return value;
+      }
+
+      return "brush";
+    },
+  });
+const useLineWidthState = () =>
+  usePersistedState("dm.settings.lineWidth", {
+    encode: (value) => String(value),
+    decode: (value) => {
+      if (typeof value !== "string") {
+        return 15;
+      }
+      const integerValue = parseInt(value, 10);
+      if (Number.isInteger(integerValue)) {
+        return integerValue;
+      }
+      return 15;
+    },
+  });
 
 const calculateRectProps = (p1, p2) => {
   const width = Math.max(p1.x, p2.x) - Math.min(p1.x, p2.x);
@@ -451,10 +499,10 @@ export const DmMap = ({
    */
   const saveFogCanvasRef = React.useRef(null);
 
-  const [mode, setMode] = useModeState("clear");
-  const [brushShape, setBrushShape] = useBrushShapeState("square");
-  const [tool, setTool] = useToolState("brush"); // "brush" or "area"
-  const [lineWidth, setLineWidth] = useLineWidthState(15);
+  const [mode, setMode] = useModeState();
+  const [brushShape, setBrushShape] = useBrushShapeState();
+  const [tool, setTool] = useToolState();
+  const [lineWidth, setLineWidth] = useLineWidthState();
 
   const tokenColor = DEFAULT_TOKEN_COLOR;
   const tokens = React.useMemo(() => map.tokens || [], [map]);
