@@ -62,7 +62,7 @@ const Plane: React.FC<{
     <animated.group {...props}>
       <mesh>
         <planeBufferGeometry attach="geometry" args={[10000, 10000]} />
-        <meshPhongMaterial attach="material" color="black" />
+        <meshBasicMaterial attach="material" color="black" />
       </mesh>
       {props.children}
     </animated.group>
@@ -265,12 +265,7 @@ const MarkedAreaRenderer: React.FC<{
         attach="geometry"
         args={[initialRadius * (1 - 0.1), initialRadius, 128]}
       />
-      <animated.meshStandardMaterial
-        attach="material"
-        color={"red"}
-        transparent={true}
-        opacity={spring.opacity}
-      />
+      <animated.meshStandardMaterial attach="material" color={"red"} />
     </animated.mesh>
   );
 };
@@ -358,7 +353,7 @@ const MapRenderer: React.FC<{
 }> = (props) => {
   return (
     <>
-      <group renderOrder={0}>
+      <group>
         <mesh>
           <planeBufferGeometry
             attach="geometry"
@@ -516,12 +511,19 @@ export const MapView: React.FC<{
     window.document.createElement("canvas")
   );
 
-  const [mapTexture] = React.useState(() => new THREE.Texture(mapCanvas));
-  const [fogTexture] = React.useState(() => new THREE.Texture(fogCanvas));
+  const [mapTexture] = React.useState(() => new THREE.CanvasTexture(mapCanvas));
+  const [fogTexture] = React.useState(() => new THREE.CanvasTexture(fogCanvas));
   const [maximumTextureSize, setMaximumTextureSize] = React.useState<
     number | null
   >(null);
-  console.log(maximumTextureSize);
+
+  // maximumSideLength * maximumSideLength = MAXIMUM_TEXTURE_SIZE * 1024
+  const maximumSideLength = React.useMemo(() => {
+    if (!maximumTextureSize) {
+      return null;
+    }
+    return Math.sqrt(maximumTextureSize * 1024);
+  }, [maximumTextureSize]);
 
   React.useEffect(() => {
     set({
@@ -531,15 +533,15 @@ export const MapView: React.FC<{
   }, [mapTexture, set]);
 
   React.useEffect(() => {
-    if (!maximumTextureSize) {
+    if (!maximumSideLength) {
       return;
     }
     if (props.fogImage) {
       const { width, height } = getOptimalDimensions(
         props.mapImage.naturalWidth,
         props.mapImage.naturalHeight,
-        maximumTextureSize,
-        maximumTextureSize
+        maximumSideLength,
+        maximumSideLength
       );
 
       fogCanvas.width = width;
@@ -565,29 +567,30 @@ export const MapView: React.FC<{
       context.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
     }
     fogTexture.needsUpdate = true;
-  }, [props.fogImage, fogCanvas, maximumTextureSize]);
+  }, [props.fogImage, fogCanvas, maximumSideLength]);
 
   React.useEffect(() => {
-    if (!maximumTextureSize) {
+    if (!maximumSideLength) {
       return;
     }
+
     const { width, height } = getOptimalDimensions(
       props.mapImage.naturalWidth,
       props.mapImage.naturalHeight,
-      maximumTextureSize,
-      maximumTextureSize
+      maximumSideLength,
+      maximumSideLength
     );
 
     mapCanvas.width = width;
     mapCanvas.height = height;
     const context = mapCanvas.getContext("2d");
     if (!context) {
-      alert("NO");
       return;
     }
     context.drawImage(props.mapImage, 0, 0, mapCanvas.width, mapCanvas.height);
+
     mapTexture.needsUpdate = true;
-  }, [props.mapImage, mapCanvas, maximumTextureSize]);
+  }, [props.mapImage, mapCanvas, maximumSideLength]);
 
   const dimensions = React.useMemo(() => {
     if (viewport) {
