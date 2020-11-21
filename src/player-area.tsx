@@ -1,8 +1,7 @@
 import * as React from "react";
 import produce from "immer";
-import once from "lodash/once";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
-import { loadImage, getOptimalDimensions } from "./util";
+import { loadImage } from "./util";
 import { Toolbar } from "./toolbar";
 import styled from "@emotion/styled/macro";
 import * as Icons from "./feather-icons";
@@ -74,15 +73,6 @@ type MarkedArea = {
 const createCacheBusterString = () =>
   encodeURIComponent(`${Date.now()}_${uuid()}`);
 
-const getWebGLMaximumTextureSize = once(() => {
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("webgl");
-  if (!context) {
-    throw new Error("Invalid state.");
-  }
-  return context.getParameter(context.MAX_TEXTURE_SIZE);
-});
-
 const isFirefoxOnWindows = () =>
   window.navigator.userAgent.toLowerCase().includes("firefox") &&
   window.navigator.platform.toLowerCase().startsWith("win");
@@ -94,11 +84,9 @@ const PlayerMap: React.FC<{
 }> = ({ fetch, pcPassword, socket }) => {
   const [currentMap, setCurrentMap] = React.useState<null | Map>(null);
   const currentMapRef = React.useRef(currentMap);
-  const [fogCanvas, setFogCanvas] = React.useState<null | HTMLCanvasElement>(
-    null
-  );
-  const fogCanvasRef = React.useRef(fogCanvas);
-  const mapNeedsUpdateRef = React.useRef(false);
+
+  const [mapImage, setMapImage] = React.useState<HTMLImageElement | null>(null);
+  const [fogImage, setFogImage] = React.useState<HTMLImageElement | null>(null);
 
   const mapId = currentMap ? currentMap.id : null;
   const showSplashScreen = mapId === null;
@@ -108,9 +96,7 @@ const PlayerMap: React.FC<{
    * used for canceling pending requests in case there is a new update incoming.
    * should be either null or an array of tasks returned by loadImage
    */
-  const pendingFogImageLoad = React.useRef<ReturnType<typeof loadImage> | null>(
-    null
-  );
+  const pendingFogImageLoad = React.useRef<(() => void) | null>(null);
   const [markedAreas, setMarkedAreas] = React.useState<MarkedArea[]>(() => []);
 
   const [refetchTrigger, setRefetchTrigger] = React.useState(0);
@@ -124,7 +110,7 @@ const PlayerMap: React.FC<{
     }
 
     if (pendingFogImageLoad.current) {
-      pendingFogImageLoad.current.cancel();
+      pendingFogImageLoad.current?.();
       pendingFogImageLoad.current = null;
     }
 
@@ -134,7 +120,8 @@ const PlayerMap: React.FC<{
     if (!data.map) {
       currentMapRef.current = null;
       setCurrentMap(null);
-      setFogCanvas(null);
+      setFogImage(null);
+      setMapImage(null);
       return;
     }
     /**
@@ -147,31 +134,13 @@ const PlayerMap: React.FC<{
       );
 
       const task = loadImage(imageUrl);
-      pendingFogImageLoad.current = task;
+      pendingFogImageLoad.current = () => task.cancel();
 
       task.promise
         .then((fogImage) => {
-          const context = fogCanvasRef.current?.getContext("2d");
-          if (!context || !fogCanvasRef.current) {
-            throw new Error("Invalid state.");
-          }
-          context.clearRect(
-            0,
-            0,
-            fogCanvasRef.current.width,
-            fogCanvasRef.current.height
-          );
-
-          context.drawImage(
-            fogImage,
-            0,
-            0,
-            fogCanvasRef.current.width,
-            fogCanvasRef.current.height
-          );
-          mapNeedsUpdateRef.current = true;
+          setFogImage(fogImage);
         })
-        .catch((err) => {
+        .catch(() => {
           console.log("Cancel loading image.");
         });
       return;
@@ -182,47 +151,31 @@ const PlayerMap: React.FC<{
      */
     currentMapRef.current = data.map;
 
-    const imageUrl = buildApiUrl(
+    const mapImageUrl = buildApiUrl(
+      // prettier-ignore
+      `/map/${data.map.id}/map?authorization=${encodeURIComponent(pcPassword)}`
+    );
+
+    const fogImageUrl = buildApiUrl(
       // prettier-ignore
       `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
     );
 
-    const task = loadImage(imageUrl);
-    pendingFogImageLoad.current = task;
+    const loadMapImageTask = loadImage(mapImageUrl);
+    const loadFogImageTask = loadImage(fogImageUrl);
 
-    task.promise
-      .then((fogImage) => {
-        const canvas = window.document.createElement("canvas");
+    pendingFogImageLoad.current = () => {
+      loadMapImageTask.cancel();
+      loadFogImageTask.cancel();
+    };
 
-        // For some reason the fog is not rendered on Safari for bigger maps (despite being downsized)
-        // However, if down-scaled before being passed to the texture loader everything seems to be fine.
-        const maximumTextureSize = getWebGLMaximumTextureSize();
-        const { width, height } = getOptimalDimensions(
-          fogImage.naturalWidth,
-          fogImage.naturalHeight,
-          maximumTextureSize,
-          maximumTextureSize
-        );
-
-        const isMaximum =
-          maximumTextureSize === width || maximumTextureSize === height;
-
-        canvas.width =
-          isFirefoxOnWindows() && isMaximum ? Math.floor(width * 0.7) : width;
-        canvas.height =
-          isFirefoxOnWindows() && isMaximum ? Math.floor(height * 0.7) : height;
-
-        const context = canvas.getContext("2d");
-        if (!context) {
-          throw new Error("Invalid state.");
-        }
-        context.drawImage(fogImage, 0, 0, width, height);
-        setFogCanvas(canvas);
+    Promise.all([loadMapImageTask.promise, loadFogImageTask.promise])
+      .then(([mapImage, fogImage]) => {
+        setMapImage(mapImage);
+        setFogImage(fogImage);
         setCurrentMap(data.map);
-        fogCanvasRef.current = canvas;
-        mapNeedsUpdateRef.current = true;
       })
-      .catch((err) => {
+      .catch(() => {
         console.log("Cancel loading image.");
       });
   }, []);
@@ -240,7 +193,7 @@ const PlayerMap: React.FC<{
 
       return () => {
         if (pendingFogImageLoad.current) {
-          pendingFogImageLoad.current.cancel();
+          pendingFogImageLoad.current?.();
           pendingFogImageLoad.current = null;
         }
       };
@@ -441,14 +394,10 @@ const PlayerMap: React.FC<{
         }}
       >
         <React.Suspense fallback={null}>
-          {currentMap && fogCanvas ? (
+          {currentMap && mapImage ? (
             <MapView
-              mapImageUrl={buildApiUrl(
-                `/map/${currentMap.id}/map?authorization=${encodeURIComponent(
-                  pcPassword
-                )}`
-              )}
-              fogCanvas={fogCanvas}
+              mapImage={mapImage}
+              fogImage={fogImage}
               controlRef={controlRef}
               tokens={currentMap.tokens}
               updateTokenPosition={(id, position) =>
@@ -463,7 +412,6 @@ const PlayerMap: React.FC<{
                   markedAreas.filter((area) => area.id !== id)
                 );
               }}
-              mapTextureNeedsUpdateRef={mapNeedsUpdateRef}
               grid={
                 currentMap.grid && currentMap.showGridToPlayers
                   ? {

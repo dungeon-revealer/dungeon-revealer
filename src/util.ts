@@ -5,8 +5,12 @@ import * as React from "react";
  */
 export const loadImage = (src: string) => {
   const image = new Image();
+  let isLoaded = false;
 
   const cancel = () => {
+    if (isLoaded) {
+      return;
+    }
     image.src = "";
   };
 
@@ -18,6 +22,7 @@ export const loadImage = (src: string) => {
     };
     const loadListener = () => {
       removeEventListeners();
+      isLoaded = true;
       resolve(image);
     };
     const errorListener = (err: unknown) => {
@@ -45,6 +50,13 @@ export const getOptimalDimensions = (
   maxHeight: number
 ) => {
   const ratio = Math.min(maxWidth / idealWidth, maxHeight / idealHeight);
+  if (ratio > 1) {
+    return {
+      ratio: 1,
+      width: idealWidth,
+      height: idealHeight,
+    };
+  }
 
   return {
     ratio: ratio,
