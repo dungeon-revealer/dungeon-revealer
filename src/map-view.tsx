@@ -516,12 +516,8 @@ export const MapView: React.FC<{
     window.document.createElement("canvas")
   );
 
-  const [mapTexture, setMapTexture] = React.useState(
-    () => new THREE.Texture(mapCanvas)
-  );
-  const [fogTexture, setFogTexture] = React.useState(
-    () => new THREE.Texture(fogCanvas)
-  );
+  const [mapTexture] = React.useState(() => new THREE.Texture(mapCanvas));
+  const [fogTexture] = React.useState(() => new THREE.Texture(fogCanvas));
   const [maximumTextureSize, setMaximumTextureSize] = React.useState<
     number | null
   >(null);
@@ -540,11 +536,12 @@ export const MapView: React.FC<{
     }
     if (props.fogImage) {
       const { width, height } = getOptimalDimensions(
-        props.fogImage.naturalWidth,
-        props.fogImage.naturalHeight,
+        props.mapImage.naturalWidth,
+        props.mapImage.naturalHeight,
         maximumTextureSize,
         maximumTextureSize
       );
+
       fogCanvas.width = width;
       fogCanvas.height = height;
       const context = fogCanvas.getContext("2d");
@@ -559,10 +556,6 @@ export const MapView: React.FC<{
         fogCanvas.width,
         fogCanvas.height
       );
-      fogTexture.dispose();
-      const newTexture = new THREE.Texture(fogCanvas);
-      newTexture.needsUpdate = true;
-      setFogTexture(newTexture);
     } else {
       const context = fogCanvas.getContext("2d");
       if (!context) {
@@ -570,8 +563,8 @@ export const MapView: React.FC<{
         return;
       }
       context.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
-      fogTexture.needsUpdate = true;
     }
+    fogTexture.needsUpdate = true;
   }, [props.fogImage, fogCanvas, maximumTextureSize]);
 
   React.useEffect(() => {
@@ -593,10 +586,7 @@ export const MapView: React.FC<{
       return;
     }
     context.drawImage(props.mapImage, 0, 0, mapCanvas.width, mapCanvas.height);
-    mapTexture.dispose();
-    const newTexture = new THREE.Texture(mapCanvas);
-    newTexture.needsUpdate = true;
-    setMapTexture(newTexture);
+    mapTexture.needsUpdate = true;
   }, [props.mapImage, mapCanvas, maximumTextureSize]);
 
   const dimensions = React.useMemo(() => {
