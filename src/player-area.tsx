@@ -123,6 +123,11 @@ const PlayerMap: React.FC<{
       return;
     }
 
+    if (pendingFogImageLoad.current) {
+      pendingFogImageLoad.current.cancel();
+      pendingFogImageLoad.current = null;
+    }
+
     /**
      * Hide map (show splashscreen)
      */
@@ -144,27 +149,31 @@ const PlayerMap: React.FC<{
       const task = loadImage(imageUrl);
       pendingFogImageLoad.current = task;
 
-      task.promise.then((fogImage) => {
-        const context = fogCanvasRef.current?.getContext("2d");
-        if (!context || !fogCanvasRef.current) {
-          throw new Error("Invalid state.");
-        }
-        context.clearRect(
-          0,
-          0,
-          fogCanvasRef.current.width,
-          fogCanvasRef.current.height
-        );
+      task.promise
+        .then((fogImage) => {
+          const context = fogCanvasRef.current?.getContext("2d");
+          if (!context || !fogCanvasRef.current) {
+            throw new Error("Invalid state.");
+          }
+          context.clearRect(
+            0,
+            0,
+            fogCanvasRef.current.width,
+            fogCanvasRef.current.height
+          );
 
-        context.drawImage(
-          fogImage,
-          0,
-          0,
-          fogCanvasRef.current.width,
-          fogCanvasRef.current.height
-        );
-        mapNeedsUpdateRef.current = true;
-      });
+          context.drawImage(
+            fogImage,
+            0,
+            0,
+            fogCanvasRef.current.width,
+            fogCanvasRef.current.height
+          );
+          mapNeedsUpdateRef.current = true;
+        })
+        .catch((err) => {
+          console.log("Cancel loading image.");
+        });
       return;
     }
 
@@ -181,37 +190,41 @@ const PlayerMap: React.FC<{
     const task = loadImage(imageUrl);
     pendingFogImageLoad.current = task;
 
-    task.promise.then((fogImage) => {
-      const canvas = window.document.createElement("canvas");
+    task.promise
+      .then((fogImage) => {
+        const canvas = window.document.createElement("canvas");
 
-      // For some reason the fog is not rendered on Safari for bigger maps (despite being downsized)
-      // However, if down-scaled before being passed to the texture loader everything seems to be fine.
-      const maximumTextureSize = getWebGLMaximumTextureSize();
-      const { width, height } = getOptimalDimensions(
-        fogImage.naturalWidth,
-        fogImage.naturalHeight,
-        maximumTextureSize,
-        maximumTextureSize
-      );
+        // For some reason the fog is not rendered on Safari for bigger maps (despite being downsized)
+        // However, if down-scaled before being passed to the texture loader everything seems to be fine.
+        const maximumTextureSize = getWebGLMaximumTextureSize();
+        const { width, height } = getOptimalDimensions(
+          fogImage.naturalWidth,
+          fogImage.naturalHeight,
+          maximumTextureSize,
+          maximumTextureSize
+        );
 
-      const isMaximum =
-        maximumTextureSize === width || maximumTextureSize === height;
+        const isMaximum =
+          maximumTextureSize === width || maximumTextureSize === height;
 
-      canvas.width =
-        isFirefoxOnWindows() && isMaximum ? Math.floor(width * 0.7) : width;
-      canvas.height =
-        isFirefoxOnWindows() && isMaximum ? Math.floor(height * 0.7) : height;
+        canvas.width =
+          isFirefoxOnWindows() && isMaximum ? Math.floor(width * 0.7) : width;
+        canvas.height =
+          isFirefoxOnWindows() && isMaximum ? Math.floor(height * 0.7) : height;
 
-      const context = canvas.getContext("2d");
-      if (!context) {
-        throw new Error("Invalid state.");
-      }
-      context.drawImage(fogImage, 0, 0, width, height);
-      setFogCanvas(canvas);
-      setCurrentMap(data.map);
-      fogCanvasRef.current = canvas;
-      mapNeedsUpdateRef.current = true;
-    });
+        const context = canvas.getContext("2d");
+        if (!context) {
+          throw new Error("Invalid state.");
+        }
+        context.drawImage(fogImage, 0, 0, width, height);
+        setFogCanvas(canvas);
+        setCurrentMap(data.map);
+        fogCanvasRef.current = canvas;
+        mapNeedsUpdateRef.current = true;
+      })
+      .catch((err) => {
+        console.log("Cancel loading image.");
+      });
   }, []);
 
   useAsyncEffect(
