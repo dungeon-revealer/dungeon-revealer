@@ -115,15 +115,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Setup node
-        uses: actions/setup-node@v1
-        with:
-          node-version: 12
-
       - name: Set environment
         run: |
           echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          node ./scripts/set-git-tag-env.js
+          echo "GH_TAG=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
 
       - name: Download Artifacts
         uses: actions/download-artifact@v2
