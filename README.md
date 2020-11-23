@@ -1,10 +1,11 @@
 # dungeon-revealer
 
-[![Build Status](https://github.com/dungeon-revealer/dungeon-revealer/workflows/Node.js%20CI/badge.svg)](https://github.com/dungeon-revealer/dungeon-revealer/actions)
-[![Downloads](https://img.shields.io/github/downloads/dungeon-revealer/dungeon-revealer/total.svg?logo=github&style=plastic)](https://github.com/dungeon-revealer/dungeon-revealer/releases)
-[![Release](https://img.shields.io/github/v/release/dungeon-revealer/dungeon-revealer?logo=github&color=orange&style=plastic)](https://github.com/dungeon-revealer/dungeon-revealer/releases/latest)
-[![Docker](https://img.shields.io/static/v1?label=docker&message=latest&color=blue&logo=Docker&style=plastic)](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer)
-[![Discord](https://img.shields.io/discord/709687178422386708?style=plastic)](https://discord.gg/dS5khqk)
+[![Build Status](https://img.shields.io/github/workflow/status/dungeon-revealer/dungeon-revealer/Node.js%20CI)](https://github.com/dungeon-revealer/dungeon-revealer/actions)
+[![Downloads](https://img.shields.io/github/downloads/dungeon-revealer/dungeon-revealer/total.svg?logo=github)](https://github.com/dungeon-revealer/dungeon-revealer/releases)
+[![Release](https://img.shields.io/github/v/release/dungeon-revealer/dungeon-revealer?logo=github&color=orange)](https://github.com/dungeon-revealer/dungeon-revealer/releases/latest)
+[![Docker](https://img.shields.io/static/v1?label=docker&message=latest&color=blue&logo=Docker)](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer)
+[![Docker pulls](https://img.shields.io/docker/pulls/dungeonrevealer/dungeon-revealer)](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer)
+[![Discord](https://img.shields.io/discord/709687178422386708)](https://discord.gg/dS5khqk)
 
 A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
 Join the [discord server](https://discord.gg/dS5khqk).
