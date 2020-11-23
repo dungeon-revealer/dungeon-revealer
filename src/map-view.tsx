@@ -1,14 +1,14 @@
 import * as React from "react";
 import * as THREE from "three";
-import { Canvas, PointerEvent } from "react-three-fiber";
-import { getOptimalDimensions } from "./util";
+import { Canvas, PointerEvent, useThree } from "react-three-fiber";
 import { animated, useSpring, SpringValue } from "@react-spring/three";
 import { useGesture } from "react-use-gesture";
+import styled from "@emotion/styled/macro";
 import { darken, lighten } from "polished";
+import { getOptimalDimensions } from "./util";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { buildUrl } from "./public-url";
 import { useUniqueId } from "./hooks/use-unique-id";
-import { debounce } from "lodash";
 import { CanvasText } from "./canvas-text";
 
 // convert image relative to three.js
@@ -278,17 +278,24 @@ const reduceOffsetToMinimum = (offset: number, sideLength: number): number => {
   return offset;
 };
 
-const drawGridToContext = (grid: Grid, canvas: HTMLCanvasElement) => {
+const drawGridToContext = (
+  grid: Grid,
+  ratio: number,
+  canvas: HTMLCanvasElement
+) => {
   const context = canvas.getContext("2d");
   if (!context) {
+    console.error("Could not create canvas context.");
     return;
   }
   context.strokeStyle = grid.color || "rgba(0, 0, 0, .5)";
   context.lineWidth = 2;
 
-  const sideLength = grid.sideLength;
-  const offsetX = reduceOffsetToMinimum(grid.x, sideLength);
-  const offsetY = reduceOffsetToMinimum(grid.y, sideLength);
+  const gridX = grid.x * ratio;
+  const gridY = grid.y * ratio;
+  const sideLength = grid.sideLength * ratio;
+  const offsetX = reduceOffsetToMinimum(gridX, sideLength);
+  const offsetY = reduceOffsetToMinimum(gridY, sideLength);
 
   for (let i = 0; i < canvas.width / sideLength; i++) {
     context.beginPath();
@@ -304,22 +311,45 @@ const drawGridToContext = (grid: Grid, canvas: HTMLCanvasElement) => {
   }
 };
 
-const GridRenderer: React.FC<{
+const GridRenderer = (props: {
   grid: Grid;
   dimensions: Dimensions;
   factor: number;
   imageHeight: number;
   imageWidth: number;
-}> = (props) => {
-  const texture = React.useMemo(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = props.imageWidth;
-    canvas.height = props.imageHeight;
-    drawGridToContext(props.grid, canvas);
-    const texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    return texture;
-  }, []);
+}): React.ReactElement => {
+  const three = useThree();
+  const maximumTextureSize = three.gl.capabilities.maxTextureSize;
+  const [gridCanvas] = React.useState(() =>
+    window.document.createElement("canvas")
+  );
+  const [gridTexture] = React.useState(
+    () => new THREE.CanvasTexture(gridCanvas)
+  );
+
+  // maximumSideLength * maximumSideLength = MAXIMUM_TEXTURE_SIZE * 1024
+  const maximumSideLength = React.useMemo(() => {
+    return Math.sqrt(maximumTextureSize * 1024);
+  }, [maximumTextureSize]);
+
+  React.useEffect(() => {
+    const { width, height, ratio } = getOptimalDimensions(
+      props.imageWidth,
+      props.imageHeight,
+      maximumSideLength,
+      maximumSideLength
+    );
+    gridCanvas.width = width;
+    gridCanvas.height = height;
+    drawGridToContext(props.grid, ratio, gridCanvas);
+    gridTexture.needsUpdate = true;
+  }, [
+    gridCanvas,
+    maximumSideLength,
+    props.factor,
+    props.imageWidth,
+    props.imageHeight,
+  ]);
 
   return (
     <mesh>
@@ -329,7 +359,7 @@ const GridRenderer: React.FC<{
       />
       <meshStandardMaterial
         attach="material"
-        map={texture}
+        map={gridTexture}
         transparent={true}
       />
     </mesh>
@@ -485,7 +515,7 @@ export type MapControlInterface = {
   zoomOut: () => void;
 };
 
-export const MapView: React.FC<{
+const MapViewRenderer = (props: {
   mapImage: HTMLImageElement;
   fogImage: HTMLImageElement | null;
   tokens: Token[];
@@ -495,8 +525,10 @@ export const MapView: React.FC<{
   markArea: (coordinates: { x: number; y: number }) => void;
   removeMarkedArea: (id: string) => void;
   grid: Grid | null;
-}> = (props) => {
-  const [viewport, setViewport] = React.useState<Viewport | null>(null);
+}): React.ReactElement => {
+  const three = useThree();
+  const viewport = three.viewport;
+  const maximumTextureSize = three.gl.capabilities.maxTextureSize;
   const hoveredElementRef = React.useRef(null);
 
   const [spring, set] = useSpring(() => ({
@@ -513,15 +545,9 @@ export const MapView: React.FC<{
 
   const [mapTexture] = React.useState(() => new THREE.CanvasTexture(mapCanvas));
   const [fogTexture] = React.useState(() => new THREE.CanvasTexture(fogCanvas));
-  const [maximumTextureSize, setMaximumTextureSize] = React.useState<
-    number | null
-  >(null);
 
   // maximumSideLength * maximumSideLength = MAXIMUM_TEXTURE_SIZE * 1024
   const maximumSideLength = React.useMemo(() => {
-    if (!maximumTextureSize) {
-      return null;
-    }
     return Math.sqrt(maximumTextureSize * 1024);
   }, [maximumTextureSize]);
 
@@ -548,6 +574,7 @@ export const MapView: React.FC<{
       fogCanvas.height = height;
       const context = fogCanvas.getContext("2d");
       if (!context) {
+        console.error("Could not create canvas context.");
         return;
       }
       context.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
@@ -561,7 +588,7 @@ export const MapView: React.FC<{
     } else {
       const context = fogCanvas.getContext("2d");
       if (!context) {
-        alert("NO");
+        console.error("Could not create canvas context.");
         return;
       }
       context.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
@@ -593,19 +620,13 @@ export const MapView: React.FC<{
   }, [props.mapImage, mapCanvas, maximumSideLength]);
 
   const dimensions = React.useMemo(() => {
-    if (viewport) {
-      const optimalDimensions = getOptimalDimensions(
-        props.mapImage.naturalWidth,
-        props.mapImage.naturalHeight,
-        viewport.width * 0.95,
-        viewport.height * 0.95
-      );
-
-      return optimalDimensions;
-    }
-
-    return null;
-  }, [props.mapImage, viewport, maximumTextureSize]);
+    return getOptimalDimensions(
+      props.mapImage.naturalWidth,
+      props.mapImage.naturalHeight,
+      viewport.width * 0.95,
+      viewport.height * 0.95
+    );
+  }, [props.mapImage, viewport]);
 
   React.useEffect(() => {
     if (props.controlRef) {
@@ -821,52 +842,61 @@ export const MapView: React.FC<{
   React.useEffect(() => () => onUnmountRef.current?.(), []);
 
   return (
-    <div style={{ height: "100%", touchAction: "manipulation" }}>
+    <Plane position={spring.position} scale={spring.scale} {...bind()}>
+      <MapRenderer
+        mapImage={props.mapImage}
+        mapImageTexture={mapTexture}
+        fogTexture={fogTexture}
+        viewport={viewport}
+        tokens={props.tokens}
+        markedAreas={props.markedAreas}
+        removeMarkedArea={props.removeMarkedArea}
+        grid={props.grid}
+        updateTokenPosition={props.updateTokenPosition}
+        scale={spring.scale}
+        hoveredElementRef={hoveredElementRef}
+        dimensions={dimensions}
+        factor={dimensions.width / props.mapImage.width}
+      />
+    </Plane>
+  );
+};
+
+const MapCanvasContainer = styled.div`
+  height: 100%;
+  touch-action: manipulation;
+`;
+
+export const MapView = (props: {
+  mapImage: HTMLImageElement;
+  fogImage: HTMLImageElement | null;
+  tokens: Token[];
+  controlRef?: React.MutableRefObject<MapControlInterface | null>;
+  updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
+  markedAreas: MarkedArea[];
+  markArea: (coordinates: { x: number; y: number }) => void;
+  removeMarkedArea: (id: string) => void;
+  grid: Grid | null;
+}): React.ReactElement => {
+  return (
+    <MapCanvasContainer>
       <Canvas
         camera={{ position: [0, 0, 5] }}
-        onCreated={(props) => {
-          const syncViewport = () =>
-            setViewport({
-              factor: props.viewport.factor,
-              width: props.viewport.width,
-              height: props.viewport.height,
-            });
-
-          const listener = debounce(syncViewport, 500);
-
-          window.addEventListener("resize", listener);
-          onUnmountRef.current = () =>
-            window.removeEventListener("resize", listener);
-          syncViewport();
-          setMaximumTextureSize(props.gl.capabilities.maxTextureSize);
-        }}
-        // we wanna have the best quality available on retina displays
-        // https://discourse.threejs.org/t/render-looks-blurry-and-pixelated-even-with-antialias-true-why/12381
         pixelRatio={window.devicePixelRatio}
       >
-        <React.Suspense fallback={null}>
-          <ambientLight intensity={1} />
-          {dimensions && viewport ? (
-            <Plane position={spring.position} scale={spring.scale} {...bind()}>
-              <MapRenderer
-                mapImage={props.mapImage}
-                mapImageTexture={mapTexture}
-                fogTexture={fogTexture}
-                viewport={viewport}
-                tokens={props.tokens}
-                markedAreas={props.markedAreas}
-                removeMarkedArea={props.removeMarkedArea}
-                grid={props.grid}
-                updateTokenPosition={props.updateTokenPosition}
-                scale={spring.scale}
-                hoveredElementRef={hoveredElementRef}
-                dimensions={dimensions}
-                factor={dimensions.width / props.mapImage.width}
-              />
-            </Plane>
-          ) : null}
-        </React.Suspense>
+        <ambientLight intensity={1} />
+        <MapViewRenderer
+          mapImage={props.mapImage}
+          fogImage={props.fogImage}
+          tokens={props.tokens}
+          controlRef={props.controlRef}
+          updateTokenPosition={props.updateTokenPosition}
+          markedAreas={props.markedAreas}
+          markArea={props.markArea}
+          removeMarkedArea={props.removeMarkedArea}
+          grid={props.grid}
+        />
       </Canvas>
-    </div>
+    </MapCanvasContainer>
   );
 };
