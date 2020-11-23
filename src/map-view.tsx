@@ -1,6 +1,11 @@
 import * as React from "react";
 import * as THREE from "three";
-import { Canvas, PointerEvent, useThree } from "react-three-fiber";
+import {
+  Canvas,
+  PointerEvent,
+  useThree,
+  ViewportData,
+} from "react-three-fiber";
 import { animated, useSpring, SpringValue } from "@react-spring/three";
 import { useGesture } from "react-use-gesture";
 import styled from "@emotion/styled/macro";
@@ -8,26 +13,36 @@ import { darken, lighten } from "polished";
 import { getOptimalDimensions } from "./util";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { buildUrl } from "./public-url";
-import { useUniqueId } from "./hooks/use-unique-id";
 import { CanvasText } from "./canvas-text";
+import type { MapTool, SharedMapToolState } from "./map-tools/map-tool";
 
 // convert image relative to three.js
-const calculateX = (x: number, factor: number, dimensionsWidth: number) =>
-  x * factor - dimensionsWidth / 2;
+export const calculateX = (
+  x: number,
+  factor: number,
+  dimensionsWidth: number
+) => x * factor - dimensionsWidth / 2;
 
-const calculateY = (y: number, factor: number, dimensionsHeight: number) =>
-  -y * factor + dimensionsHeight / 2;
+export const calculateY = (
+  y: number,
+  factor: number,
+  dimensionsHeight: number
+) => -y * factor + dimensionsHeight / 2;
 
 // convert three.js to image relative
-const calculateRealX = (x: number, factor: number, dimensionsWidth: number) =>
-  (x + dimensionsWidth / 2) / factor;
+export const calculateRealX = (
+  x: number,
+  factor: number,
+  dimensionsWidth: number
+) => (x + dimensionsWidth / 2) / factor;
 
-const calculateRealY = (y: number, factor: number, dimensionsHeight: number) =>
-  ((y - dimensionsHeight / 2) / factor) * -1;
+export const calculateRealY = (
+  y: number,
+  factor: number,
+  dimensionsHeight: number
+) => ((y - dimensionsHeight / 2) / factor) * -1;
 
-type Viewport = { height: number; width: number; factor: number };
-
-type Dimensions = { width: number; height: number; ratio: number };
+export type Dimensions = { width: number; height: number; ratio: number };
 
 type Token = {
   id: string;
@@ -75,17 +90,15 @@ const TokenRenderer: React.FC<{
   color: string;
   radius: number;
   textLabel: string;
-  viewport: Viewport;
+  viewport: ViewportData;
   dimensions: Dimensions;
   factor: number;
   isLocked: boolean;
   isMovableByPlayers: boolean;
   updateTokenPosition: ({ x, y }: { x: number; y: number }) => void;
   mapScale: SpringValue<[number, number, number]>;
-  hoveredElementRef: React.MutableRefObject<null | unknown>;
 }> = (props) => {
   const initialRadius = useStaticRef(() => props.radius * props.factor);
-  const id = useUniqueId();
 
   const isLocked = props.isMovableByPlayers === false || props.isLocked;
 
@@ -95,7 +108,7 @@ const TokenRenderer: React.FC<{
     position: [
       calculateX(props.x, props.factor, props.dimensions.width),
       calculateY(props.y, props.factor, props.dimensions.height),
-      0,
+      0.00001,
     ] as [number, number, number],
     circleScale: [1, 1, 1] as [number, number, number],
   }));
@@ -106,7 +119,7 @@ const TokenRenderer: React.FC<{
       position: [
         calculateX(props.x, props.factor, props.dimensions.width),
         calculateY(props.y, props.factor, props.dimensions.height),
-        0,
+        0.00001,
       ],
       circleScale: [newRadius / initialRadius, newRadius / initialRadius, 1],
     });
@@ -122,8 +135,13 @@ const TokenRenderer: React.FC<{
 
   const dragProps = useGesture(
     {
-      onDrag: ({ movement, last, memo = animatedProps.position.get() }) => {
-        isDraggingRef.current = true;
+      onDrag: ({
+        event,
+        movement,
+        last,
+        memo = animatedProps.position.get(),
+      }) => {
+        event.stopPropagation();
 
         const mapScale = props.mapScale.get();
         const newX =
@@ -132,7 +150,7 @@ const TokenRenderer: React.FC<{
           memo[1] - movement[1] / props.viewport.factor / mapScale[1];
 
         set({
-          position: [newX, newY, 0],
+          position: [newX, newY, 0.00001],
           immediate: true,
         });
 
@@ -141,44 +159,43 @@ const TokenRenderer: React.FC<{
             x: calculateRealX(newX, props.factor, props.dimensions.width),
             y: calculateRealY(newY, props.factor, props.dimensions.height),
           });
-          isDraggingRef.current = false;
+          // isDraggingRef.current = false;
         }
 
         return memo;
       },
       onPointerDown: ({ event }) => {
         if (isLocked === false) {
-          setIsHover(true);
           event.stopPropagation();
+          setIsHover(true);
         }
+      },
+      onPointerMove: ({ event }) => {
+        event.stopPropagation();
       },
       onPointerOver: () => {
         if (isLocked === false) {
           setIsHover(true);
-          props.hoveredElementRef.current = id;
         }
       },
-      onPointerUp: () => {
-        if (isLocked === false) {
-          // TODO: only on tablet
-          setIsHover(false);
-          props.hoveredElementRef.current = null;
-        }
-      },
+      // onPointerUp: () => {
+      //   if (isLocked === false) {
+      //     // TODO: only on tablet
+      //     setIsHover(false);
+      //   }
+      // },
       onPointerOut: () => {
         if (isLocked === false) {
           if (isDraggingRef.current === false) {
             setIsHover(false);
-            props.hoveredElementRef.current = null;
           }
         }
       },
-      onClick: () => {
-        if (isLocked === false) {
-          setIsHover(false);
-          props.hoveredElementRef.current = null;
-        }
-      },
+      // onClick: () => {
+      //   if (isLocked === false) {
+      //     setIsHover(false);
+      //   }
+      // },
     },
     {
       enabled: isLocked === false,
@@ -189,29 +206,21 @@ const TokenRenderer: React.FC<{
 
   return (
     <animated.group
-      renderOrder={1}
+      renderOrder={100}
       position={animatedProps.position}
       scale={animatedProps.circleScale}
       {...dragProps()}
     >
       <mesh>
         <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
-        <meshStandardMaterial
-          attach="material"
-          color={color}
-          transparent={true}
-        />
+        <meshStandardMaterial attach="material" color={color} />
       </mesh>
       <mesh>
         <ringBufferGeometry
           attach="geometry"
           args={[initialRadius * (1 - 0.05), initialRadius, 128]}
         />
-        <meshStandardMaterial
-          attach="material"
-          color={darken(0.1, color)}
-          transparent={true}
-        />
+        <meshStandardMaterial attach="material" color={darken(0.1, color)} />
       </mesh>
       <CanvasText
         fontSize={0.8 * initialRadius}
@@ -370,14 +379,13 @@ const MapRenderer: React.FC<{
   mapImage: HTMLImageElement;
   mapImageTexture: THREE.Texture;
   fogTexture: THREE.Texture;
-  viewport: Viewport;
+  viewport: ViewportData;
   tokens: Token[];
   markedAreas: MarkedArea[];
   removeMarkedArea: (id: string) => void;
   grid: Grid | null;
   scale: SpringValue<[number, number, number]>;
   updateTokenPosition: (id: string, position: { x: number; y: number }) => void;
-  hoveredElementRef: React.MutableRefObject<null | unknown>;
   factor: number;
   dimensions: Dimensions;
 }> = (props) => {
@@ -412,7 +420,7 @@ const MapRenderer: React.FC<{
           />
         </mesh>
       </group>
-      <group>
+      <group renderOrder={1000}>
         {props.tokens
           .filter((token) => token.isVisibleForPlayers)
           .map((token) => (
@@ -432,7 +440,6 @@ const MapRenderer: React.FC<{
                 props.updateTokenPosition(token.id, position)
               }
               mapScale={props.scale}
-              hoveredElementRef={props.hoveredElementRef}
             />
           ))}
       </group>
@@ -452,63 +459,6 @@ const MapRenderer: React.FC<{
   );
 };
 
-const calculateScreenPosition = ({
-  imageDimensions: { width, height },
-  viewportDimensions,
-  scale,
-  translateX,
-  translateY,
-  aspect,
-}: {
-  imageDimensions: { width: number; height: number };
-  viewportDimensions: { width: number; height: number };
-  scale: number;
-  translateX: number;
-  translateY: number;
-  aspect: number;
-}) => {
-  const imageWidth = width * scale * aspect;
-  const imageHeight = height * scale * aspect;
-  const imageTopLeftX =
-    translateX * aspect + viewportDimensions.width / 2 - imageWidth / 2;
-  const imageTopLeftY =
-    viewportDimensions.height / 2 - translateY * aspect - imageHeight / 2;
-  return { imageWidth, imageHeight, imageTopLeftY, imageTopLeftX };
-};
-
-const getTranslateOffsetsFromScale = ({
-  imageTopLeftY,
-  imageTopLeftX,
-  imageWidth,
-  imageHeight,
-  scale,
-  pinchDelta,
-  origin: [touchOriginX, touchOriginY],
-  currentTranslate: [translateX, translateY],
-  aspect,
-}: {
-  imageTopLeftY: number;
-  imageTopLeftX: number;
-  imageWidth: number;
-  imageHeight: number;
-  scale: number;
-  pinchDelta: number;
-  origin: [number, number];
-  currentTranslate: [number, number];
-  aspect: number;
-}) => {
-  // Get the (x,y) touch position relative to image origin at the current scale
-  const imageCoordX = (touchOriginX - imageTopLeftX - imageWidth / 2) / scale;
-  const imageCoordY = (touchOriginY - imageTopLeftY - imageHeight / 2) / scale;
-  // Calculate translateX/Y offset at the next scale to zoom to touch position
-  const newTranslateX =
-    (-imageCoordX * pinchDelta + translateX * aspect) / aspect;
-  const newTranslateY =
-    (imageCoordY * pinchDelta + translateY * aspect) / aspect;
-
-  return [newTranslateX, newTranslateY];
-};
-
 export type MapControlInterface = {
   center: () => void;
   zoomIn: () => void;
@@ -525,6 +475,7 @@ const MapViewRenderer = (props: {
   markArea: (coordinates: { x: number; y: number }) => void;
   removeMarkedArea: (id: string) => void;
   grid: Grid | null;
+  activeTool: MapTool | null;
 }): React.ReactElement => {
   const three = useThree();
   const viewport = three.viewport;
@@ -652,194 +603,88 @@ const MapViewRenderer = (props: {
     }
   });
 
-  const isDragDisabledRef = React.useRef(false);
   const pointerTimer = React.useRef<NodeJS.Timeout>();
 
-  const bind = useGesture<{ onPointerDown: PointerEvent }>(
+  const toolContext = React.useMemo<SharedMapToolState>(() => {
+    return {
+      fogCanvas,
+      fogTexture,
+      mapState: spring,
+      setMapState: set,
+      dimensions,
+      mapImage: props.mapImage,
+      viewport,
+    };
+  }, [
+    fogCanvas,
+    fogTexture,
+    spring,
+    set,
+    dimensions,
+    props.mapImage,
+    viewport,
+  ]);
+
+  const toolRef = React.useRef<{
+    contextState: any;
+    mutableState: any;
+  } | null>(null);
+
+  const bind = useGesture<{
+    onPointerUp: PointerEvent;
+    onPointerDown: PointerEvent;
+    onPointerMove: PointerEvent;
+  }>(
     {
       onPointerDown: ({ event }) => {
-        if (pointerTimer.current) {
-          clearTimeout(pointerTimer.current);
-        }
-
-        pointerTimer.current = setTimeout(() => {
-          if (dimensions) {
-            const factor = dimensions.width / props.mapImage.naturalWidth;
-            const x = calculateRealX(
-              // We need to convert the point to the point local to our element.
-              (event.point.x - spring.position.get()[0]) /
-                spring.scale.get()[0],
-              factor,
-              dimensions.width
-            );
-            const y = calculateRealY(
-              // We need to convert the point to the point local to our element.
-              (event.point.y - spring.position.get()[1]) /
-                spring.scale.get()[1],
-              factor,
-              dimensions.height
-            );
-            props.markArea({ x, y });
-          }
-        }, 200);
-      },
-      onPointerUp: () => {
-        if (pointerTimer.current) {
-          clearTimeout(pointerTimer.current);
-        }
-      },
-      onPointerMove: () => {
-        if (pointerTimer.current) {
-          clearTimeout(pointerTimer.current);
-        }
-      },
-      onDrag: ({
-        movement: [xMovement, yMovement],
-        memo = spring.position.get(),
-        cancel,
-      }) => {
-        if (
-          !viewport ||
-          isDragDisabledRef.current === true ||
-          hoveredElementRef.current !== null
-        ) {
-          cancel();
+        if (!toolRef.current || !props.activeTool) {
           return;
         }
-        set({
-          position: [
-            memo[0] + xMovement / viewport.factor,
-            memo[1] - yMovement / viewport.factor,
-            0,
-          ],
-          immediate: true,
-        });
-        return memo;
+        props.activeTool.onPointerDown?.(
+          event,
+          toolContext,
+          toolRef.current.mutableState,
+          toolRef.current.contextState
+        );
+        return;
       },
-      onMouseDown: ({ event }) => {
-        if (event.target instanceof HTMLCanvasElement) {
-          window.document.body.classList.add("user-select-disabled");
-          const onUnmount = () => {
-            window.document.body.classList.remove("user-select-disabled");
-            window.removeEventListener("mouseup", onUnmount);
-          };
-          window.addEventListener("mouseup", onUnmount);
-          onUnmountRef.current = onUnmount;
+      onPointerUp: ({ event }) => {
+        if (!toolRef.current || !props.activeTool) {
+          return;
         }
+        props.activeTool.onPointerUp?.(
+          event,
+          toolContext,
+          toolRef.current.mutableState,
+          toolRef.current.contextState
+        );
+      },
+      onPointerMove: ({ event }) => {
+        if (!toolRef.current || !props.activeTool) {
+          return;
+        }
+        return props.activeTool.onPointerMove?.(
+          event,
+          toolContext,
+          toolRef.current.mutableState,
+          toolRef.current.contextState
+        );
+      },
+      onDrag: (args) => {
+        if (!toolRef.current || !props.activeTool) {
+          return;
+        }
+        return props.activeTool.onDrag?.(
+          // @ts-ignore
+          args,
+          toolContext,
+          toolRef.current.mutableState,
+          toolRef.current.contextState
+        );
       },
     },
     {}
   );
-
-  const updateZoom = ({
-    pinchDelta,
-    pinchScale,
-    origin,
-  }: {
-    pinchDelta: number;
-    pinchScale: number;
-    origin: [number, number];
-  }) => {
-    if (!viewport || !dimensions) {
-      return;
-    }
-
-    const position = spring.position.get();
-    const [scale] = spring.scale.get();
-
-    const {
-      imageWidth,
-      imageHeight,
-      imageTopLeftY,
-      imageTopLeftX,
-    } = calculateScreenPosition({
-      imageDimensions: dimensions,
-      viewportDimensions: {
-        width: viewport.width * viewport.factor,
-        height: viewport.height * viewport.factor,
-      },
-      scale,
-      translateX: position[0],
-      translateY: position[1],
-      aspect: viewport.factor,
-    });
-
-    // Calculate the amount of x, y translate offset needed to
-    // zoom-in to point as image scale grows
-    const [newTranslateX, newTranslateY] = getTranslateOffsetsFromScale({
-      imageTopLeftY,
-      imageTopLeftX,
-      imageWidth,
-      imageHeight,
-      scale,
-      aspect: viewport.factor,
-      pinchDelta: pinchDelta,
-      currentTranslate: [position[0], position[1]],
-      origin,
-    });
-
-    set({
-      scale: [pinchScale, pinchScale, 1],
-      position: [newTranslateX, newTranslateY, 0],
-    });
-  };
-
-  useGesture(
-    {
-      onPinchEnd: () => {
-        setTimeout(() => {
-          isDragDisabledRef.current = false;
-        }, 100);
-      },
-      onWheel: ({ event }) => {
-        if (event.target instanceof HTMLCanvasElement === false) {
-          return;
-        }
-        event.preventDefault();
-
-        const [scale] = spring.scale.get();
-        const origin = [event.clientX, event.clientY] as [number, number];
-
-        const wheel = event.deltaY < 0 ? 1 : -1;
-        const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
-        const pinchDelta = pinchScale - scale;
-
-        updateZoom({ pinchDelta, pinchScale, origin });
-      },
-      onPinch: ({ movement, event, origin, last, cancel }) => {
-        if (event.target instanceof HTMLCanvasElement === false) {
-          return;
-        }
-        event.preventDefault();
-        isDragDisabledRef.current = true;
-
-        const [scale] = spring.scale.get();
-
-        // Don't calculate new translate offsets on final frame
-        if (last) {
-          cancel?.();
-          return;
-        }
-
-        let xMovement = Array.isArray(movement) ? movement[0] : 0;
-
-        const wheel = xMovement > 0 ? 1 : -1;
-        const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
-        const pinchDelta = pinchScale - scale;
-
-        updateZoom({ pinchDelta, pinchScale, origin });
-      },
-    },
-    {
-      domTarget: window.document,
-      eventOptions: {
-        passive: false,
-      },
-    }
-  );
-
-  const onUnmountRef = React.useRef<() => void>();
-  React.useEffect(() => () => onUnmountRef.current?.(), []);
 
   return (
     <Plane position={spring.position} scale={spring.scale} {...bind()}>
@@ -854,10 +699,16 @@ const MapViewRenderer = (props: {
         grid={props.grid}
         updateTokenPosition={props.updateTokenPosition}
         scale={spring.scale}
-        hoveredElementRef={hoveredElementRef}
         dimensions={dimensions}
         factor={dimensions.width / props.mapImage.width}
       />
+      {props.activeTool ? (
+        <MapToolRenderer
+          tool={props.activeTool}
+          toolRef={toolRef}
+          handlerContext={toolContext}
+        />
+      ) : null}
     </Plane>
   );
 };
@@ -877,6 +728,7 @@ export const MapView = (props: {
   markArea: (coordinates: { x: number; y: number }) => void;
   removeMarkedArea: (id: string) => void;
   grid: Grid | null;
+  activeTool: MapTool | null;
 }): React.ReactElement => {
   return (
     <MapCanvasContainer>
@@ -886,6 +738,7 @@ export const MapView = (props: {
       >
         <ambientLight intensity={1} />
         <MapViewRenderer
+          activeTool={props.activeTool}
           mapImage={props.mapImage}
           fogImage={props.fogImage}
           tokens={props.tokens}
@@ -898,5 +751,39 @@ export const MapView = (props: {
         />
       </Canvas>
     </MapCanvasContainer>
+  );
+};
+
+const MapToolRenderer = <
+  MutableState extends {} = {},
+  ContextState extends {} = {}
+>(props: {
+  tool: MapTool<MutableState, ContextState>;
+  toolRef: React.MutableRefObject<{
+    contextState: ContextState;
+    mutableState: MutableState;
+  } | null>;
+  handlerContext: SharedMapToolState;
+}): React.ReactElement => {
+  const contextState = React.useContext<ContextState>(props.tool.Context);
+  const [mutableState] = React.useState<MutableState>(
+    props.tool.createMutableState
+  );
+  React.useEffect(() => {
+    props.toolRef.current = {
+      contextState,
+      mutableState,
+    };
+
+    return () => {
+      props.toolRef.current = null;
+    };
+  });
+  return (
+    <props.tool.Component
+      contextState={contextState}
+      mutableState={mutableState}
+      mapContext={props.handlerContext}
+    />
   );
 };
