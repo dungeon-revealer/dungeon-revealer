@@ -16,6 +16,11 @@ import { buildUrl } from "./public-url";
 import { CanvasText } from "./canvas-text";
 import type { MapTool, SharedMapToolState } from "./map-tools/map-tool";
 
+enum LayerPosition {
+  map = 0,
+  token = 0.00001,
+}
+
 // convert image relative to three.js
 export const calculateX = (
   x: number,
@@ -108,7 +113,7 @@ const TokenRenderer: React.FC<{
     position: [
       calculateX(props.x, props.factor, props.dimensions.width),
       calculateY(props.y, props.factor, props.dimensions.height),
-      0.00001,
+      LayerPosition.token,
     ] as [number, number, number],
     circleScale: [1, 1, 1] as [number, number, number],
   }));
@@ -119,7 +124,7 @@ const TokenRenderer: React.FC<{
       position: [
         calculateX(props.x, props.factor, props.dimensions.width),
         calculateY(props.y, props.factor, props.dimensions.height),
-        0.00001,
+        LayerPosition.token,
       ],
       circleScale: [newRadius / initialRadius, newRadius / initialRadius, 1],
     });
@@ -150,7 +155,7 @@ const TokenRenderer: React.FC<{
           memo[1] - movement[1] / props.viewport.factor / mapScale[1];
 
         set({
-          position: [newX, newY, 0.00001],
+          position: [newX, newY, LayerPosition.token],
           immediate: true,
         });
 
@@ -170,20 +175,17 @@ const TokenRenderer: React.FC<{
           setIsHover(true);
         }
       },
-      onPointerMove: ({ event }) => {
-        event.stopPropagation();
-      },
       onPointerOver: () => {
         if (isLocked === false) {
           setIsHover(true);
         }
       },
-      // onPointerUp: () => {
-      //   if (isLocked === false) {
-      //     // TODO: only on tablet
-      //     setIsHover(false);
-      //   }
-      // },
+      onPointerUp: () => {
+        if (isLocked === false) {
+          // TODO: only on tablet
+          setIsHover(false);
+        }
+      },
       onPointerOut: () => {
         if (isLocked === false) {
           if (isDraggingRef.current === false) {
@@ -191,11 +193,12 @@ const TokenRenderer: React.FC<{
           }
         }
       },
-      // onClick: () => {
-      //   if (isLocked === false) {
-      //     setIsHover(false);
-      //   }
-      // },
+      onClick: () => {
+        if (isLocked === false) {
+          // TODO: only on tablet
+          setIsHover(false);
+        }
+      },
     },
     {
       enabled: isLocked === false,
@@ -206,14 +209,17 @@ const TokenRenderer: React.FC<{
 
   return (
     <animated.group
-      renderOrder={100}
       position={animatedProps.position}
       scale={animatedProps.circleScale}
       {...dragProps()}
     >
       <mesh>
         <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
-        <meshStandardMaterial attach="material" color={color} />
+        <meshStandardMaterial
+          attach="material"
+          color={color}
+          transparent={true}
+        />
       </mesh>
       <mesh>
         <ringBufferGeometry
@@ -420,7 +426,7 @@ const MapRenderer: React.FC<{
           />
         </mesh>
       </group>
-      <group renderOrder={1000}>
+      <group>
         {props.tokens
           .filter((token) => token.isVisibleForPlayers)
           .map((token) => (

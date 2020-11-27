@@ -45,7 +45,7 @@ export const brushTool: MapTool<
       <animated.group position={props.mutableState.cursorPosition}>
         <mesh>
           <circleBufferGeometry attach="geometry" args={[0.1, 32]} />
-          <meshStandardMaterial attach="material" color={"red"} />
+          <meshStandardMaterial attach="material" color={"red"} transparent />
         </mesh>
       </animated.group>
     );
@@ -99,10 +99,9 @@ export const brushTool: MapTool<
       context.dimensions.height
     );
 
-    const cursorFactor = context.dimensions.width / context.mapImage.width;
     mutableState.cursorPosition.set([
-      calculateX(x, cursorFactor, context.dimensions.width),
-      calculateY(y, cursorFactor, context.dimensions.height),
+      calculateX(x, factor, context.dimensions.width),
+      calculateY(y, factor, context.dimensions.height),
       0,
     ]);
 
