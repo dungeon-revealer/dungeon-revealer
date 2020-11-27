@@ -86,7 +86,7 @@ In your browser, go to `<YOUR_IPADDRESS>:<PORT>/dm`. If your players are on the 
 
 Heroku is a platform supporting one-click deployments and includes a free usage tier. Sign up for a free account then click the button below. Give your app a unique name, set any required passwords, and click `Deploy App` to start the build process.
 
-[![button](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/dungeon-revealer/dungeon-revealer/tree/v1.10.4)
+[![button](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/dungeon-revealer/dungeon-revealer/tree/v1.10.6)
 
 ### Using the app
 
