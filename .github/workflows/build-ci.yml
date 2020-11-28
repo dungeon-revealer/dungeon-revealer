@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         node-version: [12.x, 14.x]
@@ -28,12 +28,11 @@ jobs:
           CI: true
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build image
         uses: docker/build-push-action@v2
         with:
-          repository: ${{ secrets.DOCKER_REPO }}
           push: false
