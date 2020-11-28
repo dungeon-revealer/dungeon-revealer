@@ -221,37 +221,37 @@ export const CrosshairIcon: React.FC<{ color?: string; size?: number }> = ({
   </svg>
 );
 
-export const CircleIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
-  fill = "currentColor",
-  ...props
+export const CircleIcon: React.FC<{ color?: string; size?: number }> = ({
+  color = "currentColor",
+  size = 30,
 }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke={fill}
+    stroke={color}
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
-    height={30}
-    {...props}
+    height={size}
+    width={size}
   >
     <circle cx={12} cy={12} r={10} />
   </svg>
 );
 
-export const SquareIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
-  fill = "currentColor",
-  ...props
+export const SquareIcon: React.FC<{ color?: string; size?: number }> = ({
+  color = "currentColor",
+  size = 30,
 }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke={fill}
+    stroke={color}
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
-    height={30}
-    {...props}
+    height={size}
+    width={size}
   >
     <rect x={3} y={3} width={18} height={18} rx={2} ry={2} />
   </svg>

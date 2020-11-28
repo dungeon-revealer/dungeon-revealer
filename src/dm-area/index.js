@@ -26,6 +26,7 @@ import { sendRequest } from "../http-request";
 import { AuthenticatedAppShell } from "../authenticated-app-shell";
 import { AccessTokenProvider } from "../hooks/use-access-token";
 import { usePersistedState } from "../hooks/use-persisted-state";
+import { NewDmSection } from "./new-dm-map";
 
 const useLoadedMapId = () =>
   usePersistedState("loadedMapId", {
@@ -406,7 +407,8 @@ const Content = ({ socket, password: dmPassword }) => {
               overflow: "hidden",
             }}
           >
-            <DmMap
+            <NewDmSection />
+            {/* <DmMap
               dmPassword={dmPassword}
               setAppData={setData}
               socket={socket}
@@ -427,7 +429,7 @@ const Content = ({ socket, password: dmPassword }) => {
               deleteToken={deleteToken}
               updateToken={updateToken}
               onDropFile={onDropFile}
-            />
+            /> */}
           </div>
         </div>
       ) : null}

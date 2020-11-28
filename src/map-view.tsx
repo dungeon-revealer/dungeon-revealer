@@ -15,6 +15,7 @@ import { useStaticRef } from "./hooks/use-static-ref";
 import { buildUrl } from "./public-url";
 import { CanvasText } from "./canvas-text";
 import type { MapTool, SharedMapToolState } from "./map-tools/map-tool";
+import { useContextBridge } from "./hooks/use-context-bridge";
 
 enum LayerPosition {
   map = 0,
@@ -77,14 +78,14 @@ type Grid = {
 const Plane: React.FC<{
   position: SpringValue<[number, number, number]>;
   scale: SpringValue<[number, number, number]>;
-}> = (props) => {
+}> = ({ children, position, scale, ...props }) => {
   return (
-    <animated.group {...props}>
-      <mesh>
+    <animated.group position={position} scale={scale}>
+      <mesh {...props}>
         <planeBufferGeometry attach="geometry" args={[10000, 10000]} />
         <meshBasicMaterial attach="material" color="black" />
       </mesh>
-      {props.children}
+      {children}
     </animated.group>
   );
 };
@@ -394,6 +395,7 @@ const MapRenderer: React.FC<{
   updateTokenPosition: (id: string, position: { x: number; y: number }) => void;
   factor: number;
   dimensions: Dimensions;
+  fogOpacity: number;
 }> = (props) => {
   return (
     <>
@@ -423,6 +425,7 @@ const MapRenderer: React.FC<{
             attach="material"
             map={props.fogTexture}
             transparent={true}
+            opacity={props.fogOpacity}
           />
         </mesh>
       </group>
@@ -481,12 +484,12 @@ const MapViewRenderer = (props: {
   markArea: (coordinates: { x: number; y: number }) => void;
   removeMarkedArea: (id: string) => void;
   grid: Grid | null;
-  activeTool: MapTool | null;
+  activeTool: MapTool<any, any> | null;
+  fogOpacity: number;
 }): React.ReactElement => {
   const three = useThree();
   const viewport = three.viewport;
   const maximumTextureSize = three.gl.capabilities.maxTextureSize;
-  const hoveredElementRef = React.useRef(null);
 
   const [spring, set] = useSpring(() => ({
     scale: [1, 1, 1] as [number, number, number],
@@ -609,7 +612,7 @@ const MapViewRenderer = (props: {
     }
   });
 
-  const pointerTimer = React.useRef<NodeJS.Timeout>();
+  const isDragAllowed = React.useRef(true);
 
   const toolContext = React.useMemo<SharedMapToolState>(() => {
     return {
@@ -620,6 +623,7 @@ const MapViewRenderer = (props: {
       dimensions,
       mapImage: props.mapImage,
       viewport,
+      isDragAllowed,
     };
   }, [
     fogCanvas,
@@ -629,11 +633,12 @@ const MapViewRenderer = (props: {
     dimensions,
     props.mapImage,
     viewport,
+    isDragAllowed,
   ]);
 
   const toolRef = React.useRef<{
     contextState: any;
-    mutableState: any;
+    localState: any;
   } | null>(null);
 
   const bind = useGesture<{
@@ -649,7 +654,7 @@ const MapViewRenderer = (props: {
         props.activeTool.onPointerDown?.(
           event,
           toolContext,
-          toolRef.current.mutableState,
+          toolRef.current.localState,
           toolRef.current.contextState
         );
         return;
@@ -661,7 +666,7 @@ const MapViewRenderer = (props: {
         props.activeTool.onPointerUp?.(
           event,
           toolContext,
-          toolRef.current.mutableState,
+          toolRef.current.localState,
           toolRef.current.contextState
         );
       },
@@ -672,19 +677,23 @@ const MapViewRenderer = (props: {
         return props.activeTool.onPointerMove?.(
           event,
           toolContext,
-          toolRef.current.mutableState,
+          toolRef.current.localState,
           toolRef.current.contextState
         );
       },
       onDrag: (args) => {
-        if (!toolRef.current || !props.activeTool) {
+        if (
+          !toolRef.current ||
+          !props.activeTool ||
+          isDragAllowed.current === false
+        ) {
           return;
         }
         return props.activeTool.onDrag?.(
           // @ts-ignore
           args,
           toolContext,
-          toolRef.current.mutableState,
+          toolRef.current.localState,
           toolRef.current.contextState
         );
       },
@@ -707,9 +716,11 @@ const MapViewRenderer = (props: {
         scale={spring.scale}
         dimensions={dimensions}
         factor={dimensions.width / props.mapImage.width}
+        fogOpacity={props.fogOpacity}
       />
       {props.activeTool ? (
         <MapToolRenderer
+          key={props.activeTool.id}
           tool={props.activeTool}
           toolRef={toolRef}
           handlerContext={toolContext}
@@ -735,7 +746,12 @@ export const MapView = (props: {
   removeMarkedArea: (id: string) => void;
   grid: Grid | null;
   activeTool: MapTool | null;
+  /* List of contexts that need to be proxied into R3F */
+  sharedContexts: Array<React.Context<any>>;
+  fogOpacity: number;
 }): React.ReactElement => {
+  const ContextBridge = useContextBridge(...props.sharedContexts);
+
   return (
     <MapCanvasContainer>
       <Canvas
@@ -743,42 +759,54 @@ export const MapView = (props: {
         pixelRatio={window.devicePixelRatio}
       >
         <ambientLight intensity={1} />
-        <MapViewRenderer
-          activeTool={props.activeTool}
-          mapImage={props.mapImage}
-          fogImage={props.fogImage}
-          tokens={props.tokens}
-          controlRef={props.controlRef}
-          updateTokenPosition={props.updateTokenPosition}
-          markedAreas={props.markedAreas}
-          markArea={props.markArea}
-          removeMarkedArea={props.removeMarkedArea}
-          grid={props.grid}
-        />
+        <ContextBridge>
+          <MapViewRenderer
+            activeTool={props.activeTool}
+            mapImage={props.mapImage}
+            fogImage={props.fogImage}
+            tokens={props.tokens}
+            controlRef={props.controlRef}
+            updateTokenPosition={props.updateTokenPosition}
+            markedAreas={props.markedAreas}
+            markArea={props.markArea}
+            removeMarkedArea={props.removeMarkedArea}
+            grid={props.grid}
+            fogOpacity={props.fogOpacity}
+          />
+        </ContextBridge>
       </Canvas>
     </MapCanvasContainer>
   );
 };
 
 const MapToolRenderer = <
-  MutableState extends {} = {},
-  ContextState extends {} = {}
+  LocalState extends {} = any,
+  ContextState extends {} = any
 >(props: {
-  tool: MapTool<MutableState, ContextState>;
+  tool: MapTool<LocalState, ContextState>;
   toolRef: React.MutableRefObject<{
     contextState: ContextState;
-    mutableState: MutableState;
+    localState: {
+      state: LocalState;
+      setState: React.Dispatch<React.SetStateAction<LocalState>>;
+    };
   } | null>;
   handlerContext: SharedMapToolState;
 }): React.ReactElement => {
   const contextState = React.useContext<ContextState>(props.tool.Context);
-  const [mutableState] = React.useState<MutableState>(
-    props.tool.createMutableState
+  const [state, setState] = React.useState<LocalState>(
+    props.tool.createLocalState
   );
+
+  const localState = {
+    state,
+    setState,
+  };
+
   React.useEffect(() => {
     props.toolRef.current = {
       contextState,
-      mutableState,
+      localState,
     };
 
     return () => {
@@ -788,7 +816,7 @@ const MapToolRenderer = <
   return (
     <props.tool.Component
       contextState={contextState}
-      mutableState={mutableState}
+      localState={localState}
       mapContext={props.handlerContext}
     />
   );

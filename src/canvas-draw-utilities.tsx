@@ -1,13 +1,13 @@
 import orderBy from "lodash/orderBy";
 
 export enum FogMode {
-  clear,
-  shroud,
+  clear = "clear",
+  shroud = "shroud",
 }
 
 export enum BrushShape {
-  square,
-  circle,
+  square = "square",
+  circle = "circle",
 }
 
 type Vector2D = [number, number];
@@ -64,7 +64,22 @@ export const applyInitialFog = (
   context.fill();
 };
 
-const midBetweenPoints = (point1: Vector2D, point2: Vector2D): Vector2D => [
+export const applyFogRectangle = (
+  fogMode: FogMode,
+  p1: Vector2D,
+  p2: Vector2D,
+  context: CanvasRenderingContext2D
+) => {
+  setCompositeMode(fogMode, context);
+  context.beginPath();
+  context.rect(p1[0], p1[1], p2[0] - p1[0], p2[1] - p1[1]);
+  context.fill();
+};
+
+export const midBetweenPoints = (
+  point1: Vector2D,
+  point2: Vector2D
+): Vector2D => [
   point1[0] + (point2[0] - point1[0]) / 2,
   point1[1] + (point2[1] - point1[1]) / 2,
 ];
@@ -222,7 +237,7 @@ const calculateOptimalRhombus = (
 
 type SquareCoordinates2D = [Vector2D, Vector2D, Vector2D, Vector2D];
 
-const calculateSquareCoordinates = (
+export const calculateSquareCoordinates = (
   center: Vector2D,
   width: number
 ): SquareCoordinates2D => {
@@ -244,6 +259,6 @@ const calculateSquareCoordinates = (
   ];
 };
 
-const distanceBetweenPoints = (point1: Vector2D, point2: Vector2D) => {
+export const distanceBetweenPoints = (point1: Vector2D, point2: Vector2D) => {
   return Math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2);
 };

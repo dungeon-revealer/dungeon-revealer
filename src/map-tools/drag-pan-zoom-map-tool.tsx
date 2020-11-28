@@ -2,8 +2,9 @@ import * as React from "react";
 import { useGesture } from "react-use-gesture";
 import type { MapTool } from "./map-tool";
 
-export const dragPanZoomTool: MapTool<unknown, unknown> = {
-  createMutableState: () => ({}),
+export const DragPanZoomMapTool: MapTool<unknown, unknown> = {
+  id: "drag-pan-zoom-map-tool",
+  createLocalState: () => ({}),
   // Noop Context :)
   Context: React.createContext<unknown>({}),
   Component: (props) => {
@@ -63,6 +64,14 @@ export const dragPanZoomTool: MapTool<unknown, unknown> = {
 
     useGesture(
       {
+        onPinchEnd: ({ event }) => {
+          // This is some kind of a hack to prevent drag being triggerd after ending a pinch gesture
+          // which causes the map to jump on tablets such as the iPad.
+          event.stopPropagation();
+          setTimeout(() => {
+            props.mapContext.isDragAllowed.current = true;
+          }, 100);
+        },
         onPointerDown: ({ event }) => {
           if (event.target instanceof HTMLCanvasElement) {
             window.document.body.classList.add("user-select-disabled");
@@ -93,7 +102,7 @@ export const dragPanZoomTool: MapTool<unknown, unknown> = {
             return;
           }
           event.preventDefault();
-          // isDragDisabledRef.current = true;
+          props.mapContext.isDragAllowed.current = false;
 
           const [scale] = props.mapContext.mapState.scale.get();
 

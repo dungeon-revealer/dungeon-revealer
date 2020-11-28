@@ -129,16 +129,17 @@ const ToolbarItemPopupContainer = styled.div<{ horizontal?: boolean }>`
   min-width: 120px;
 `;
 
-const ToolbarItemPopup = React.forwardRef<HTMLDivElement, {}>(
-  ({ children }, ref) => {
-    const { horizontal } = React.useContext(ToolbarContext);
-    return (
-      <ToolbarItemPopupContainer horizontal={horizontal} ref={ref}>
-        {children}
-      </ToolbarItemPopupContainer>
-    );
-  }
-);
+const ToolbarItemPopup = React.forwardRef<
+  HTMLDivElement,
+  { children: React.ReactNode }
+>(({ children }, ref) => {
+  const { horizontal } = React.useContext(ToolbarContext);
+  return (
+    <ToolbarItemPopupContainer horizontal={horizontal} ref={ref}>
+      {children}
+    </ToolbarItemPopupContainer>
+  );
+});
 
 type ToolbarType = React.FC<{ horizontal?: boolean }> & {
   Logo: typeof Logo;
@@ -215,17 +216,23 @@ const Group: React.FC<
   );
 };
 
-const Item: React.FC<
-  Pick<React.ComponentProps<"div">, "style"> & { isActive?: boolean }
-> = ({ children, isActive, style, ...props }) => {
+const Item = React.forwardRef<
+  HTMLLIElement,
+  Exclude<React.ComponentProps<"li">, "style"> & { isActive?: boolean }
+>(({ children, isActive, style, ...props }, ref) => {
   const { horizontal } = React.useContext(ToolbarContext);
 
   return (
-    <ToolbarItem horizontal={horizontal} isActive={isActive} {...props}>
+    <ToolbarItem
+      {...props}
+      horizontal={horizontal}
+      isActive={isActive}
+      ref={ref}
+    >
       {children}
     </ToolbarItem>
   );
-};
+});
 
 const LongPressButton: React.FC<{
   onLongPress?: () => () => void;
