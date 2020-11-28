@@ -9,10 +9,17 @@ on:
 jobs:
   build_x64_native:
     name: ${{ matrix.os }} Binaries
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
         os: [ubuntu, macos, windows]
+        include:
+          - os: ubuntu
+            runner: ubuntu-20.04
+          - os: macos
+            runner: macos-latest
+          - os: windows
+            runner: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -52,7 +59,7 @@ jobs:
 
   build_arm:
     name: ${{ matrix.arch }} Binaries
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         platform: [linux/arm/v7, linux/arm64/v8]
@@ -110,7 +117,7 @@ jobs:
   job_upload:
     name: Upload Release Assets
     needs: [build_x64_native, build_arm]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

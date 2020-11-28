@@ -9,7 +9,7 @@ on:
 jobs:
   build-app:
     name: Build app
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -34,7 +34,7 @@ jobs:
   build:
     name: Build
     needs: build-app
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         platform: [linux/amd64, linux/arm/v7, linux/arm64]
@@ -129,7 +129,7 @@ jobs:
   deploy:
     name: Deploy Images
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
