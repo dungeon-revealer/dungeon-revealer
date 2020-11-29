@@ -1,6 +1,7 @@
 import * as React from "react";
 import { v4 as uuid } from "uuid";
 import styled from "@emotion/styled/macro";
+import { useToasts } from "react-toast-notifications";
 import * as Icons from "../feather-icons";
 import { Toolbar } from "../toolbar";
 import type { MapTool } from "../map-tools/map-tool";
@@ -16,9 +17,10 @@ import { BrushShape, FogMode } from "../canvas-draw-utilities";
 import { AreaSelectMapTool } from "../map-tools/area-select-map-tool";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
-import { useToasts } from "react-toast-notifications";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
 import { MapEntity, MarkedArea } from "../map-typings";
+import { useConfirmationDialog } from "../hooks/use-confirmation-dialog";
+import { applyFogRectangle } from "../canvas-draw-utilities";
 
 type ToolMapRecord = {
   name: string;
@@ -308,6 +310,8 @@ export const NewDmSection = (props: {
     return () => window.document.removeEventListener("keypress", listener);
   }, []);
 
+  const [confirmDialogNode, showDialog] = useConfirmationDialog();
+
   return (
     <BrushToolContextProvider
       onDrawEnd={(canvas) => {
@@ -367,6 +371,64 @@ export const NewDmSection = (props: {
           </Toolbar.Group>
           <Toolbar.Group divider>
             <ShroudRevealSettings />
+          </Toolbar.Group>
+          <Toolbar.Group divider>
+            <Toolbar.Item isActive>
+              <Toolbar.Button
+                onClick={() =>
+                  showDialog({
+                    header: "Shroud All",
+                    body: "Do you really want to shroud the whole map?",
+                    onConfirm: () => {
+                      // TODO: this should be less verbose
+                      const context = controlRef.current?.getContext();
+                      if (!context) {
+                        return;
+                      }
+                      const canvasContext = context.fogCanvas.getContext("2d")!;
+                      applyFogRectangle(
+                        FogMode.shroud,
+                        [0, 0],
+                        [context.fogCanvas.width, context.fogCanvas.height],
+                        canvasContext
+                      );
+                      context.fogTexture.needsUpdate = true;
+                    },
+                  })
+                }
+              >
+                <Icons.DropletIcon fill size={20} />
+                <Icons.Label>Shroud All</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
+            <Toolbar.Item isActive>
+              <Toolbar.Button
+                onClick={() =>
+                  showDialog({
+                    header: "Clear All",
+                    body: "Do you really want to clear the whole map?",
+                    onConfirm: () => {
+                      // TODO: this should be less verbose
+                      const context = controlRef.current?.getContext();
+                      if (!context) {
+                        return;
+                      }
+                      const canvasContext = context.fogCanvas.getContext("2d")!;
+                      applyFogRectangle(
+                        FogMode.clear,
+                        [0, 0],
+                        [context.fogCanvas.width, context.fogCanvas.height],
+                        canvasContext
+                      );
+                      context.fogTexture.needsUpdate = true;
+                    },
+                  })
+                }
+              >
+                <Icons.DropletIcon size={20} />
+                <Icons.Label>Clear All</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
           </Toolbar.Group>
         </Toolbar>
       </LeftToolbarContainer>
@@ -511,6 +573,7 @@ export const NewDmSection = (props: {
           </Toolbar.Group>
         </Toolbar>
       </BottomToolbarContainer>
+      {confirmDialogNode}
     </BrushToolContextProvider>
   );
 };

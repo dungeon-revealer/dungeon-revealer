@@ -477,6 +477,7 @@ export type MapControlInterface = {
   getContext: () => {
     mapCanvas: HTMLCanvasElement;
     fogCanvas: HTMLCanvasElement;
+    fogTexture: THREE.CanvasTexture;
   };
 };
 
@@ -619,6 +620,7 @@ const MapViewRenderer = (props: {
         getContext: () => ({
           mapCanvas,
           fogCanvas,
+          fogTexture,
         }),
       };
     }
