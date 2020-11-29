@@ -1,5 +1,4 @@
 import * as React from "react";
-import useAsyncEffect from "@n1ru4l/use-async-effect";
 import { v4 as uuid } from "uuid";
 import styled from "@emotion/styled/macro";
 import * as Icons from "../feather-icons";
@@ -12,11 +11,14 @@ import {
 } from "../map-tools/brush-map-tool";
 import { MapView, MapControlInterface } from "../map-view";
 import { buildApiUrl } from "../public-url";
-import { loadImage } from "../util";
+import { ConditionalWrap, loadImage } from "../util";
 import { BrushShape, FogMode } from "../canvas-draw-utilities";
 import { AreaSelectMapTool } from "../map-tools/area-select-map-tool";
-import { ISendRequestTask, sendRequest } from "../http-request";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
+import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
+import { useToasts } from "react-toast-notifications";
+import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
+import { MapEntity, MarkedArea } from "../map-typings";
 
 type ToolMapRecord = {
   name: string;
@@ -153,46 +155,23 @@ const DM_TOOL_MAP: Array<ToolMapRecord> = [
   },
 ];
 
-type Grid = {
-  x: number;
-  y: number;
-  sideLength: number;
-};
-
-type Token = {
-  id: string;
-  radius: number;
-  color: string;
-  label: string;
-  x: number;
-  y: number;
-  isVisibleForPlayers: boolean;
-  isMovableByPlayers: boolean;
-  isLocked: boolean;
-};
-
-type Map = {
-  id: string;
-  showGridToPlayers: boolean;
-  grid: null | Grid;
-  gridColor: string;
-  tokens: Token[];
-};
-
-type MarkedArea = {
-  id: string;
-  x: number;
-  y: number;
-};
-
 const createCacheBusterString = () =>
   encodeURIComponent(`${Date.now()}_${uuid()}`);
 
-export const NewDmSection = () => {
-  // TODO: pcPassword shouldnt be hard coded
-  const pcPassword = "";
-  const [currentMap, setCurrentMap] = React.useState<null | Map>(null);
-  const currentMapRef = React.useRef(currentMap);
+export const NewDmSection = (props: {
+  password: string;
+  map: MapEntity;
+  liveMapId: string | null;
+  hideMap: () => void;
+  showMapModal: () => void;
+  openNotes: () => void;
+  openMediaLibrary: () => void;
+  enterGridMode: () => void;
+  sendLiveMap: (image: HTMLCanvasElement) => void;
+  saveFogProgress: (image: HTMLCanvasElement) => void;
+  updateToken: (params: { id: string; x: number; y: number }) => void;
+}) => {
+  const currentMapRef = React.useRef(props.map);
 
   const [mapImage, setMapImage] = React.useState<HTMLImageElement | null>(null);
   const [fogImage, setFogImage] = React.useState<HTMLImageElement | null>(null);
@@ -207,51 +186,7 @@ export const NewDmSection = () => {
 
   const [refetchTrigger, setRefetchTrigger] = React.useState(0);
 
-  const onReceiveMap = React.useCallback((data: { map: Map }) => {
-    if (!data) {
-      return;
-    }
-    if (window.document.visibilityState === "hidden") {
-      return;
-    }
-
-    if (pendingFogImageLoad.current) {
-      pendingFogImageLoad.current?.();
-      pendingFogImageLoad.current = null;
-    }
-
-    /**
-     * Hide map (show splashscreen)
-     */
-    if (!data.map) {
-      currentMapRef.current = null;
-      setCurrentMap(null);
-      setFogImage(null);
-      setMapImage(null);
-      return;
-    }
-    /**
-     * Fog has updated
-     */
-    if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
-      const imageUrl = buildApiUrl(
-        // prettier-ignore
-        `/map/${data.map.id}/fog?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
-      );
-
-      const task = loadImage(imageUrl);
-      pendingFogImageLoad.current = () => task.cancel();
-
-      task.promise
-        .then((fogImage) => {
-          setFogImage(fogImage);
-        })
-        .catch(() => {
-          console.log("Cancel loading image.");
-        });
-      return;
-    }
-
+  const onReceiveMap = React.useCallback((data: { map: MapEntity }) => {
     /**
      * Load new map
      */
@@ -259,12 +194,12 @@ export const NewDmSection = () => {
 
     const mapImageUrl = buildApiUrl(
       // prettier-ignore
-      `/map/${data.map.id}/map?authorization=${encodeURIComponent(pcPassword)}`
+      `/map/${data.map.id}/map?authorization=${encodeURIComponent(props.password)}`
     );
 
     const fogImageUrl = buildApiUrl(
       // prettier-ignore
-      `/map/${data.map.id}/fog?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
+      `/map/${data.map.id}/fog?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(props.password)}`
     );
 
     const loadMapImageTask = loadImage(mapImageUrl);
@@ -279,93 +214,116 @@ export const NewDmSection = () => {
       .then(([mapImage, fogImage]) => {
         setMapImage(mapImage);
         setFogImage(fogImage);
-        setCurrentMap(data.map);
       })
       .catch(() => {
         console.log("Cancel loading image.");
       });
   }, []);
 
-  useAsyncEffect(
-    function* (_, cast) {
-      const result = yield* cast(
-        fetch(buildApiUrl("/active-map")).then((res) => res.json())
-      );
-      const activeMap = result.data.activeMap;
+  React.useEffect(() => {
+    onReceiveMap({ map: props.map });
 
-      if (activeMap) {
-        onReceiveMap({ map: activeMap });
+    return () => {
+      if (pendingFogImageLoad.current) {
+        pendingFogImageLoad.current?.();
+        pendingFogImageLoad.current = null;
       }
-
-      return () => {
-        if (pendingFogImageLoad.current) {
-          pendingFogImageLoad.current?.();
-          pendingFogImageLoad.current = null;
-        }
-      };
-    },
-    [pcPassword, refetchTrigger]
-  );
+    };
+  }, [props.password, refetchTrigger]);
 
   // TODO: this should be persisted state
   const [activeTool, setActiveTool] = React.useState<null | MapTool<any, any>>(
     DM_TOOL_MAP[0].tool
   );
 
-  const sendLiveMapTaskRef = React.useRef<ISendRequestTask | null>(null);
+  const isCurrentMapLive =
+    props.map.id !== null && props.map.id === props.liveMapId;
+  const isOtherMapLive = props.liveMapId !== null;
 
-  const sendLiveMap = React.useCallback(
-    async (canvas: HTMLCanvasElement) => {
-      if (sendLiveMapTaskRef.current) {
-        sendLiveMapTaskRef.current.abort();
+  const { addToast } = useToasts();
+  const asyncClipBoardApi = useAsyncClipboardApi();
+
+  const copyMapToClipboard = () => {
+    if (!controlRef.current) {
+      return;
+    }
+    const context = controlRef.current.getContext();
+    const mapCanvas = context.mapCanvas;
+    const fogCanvas = context.fogCanvas;
+
+    if (asyncClipBoardApi) {
+      const canvas = new OffscreenCanvas(mapCanvas.width, mapCanvas.height);
+      const context = canvas.getContext("2d")!;
+      context.drawImage(mapCanvas, 0, 0);
+      context.drawImage(fogCanvas, 0, 0);
+
+      const { clipboard, ClipboardItem } = asyncClipBoardApi;
+      canvas.convertToBlob().then((blob) => {
+        clipboard
+          .write([
+            new ClipboardItem({
+              [blob.type]: blob,
+            }),
+          ])
+          .then(() => {
+            addToast(`Copied map image to clipboard.`, {
+              appearance: "success",
+              autoDismiss: true,
+            });
+          })
+          .catch(console.error);
+      });
+    } else {
+      // In case we don't have the AsyncClipboard available we need to use a normal canvas in order to get the base64 string.
+      // The OffscreenCanvas has no `toDataURL` method.
+      const canvas = document.createElement("canvas");
+      canvas.width = mapCanvas.width;
+      canvas.height = mapCanvas.height;
+
+      const context = canvas.getContext("2d")!;
+      context.drawImage(mapCanvas, 0, 0);
+      context.drawImage(fogCanvas, 0, 0);
+
+      const dataUri = canvas.toDataURL("image/png");
+      window.open(dataUri, "_blank");
+    }
+  };
+
+  const isAltPressed = useIsKeyPressed("Alt");
+
+  React.useEffect(() => {
+    const listener = (ev: KeyboardEvent) => {
+      switch (ev.key) {
+        case "1":
+        case "2":
+        case "3": {
+          const toolIndex = parseInt(ev.key, 10) - 1;
+          setActiveTool(DM_TOOL_MAP[toolIndex].tool);
+          break;
+        }
       }
-      const blob = await new Promise<Blob>((res) => {
-        canvas.toBlob((blob) => {
-          res(blob!);
-        });
-      });
+    };
+    window.document.addEventListener("keypress", listener);
 
-      const image = new File([blob], "fog.live.png", {
-        type: "image/png",
-      });
-
-      const formData = new FormData();
-      formData.append("image", image);
-
-      const task = sendRequest({
-        url: buildApiUrl(`/map/${currentMap!.id}/send`),
-        method: "POST",
-        body: formData,
-        headers: {
-          Authorization: pcPassword ? `Bearer ${pcPassword}` : null,
-        },
-      });
-      sendLiveMapTaskRef.current = task;
-      const result = await task.done;
-      if (result.type !== "success") return;
-      // setLiveMapId(loadedMapId);
-    },
-    [currentMap?.id, pcPassword]
-  );
+    return () => window.document.removeEventListener("keypress", listener);
+  }, []);
 
   return (
     <BrushToolContextProvider
       onDrawEnd={(canvas) => {
-        console.log("ON DRAW END!!!");
-        // TODO: toggle between instant send and incremental send :)
-        sendLiveMap(canvas);
+        // TODO: toggle between instant send and incremental send
+        props.saveFogProgress(canvas);
       }}
     >
-      {mapImage && currentMap ? (
+      {mapImage ? (
         <MapView
-          activeTool={activeTool}
+          activeTool={isAltPressed ? DragPanZoomMapTool : activeTool}
           mapImage={mapImage}
           fogImage={fogImage}
           controlRef={controlRef}
-          tokens={currentMap.tokens}
+          tokens={props.map.tokens}
           updateTokenPosition={(id, position) => {
-            // TODO: map tokens should be movable
-            //  updateToken({ id, ...position })
+            props.updateToken({ id, ...position });
           }}
           markedAreas={markedAreas}
           markArea={({ x, y }) => {
@@ -379,12 +337,12 @@ export const NewDmSection = () => {
             //  );
           }}
           grid={
-            currentMap.grid && currentMap.showGridToPlayers
+            props.map.grid && props.map.showGridToPlayers
               ? {
-                  x: currentMap.grid.x,
-                  y: currentMap.grid.y,
-                  sideLength: currentMap.grid.sideLength,
-                  color: currentMap.gridColor || "red",
+                  x: props.map.grid.x,
+                  y: props.map.grid.y,
+                  sideLength: props.map.grid.sideLength,
+                  color: props.map.gridColor || "red",
                 }
               : null
           }
@@ -392,17 +350,7 @@ export const NewDmSection = () => {
           fogOpacity={0.5}
         />
       ) : null}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          position: "absolute",
-          height: "100%",
-          top: 0,
-          left: 12,
-          pointerEvents: "none",
-        }}
-      >
+      <LeftToolbarContainer>
         <Toolbar>
           <Toolbar.Logo />
           <Toolbar.Group divider>
@@ -421,10 +369,170 @@ export const NewDmSection = () => {
             <ShroudRevealSettings />
           </Toolbar.Group>
         </Toolbar>
-      </div>
+      </LeftToolbarContainer>
+      <BottomToolbarContainer>
+        <Toolbar horizontal>
+          <Toolbar.Group>
+            <Toolbar.Item isActive={null != props.map.grid}>
+              <Toolbar.Button
+                onClick={() => {
+                  if (!props.map.grid) {
+                    props.enterGridMode();
+                  } else {
+                    // setShowGridSettings(
+                    //   (showGridSettings) => !showGridSettings
+                    // );
+                  }
+                }}
+              >
+                <Icons.GridIcon size={20} />
+                <Icons.Label>
+                  {props.map.grid != null ? "Grid Settings" : "Add Grid"}
+                </Icons.Label>
+              </Toolbar.Button>
+              {/* {showGridSettings ? (
+                <ShowGridSettingsPopup
+                  gridColor={gridColor}
+                  setGridColor={setGridColor}
+                  showGrid={map.showGrid}
+                  setShowGrid={(showGrid) => {
+                    updateMap(map.id, { showGrid });
+                  }}
+                  showGridToPlayers={map.showGridToPlayers}
+                  setShowGridToPlayers={(showGridToPlayers) => {
+                    updateMap(map.id, { showGridToPlayers });
+                  }}
+                  onGridColorChangeComplete={onGridColorChangeComplete}
+                  onClickOutside={() => {
+                    setShowGridSettings(false);
+                  }}
+                />
+              ) : null} */}
+            </Toolbar.Item>
+            <Toolbar.Item isActive>
+              <Toolbar.Button
+                onClick={() => {
+                  props.showMapModal();
+                }}
+              >
+                <Icons.MapIcon size={20} />
+                <Icons.Label>Map Library</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
+            <Toolbar.Item isActive>
+              <Toolbar.Button
+                onClick={() => {
+                  props.openMediaLibrary();
+                }}
+              >
+                <Icons.ImageIcon size={20} />
+                <Icons.Label>Media Library</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
+            <Toolbar.Item isActive>
+              <Toolbar.Button
+                onClick={() => {
+                  props.openNotes();
+                }}
+              >
+                <Icons.BookOpen size={20} />
+                <Icons.Label>Notes</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
+          </Toolbar.Group>
+        </Toolbar>
+        <div style={{ marginLeft: 24 }} />
+        <Toolbar horizontal>
+          <Toolbar.Group>
+            <Toolbar.Item>
+              <ConditionalWrap
+                condition={props.liveMapId !== null}
+                wrap={(children) => (
+                  <Toolbar.Button onClick={props.hideMap}>
+                    {children}
+                  </Toolbar.Button>
+                )}
+              >
+                <Icons.PauseIcon
+                  color={
+                    props.liveMapId !== null
+                      ? "hsl(360, 83%, 62%)"
+                      : "hsl(211, 27%, 70%)"
+                  }
+                  size={20}
+                />
+                <Icons.Label
+                  color={
+                    props.liveMapId !== null
+                      ? "hsl(360, 83%, 62%)"
+                      : "hsl(211, 27%, 70%)"
+                  }
+                >
+                  Stop Sharing
+                </Icons.Label>
+              </ConditionalWrap>
+            </Toolbar.Item>
+            {isCurrentMapLive ? (
+              <Toolbar.Item>
+                <Icons.RadioIcon color="hsl(160, 51%, 49%)" size={20} />
+                <Icons.Label color="hsl(160, 51%, 49%)">Live</Icons.Label>
+              </Toolbar.Item>
+            ) : isOtherMapLive ? (
+              <Toolbar.Item>
+                <Icons.RadioIcon color="hsl(48, 94%, 68%)" size={20} />
+                <Icons.Label color="hsl(48, 94%, 68%)">Live</Icons.Label>
+              </Toolbar.Item>
+            ) : (
+              <Toolbar.Item>
+                <Icons.RadioIcon color="hsl(211, 27%, 70%)" size={20} />
+                <Icons.Label color="hsl(211, 27%, 70%)">Not Live</Icons.Label>
+              </Toolbar.Item>
+            )}
+            <Toolbar.Item isActive>
+              <Toolbar.Button onClick={copyMapToClipboard}>
+                <Icons.ClipboardIcon size={20} />
+                <Icons.Label>Clipboard</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
+            <Toolbar.Item isActive>
+              <Toolbar.Button
+                onClick={() => {
+                  const context = controlRef.current?.getContext();
+                  if (!context) {
+                    return;
+                  }
+                  props.sendLiveMap(context.fogCanvas);
+                }}
+              >
+                <Icons.SendIcon size={20} />
+                <Icons.Label>Send</Icons.Label>
+              </Toolbar.Button>
+            </Toolbar.Item>
+          </Toolbar.Group>
+        </Toolbar>
+      </BottomToolbarContainer>
     </BrushToolContextProvider>
   );
 };
+
+const LeftToolbarContainer = styled.div`
+  display: flex;
+  align-items: center;
+  position: absolute;
+  height: 100%;
+  top: 0;
+  left: 12px;
+  pointer-events: none;
+`;
+
+const BottomToolbarContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  position: absolute;
+  bottom: 12px;
+  pointer-events: none;
+`;
 
 const MenuItemRenderer = (props: {
   record: ToolMapRecord;

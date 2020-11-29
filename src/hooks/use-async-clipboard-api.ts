@@ -4,7 +4,9 @@ interface ClipboardItem {
   new (input: { [contentType: string]: Blob }): ClipboardItem;
 }
 
-type AsyncClipboardWriteFunction = (input: ClipboardItem) => Promise<void>;
+type AsyncClipboardWriteFunction = (
+  input: Array<ClipboardItem>
+) => Promise<void>;
 
 declare global {
   interface Window {

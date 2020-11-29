@@ -444,11 +444,11 @@ const PlayerMap: React.FC<{
                     <Toolbar.Item isActive>
                       <Toolbar.Button
                         onClick={() => {
-                          controlRef.current?.center();
+                          controlRef.current?.controls.center();
                         }}
                         onTouchStart={(ev) => {
                           ev.preventDefault();
-                          controlRef.current?.center();
+                          controlRef.current?.controls.center();
                         }}
                       >
                         <Icons.Compass size={20} />
@@ -458,11 +458,11 @@ const PlayerMap: React.FC<{
                     <Toolbar.Item isActive>
                       <Toolbar.LongPressButton
                         onClick={() => {
-                          controlRef.current?.zoomIn();
+                          controlRef.current?.controls.zoomIn();
                         }}
                         onLongPress={() => {
                           const interval = setInterval(() => {
-                            controlRef.current?.zoomIn();
+                            controlRef.current?.controls.zoomIn();
                           }, 100);
 
                           return () => clearInterval(interval);
@@ -475,11 +475,11 @@ const PlayerMap: React.FC<{
                     <Toolbar.Item isActive>
                       <Toolbar.LongPressButton
                         onClick={() => {
-                          controlRef.current?.zoomOut();
+                          controlRef.current?.controls.zoomOut();
                         }}
                         onLongPress={() => {
                           const interval = setInterval(() => {
-                            controlRef.current?.zoomOut();
+                            controlRef.current?.controls.zoomOut();
                           }, 100);
 
                           return () => clearInterval(interval);

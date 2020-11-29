@@ -23,6 +23,7 @@ const Rectangle = (props: {
     const p2 = props.p2.get();
     return [p1, [p2[0], p1[1], 0], p2, [p1[0], p2[1], 0], p1];
   }, [props.p1, props.p2]);
+
   const points = React.useMemo<Array<[number, number, number]>>(getPoints, [
     props.p1,
     props.p2,
@@ -30,8 +31,8 @@ const Rectangle = (props: {
   const ref = React.useRef<null | ThreeLine2>(null);
 
   useFrame(() => {
-    const points = getPoints();
     if (ref.current) {
+      const points = getPoints();
       ref.current.geometry.setPositions(points.flat());
     }
   });

@@ -469,9 +469,15 @@ const MapRenderer: React.FC<{
 };
 
 export type MapControlInterface = {
-  center: () => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
+  controls: {
+    center: () => void;
+    zoomIn: () => void;
+    zoomOut: () => void;
+  };
+  getContext: () => {
+    mapCanvas: HTMLCanvasElement;
+    fogCanvas: HTMLCanvasElement;
+  };
 };
 
 const MapViewRenderer = (props: {
@@ -591,23 +597,29 @@ const MapViewRenderer = (props: {
   React.useEffect(() => {
     if (props.controlRef) {
       props.controlRef.current = {
-        center: () =>
-          set({
-            scale: [1, 1, 1] as [number, number, number],
-            position: [0, 0, 0] as [number, number, number],
-          }),
-        zoomIn: () => {
-          const scale = spring.scale.get();
-          set({
-            scale: [scale[0] * 1.1, scale[1] * 1.1, 1],
-          });
+        controls: {
+          center: () =>
+            set({
+              scale: [1, 1, 1] as [number, number, number],
+              position: [0, 0, 0] as [number, number, number],
+            }),
+          zoomIn: () => {
+            const scale = spring.scale.get();
+            set({
+              scale: [scale[0] * 1.1, scale[1] * 1.1, 1],
+            });
+          },
+          zoomOut: () => {
+            const scale = spring.scale.get();
+            set({
+              scale: [scale[0] / 1.1, scale[1] / 1.1, 1],
+            });
+          },
         },
-        zoomOut: () => {
-          const scale = spring.scale.get();
-          set({
-            scale: [scale[0] / 1.1, scale[1] / 1.1, 1],
-          });
-        },
+        getContext: () => ({
+          mapCanvas,
+          fogCanvas,
+        }),
       };
     }
   });
