@@ -23,6 +23,7 @@ export type SharedMapToolState = {
     coordinates: {
       threeToCanvas: (vector: [number, number]) => [number, number];
       canvasToThree: (vector: [number, number]) => [number, number];
+      canvasToImage: (vector: [number, number]) => [number, number];
     };
   };
 };
@@ -79,4 +80,10 @@ export type MapTool<LocalState = unknown, ContextState = unknown> = {
     localState: LocalStateFactory<LocalState>,
     contextState: ContextState
   ) => any | void;
+  onClick?: (
+    event: PointerEvent,
+    context: SharedMapToolState,
+    localState: LocalStateFactory<LocalState>,
+    contextState: ContextState
+  ) => void;
 };

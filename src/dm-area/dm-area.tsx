@@ -22,7 +22,7 @@ import { AccessTokenProvider } from "../hooks/use-access-token";
 import { usePersistedState } from "../hooks/use-persisted-state";
 import { NewDmSection } from "./new-dm-map";
 import { Socket } from "socket.io-client";
-import { MapEntity, MapTokenEntity } from "../map-typings";
+import { MapEntity, MapTokenEntity, MarkedArea } from "../map-typings";
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -493,6 +493,38 @@ const Content = ({
     [setDroppedFile]
   );
 
+  const [markedAreas, setMarkedAreas] = React.useState<MarkedArea[]>(() => []);
+
+  const onMarkArea = ([x, y]: [number, number]) => {
+    socket.emit("mark area", {
+      x,
+      y,
+    });
+  };
+
+  React.useEffect(() => {
+    socket.on(
+      "mark area",
+      async (data: { id: string; x: number; y: number }) => {
+        if (window.document.visibilityState === "hidden") {
+          return;
+        }
+        setMarkedAreas((markedAreas) => [
+          ...markedAreas,
+          {
+            id: data.id,
+            x: data.x,
+            y: data.y,
+          },
+        ]);
+      }
+    );
+
+    return () => {
+      socket.off("mark area");
+    };
+  }, [socket]);
+
   return (
     <FetchContext.Provider value={localFetch}>
       {data && mode.title === "SHOW_MAP_LIBRARY" ? (
@@ -556,47 +588,55 @@ const Content = ({
               overflow: "hidden",
             }}
           >
-            <NewDmSection
-              password={dmPassword}
-              map={loadedMap}
-              liveMapId={liveMapId}
-              sendLiveMap={sendLiveMap}
-              saveFogProgress={saveFogProgress}
-              hideMap={hideMap}
-              showMapModal={showMapModal}
-              openNotes={() => {
-                setMode({ title: "SHOW_NOTES" });
-              }}
-              openMediaLibrary={() => {
-                setMode({ title: "MEDIA_LIBRARY" });
-              }}
-              enterGridMode={enterGridMode}
-              // updateMap={updateMap}
-              // deleteToken={deleteToken}
-              updateToken={updateToken}
-            />
-            {/* <DmMap
-              dmPassword={dmPassword}
-              setAppData={setData}
-              socket={socket}
-              map={loadedMap}
-              loadedMapId={loadedMap.id}
-              liveMapId={liveMapId}
-              sendLiveMap={sendLiveMap}
-              hideMap={hideMap}
-              showMapModal={showMapModal}
-              openNotes={() => {
-                setMode({ title: "SHOW_NOTES" });
-              }}
-              openMediaLibrary={() => {
-                setMode({ title: "MEDIA_LIBRARY" });
-              }}
-              enterGridMode={enterGridMode}
-              updateMap={updateMap}
-              deleteToken={deleteToken}
-              updateToken={updateToken}
-              onDropFile={onDropFile}
-            /> */}
+            {window.location.search === "?new_map" ? (
+              <NewDmSection
+                password={dmPassword}
+                map={loadedMap}
+                liveMapId={liveMapId}
+                sendLiveMap={sendLiveMap}
+                saveFogProgress={saveFogProgress}
+                hideMap={hideMap}
+                showMapModal={showMapModal}
+                openNotes={() => {
+                  setMode({ title: "SHOW_NOTES" });
+                }}
+                openMediaLibrary={() => {
+                  setMode({ title: "MEDIA_LIBRARY" });
+                }}
+                markedAreas={markedAreas}
+                markArea={onMarkArea}
+                removeMarkedArea={(id) => {
+                  setMarkedAreas((areas) =>
+                    areas.filter((area) => area.id !== id)
+                  );
+                }}
+                enterGridMode={enterGridMode}
+                updateToken={updateToken}
+              />
+            ) : (
+              <DmMap
+                dmPassword={dmPassword}
+                setAppData={setData}
+                socket={socket}
+                map={loadedMap}
+                loadedMapId={loadedMap.id}
+                liveMapId={liveMapId}
+                sendLiveMap={sendLiveMap}
+                hideMap={hideMap}
+                showMapModal={showMapModal}
+                openNotes={() => {
+                  setMode({ title: "SHOW_NOTES" });
+                }}
+                openMediaLibrary={() => {
+                  setMode({ title: "MEDIA_LIBRARY" });
+                }}
+                enterGridMode={enterGridMode}
+                updateMap={updateMap}
+                deleteToken={deleteToken}
+                updateToken={updateToken}
+                onDropFile={onDropFile}
+              />
+            )}
           </div>
         </div>
       ) : null}

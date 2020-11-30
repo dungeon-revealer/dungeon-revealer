@@ -20,6 +20,7 @@ import { useContextBridge } from "./hooks/use-context-bridge";
 enum LayerPosition {
   map = 0,
   token = 0.00001,
+  marker = 0.00002,
 }
 
 // convert image relative to three.js
@@ -245,11 +246,11 @@ const MarkedAreaRenderer: React.FC<{
       opacity: 1,
     },
     to: {
-      scale: [10, 10, 10] as [number, number, number],
+      scale: [30, 30, 30] as [number, number, number],
       opacity: 0,
     },
     config: {
-      duration: 1250,
+      duration: 2000,
     },
     onRest: () => {
       props.remove();
@@ -262,14 +263,19 @@ const MarkedAreaRenderer: React.FC<{
       position={[
         calculateX(props.x, props.factor, props.dimensions.width),
         calculateY(props.y, props.factor, props.dimensions.height),
-        0,
+        LayerPosition.marker,
       ]}
     >
       <ringBufferGeometry
         attach="geometry"
         args={[initialRadius * (1 - 0.1), initialRadius, 128]}
       />
-      <animated.meshStandardMaterial attach="material" color={"red"} />
+      <animated.meshStandardMaterial
+        attach="material"
+        color={"red"}
+        transparent
+        opacity={spring.opacity}
+      />
     </animated.mesh>
   );
 };
@@ -476,7 +482,6 @@ const MapViewRenderer = (props: {
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
   updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
   markedAreas: MarkedArea[];
-  markArea: (coordinates: { x: number; y: number }) => void;
   removeMarkedArea: (id: string) => void;
   grid: Grid | null;
   activeTool: MapTool<any, any> | null;
@@ -513,25 +518,22 @@ const MapViewRenderer = (props: {
     });
   }, [mapTexture, set]);
 
-  React.useEffect(() => {
-    if (!maximumSideLength) {
-      return;
-    }
-    if (props.fogImage) {
-      const { width, height } = getOptimalDimensions(
+  const optimalDimensions = React.useMemo(
+    () =>
+      getOptimalDimensions(
         props.mapImage.naturalWidth,
         props.mapImage.naturalHeight,
         maximumSideLength,
         maximumSideLength
-      );
+      ),
+    [maximumSideLength, props.mapImage]
+  );
 
-      fogCanvas.width = width;
-      fogCanvas.height = height;
-      const context = fogCanvas.getContext("2d");
-      if (!context) {
-        console.error("Could not create canvas context.");
-        return;
-      }
+  React.useEffect(() => {
+    if (props.fogImage) {
+      fogCanvas.width = optimalDimensions.width;
+      fogCanvas.height = optimalDimensions.height;
+      const context = fogCanvas.getContext("2d")!;
       context.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
       context.drawImage(
         props.fogImage,
@@ -541,38 +543,20 @@ const MapViewRenderer = (props: {
         fogCanvas.height
       );
     } else {
-      const context = fogCanvas.getContext("2d");
-      if (!context) {
-        console.error("Could not create canvas context.");
-        return;
-      }
+      const context = fogCanvas.getContext("2d")!;
       context.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
     }
     fogTexture.needsUpdate = true;
-  }, [props.fogImage, fogCanvas, maximumSideLength]);
+  }, [optimalDimensions, fogCanvas, maximumSideLength]);
 
   React.useEffect(() => {
-    if (!maximumSideLength) {
-      return;
-    }
-
-    const { width, height } = getOptimalDimensions(
-      props.mapImage.naturalWidth,
-      props.mapImage.naturalHeight,
-      maximumSideLength,
-      maximumSideLength
-    );
-
-    mapCanvas.width = width;
-    mapCanvas.height = height;
-    const context = mapCanvas.getContext("2d");
-    if (!context) {
-      return;
-    }
+    mapCanvas.width = optimalDimensions.width;
+    mapCanvas.height = optimalDimensions.height;
+    const context = mapCanvas.getContext("2d")!;
     context.drawImage(props.mapImage, 0, 0, mapCanvas.width, mapCanvas.height);
 
     mapTexture.needsUpdate = true;
-  }, [props.mapImage, mapCanvas, maximumSideLength]);
+  }, [, props.mapImage, mapCanvas, maximumSideLength]);
 
   const dimensions = React.useMemo(() => {
     return getOptimalDimensions(
@@ -640,6 +624,11 @@ const MapViewRenderer = (props: {
               calculateX(x, factor, dimensions.width),
               calculateY(y, factor, dimensions.height),
             ] as [number, number],
+          canvasToImage: ([x, y]: [number, number]) =>
+            [x / optimalDimensions.ratio, y / optimalDimensions.ratio] as [
+              number,
+              number
+            ],
         },
       },
     };
@@ -652,6 +641,7 @@ const MapViewRenderer = (props: {
     props.mapImage,
     viewport,
     isDragAllowed,
+    optimalDimensions,
   ]);
 
   const toolRef = React.useRef<{
@@ -663,6 +653,7 @@ const MapViewRenderer = (props: {
     onPointerUp: PointerEvent;
     onPointerDown: PointerEvent;
     onPointerMove: PointerEvent;
+    onClick: PointerEvent;
   }>(
     {
       onPointerDown: ({ event }) => {
@@ -715,6 +706,17 @@ const MapViewRenderer = (props: {
           toolRef.current.contextState
         );
       },
+      onClick: (args) => {
+        if (!toolRef.current || !props.activeTool) {
+          return;
+        }
+        return props.activeTool.onClick?.(
+          args.event,
+          toolContext,
+          toolRef.current.localState,
+          toolRef.current.contextState
+        );
+      },
     },
     {}
   );
@@ -726,14 +728,33 @@ const MapViewRenderer = (props: {
         mapImageTexture={mapTexture}
         fogTexture={fogTexture}
         viewport={viewport}
-        tokens={props.tokens}
-        markedAreas={props.markedAreas}
+        // TODO: Tokens and MarkedAreas are scaled to the image
+        // the actual canvas size can differ, so we have to
+        // calculate the coordinates relative to the canvas
+        tokens={props.tokens.map((token) => ({
+          ...token,
+          x: token.x * optimalDimensions.ratio,
+          y: token.y * optimalDimensions.ratio,
+          radius: token.radius * optimalDimensions.ratio,
+        }))}
+        markedAreas={props.markedAreas.map((area) => ({
+          ...area,
+          x: area.x * optimalDimensions.ratio,
+          y: area.y * optimalDimensions.ratio,
+        }))}
         removeMarkedArea={props.removeMarkedArea}
         grid={props.grid}
-        updateTokenPosition={props.updateTokenPosition}
+        updateTokenPosition={(id, coords) =>
+          props.updateTokenPosition(id, {
+            x: coords.x / optimalDimensions.ratio,
+            y: coords.y / optimalDimensions.ratio,
+          })
+        }
         scale={spring.scale}
         dimensions={dimensions}
-        factor={dimensions.width / props.mapImage.width}
+        factor={
+          dimensions.width / props.mapImage.width / optimalDimensions.ratio
+        }
         fogOpacity={props.fogOpacity}
       />
       {props.activeTool ? (
@@ -760,7 +781,6 @@ export const MapView = (props: {
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
   updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
   markedAreas: MarkedArea[];
-  markArea: (coordinates: { x: number; y: number }) => void;
   removeMarkedArea: (id: string) => void;
   grid: Grid | null;
   activeTool: MapTool | null;
@@ -786,7 +806,6 @@ export const MapView = (props: {
             controlRef={props.controlRef}
             updateTokenPosition={props.updateTokenPosition}
             markedAreas={props.markedAreas}
-            markArea={props.markArea}
             removeMarkedArea={props.removeMarkedArea}
             grid={props.grid}
             fogOpacity={props.fogOpacity}
