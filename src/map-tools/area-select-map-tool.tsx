@@ -4,12 +4,6 @@ import type { MapTool } from "./map-tool";
 import { ThreeLine, ThreeLine2 } from "../three-line";
 import { BrushToolContextValue, BrushToolContext } from "./brush-map-tool";
 import { applyFogRectangle } from "../canvas-draw-utilities";
-import {
-  calculateRealX,
-  calculateRealY,
-  calculateX,
-  calculateY,
-} from "../map-view";
 import { useFrame } from "react-three-fiber";
 
 const Rectangle = (props: {
@@ -88,52 +82,25 @@ export const AreaSelectMapTool: MapTool<
     );
   },
   onPointerMove: (event, context, localState) => {
-    const factor = context.dimensions.width / context.fogCanvas.width;
     const position = context.mapState.position.get();
     const scale = context.mapState.scale.get();
 
-    const x = calculateRealX(
-      // We need to convert the point to the point local to our element.
-      (event.point.x - position[0]) / scale[0],
-      factor,
-      context.dimensions.width
-    );
-    const y = calculateRealY(
-      // We need to convert the point to the point local to our element.
-      (event.point.y - position[1]) / scale[1],
-      factor,
-      context.dimensions.height
-    );
-
     localState.state.cursorPosition.set([
-      calculateX(x, factor, context.dimensions.width),
-      calculateY(y, factor, context.dimensions.height),
+      (event.point.x - position[0]) / scale[0],
+      (event.point.y - position[1]) / scale[1],
       0,
     ]);
   },
   onPointerDown: (event, context, localState) => {
-    const factor = context.dimensions.width / context.fogCanvas.width;
     const position = context.mapState.position.get();
     const scale = context.mapState.scale.get();
 
-    const x = calculateRealX(
-      // We need to convert the point to the point local to our element.
-      (event.point.x - position[0]) / scale[0],
-      factor,
-      context.dimensions.width
-    );
-    const y = calculateRealY(
-      // We need to convert the point to the point local to our element.
-      (event.point.y - position[1]) / scale[1],
-      factor,
-      context.dimensions.height
-    );
     localState.setState((state) => ({
       ...state,
       lastCursorPosition: new SpringValue({
         from: [
-          calculateX(x, factor, context.dimensions.width),
-          calculateY(y, factor, context.dimensions.height),
+          (event.point.x - position[0]) / scale[0],
+          (event.point.y - position[1]) / scale[1],
           0,
         ] as [number, number, number],
       }),
@@ -141,21 +108,14 @@ export const AreaSelectMapTool: MapTool<
   },
   onPointerUp: (_, context, localState, contextState) => {
     if (localState.state.lastCursorPosition) {
-      const factor = context.dimensions.width / context.fogCanvas.width;
       const fogCanvasContext = context.fogCanvas.getContext("2d")!;
       const p1 = localState.state.cursorPosition.get();
       const p2 = localState.state.lastCursorPosition.get();
 
       applyFogRectangle(
         contextState.state.fogMode,
-        [
-          calculateRealX(p1[0], factor, context.dimensions.width),
-          calculateRealY(p1[1], factor, context.dimensions.height),
-        ],
-        [
-          calculateRealX(p2[0], factor, context.dimensions.width),
-          calculateRealY(p2[1], factor, context.dimensions.height),
-        ],
+        context.helper.coordinates.threeToCanvas([p1[0], p1[1]]),
+        context.helper.coordinates.threeToCanvas([p2[0], p2[1]]),
         fogCanvasContext
       );
       context.fogTexture.needsUpdate = true;

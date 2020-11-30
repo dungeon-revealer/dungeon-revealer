@@ -23,30 +23,18 @@ enum LayerPosition {
 }
 
 // convert image relative to three.js
-export const calculateX = (
-  x: number,
-  factor: number,
-  dimensionsWidth: number
-) => x * factor - dimensionsWidth / 2;
+const calculateX = (x: number, factor: number, dimensionsWidth: number) =>
+  x * factor - dimensionsWidth / 2;
 
-export const calculateY = (
-  y: number,
-  factor: number,
-  dimensionsHeight: number
-) => -y * factor + dimensionsHeight / 2;
+const calculateY = (y: number, factor: number, dimensionsHeight: number) =>
+  -y * factor + dimensionsHeight / 2;
 
 // convert three.js to image relative
-export const calculateRealX = (
-  x: number,
-  factor: number,
-  dimensionsWidth: number
-) => (x + dimensionsWidth / 2) / factor;
+const calculateRealX = (x: number, factor: number, dimensionsWidth: number) =>
+  (x + dimensionsWidth / 2) / factor;
 
-export const calculateRealY = (
-  y: number,
-  factor: number,
-  dimensionsHeight: number
-) => ((y - dimensionsHeight / 2) / factor) * -1;
+const calculateRealY = (y: number, factor: number, dimensionsHeight: number) =>
+  ((y - dimensionsHeight / 2) / factor) * -1;
 
 export type Dimensions = { width: number; height: number; ratio: number };
 
@@ -629,6 +617,8 @@ const MapViewRenderer = (props: {
   const isDragAllowed = React.useRef(true);
 
   const toolContext = React.useMemo<SharedMapToolState>(() => {
+    const factor = dimensions.width / mapCanvas.width;
+
     return {
       fogCanvas,
       fogTexture,
@@ -638,6 +628,20 @@ const MapViewRenderer = (props: {
       mapImage: props.mapImage,
       viewport,
       isDragAllowed,
+      helper: {
+        coordinates: {
+          threeToCanvas: ([x, y]: [number, number]) =>
+            [
+              calculateRealX(x, factor, dimensions.width),
+              calculateRealY(y, factor, dimensions.height),
+            ] as [number, number],
+          canvasToThree: ([x, y]: [number, number]) =>
+            [
+              calculateX(x, factor, dimensions.width),
+              calculateY(y, factor, dimensions.height),
+            ] as [number, number],
+        },
+      },
     };
   }, [
     fogCanvas,

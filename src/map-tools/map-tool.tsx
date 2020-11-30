@@ -19,6 +19,12 @@ export type SharedMapToolState = {
   dimensions: Dimensions;
   viewport: ViewportData;
   isDragAllowed: React.MutableRefObject<boolean>;
+  helper: {
+    coordinates: {
+      threeToCanvas: (vector: [number, number]) => [number, number];
+      canvasToThree: (vector: [number, number]) => [number, number];
+    };
+  };
 };
 
 type LocalStateFactory<State> = {

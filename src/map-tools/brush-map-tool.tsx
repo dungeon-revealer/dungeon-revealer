@@ -13,12 +13,6 @@ import {
   calculateSquareCoordinates,
 } from "../canvas-draw-utilities";
 import {
-  calculateRealX,
-  calculateRealY,
-  calculateX,
-  calculateY,
-} from "../map-view";
-import {
   PersistedStateModel,
   usePersistedState,
 } from "../hooks/use-persisted-state";
@@ -184,28 +178,19 @@ export const BrushMapTool: MapTool<
     }
   },
   onPointerDown: (event, context, localState, { state }) => {
-    const canvasContext = context.fogCanvas.getContext("2d")!;
-    const factor = context.dimensions.width / context.fogCanvas.width;
     const position = context.mapState.position.get();
     const scale = context.mapState.scale.get();
-    const x = calculateRealX(
-      // We need to convert the point to the point local to our element.
-      (event.point.x - position[0]) / scale[0],
-      factor,
-      context.dimensions.width
-    );
-    const y = calculateRealY(
-      // We need to convert the point to the point local to our element.
-      (event.point.y - position[1]) / scale[1],
-      factor,
-      context.dimensions.height
-    );
+
+    const x = (event.point.x - position[0]) / scale[0];
+    const y = (event.point.y - position[1]) / scale[1];
+
+    const canvasContext = context.fogCanvas.getContext("2d")!;
 
     applyInitialFog(
       state.fogMode,
       state.brushShape,
       state.brushSize,
-      [x, y],
+      context.helper.coordinates.threeToCanvas([x, y]),
       canvasContext!
     );
     context.fogTexture.needsUpdate = true;
@@ -216,28 +201,13 @@ export const BrushMapTool: MapTool<
     contextState.handlers.onDrawEnd(context.fogCanvas);
   },
   onPointerMove: (event, context, localState, { state }) => {
-    const factor = context.dimensions.width / context.fogCanvas.width;
     const position = context.mapState.position.get();
     const scale = context.mapState.scale.get();
 
-    const x = calculateRealX(
-      // We need to convert the point to the point local to our element.
-      (event.point.x - position[0]) / scale[0],
-      factor,
-      context.dimensions.width
-    );
-    const y = calculateRealY(
-      // We need to convert the point to the point local to our element.
-      (event.point.y - position[1]) / scale[1],
-      factor,
-      context.dimensions.height
-    );
+    const x = (event.point.x - position[0]) / scale[0];
+    const y = (event.point.y - position[1]) / scale[1];
 
-    localState.state.cursorPosition.set([
-      calculateX(x, factor, context.dimensions.width),
-      calculateY(y, factor, context.dimensions.height),
-      0,
-    ]);
+    localState.state.cursorPosition.set([x, y, 0]);
 
     if (localState.state.lastCursorPosition) {
       const canvasContext = context.fogCanvas.getContext("2d")!;
@@ -246,8 +216,10 @@ export const BrushMapTool: MapTool<
         state.fogMode,
         state.brushShape,
         state.brushSize,
-        localState.state.lastCursorPosition,
-        [x, y],
+        context.helper.coordinates.threeToCanvas(
+          localState.state.lastCursorPosition
+        ),
+        context.helper.coordinates.threeToCanvas([x, y]),
         canvasContext
       );
       context.fogTexture.needsUpdate = true;
