@@ -600,6 +600,10 @@ const MapViewRenderer = (props: {
 
   const isDragAllowed = React.useRef(true);
 
+  const [pointerPosition] = React.useState(
+    () => new SpringValue({ from: [0, 0, 0] as [number, number, number] })
+  );
+
   const toolContext = React.useMemo<SharedMapToolState>(() => {
     const factor = dimensions.width / mapCanvas.width;
 
@@ -612,6 +616,7 @@ const MapViewRenderer = (props: {
       mapImage: props.mapImage,
       viewport,
       isDragAllowed,
+      pointerPosition,
       helper: {
         coordinates: {
           threeToCanvas: ([x, y]: [number, number]) =>
@@ -642,6 +647,7 @@ const MapViewRenderer = (props: {
     viewport,
     isDragAllowed,
     optimalDimensions,
+    pointerPosition,
   ]);
 
   const toolRef = React.useRef<{
@@ -654,6 +660,7 @@ const MapViewRenderer = (props: {
     onPointerDown: PointerEvent;
     onPointerMove: PointerEvent;
     onClick: PointerEvent;
+    onKeyDown: KeyboardEvent;
   }>(
     {
       onPointerDown: ({ event }) => {
@@ -683,6 +690,15 @@ const MapViewRenderer = (props: {
         if (!toolRef.current || !props.activeTool) {
           return;
         }
+        const position = toolContext.mapState.position.get();
+        const scale = toolContext.mapState.scale.get();
+
+        pointerPosition.set([
+          (event.point.x - position[0]) / scale[0],
+          (event.point.y - position[1]) / scale[1],
+          0,
+        ]);
+
         return props.activeTool.onPointerMove?.(
           event,
           toolContext,

@@ -11,39 +11,17 @@ export const MarkAreaToolContext = React.createContext<MarkAreaToolContextValue>
   undefined as any
 );
 
-export const MarkAreaMapTool: MapTool<
-  {
-    cursorPosition: SpringValue<[number, number, number]>;
-  },
-  MarkAreaToolContextValue
-> = {
+export const MarkAreaMapTool: MapTool<{}, MarkAreaToolContextValue> = {
   id: "mark-area-map-tool",
   Context: MarkAreaToolContext,
   Component: () => null,
-  createLocalState: () => ({
-    cursorPosition: new SpringValue<[number, number, number]>({
-      to: [0, 0, 0],
-    }),
-  }),
-  onPointerMove: (event, context, localState) => {
-    const position = context.mapState.position.get();
-    const scale = context.mapState.scale.get();
-
-    const x = (event.point.x - position[0]) / scale[0];
-    const y = (event.point.y - position[1]) / scale[1];
-
-    localState.state.cursorPosition.set([x, y, 0]);
-  },
-  onClick: (event, context, _, contextValue) => {
-    const position = context.mapState.position.get();
-    const scale = context.mapState.scale.get();
-
-    const x = (event.point.x - position[0]) / scale[0];
-    const y = (event.point.y - position[1]) / scale[1];
+  createLocalState: () => ({}),
+  onClick: (_, context, __, contextValue) => {
+    const position = context.pointerPosition.get();
 
     contextValue.onMarkArea(
       context.helper.coordinates.canvasToImage(
-        context.helper.coordinates.threeToCanvas([x, y])
+        context.helper.coordinates.threeToCanvas([position[0], position[1]])
       )
     );
   },

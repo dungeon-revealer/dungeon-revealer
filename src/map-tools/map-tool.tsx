@@ -19,10 +19,15 @@ export type SharedMapToolState = {
   dimensions: Dimensions;
   viewport: ViewportData;
   isDragAllowed: React.MutableRefObject<boolean>;
+  /* The current pointer position on the three.js canvas */
+  pointerPosition: SpringValue<[number, number, number]>;
   helper: {
     coordinates: {
+      /* convert three.js coordinate to canvas coordinate */
       threeToCanvas: (vector: [number, number]) => [number, number];
+      /* convert canvas coordinate to three.js coordinate */
       canvasToThree: (vector: [number, number]) => [number, number];
+      /* convert canvas coordinate to image coordinate */
       canvasToImage: (vector: [number, number]) => [number, number];
     };
   };

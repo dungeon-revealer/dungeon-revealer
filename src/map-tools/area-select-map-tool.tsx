@@ -5,6 +5,7 @@ import { ThreeLine, ThreeLine2 } from "../three-line";
 import { BrushToolContextValue, BrushToolContext } from "./brush-map-tool";
 import { applyFogRectangle } from "../canvas-draw-utilities";
 import { useFrame } from "react-three-fiber";
+import { useGesture } from "react-use-gesture";
 
 const Rectangle = (props: {
   p1: SpringValue<[number, number, number]>;
@@ -35,29 +36,41 @@ const Rectangle = (props: {
 
 export const AreaSelectMapTool: MapTool<
   {
-    lastCursorPosition: null | SpringValue<[number, number, number]>;
-    cursorPosition: SpringValue<[number, number, number]>;
+    lastPointerPosition: null | SpringValue<[number, number, number]>;
   },
   BrushToolContextValue
 > = {
   id: "area-select-map-tool",
   Context: BrushToolContext,
   createLocalState: () => ({
-    lastCursorPosition: null,
-    cursorPosition: new SpringValue<[number, number, number]>({
-      to: [0, 0, 0],
-    }),
+    lastPointerPosition: null,
   }),
   Component: (props) => {
     const fadeWidth = 0.05;
 
-    return props.localState.state.lastCursorPosition ? (
+    useGesture<{ onKeyDown: KeyboardEvent }>(
+      {
+        onKeyDown: (args) => {
+          if (args.event.key === "Escape") {
+            props.localState.setState((state) => ({
+              ...state,
+              lastPointerPosition: null,
+            }));
+          }
+        },
+      },
+      {
+        domTarget: window.document,
+      }
+    );
+
+    return props.localState.state.lastPointerPosition ? (
       <Rectangle
-        p1={props.localState.state.lastCursorPosition}
-        p2={props.localState.state.cursorPosition}
+        p1={props.localState.state.lastPointerPosition}
+        p2={props.mapContext.pointerPosition}
       />
     ) : (
-      <animated.group position={props.localState.state.cursorPosition}>
+      <animated.group position={props.mapContext.pointerPosition}>
         <>
           <ThreeLine
             color="red"
@@ -81,23 +94,13 @@ export const AreaSelectMapTool: MapTool<
       </animated.group>
     );
   },
-  onPointerMove: (event, context, localState) => {
-    const position = context.mapState.position.get();
-    const scale = context.mapState.scale.get();
-
-    localState.state.cursorPosition.set([
-      (event.point.x - position[0]) / scale[0],
-      (event.point.y - position[1]) / scale[1],
-      0,
-    ]);
-  },
   onPointerDown: (event, context, localState) => {
     const position = context.mapState.position.get();
     const scale = context.mapState.scale.get();
 
     localState.setState((state) => ({
       ...state,
-      lastCursorPosition: new SpringValue({
+      lastPointerPosition: new SpringValue({
         from: [
           (event.point.x - position[0]) / scale[0],
           (event.point.y - position[1]) / scale[1],
@@ -107,10 +110,10 @@ export const AreaSelectMapTool: MapTool<
     }));
   },
   onPointerUp: (_, context, localState, contextState) => {
-    if (localState.state.lastCursorPosition) {
+    if (localState.state.lastPointerPosition) {
       const fogCanvasContext = context.fogCanvas.getContext("2d")!;
-      const p1 = localState.state.cursorPosition.get();
-      const p2 = localState.state.lastCursorPosition.get();
+      const p1 = context.pointerPosition.get();
+      const p2 = localState.state.lastPointerPosition.get();
 
       applyFogRectangle(
         contextState.state.fogMode,
@@ -124,7 +127,7 @@ export const AreaSelectMapTool: MapTool<
 
     localState.setState((state) => ({
       ...state,
-      lastCursorPosition: null,
+      lastPointerPosition: null,
     }));
   },
 };

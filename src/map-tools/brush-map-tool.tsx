@@ -120,17 +120,13 @@ export const BrushToolContextProvider = (props: {
 
 export const BrushMapTool: MapTool<
   {
-    lastCursorPosition: null | [number, number];
-    cursorPosition: SpringValue<[number, number, number]>;
+    lastPointerPosition: null | [number, number];
   },
   BrushToolContextValue
 > = {
   id: "brush-map-tool",
   createLocalState: () => ({
-    lastCursorPosition: null,
-    cursorPosition: new SpringValue<[number, number, number]>({
-      to: [0, 0, 0],
-    }),
+    lastPointerPosition: null,
   }),
   Context: BrushToolContext,
   Component: (props) => {
@@ -143,7 +139,7 @@ export const BrushMapTool: MapTool<
           2;
 
         return (
-          <animated.group position={props.localState.state.cursorPosition}>
+          <animated.group position={props.mapContext.pointerPosition}>
             <mesh>
               <ringBufferGeometry
                 attach="geometry"
@@ -170,19 +166,18 @@ export const BrushMapTool: MapTool<
         return (
           <Square
             width={center}
-            position={props.localState.state.cursorPosition}
+            position={props.mapContext.pointerPosition}
             color="red"
           />
         );
       }
     }
   },
-  onPointerDown: (event, context, localState, { state }) => {
-    const position = context.mapState.position.get();
-    const scale = context.mapState.scale.get();
-
-    const x = (event.point.x - position[0]) / scale[0];
-    const y = (event.point.y - position[1]) / scale[1];
+  onPointerDown: (_, context, localState, { state }) => {
+    const position: [number, number] = [
+      context.pointerPosition.get()[0],
+      context.pointerPosition.get()[1],
+    ];
 
     const canvasContext = context.fogCanvas.getContext("2d")!;
 
@@ -190,40 +185,37 @@ export const BrushMapTool: MapTool<
       state.fogMode,
       state.brushShape,
       state.brushSize,
-      context.helper.coordinates.threeToCanvas([x, y]),
+      context.helper.coordinates.threeToCanvas(position),
       canvasContext!
     );
     context.fogTexture.needsUpdate = true;
-    localState.state.lastCursorPosition = [x, y];
+    localState.state.lastPointerPosition = position;
   },
   onPointerUp: (_, context, localState, contextState) => {
-    localState.state.lastCursorPosition = null;
+    localState.state.lastPointerPosition = null;
     contextState.handlers.onDrawEnd(context.fogCanvas);
   },
-  onPointerMove: (event, context, localState, { state }) => {
-    const position = context.mapState.position.get();
-    const scale = context.mapState.scale.get();
-
-    const x = (event.point.x - position[0]) / scale[0];
-    const y = (event.point.y - position[1]) / scale[1];
-
-    localState.state.cursorPosition.set([x, y, 0]);
-
-    if (localState.state.lastCursorPosition) {
+  onPointerMove: (_, context, localState, { state }) => {
+    if (localState.state.lastPointerPosition) {
       const canvasContext = context.fogCanvas.getContext("2d")!;
+
+      const position: [number, number] = [
+        context.pointerPosition.get()[0],
+        context.pointerPosition.get()[1],
+      ];
 
       applyFog(
         state.fogMode,
         state.brushShape,
         state.brushSize,
         context.helper.coordinates.threeToCanvas(
-          localState.state.lastCursorPosition
+          localState.state.lastPointerPosition
         ),
-        context.helper.coordinates.threeToCanvas([x, y]),
+        context.helper.coordinates.threeToCanvas(position),
         canvasContext
       );
       context.fogTexture.needsUpdate = true;
-      localState.state.lastCursorPosition = [x, y];
+      localState.state.lastPointerPosition = position;
     }
   },
 };
