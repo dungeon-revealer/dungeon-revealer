@@ -790,33 +790,16 @@ const MapToolRenderer = <
   LocalState extends {} = any,
   ContextState extends {} = any
 >(props: {
-  tool: MapTool<LocalState, ContextState>;
+  tool: MapTool;
   toolRef: React.MutableRefObject<{
-    contextState: ContextState;
-    localState: {
-      state: LocalState;
-      setState: React.Dispatch<React.SetStateAction<LocalState>>;
-    };
     handlers?: any;
   } | null>;
   handlerContext: SharedMapToolState;
 }): React.ReactElement => {
-  const contextState = React.useContext<ContextState>(props.tool.Context);
-  const [state, setState] = React.useState<LocalState>(
-    props.tool.createLocalState
-  );
-
-  const localState = {
-    state,
-    setState,
-  };
-
   const handlers = React.useRef<any>(null);
 
   React.useEffect(() => {
     props.toolRef.current = {
-      contextState,
-      localState,
       handlers: handlers.current,
     };
 
@@ -827,13 +810,9 @@ const MapToolRenderer = <
 
   return (
     <props.tool.Component
-      contextState={contextState}
-      localState={localState}
       mapContext={props.handlerContext}
       useMapGesture={(config) => {
         props.toolRef.current = {
-          contextState,
-          localState,
           handlers: (handlers.current = config),
         };
       }}

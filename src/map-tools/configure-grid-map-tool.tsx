@@ -21,22 +21,17 @@ export const ConfigureGridMapToolContext = React.createContext<ConfigureGridMapT
   undefined as any
 );
 
-export const ConfigureGridMapTool: MapTool<
-  {},
-  ConfigureGridMapToolContextValue
-> = {
+export const ConfigureGridMapTool: MapTool = {
   id: "configure-grid-map-tool",
-  Context: ConfigureGridMapToolContext,
-  createLocalState: () => ({}),
   Component: (props) => {
+    const configureGridContext = React.useContext(ConfigureGridMapToolContext);
     usePinchWheelZoom(props.mapContext);
-
     props.useMapGesture({
       onDrag: ({ delta, movement, memo, event }) => {
         event.stopPropagation();
 
         if (props.mapContext.isAltPressed) {
-          props.contextState.setState((state) => ({
+          configureGridContext.setState((state) => ({
             ...state,
             offsetX: state.offsetX + delta[0],
             offsetY: state.offsetY + delta[1],
@@ -61,8 +56,8 @@ export const ConfigureGridMapTool: MapTool<
       offsetY,
     ] = props.mapContext.helper.coordinates.canvasToThree(
       props.mapContext.helper.coordinates.imageToCanvas([
-        props.contextState.state.offsetX,
-        props.contextState.state.offsetY,
+        configureGridContext.state.offsetX,
+        configureGridContext.state.offsetY,
       ])
     );
 
@@ -71,8 +66,8 @@ export const ConfigureGridMapTool: MapTool<
       columnHeight,
     ] = props.mapContext.helper.vector.canvasToThree(
       props.mapContext.helper.vector.imageToCanvas([
-        props.contextState.state.columnWidth,
-        props.contextState.state.columnHeight,
+        configureGridContext.state.columnWidth,
+        configureGridContext.state.columnHeight,
       ])
     );
 

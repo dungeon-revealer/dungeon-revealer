@@ -37,25 +37,21 @@ export const Rectangle = (props: {
   );
 };
 
-export const AreaSelectMapTool: MapTool<
-  {
-    lastPointerPosition: null | SpringValue<[number, number, number]>;
-  },
-  BrushToolContextValue
-> = {
+export const AreaSelectMapTool: MapTool = {
   id: "area-select-map-tool",
-  Context: BrushToolContext,
-  createLocalState: () => ({
-    lastPointerPosition: null,
-  }),
   Component: (props) => {
+    const brushContext = React.useContext(BrushToolContext);
+    const [localState, setLocalState] = React.useState(() => ({
+      lastPointerPosition: null as null | SpringValue<[number, number, number]>,
+    }));
+
     const fadeWidth = 0.05;
 
     useGesture<{ onKeyDown: KeyboardEvent }>(
       {
         onKeyDown: (args) => {
           if (args.event.key === "Escape") {
-            props.localState.setState((state) => ({
+            setLocalState((state) => ({
               ...state,
               lastPointerPosition: null,
             }));
@@ -72,7 +68,7 @@ export const AreaSelectMapTool: MapTool<
         const position = props.mapContext.mapState.position.get();
         const scale = props.mapContext.mapState.scale.get();
 
-        props.localState.setState((state) => ({
+        setLocalState((state) => ({
           ...state,
           lastPointerPosition: new SpringValue({
             from: [
@@ -84,31 +80,31 @@ export const AreaSelectMapTool: MapTool<
         }));
       },
       onPointerUp: () => {
-        if (props.localState.state.lastPointerPosition) {
+        if (localState.lastPointerPosition) {
           const fogCanvasContext = props.mapContext.fogCanvas.getContext("2d")!;
           const p1 = props.mapContext.pointerPosition.get();
-          const p2 = props.localState.state.lastPointerPosition.get();
+          const p2 = localState.lastPointerPosition.get();
 
           applyFogRectangle(
-            props.contextState.state.fogMode,
+            brushContext.state.fogMode,
             props.mapContext.helper.coordinates.threeToCanvas([p1[0], p1[1]]),
             props.mapContext.helper.coordinates.threeToCanvas([p2[0], p2[1]]),
             fogCanvasContext
           );
           props.mapContext.fogTexture.needsUpdate = true;
-          props.contextState.handlers.onDrawEnd(props.mapContext.fogCanvas);
+          brushContext.handlers.onDrawEnd(props.mapContext.fogCanvas);
         }
 
-        props.localState.setState((state) => ({
+        setLocalState((state) => ({
           ...state,
           lastPointerPosition: null,
         }));
       },
     });
 
-    return props.localState.state.lastPointerPosition ? (
+    return localState.lastPointerPosition ? (
       <Rectangle
-        p1={props.localState.state.lastPointerPosition}
+        p1={localState.lastPointerPosition}
         p2={props.mapContext.pointerPosition}
         color="red"
       />

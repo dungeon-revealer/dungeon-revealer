@@ -65,20 +65,10 @@ export type MapToolMapGestureHandlers = Handlers<{
 /**
  * Utility for keeping the tools logic isolated.
  */
-export type MapTool<LocalState = unknown, ContextState = unknown> = {
+export type MapTool = {
   id: string;
-  // Create a mutable state that is available as long as the tool is active.
-  // It can be used for storing information about the cursor position or selected elements.
-  // All information inside createMutableState should not trigger any re-renders
-  createLocalState: () => LocalState;
-  // The context that will be used for injecting additional state into the handlers/component.
-  // A usage example is a context that holds information about the brush size; which can be configured
-  // in a component somewhere else in the React component tree.
-  Context: React.Context<ContextState>;
   // A component that will be rendered inside the map with all necessary props injected.
   Component: (props: {
-    contextState: ContextState;
-    localState: LocalStateFactory<LocalState>;
     mapContext: SharedMapToolState;
     useMapGesture: (params: MapToolMapGestureHandlers) => void;
   }) => React.ReactElement | null;

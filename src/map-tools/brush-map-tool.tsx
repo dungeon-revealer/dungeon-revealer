@@ -118,18 +118,14 @@ export const BrushToolContextProvider = (props: {
   );
 };
 
-export const BrushMapTool: MapTool<
-  {
-    lastPointerPosition: null | [number, number];
-  },
-  BrushToolContextValue
-> = {
+export const BrushMapTool: MapTool = {
   id: "brush-map-tool",
-  createLocalState: () => ({
-    lastPointerPosition: null,
-  }),
-  Context: BrushToolContext,
   Component: (props) => {
+    const brushContext = React.useContext(BrushToolContext);
+    const [localState] = React.useState(() => ({
+      lastPointerPosition: null as null | [number, number],
+    }));
+
     props.useMapGesture({
       onPointerDown: () => {
         const position: [number, number] = [
@@ -140,21 +136,21 @@ export const BrushMapTool: MapTool<
         const canvasContext = props.mapContext.fogCanvas.getContext("2d")!;
 
         applyInitialFog(
-          props.contextState.state.fogMode,
-          props.contextState.state.brushShape,
-          props.contextState.state.brushSize,
+          brushContext.state.fogMode,
+          brushContext.state.brushShape,
+          brushContext.state.brushSize,
           props.mapContext.helper.coordinates.threeToCanvas(position),
           canvasContext!
         );
         props.mapContext.fogTexture.needsUpdate = true;
-        props.localState.state.lastPointerPosition = position;
+        localState.lastPointerPosition = position;
       },
       onPointerUp: () => {
-        props.localState.state.lastPointerPosition = null;
-        props.contextState.handlers.onDrawEnd(props.mapContext.fogCanvas);
+        localState.lastPointerPosition = null;
+        brushContext.handlers.onDrawEnd(props.mapContext.fogCanvas);
       },
       onPointerMove: () => {
-        if (props.localState.state.lastPointerPosition) {
+        if (localState.lastPointerPosition) {
           const canvasContext = props.mapContext.fogCanvas.getContext("2d")!;
 
           const position: [number, number] = [
@@ -163,26 +159,25 @@ export const BrushMapTool: MapTool<
           ];
 
           applyFog(
-            props.contextState.state.fogMode,
-            props.contextState.state.brushShape,
-            props.contextState.state.brushSize,
+            brushContext.state.fogMode,
+            brushContext.state.brushShape,
+            brushContext.state.brushSize,
             props.mapContext.helper.coordinates.threeToCanvas(
-              props.localState.state.lastPointerPosition
+              localState.lastPointerPosition
             ),
             props.mapContext.helper.coordinates.threeToCanvas(position),
             canvasContext
           );
           props.mapContext.fogTexture.needsUpdate = true;
-          props.localState.state.lastPointerPosition = position;
+          localState.lastPointerPosition = position;
         }
       },
     });
 
-    switch (props.contextState.state.brushShape) {
+    switch (brushContext.state.brushShape) {
       case BrushShape.circle: {
         const radius =
-          (props.contextState.state.brushSize *
-            props.mapContext.dimensions.width) /
+          (brushContext.state.brushSize * props.mapContext.dimensions.width) /
           props.mapContext.fogCanvas.width /
           2;
 
@@ -204,8 +199,7 @@ export const BrushMapTool: MapTool<
       }
       case BrushShape.square: {
         const center =
-          (props.contextState.state.brushSize *
-            props.mapContext.dimensions.width) /
+          (brushContext.state.brushSize * props.mapContext.dimensions.width) /
           props.mapContext.fogCanvas.width;
         return (
           <Square

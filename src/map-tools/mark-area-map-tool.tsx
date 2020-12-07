@@ -10,14 +10,14 @@ export const MarkAreaToolContext = React.createContext<MarkAreaToolContextValue>
   undefined as any
 );
 
-export const MarkAreaMapTool: MapTool<{}, MarkAreaToolContextValue> = {
+export const MarkAreaMapTool: MapTool = {
   id: "mark-area-map-tool",
-  Context: MarkAreaToolContext,
   Component: (props) => {
+    const markAreaContext = React.useContext(MarkAreaToolContext);
     props.useMapGesture({
       onClick: () => {
         const position = props.mapContext.pointerPosition.get();
-        props.contextState.onMarkArea(
+        markAreaContext.onMarkArea(
           props.mapContext.helper.coordinates.canvasToImage(
             props.mapContext.helper.coordinates.threeToCanvas([
               position[0],
@@ -29,5 +29,4 @@ export const MarkAreaMapTool: MapTool<{}, MarkAreaToolContextValue> = {
     });
     return null;
   },
-  createLocalState: () => ({}),
 };

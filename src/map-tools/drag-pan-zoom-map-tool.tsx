@@ -122,11 +122,8 @@ export const usePinchWheelZoom = (mapToolState: SharedMapToolState) => {
   );
 };
 
-export const DragPanZoomMapTool: MapTool<unknown, unknown> = {
+export const DragPanZoomMapTool: MapTool = {
   id: "drag-pan-zoom-map-tool",
-  createLocalState: () => ({}),
-  // Noop Context :)
-  Context: React.createContext<unknown>({}),
   Component: (props) => {
     usePinchWheelZoom(props.mapContext);
     props.useMapGesture({

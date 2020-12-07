@@ -10,6 +10,7 @@ import type { MapTool } from "../map-tools/map-tool";
 import { DragPanZoomMapTool } from "../map-tools/drag-pan-zoom-map-tool";
 import {
   BrushMapTool,
+  BrushToolContext,
   BrushToolContextProvider,
 } from "../map-tools/brush-map-tool";
 import {
@@ -48,12 +49,12 @@ import {
 type ToolMapRecord = {
   name: string;
   icon: React.ReactElement;
-  tool: MapTool<any, any>;
+  tool: MapTool;
   MenuComponent: null | (() => React.ReactElement);
 };
 
 const BrushSettings = (): React.ReactElement => {
-  const { state, setState } = React.useContext(BrushMapTool.Context);
+  const { state, setState } = React.useContext(BrushToolContext);
 
   return (
     <>
@@ -132,7 +133,7 @@ const BrushSettings = (): React.ReactElement => {
 };
 
 const ShroudRevealSettings = (): React.ReactElement => {
-  const { state, setState } = React.useContext(BrushMapTool.Context);
+  const { state, setState } = React.useContext(BrushToolContext);
   return (
     <>
       <Toolbar.Item isActive={state.fogMode === FogMode.clear}>
@@ -444,14 +445,11 @@ export const NewDmSection = (props: {
   }, [props.password, props.map.id]);
 
   // TODO: this should be persisted state
-  const [userSelectedTool, setUserSelectedTool] = React.useState<null | MapTool<
-    any,
-    any
-  >>(DM_TOOL_MAP[0].tool);
-  const [toolOverride, setToolOverride] = React.useState<null | MapTool<
-    any,
-    any
-  >>(null);
+  const [
+    userSelectedTool,
+    setUserSelectedTool,
+  ] = React.useState<null | MapTool>(DM_TOOL_MAP[0].tool);
+  const [toolOverride, setToolOverride] = React.useState<null | MapTool>(null);
   const activeTool = toolOverride ?? userSelectedTool;
 
   const isCurrentMapLive =
@@ -605,7 +603,8 @@ export const NewDmSection = (props: {
                 : null
             }
             sharedContexts={[
-              ...DM_TOOL_MAP.map((record) => record.tool.Context),
+              MarkAreaToolContext,
+              BrushToolContext,
               ConfigureGridMapToolContext,
             ]}
             fogOpacity={0.5}
