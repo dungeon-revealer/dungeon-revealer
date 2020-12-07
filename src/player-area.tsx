@@ -20,6 +20,7 @@ import { v4 as uuid } from "uuid";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
 import { usePersistedState } from "./hooks/use-persisted-state";
 import { DragPanZoomMapTool } from "./map-tools/drag-pan-zoom-map-tool";
+import { MapEntity } from "./map-typings";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -57,14 +58,6 @@ type Token = {
   isLocked: boolean;
 };
 
-type Map = {
-  id: string;
-  showGridToPlayers: boolean;
-  grid: null | Grid;
-  gridColor: string;
-  tokens: Token[];
-};
-
 type MarkedArea = {
   id: string;
   x: number;
@@ -79,7 +72,7 @@ const PlayerMap: React.FC<{
   pcPassword: string;
   socket: ReturnType<typeof useSocket>;
 }> = ({ fetch, pcPassword, socket }) => {
-  const [currentMap, setCurrentMap] = React.useState<null | Map>(null);
+  const [currentMap, setCurrentMap] = React.useState<null | MapEntity>(null);
   const currentMapRef = React.useRef(currentMap);
 
   const [mapImage, setMapImage] = React.useState<HTMLImageElement | null>(null);
@@ -98,7 +91,7 @@ const PlayerMap: React.FC<{
 
   const [refetchTrigger, setRefetchTrigger] = React.useState(0);
 
-  const onReceiveMap = React.useCallback((data: { map: Map }) => {
+  const onReceiveMap = React.useCallback((data: { map: MapEntity }) => {
     if (!data) {
       return;
     }
@@ -242,7 +235,7 @@ const PlayerMap: React.FC<{
         );
       } else if (type === "update") {
         setCurrentMap(
-          produce((map: Map | null) => {
+          produce((map: MapEntity | null) => {
             if (map) {
               map.tokens = map.tokens.map((token) => {
                 if (token.id !== data.token.id) return token;
@@ -256,7 +249,7 @@ const PlayerMap: React.FC<{
         );
       } else if (type === "remove") {
         setCurrentMap(
-          produce((map: Map | null) => {
+          produce((map: MapEntity | null) => {
             if (map) {
               map.tokens = map.tokens = map.tokens.filter(
                 (token) => token.id !== data.tokenId
@@ -310,7 +303,7 @@ const PlayerMap: React.FC<{
   const updateToken = React.useCallback(
     ({ id, ...updates }) => {
       setCurrentMap(
-        produce((map: Map | null) => {
+        produce((map: MapEntity | null) => {
           if (map) {
             map.tokens = map.tokens.map((token) => {
               if (token.id !== id) return token;
@@ -412,12 +405,7 @@ const PlayerMap: React.FC<{
               }}
               grid={
                 currentMap.grid && currentMap.showGridToPlayers
-                  ? {
-                      x: currentMap.grid.x,
-                      y: currentMap.grid.y,
-                      sideLength: currentMap.grid.sideLength,
-                      color: currentMap.gridColor || "red",
-                    }
+                  ? currentMap.grid
                   : null
               }
               sharedContexts={[DragPanZoomMapTool.Context]}

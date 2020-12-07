@@ -336,6 +336,7 @@ const GridRenderer = (props: {
     props.factor,
     props.imageWidth,
     props.imageHeight,
+    props.grid,
   ]);
 
   return (

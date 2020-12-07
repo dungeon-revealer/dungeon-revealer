@@ -22,7 +22,7 @@ import { AccessTokenProvider } from "../hooks/use-access-token";
 import { usePersistedState } from "../hooks/use-persisted-state";
 import { NewDmSection } from "./new-dm-map";
 import { Socket } from "socket.io-client";
-import { MapEntity, MapTokenEntity, MarkedArea } from "../map-typings";
+import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -87,8 +87,6 @@ const createInitialMode = (): Mode => ({
   title: "LOADING",
   data: null,
 });
-
-type Token = { id: string };
 
 type MapData = {
   currentMapId: null | string;
@@ -493,7 +491,9 @@ const Content = ({
     [setDroppedFile]
   );
 
-  const [markedAreas, setMarkedAreas] = React.useState<MarkedArea[]>(() => []);
+  const [markedAreas, setMarkedAreas] = React.useState<MarkedAreaEntity[]>(
+    () => []
+  );
 
   const onMarkArea = ([x, y]: [number, number]) => {
     socket.emit("mark area", {
@@ -610,8 +610,10 @@ const Content = ({
                     areas.filter((area) => area.id !== id)
                   );
                 }}
-                enterGridMode={enterGridMode}
                 updateToken={updateToken}
+                updateMap={(map) => {
+                  updateMap(liveMapId, map);
+                }}
               />
             ) : (
               <DmMap
