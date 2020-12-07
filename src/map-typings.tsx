@@ -1,7 +1,9 @@
-export type GridEntity = {
-  x: number;
-  y: number;
-  sideLength: number;
+export type MapGridEntity = {
+  color: string;
+  offsetX: number;
+  offsetY: number;
+  columnWidth: number;
+  columnHeight: number;
 };
 
 export type MapTokenEntity = {
@@ -19,12 +21,12 @@ export type MapTokenEntity = {
 export type MapEntity = {
   id: string;
   showGridToPlayers: boolean;
-  grid: null | GridEntity;
-  gridColor: string;
+  showGrid: boolean;
+  grid: null | MapGridEntity;
   tokens: Array<MapTokenEntity>;
 };
 
-export type MarkedArea = {
+export type MarkedAreaEntity = {
   id: string;
   x: number;
   y: number;

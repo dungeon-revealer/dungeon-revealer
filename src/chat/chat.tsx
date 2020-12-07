@@ -294,7 +294,7 @@ export const Chat: React.FC<{
                   fullWidth
                   onClick={() => setMode("settings")}
                 >
-                  <Icon.SettingsIcon height={12} width={12} />
+                  <Icon.SettingsIcon size={12} />
                   <span>Settings</span>
                 </HorizontalNavigation.Button>
               </HorizontalNavigation.Group>

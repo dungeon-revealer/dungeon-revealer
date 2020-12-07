@@ -64,8 +64,8 @@ export const BrushToolContext = React.createContext<BrushToolContextValue>(
   undefined as any
 );
 
-const Square = (props: {
-  position: SpringValue<[number, number, number]>;
+export const Square = (props: {
+  position: SpringValue<[number, number, number]> | [number, number, number];
   width: number;
   color: string;
 }): React.ReactElement => {

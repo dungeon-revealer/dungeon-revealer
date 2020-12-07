@@ -7,15 +7,16 @@ import { applyFogRectangle } from "../canvas-draw-utilities";
 import { useFrame } from "react-three-fiber";
 import { useGesture } from "react-use-gesture";
 
-const Rectangle = (props: {
-  p1: SpringValue<[number, number, number]>;
-  p2: SpringValue<[number, number, number]>;
+export const Rectangle = (props: {
+  p1: SpringValue<[number, number, number]> | [number, number, number];
+  p2: SpringValue<[number, number, number]> | [number, number, number];
+  color: string;
 }): React.ReactElement => {
   const getPoints = React.useCallback<
     () => Array<[number, number, number]>
   >(() => {
-    const p1 = props.p1.get();
-    const p2 = props.p2.get();
+    const p1 = props.p1 instanceof SpringValue ? props.p1.get() : props.p1;
+    const p2 = props.p2 instanceof SpringValue ? props.p2.get() : props.p2;
     return [p1, [p2[0], p1[1], 0], p2, [p1[0], p2[1], 0], p1];
   }, [props.p1, props.p2]);
 
@@ -31,7 +32,9 @@ const Rectangle = (props: {
       ref.current.geometry.setPositions(points.flat());
     }
   });
-  return <ThreeLine points={points} color="red" ref={ref} transparent />;
+  return (
+    <ThreeLine points={points} color={props.color} ref={ref} transparent />
+  );
 };
 
 export const AreaSelectMapTool: MapTool<
@@ -68,6 +71,7 @@ export const AreaSelectMapTool: MapTool<
       <Rectangle
         p1={props.localState.state.lastPointerPosition}
         p2={props.mapContext.pointerPosition}
+        color="red"
       />
     ) : (
       <animated.group position={props.mapContext.pointerPosition}>

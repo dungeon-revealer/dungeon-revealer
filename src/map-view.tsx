@@ -16,6 +16,8 @@ import { buildUrl } from "./public-url";
 import { CanvasText } from "./canvas-text";
 import type { MapTool, SharedMapToolState } from "./map-tools/map-tool";
 import { useContextBridge } from "./hooks/use-context-bridge";
+import { MapGridEntity, MapTokenEntity, MarkedAreaEntity } from "./map-typings";
+import { useIsKeyPressed } from "./hooks/use-is-key-pressed";
 
 enum LayerPosition {
   map = 0,
@@ -38,31 +40,6 @@ const calculateRealY = (y: number, factor: number, dimensionsHeight: number) =>
   ((y - dimensionsHeight / 2) / factor) * -1;
 
 export type Dimensions = { width: number; height: number; ratio: number };
-
-type Token = {
-  id: string;
-  radius: number;
-  color: string;
-  label: string;
-  x: number;
-  y: number;
-  isVisibleForPlayers: boolean;
-  isMovableByPlayers: boolean;
-  isLocked: boolean;
-};
-
-type MarkedArea = {
-  id: string;
-  x: number;
-  y: number;
-};
-
-type Grid = {
-  x: number;
-  y: number;
-  sideLength: number;
-  color: string;
-};
 
 const Plane: React.FC<{
   position: SpringValue<[number, number, number]>;
@@ -289,7 +266,7 @@ const reduceOffsetToMinimum = (offset: number, sideLength: number): number => {
 };
 
 const drawGridToContext = (
-  grid: Grid,
+  grid: MapGridEntity,
   ratio: number,
   canvas: HTMLCanvasElement
 ) => {
@@ -301,9 +278,9 @@ const drawGridToContext = (
   context.strokeStyle = grid.color || "rgba(0, 0, 0, .5)";
   context.lineWidth = 2;
 
-  const gridX = grid.x * ratio;
-  const gridY = grid.y * ratio;
-  const sideLength = grid.sideLength * ratio;
+  const gridX = grid.offsetX * ratio;
+  const gridY = grid.offsetY * ratio;
+  const sideLength = grid.columnWidth * ratio;
   const offsetX = reduceOffsetToMinimum(gridX, sideLength);
   const offsetY = reduceOffsetToMinimum(gridY, sideLength);
 
@@ -322,7 +299,7 @@ const drawGridToContext = (
 };
 
 const GridRenderer = (props: {
-  grid: Grid;
+  grid: MapGridEntity;
   dimensions: Dimensions;
   factor: number;
   imageHeight: number;
@@ -381,10 +358,10 @@ const MapRenderer: React.FC<{
   mapImageTexture: THREE.Texture;
   fogTexture: THREE.Texture;
   viewport: ViewportData;
-  tokens: Token[];
-  markedAreas: MarkedArea[];
+  tokens: MapTokenEntity[];
+  markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
-  grid: Grid | null;
+  grid: MapGridEntity | null;
   scale: SpringValue<[number, number, number]>;
   updateTokenPosition: (id: string, position: { x: number; y: number }) => void;
   factor: number;
@@ -478,12 +455,12 @@ export type MapControlInterface = {
 const MapViewRenderer = (props: {
   mapImage: HTMLImageElement;
   fogImage: HTMLImageElement | null;
-  tokens: Token[];
+  tokens: MapTokenEntity[];
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
   updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
-  markedAreas: MarkedArea[];
+  markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
-  grid: Grid | null;
+  grid: MapGridEntity | null;
   activeTool: MapTool<any, any> | null;
   fogOpacity: number;
 }): React.ReactElement => {
@@ -604,6 +581,8 @@ const MapViewRenderer = (props: {
     () => new SpringValue({ from: [0, 0, 0] as [number, number, number] })
   );
 
+  const isAltPressed = useIsKeyPressed("Alt");
+
   const toolContext = React.useMemo<SharedMapToolState>(() => {
     const factor = dimensions.width / mapCanvas.width;
 
@@ -616,8 +595,21 @@ const MapViewRenderer = (props: {
       mapImage: props.mapImage,
       viewport,
       isDragAllowed,
+      isAltPressed,
       pointerPosition,
       helper: {
+        vector: {
+          threeToCanvas: ([x, y]) => [x / factor, y / factor],
+          canvasToThree: ([x, y]) => [x * factor, y * factor],
+          canvasToImage: ([x, y]) => [
+            x / optimalDimensions.ratio,
+            y / optimalDimensions.ratio,
+          ],
+          imageToCanvas: ([x, y]) => [
+            x * optimalDimensions.ratio,
+            y * optimalDimensions.ratio,
+          ],
+        },
         coordinates: {
           threeToCanvas: ([x, y]: [number, number]) =>
             [
@@ -634,6 +626,10 @@ const MapViewRenderer = (props: {
               number,
               number
             ],
+          imageToCanvas: ([x, y]) => [
+            x * optimalDimensions.ratio,
+            y * optimalDimensions.ratio,
+          ],
         },
       },
     };
@@ -648,6 +644,7 @@ const MapViewRenderer = (props: {
     isDragAllowed,
     optimalDimensions,
     pointerPosition,
+    isAltPressed,
   ]);
 
   const toolRef = React.useRef<{
@@ -793,12 +790,12 @@ const MapCanvasContainer = styled.div`
 export const MapView = (props: {
   mapImage: HTMLImageElement;
   fogImage: HTMLImageElement | null;
-  tokens: Token[];
+  tokens: MapTokenEntity[];
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
   updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
-  markedAreas: MarkedArea[];
+  markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
-  grid: Grid | null;
+  grid: MapGridEntity | null;
   activeTool: MapTool | null;
   /* List of contexts that need to be proxied into R3F */
   sharedContexts: Array<React.Context<any>>;

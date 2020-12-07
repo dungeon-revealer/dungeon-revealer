@@ -4,31 +4,47 @@ import type { Dimensions } from "../map-view";
 import type { ViewportData, PointerEvent } from "react-three-fiber";
 import type { Handler } from "react-use-gesture/dist/types";
 
+type Vector2D = [number, number];
+type Vector3D = [number, number, number];
+
 export type SharedMapToolState = {
   mapImage: HTMLImageElement;
   fogCanvas: HTMLCanvasElement;
   fogTexture: THREE.CanvasTexture;
   mapState: {
-    position: SpringValue<[number, number, number]>;
-    scale: SpringValue<[number, number, number]>;
+    position: SpringValue<Vector3D>;
+    scale: SpringValue<Vector3D>;
   };
   setMapState: SpringStartFn<{
-    position: [number, number, number];
-    scale: [number, number, number];
+    position: Vector3D;
+    scale: Vector3D;
   }>;
   dimensions: Dimensions;
   viewport: ViewportData;
   isDragAllowed: React.MutableRefObject<boolean>;
+  isAltPressed: boolean;
   /* The current pointer position on the three.js canvas */
-  pointerPosition: SpringValue<[number, number, number]>;
+  pointerPosition: SpringValue<Vector3D>;
   helper: {
+    vector: {
+      /* convert three.js vector to canvas vector */
+      threeToCanvas: (vector: Vector2D) => Vector2D;
+      /* convert canvas vector to three.js vector */
+      canvasToThree: (vector: Vector2D) => Vector2D;
+      /* convert canvas vector to image coordinate */
+      canvasToImage: (vector: Vector2D) => Vector2D;
+      /* convert image vector to canvas vector */
+      imageToCanvas: (vector: Vector2D) => Vector2D;
+    };
     coordinates: {
       /* convert three.js coordinate to canvas coordinate */
-      threeToCanvas: (vector: [number, number]) => [number, number];
+      threeToCanvas: (vector: Vector2D) => Vector2D;
       /* convert canvas coordinate to three.js coordinate */
-      canvasToThree: (vector: [number, number]) => [number, number];
+      canvasToThree: (vector: Vector2D) => Vector2D;
       /* convert canvas coordinate to image coordinate */
-      canvasToImage: (vector: [number, number]) => [number, number];
+      canvasToImage: (vector: Vector2D) => Vector2D;
+      /* convert image coordinate to canvas coordinate */
+      imageToCanvas: (vector: Vector2D) => Vector2D;
     };
   };
 };

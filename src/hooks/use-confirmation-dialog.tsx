@@ -12,6 +12,8 @@ export const useConfirmationDialog = () => {
         header,
         body,
         onConfirm,
+        confirmButtonText = "Confirm",
+        cancelButtonText = "Abort",
       }: {
         header: React.ReactNode;
         body: React.ReactNode;
@@ -32,7 +34,7 @@ export const useConfirmationDialog = () => {
                   <Modal.ActionGroup>
                     <div>
                       <Button.Tertiary type="submit" onClick={close}>
-                        Abort
+                        {cancelButtonText}
                       </Button.Tertiary>
                     </div>
                     <div>
@@ -43,7 +45,7 @@ export const useConfirmationDialog = () => {
                           onConfirm();
                         }}
                       >
-                        Confirm
+                        {confirmButtonText}
                       </Button.Primary>
                     </div>
                   </Modal.ActionGroup>

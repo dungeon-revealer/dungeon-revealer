@@ -1,6 +1,126 @@
 import * as React from "react";
 import { useGesture } from "react-use-gesture";
-import type { MapTool } from "./map-tool";
+import type { MapTool, SharedMapToolState } from "./map-tool";
+
+export const usePinchWheelZoom = (mapToolState: SharedMapToolState) => {
+  const updateZoom = ({
+    pinchDelta,
+    pinchScale,
+    origin,
+  }: {
+    pinchDelta: number;
+    pinchScale: number;
+    origin: [number, number];
+  }) => {
+    const position = mapToolState.mapState.position.get();
+    const [scale] = mapToolState.mapState.scale.get();
+
+    const {
+      imageWidth,
+      imageHeight,
+      imageTopLeftY,
+      imageTopLeftX,
+    } = calculateScreenPosition({
+      imageDimensions: mapToolState.dimensions,
+      viewportDimensions: {
+        width: mapToolState.viewport.width * mapToolState.viewport.factor,
+        height: mapToolState.viewport.height * mapToolState.viewport.factor,
+      },
+      scale,
+      translateX: position[0],
+      translateY: position[1],
+      aspect: mapToolState.viewport.factor,
+    });
+
+    // Calculate the amount of x, y translate offset needed to
+    // zoom-in to point as image scale grows
+    const [newTranslateX, newTranslateY] = getTranslateOffsetsFromScale({
+      imageTopLeftY,
+      imageTopLeftX,
+      imageWidth,
+      imageHeight,
+      scale,
+      aspect: mapToolState.viewport.factor,
+      pinchDelta: pinchDelta,
+      currentTranslate: [position[0], position[1]],
+      origin,
+    });
+
+    mapToolState.setMapState({
+      scale: [pinchScale, pinchScale, 1],
+      position: [newTranslateX, newTranslateY, 0],
+    });
+  };
+
+  const onUnmountRef = React.useRef<() => void>();
+  React.useEffect(() => () => onUnmountRef.current?.(), []);
+  useGesture(
+    {
+      onWheel: ({ event }) => {
+        if (event.target instanceof HTMLCanvasElement === false) {
+          return;
+        }
+        event.preventDefault();
+        const [scale] = mapToolState.mapState.scale.get();
+        const origin = [event.clientX, event.clientY] as [number, number];
+
+        const wheel = event.deltaY < 0 ? 1 : -1;
+        const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
+        const pinchDelta = pinchScale - scale;
+
+        updateZoom({ pinchDelta, pinchScale, origin });
+      },
+      onPinch: ({ movement, event, origin, last, cancel }) => {
+        if (event.target instanceof HTMLCanvasElement === false) {
+          return;
+        }
+        event.preventDefault();
+        mapToolState.isDragAllowed.current = false;
+
+        const [scale] = mapToolState.mapState.scale.get();
+
+        // Don't calculate new translate offsets on final frame
+        if (last) {
+          cancel?.();
+          return;
+        }
+
+        let xMovement = Array.isArray(movement) ? movement[0] : 0;
+
+        const wheel = xMovement > 0 ? 1 : -1;
+        const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
+        const pinchDelta = pinchScale - scale;
+
+        updateZoom({ pinchDelta, pinchScale, origin });
+      },
+      onPinchEnd: ({ event }) => {
+        // This is some kind of a hack to prevent drag being triggerd after ending a pinch gesture
+        // which causes the map to jump on tablets such as the iPad.
+        event.stopPropagation();
+        setTimeout(() => {
+          mapToolState.isDragAllowed.current = true;
+        }, 100);
+      },
+      onPointerDown: ({ event }) => {
+        if (event.target instanceof HTMLCanvasElement) {
+          window.document.body.classList.add("user-select-disabled");
+          const onUnmount = () => {
+            window.document.body.classList.remove("user-select-disabled");
+            window.removeEventListener("mouseup", onUnmount);
+          };
+          window.addEventListener("mouseup", onUnmount);
+          onUnmountRef.current = onUnmount;
+        }
+      },
+    },
+    {
+      domTarget: window.document,
+      eventOptions: {
+        passive: false,
+      },
+    }
+  );
+};
 
 export const DragPanZoomMapTool: MapTool<unknown, unknown> = {
   id: "drag-pan-zoom-map-tool",
@@ -8,126 +128,7 @@ export const DragPanZoomMapTool: MapTool<unknown, unknown> = {
   // Noop Context :)
   Context: React.createContext<unknown>({}),
   Component: (props) => {
-    const updateZoom = ({
-      pinchDelta,
-      pinchScale,
-      origin,
-    }: {
-      pinchDelta: number;
-      pinchScale: number;
-      origin: [number, number];
-    }) => {
-      const position = props.mapContext.mapState.position.get();
-      const [scale] = props.mapContext.mapState.scale.get();
-
-      const {
-        imageWidth,
-        imageHeight,
-        imageTopLeftY,
-        imageTopLeftX,
-      } = calculateScreenPosition({
-        imageDimensions: props.mapContext.dimensions,
-        viewportDimensions: {
-          width:
-            props.mapContext.viewport.width * props.mapContext.viewport.factor,
-          height:
-            props.mapContext.viewport.height * props.mapContext.viewport.factor,
-        },
-        scale,
-        translateX: position[0],
-        translateY: position[1],
-        aspect: props.mapContext.viewport.factor,
-      });
-
-      // Calculate the amount of x, y translate offset needed to
-      // zoom-in to point as image scale grows
-      const [newTranslateX, newTranslateY] = getTranslateOffsetsFromScale({
-        imageTopLeftY,
-        imageTopLeftX,
-        imageWidth,
-        imageHeight,
-        scale,
-        aspect: props.mapContext.viewport.factor,
-        pinchDelta: pinchDelta,
-        currentTranslate: [position[0], position[1]],
-        origin,
-      });
-
-      props.mapContext.setMapState({
-        scale: [pinchScale, pinchScale, 1],
-        position: [newTranslateX, newTranslateY, 0],
-      });
-    };
-
-    const onUnmountRef = React.useRef<() => void>();
-    React.useEffect(() => () => onUnmountRef.current?.(), []);
-
-    useGesture(
-      {
-        onPinchEnd: ({ event }) => {
-          // This is some kind of a hack to prevent drag being triggerd after ending a pinch gesture
-          // which causes the map to jump on tablets such as the iPad.
-          event.stopPropagation();
-          setTimeout(() => {
-            props.mapContext.isDragAllowed.current = true;
-          }, 100);
-        },
-        onPointerDown: ({ event }) => {
-          if (event.target instanceof HTMLCanvasElement) {
-            window.document.body.classList.add("user-select-disabled");
-            const onUnmount = () => {
-              window.document.body.classList.remove("user-select-disabled");
-              window.removeEventListener("mouseup", onUnmount);
-            };
-            window.addEventListener("mouseup", onUnmount);
-            onUnmountRef.current = onUnmount;
-          }
-        },
-        onWheel: ({ event }) => {
-          if (event.target instanceof HTMLCanvasElement === false) {
-            return;
-          }
-          event.preventDefault();
-          const [scale] = props.mapContext.mapState.scale.get();
-          const origin = [event.clientX, event.clientY] as [number, number];
-
-          const wheel = event.deltaY < 0 ? 1 : -1;
-          const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
-          const pinchDelta = pinchScale - scale;
-
-          updateZoom({ pinchDelta, pinchScale, origin });
-        },
-        onPinch: ({ movement, event, origin, last, cancel }) => {
-          if (event.target instanceof HTMLCanvasElement === false) {
-            return;
-          }
-          event.preventDefault();
-          props.mapContext.isDragAllowed.current = false;
-
-          const [scale] = props.mapContext.mapState.scale.get();
-
-          // Don't calculate new translate offsets on final frame
-          if (last) {
-            cancel?.();
-            return;
-          }
-
-          let xMovement = Array.isArray(movement) ? movement[0] : 0;
-
-          const wheel = xMovement > 0 ? 1 : -1;
-          const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
-          const pinchDelta = pinchScale - scale;
-
-          updateZoom({ pinchDelta, pinchScale, origin });
-        },
-      },
-      {
-        domTarget: window.document,
-        eventOptions: {
-          passive: false,
-        },
-      }
-    );
+    usePinchWheelZoom(props.mapContext);
     return null;
   },
   onDrag: ({ movement, memo, event }, context) => {
