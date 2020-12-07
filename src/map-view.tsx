@@ -71,6 +71,7 @@ const TokenRenderer: React.FC<{
   factor: number;
   isLocked: boolean;
   isMovableByPlayers: boolean;
+  isVisibleForPlayers: boolean;
   updateTokenPosition: ({ x, y }: { x: number; y: number }) => void;
   mapScale: SpringValue<[number, number, number]>;
 }> = (props) => {
@@ -190,6 +191,7 @@ const TokenRenderer: React.FC<{
           attach="material"
           color={color}
           transparent={true}
+          opacity={props.isVisibleForPlayers ? 1 : 0.5}
         />
       </mesh>
       <mesh>
@@ -197,7 +199,11 @@ const TokenRenderer: React.FC<{
           attach="geometry"
           args={[initialRadius * (1 - 0.05), initialRadius, 128]}
         />
-        <meshStandardMaterial attach="material" color={darken(0.1, color)} />
+        <meshStandardMaterial
+          attach="material"
+          color={darken(0.1, color)}
+          opacity={props.isVisibleForPlayers ? 1 : 0.5}
+        />
       </mesh>
       <CanvasText
         fontSize={0.8 * initialRadius}
@@ -406,27 +412,26 @@ const MapRenderer: React.FC<{
         </mesh>
       </group>
       <group>
-        {props.tokens
-          .filter((token) => token.isVisibleForPlayers)
-          .map((token) => (
-            <TokenRenderer
-              key={token.id}
-              x={token.x}
-              y={token.y}
-              color={token.color}
-              textLabel={token.label}
-              isLocked={token.isLocked}
-              isMovableByPlayers={token.isMovableByPlayers}
-              factor={props.factor}
-              radius={token.radius}
-              dimensions={props.dimensions}
-              viewport={props.viewport}
-              updateTokenPosition={(position) =>
-                props.updateTokenPosition(token.id, position)
-              }
-              mapScale={props.scale}
-            />
-          ))}
+        {props.tokens.map((token) => (
+          <TokenRenderer
+            key={token.id}
+            x={token.x}
+            y={token.y}
+            color={token.color}
+            textLabel={token.label}
+            isLocked={token.isLocked}
+            isMovableByPlayers={token.isMovableByPlayers}
+            isVisibleForPlayers={token.isVisibleForPlayers}
+            factor={props.factor}
+            radius={token.radius}
+            dimensions={props.dimensions}
+            viewport={props.viewport}
+            updateTokenPosition={(position) =>
+              props.updateTokenPosition(token.id, position)
+            }
+            mapScale={props.scale}
+          />
+        ))}
       </group>
       <group>
         {props.markedAreas.map((markedArea) => (

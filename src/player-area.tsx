@@ -45,24 +45,6 @@ const AbsoluteFullscreenContainer = styled.div`
   height: 100%;
 `;
 
-type Grid = {
-  x: number;
-  y: number;
-  sideLength: number;
-};
-
-type Token = {
-  id: string;
-  radius: number;
-  color: string;
-  label: string;
-  x: number;
-  y: number;
-  isVisibleForPlayers: boolean;
-  isMovableByPlayers: boolean;
-  isLocked: boolean;
-};
-
 type MarkedArea = {
   id: string;
   x: number;
@@ -409,7 +391,9 @@ const PlayerMap: React.FC<{
               mapImage={mapImage}
               fogImage={fogImage}
               controlRef={controlRef}
-              tokens={currentMap.tokens}
+              tokens={currentMap.tokens.filter(
+                (token) => token.isVisibleForPlayers === true
+              )}
               updateTokenPosition={(id, position) =>
                 updateToken({ id, ...position })
               }
