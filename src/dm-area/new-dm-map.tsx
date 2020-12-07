@@ -582,252 +582,244 @@ export const NewDmSection = (props: {
         >,
       ]}
     >
-      <>
-        {mapImage ? (
-          <MapView
-            activeTool={activeTool}
-            mapImage={mapImage}
-            fogImage={fogImage}
-            controlRef={controlRef}
-            tokens={props.map.tokens}
-            updateTokenPosition={(id, position) => {
-              props.updateToken({ id, ...position });
-            }}
-            markedAreas={props.markedAreas}
-            removeMarkedArea={props.removeMarkedArea}
-            grid={
-              props.map.grid &&
-              props.map.showGrid &&
-              activeTool !== ConfigureGridMapTool
-                ? props.map.grid
-                : null
-            }
-            sharedContexts={[
-              MarkAreaToolContext,
-              BrushToolContext,
-              ConfigureGridMapToolContext,
-            ]}
-            fogOpacity={0.5}
-          />
-        ) : null}
-        {toolOverride !== ConfigureGridMapTool ? (
-          <>
-            <LeftToolbarContainer>
-              <Toolbar>
-                <Toolbar.Logo />
-                <Toolbar.Group divider>
-                  {DM_TOOL_MAP.map((record) => (
-                    <MenuItemRenderer
-                      key={record.tool.id}
-                      record={record}
-                      isActive={record.tool === userSelectedTool}
-                      setActiveTool={() => {
-                        setUserSelectedTool(record.tool);
-                      }}
-                    />
-                  ))}
-                </Toolbar.Group>
-                <Toolbar.Group divider>
-                  <ShroudRevealSettings />
-                </Toolbar.Group>
-                <Toolbar.Group divider>
-                  <Toolbar.Item isActive>
-                    <Toolbar.Button
-                      onClick={() =>
-                        showDialog({
-                          header: "Shroud All",
-                          body: "Do you really want to shroud the whole map?",
-                          onConfirm: () => {
-                            // TODO: this should be less verbose
-                            const context = controlRef.current?.getContext();
-                            if (!context) {
-                              return;
-                            }
-                            const canvasContext = context.fogCanvas.getContext(
-                              "2d"
-                            )!;
-                            applyFogRectangle(
-                              FogMode.shroud,
-                              [0, 0],
-                              [
-                                context.fogCanvas.width,
-                                context.fogCanvas.height,
-                              ],
-                              canvasContext
-                            );
-                            context.fogTexture.needsUpdate = true;
-                          },
-                        })
-                      }
-                    >
-                      <Icons.DropletIcon fill size={20} />
-                      <Icons.Label>Shroud All</Icons.Label>
-                    </Toolbar.Button>
-                  </Toolbar.Item>
-                  <Toolbar.Item isActive>
-                    <Toolbar.Button
-                      onClick={() =>
-                        showDialog({
-                          header: "Clear All",
-                          body: "Do you really want to clear the whole map?",
-                          onConfirm: () => {
-                            // TODO: this should be less verbose
-                            const context = controlRef.current?.getContext();
-                            if (!context) {
-                              return;
-                            }
-                            const canvasContext = context.fogCanvas.getContext(
-                              "2d"
-                            )!;
-                            applyFogRectangle(
-                              FogMode.clear,
-                              [0, 0],
-                              [
-                                context.fogCanvas.width,
-                                context.fogCanvas.height,
-                              ],
-                              canvasContext
-                            );
-                            context.fogTexture.needsUpdate = true;
-                          },
-                        })
-                      }
-                    >
-                      <Icons.DropletIcon size={20} />
-                      <Icons.Label>Clear All</Icons.Label>
-                    </Toolbar.Button>
-                  </Toolbar.Item>
-                </Toolbar.Group>
-              </Toolbar>
-            </LeftToolbarContainer>
-            <BottomToolbarContainer>
-              <Toolbar horizontal>
-                <Toolbar.Group>
-                  <GridSettingButton
-                    enterConfigureGridMode={() => {
-                      setToolOverride(ConfigureGridMapTool);
+      {mapImage ? (
+        <MapView
+          activeTool={activeTool}
+          mapImage={mapImage}
+          fogImage={fogImage}
+          controlRef={controlRef}
+          tokens={props.map.tokens}
+          updateTokenPosition={(id, position) => {
+            props.updateToken({ id, ...position });
+          }}
+          markedAreas={props.markedAreas}
+          removeMarkedArea={props.removeMarkedArea}
+          grid={
+            props.map.grid &&
+            props.map.showGrid &&
+            activeTool !== ConfigureGridMapTool
+              ? props.map.grid
+              : null
+          }
+          sharedContexts={[
+            MarkAreaToolContext,
+            BrushToolContext,
+            ConfigureGridMapToolContext,
+          ]}
+          fogOpacity={0.5}
+        />
+      ) : null}
+      {toolOverride !== ConfigureGridMapTool ? (
+        <>
+          <LeftToolbarContainer>
+            <Toolbar>
+              <Toolbar.Logo />
+              <Toolbar.Group divider>
+                {DM_TOOL_MAP.map((record) => (
+                  <MenuItemRenderer
+                    key={record.tool.id}
+                    record={record}
+                    isActive={record.tool === userSelectedTool}
+                    setActiveTool={() => {
+                      setUserSelectedTool(record.tool);
                     }}
-                    map={props.map}
-                    updateMap={props.updateMap}
                   />
-                  <Toolbar.Item isActive>
-                    <Toolbar.Button
-                      onClick={() => {
-                        props.showMapModal();
-                      }}
+                ))}
+              </Toolbar.Group>
+              <Toolbar.Group divider>
+                <ShroudRevealSettings />
+              </Toolbar.Group>
+              <Toolbar.Group divider>
+                <Toolbar.Item isActive>
+                  <Toolbar.Button
+                    onClick={() =>
+                      showDialog({
+                        header: "Shroud All",
+                        body: "Do you really want to shroud the whole map?",
+                        onConfirm: () => {
+                          // TODO: this should be less verbose
+                          const context = controlRef.current?.getContext();
+                          if (!context) {
+                            return;
+                          }
+                          const canvasContext = context.fogCanvas.getContext(
+                            "2d"
+                          )!;
+                          applyFogRectangle(
+                            FogMode.shroud,
+                            [0, 0],
+                            [context.fogCanvas.width, context.fogCanvas.height],
+                            canvasContext
+                          );
+                          context.fogTexture.needsUpdate = true;
+                        },
+                      })
+                    }
+                  >
+                    <Icons.DropletIcon fill size={20} />
+                    <Icons.Label>Shroud All</Icons.Label>
+                  </Toolbar.Button>
+                </Toolbar.Item>
+                <Toolbar.Item isActive>
+                  <Toolbar.Button
+                    onClick={() =>
+                      showDialog({
+                        header: "Clear All",
+                        body: "Do you really want to clear the whole map?",
+                        onConfirm: () => {
+                          // TODO: this should be less verbose
+                          const context = controlRef.current?.getContext();
+                          if (!context) {
+                            return;
+                          }
+                          const canvasContext = context.fogCanvas.getContext(
+                            "2d"
+                          )!;
+                          applyFogRectangle(
+                            FogMode.clear,
+                            [0, 0],
+                            [context.fogCanvas.width, context.fogCanvas.height],
+                            canvasContext
+                          );
+                          context.fogTexture.needsUpdate = true;
+                        },
+                      })
+                    }
+                  >
+                    <Icons.DropletIcon size={20} />
+                    <Icons.Label>Clear All</Icons.Label>
+                  </Toolbar.Button>
+                </Toolbar.Item>
+              </Toolbar.Group>
+            </Toolbar>
+          </LeftToolbarContainer>
+          <BottomToolbarContainer>
+            <Toolbar horizontal>
+              <Toolbar.Group>
+                <GridSettingButton
+                  enterConfigureGridMode={() => {
+                    setToolOverride(ConfigureGridMapTool);
+                  }}
+                  map={props.map}
+                  updateMap={props.updateMap}
+                />
+                <Toolbar.Item isActive>
+                  <Toolbar.Button
+                    onClick={() => {
+                      props.showMapModal();
+                    }}
+                  >
+                    <Icons.MapIcon size={20} />
+                    <Icons.Label>Map Library</Icons.Label>
+                  </Toolbar.Button>
+                </Toolbar.Item>
+                <Toolbar.Item isActive>
+                  <Toolbar.Button
+                    onClick={() => {
+                      props.openMediaLibrary();
+                    }}
+                  >
+                    <Icons.ImageIcon size={20} />
+                    <Icons.Label>Media Library</Icons.Label>
+                  </Toolbar.Button>
+                </Toolbar.Item>
+                <Toolbar.Item isActive>
+                  <Toolbar.Button
+                    onClick={() => {
+                      props.openNotes();
+                    }}
+                  >
+                    <Icons.BookOpen size={20} />
+                    <Icons.Label>Notes</Icons.Label>
+                  </Toolbar.Button>
+                </Toolbar.Item>
+              </Toolbar.Group>
+            </Toolbar>
+            <div style={{ marginLeft: 24 }} />
+            <Toolbar horizontal>
+              <Toolbar.Group>
+                <Toolbar.Item>
+                  <ConditionalWrap
+                    condition={props.liveMapId !== null}
+                    wrap={(children) => (
+                      <Toolbar.Button onClick={props.hideMap}>
+                        {children}
+                      </Toolbar.Button>
+                    )}
+                  >
+                    <Icons.PauseIcon
+                      color={
+                        props.liveMapId !== null
+                          ? "hsl(360, 83%, 62%)"
+                          : "hsl(211, 27%, 70%)"
+                      }
+                      size={20}
+                    />
+                    <Icons.Label
+                      color={
+                        props.liveMapId !== null
+                          ? "hsl(360, 83%, 62%)"
+                          : "hsl(211, 27%, 70%)"
+                      }
                     >
-                      <Icons.MapIcon size={20} />
-                      <Icons.Label>Map Library</Icons.Label>
-                    </Toolbar.Button>
-                  </Toolbar.Item>
-                  <Toolbar.Item isActive>
-                    <Toolbar.Button
-                      onClick={() => {
-                        props.openMediaLibrary();
-                      }}
-                    >
-                      <Icons.ImageIcon size={20} />
-                      <Icons.Label>Media Library</Icons.Label>
-                    </Toolbar.Button>
-                  </Toolbar.Item>
-                  <Toolbar.Item isActive>
-                    <Toolbar.Button
-                      onClick={() => {
-                        props.openNotes();
-                      }}
-                    >
-                      <Icons.BookOpen size={20} />
-                      <Icons.Label>Notes</Icons.Label>
-                    </Toolbar.Button>
-                  </Toolbar.Item>
-                </Toolbar.Group>
-              </Toolbar>
-              <div style={{ marginLeft: 24 }} />
-              <Toolbar horizontal>
-                <Toolbar.Group>
+                      Stop Sharing
+                    </Icons.Label>
+                  </ConditionalWrap>
+                </Toolbar.Item>
+                {isCurrentMapLive ? (
                   <Toolbar.Item>
-                    <ConditionalWrap
-                      condition={props.liveMapId !== null}
-                      wrap={(children) => (
-                        <Toolbar.Button onClick={props.hideMap}>
-                          {children}
-                        </Toolbar.Button>
-                      )}
-                    >
-                      <Icons.PauseIcon
-                        color={
-                          props.liveMapId !== null
-                            ? "hsl(360, 83%, 62%)"
-                            : "hsl(211, 27%, 70%)"
-                        }
-                        size={20}
-                      />
-                      <Icons.Label
-                        color={
-                          props.liveMapId !== null
-                            ? "hsl(360, 83%, 62%)"
-                            : "hsl(211, 27%, 70%)"
-                        }
-                      >
-                        Stop Sharing
-                      </Icons.Label>
-                    </ConditionalWrap>
+                    <Icons.RadioIcon color="hsl(160, 51%, 49%)" size={20} />
+                    <Icons.Label color="hsl(160, 51%, 49%)">Live</Icons.Label>
                   </Toolbar.Item>
-                  {isCurrentMapLive ? (
-                    <Toolbar.Item>
-                      <Icons.RadioIcon color="hsl(160, 51%, 49%)" size={20} />
-                      <Icons.Label color="hsl(160, 51%, 49%)">Live</Icons.Label>
-                    </Toolbar.Item>
-                  ) : isOtherMapLive ? (
-                    <Toolbar.Item>
-                      <Icons.RadioIcon color="hsl(48, 94%, 68%)" size={20} />
-                      <Icons.Label color="hsl(48, 94%, 68%)">Live</Icons.Label>
-                    </Toolbar.Item>
-                  ) : (
-                    <Toolbar.Item>
-                      <Icons.RadioIcon color="hsl(211, 27%, 70%)" size={20} />
-                      <Icons.Label color="hsl(211, 27%, 70%)">
-                        Not Live
-                      </Icons.Label>
-                    </Toolbar.Item>
-                  )}
-                  <Toolbar.Item isActive>
-                    <Toolbar.Button onClick={copyMapToClipboard}>
-                      <Icons.ClipboardIcon size={20} />
-                      <Icons.Label>Clipboard</Icons.Label>
-                    </Toolbar.Button>
+                ) : isOtherMapLive ? (
+                  <Toolbar.Item>
+                    <Icons.RadioIcon color="hsl(48, 94%, 68%)" size={20} />
+                    <Icons.Label color="hsl(48, 94%, 68%)">Live</Icons.Label>
                   </Toolbar.Item>
-                  <Toolbar.Item isActive>
-                    <Toolbar.Button
-                      onClick={() => {
-                        const context = controlRef.current?.getContext();
-                        if (!context) {
-                          return;
-                        }
-                        props.sendLiveMap(context.fogCanvas);
-                      }}
-                    >
-                      <Icons.SendIcon size={20} />
-                      <Icons.Label>Send</Icons.Label>
-                    </Toolbar.Button>
+                ) : (
+                  <Toolbar.Item>
+                    <Icons.RadioIcon color="hsl(211, 27%, 70%)" size={20} />
+                    <Icons.Label color="hsl(211, 27%, 70%)">
+                      Not Live
+                    </Icons.Label>
                   </Toolbar.Item>
-                </Toolbar.Group>
-              </Toolbar>
-            </BottomToolbarContainer>
-          </>
-        ) : (
-          <GridConfigurator
-            onAbort={() => {
-              setToolOverride(null);
-            }}
-            onConfirm={(grid) => {
-              props.updateMap({ grid });
-              setToolOverride(null);
-            }}
-          />
-        )}
-        {confirmDialogNode}
-      </>
+                )}
+                <Toolbar.Item isActive>
+                  <Toolbar.Button onClick={copyMapToClipboard}>
+                    <Icons.ClipboardIcon size={20} />
+                    <Icons.Label>Clipboard</Icons.Label>
+                  </Toolbar.Button>
+                </Toolbar.Item>
+                <Toolbar.Item isActive>
+                  <Toolbar.Button
+                    onClick={() => {
+                      const context = controlRef.current?.getContext();
+                      if (!context) {
+                        return;
+                      }
+                      props.sendLiveMap(context.fogCanvas);
+                    }}
+                  >
+                    <Icons.SendIcon size={20} />
+                    <Icons.Label>Send</Icons.Label>
+                  </Toolbar.Button>
+                </Toolbar.Item>
+              </Toolbar.Group>
+            </Toolbar>
+          </BottomToolbarContainer>
+        </>
+      ) : (
+        <GridConfigurator
+          onAbort={() => {
+            setToolOverride(null);
+          }}
+          onConfirm={(grid) => {
+            props.updateMap({ grid });
+            setToolOverride(null);
+          }}
+        />
+      )}
+      {confirmDialogNode}
     </FlatContextProvider>
   );
 };

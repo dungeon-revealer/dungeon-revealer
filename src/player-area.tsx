@@ -19,8 +19,13 @@ import { ToastProvider } from "react-toast-notifications";
 import { v4 as uuid } from "uuid";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
 import { usePersistedState } from "./hooks/use-persisted-state";
-import { DragPanZoomMapTool } from "./map-tools/drag-pan-zoom-map-tool";
+import { PlayerMapTool } from "./map-tools/player-map-tool";
 import { MapEntity } from "./map-typings";
+import {
+  ComponentWithPropsTuple,
+  FlatContextProvider,
+} from "./flat-context-provider";
+import { MarkAreaToolContext } from "./map-tools/mark-area-map-tool";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -373,7 +378,6 @@ const PlayerMap: React.FC<{
       },
     }
   );
-
   return (
     <>
       <div
@@ -383,34 +387,48 @@ const PlayerMap: React.FC<{
           height: "100vh",
         }}
       >
-        {currentMap && mapImage ? (
-          <MapView
-            activeTool={DragPanZoomMapTool}
-            mapImage={mapImage}
-            fogImage={fogImage}
-            controlRef={controlRef}
-            tokens={currentMap.tokens}
-            updateTokenPosition={(id, position) =>
-              updateToken({ id, ...position })
-            }
-            markedAreas={markedAreas}
-            markArea={({ x, y }) => {
-              socket.emit("mark area", { x, y });
-            }}
-            removeMarkedArea={(id) => {
-              setMarkedAreas((markedAreas) =>
-                markedAreas.filter((area) => area.id !== id)
-              );
-            }}
-            grid={
-              currentMap.grid && currentMap.showGridToPlayers
-                ? currentMap.grid
-                : null
-            }
-            sharedContexts={[]}
-            fogOpacity={1}
-          />
-        ) : null}
+        <FlatContextProvider
+          value={[
+            [
+              MarkAreaToolContext.Provider,
+              {
+                value: {
+                  onMarkArea: ([x, y]) => {
+                    socket.emit("mark area", { x, y });
+                  },
+                },
+              },
+            ] as ComponentWithPropsTuple<
+              React.ComponentProps<typeof MarkAreaToolContext.Provider>
+            >,
+          ]}
+        >
+          {currentMap && mapImage ? (
+            <MapView
+              activeTool={PlayerMapTool}
+              mapImage={mapImage}
+              fogImage={fogImage}
+              controlRef={controlRef}
+              tokens={currentMap.tokens}
+              updateTokenPosition={(id, position) =>
+                updateToken({ id, ...position })
+              }
+              markedAreas={markedAreas}
+              removeMarkedArea={(id) => {
+                setMarkedAreas((markedAreas) =>
+                  markedAreas.filter((area) => area.id !== id)
+                );
+              }}
+              grid={
+                currentMap.grid && currentMap.showGridToPlayers
+                  ? currentMap.grid
+                  : null
+              }
+              sharedContexts={[MarkAreaToolContext]}
+              fogOpacity={1}
+            />
+          ) : null}
+        </FlatContextProvider>
       </div>
       {!showSplashScreen ? (
         <>

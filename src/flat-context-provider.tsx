@@ -5,6 +5,8 @@ export type ComponentWithPropsTuple<TProps = any> = [
   TProps
 ];
 
+type ArrayOrOne<T> = T | Array<T>;
+
 /**
  * This component allows rendering Components in a flat structure.
  * Some components rely on a lot of differen context providers.
@@ -12,7 +14,7 @@ export type ComponentWithPropsTuple<TProps = any> = [
  */
 export const FlatContextProvider = (props: {
   value: Array<ComponentWithPropsTuple>;
-  children: React.ReactElement;
+  children: ArrayOrOne<React.ReactElement | React.ReactElement | null>;
 }): React.ReactElement => {
   return props.value
     .slice(0)
@@ -21,6 +23,6 @@ export const FlatContextProvider = (props: {
       (innerNode, [Component, props]) => (
         <Component {...props}>{innerNode}</Component>
       ),
-      props.children
+      <>{props.children}</>
     );
 };
