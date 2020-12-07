@@ -2,7 +2,7 @@ import * as React from "react";
 import type { SpringValue, SpringStartFn } from "react-spring";
 import type { Dimensions } from "../map-view";
 import type { ViewportData, PointerEvent } from "react-three-fiber";
-import type { Handler } from "react-use-gesture/dist/types";
+import type { Handlers } from "react-use-gesture/dist/types";
 
 type Vector2D = [number, number];
 type Vector3D = [number, number, number];
@@ -54,6 +54,14 @@ type LocalStateFactory<State> = {
   setState: React.Dispatch<React.SetStateAction<State>>;
 };
 
+export type MapToolMapGestureHandlers = Handlers<{
+  onPointerDown: PointerEvent;
+  onPointerUp: PointerEvent;
+  onPointerMove: PointerEvent;
+  onDrag: PointerEvent;
+  onClick: PointerEvent;
+}>;
+
 /**
  * Utility for keeping the tools logic isolated.
  */
@@ -72,39 +80,6 @@ export type MapTool<LocalState = unknown, ContextState = unknown> = {
     contextState: ContextState;
     localState: LocalStateFactory<LocalState>;
     mapContext: SharedMapToolState;
+    useMapGesture: (params: MapToolMapGestureHandlers) => void;
   }) => React.ReactElement | null;
-  // Handler for pointer down events.
-  onPointerDown?: (
-    event: PointerEvent,
-    context: SharedMapToolState,
-    localState: LocalStateFactory<LocalState>,
-    contextState: ContextState
-  ) => void;
-  // Handler for pointer down events.
-  onPointerUp?: (
-    event: PointerEvent,
-    context: SharedMapToolState,
-    localState: LocalStateFactory<LocalState>,
-    contextState: ContextState
-  ) => void;
-  // Handler for pointer move events.
-  onPointerMove?: (
-    event: PointerEvent,
-    context: SharedMapToolState,
-    localState: LocalStateFactory<LocalState>,
-    contextState: ContextState
-  ) => void;
-  // Handler for drag events.
-  onDrag?: (
-    event: Parameters<Handler<"drag", PointerEvent>>[0],
-    context: SharedMapToolState,
-    localState: LocalStateFactory<LocalState>,
-    contextState: ContextState
-  ) => any | void;
-  onClick?: (
-    event: PointerEvent,
-    context: SharedMapToolState,
-    localState: LocalStateFactory<LocalState>,
-    contextState: ContextState
-  ) => void;
 };

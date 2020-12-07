@@ -67,6 +67,45 @@ export const AreaSelectMapTool: MapTool<
       }
     );
 
+    props.useMapGesture({
+      onPointerDown: (args) => {
+        const position = props.mapContext.mapState.position.get();
+        const scale = props.mapContext.mapState.scale.get();
+
+        props.localState.setState((state) => ({
+          ...state,
+          lastPointerPosition: new SpringValue({
+            from: [
+              (args.event.point.x - position[0]) / scale[0],
+              (args.event.point.y - position[1]) / scale[1],
+              0,
+            ] as [number, number, number],
+          }),
+        }));
+      },
+      onPointerUp: () => {
+        if (props.localState.state.lastPointerPosition) {
+          const fogCanvasContext = props.mapContext.fogCanvas.getContext("2d")!;
+          const p1 = props.mapContext.pointerPosition.get();
+          const p2 = props.localState.state.lastPointerPosition.get();
+
+          applyFogRectangle(
+            props.contextState.state.fogMode,
+            props.mapContext.helper.coordinates.threeToCanvas([p1[0], p1[1]]),
+            props.mapContext.helper.coordinates.threeToCanvas([p2[0], p2[1]]),
+            fogCanvasContext
+          );
+          props.mapContext.fogTexture.needsUpdate = true;
+          props.contextState.handlers.onDrawEnd(props.mapContext.fogCanvas);
+        }
+
+        props.localState.setState((state) => ({
+          ...state,
+          lastPointerPosition: null,
+        }));
+      },
+    });
+
     return props.localState.state.lastPointerPosition ? (
       <Rectangle
         p1={props.localState.state.lastPointerPosition}
@@ -97,41 +136,5 @@ export const AreaSelectMapTool: MapTool<
         </>
       </animated.group>
     );
-  },
-  onPointerDown: (event, context, localState) => {
-    const position = context.mapState.position.get();
-    const scale = context.mapState.scale.get();
-
-    localState.setState((state) => ({
-      ...state,
-      lastPointerPosition: new SpringValue({
-        from: [
-          (event.point.x - position[0]) / scale[0],
-          (event.point.y - position[1]) / scale[1],
-          0,
-        ] as [number, number, number],
-      }),
-    }));
-  },
-  onPointerUp: (_, context, localState, contextState) => {
-    if (localState.state.lastPointerPosition) {
-      const fogCanvasContext = context.fogCanvas.getContext("2d")!;
-      const p1 = context.pointerPosition.get();
-      const p2 = localState.state.lastPointerPosition.get();
-
-      applyFogRectangle(
-        contextState.state.fogMode,
-        context.helper.coordinates.threeToCanvas([p1[0], p1[1]]),
-        context.helper.coordinates.threeToCanvas([p2[0], p2[1]]),
-        fogCanvasContext
-      );
-      context.fogTexture.needsUpdate = true;
-      contextState.handlers.onDrawEnd(context.fogCanvas);
-    }
-
-    localState.setState((state) => ({
-      ...state,
-      lastPointerPosition: null,
-    }));
   },
 };

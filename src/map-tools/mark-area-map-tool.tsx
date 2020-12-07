@@ -1,6 +1,5 @@
 import * as React from "react";
 import type { MapTool } from "./map-tool";
-import { SpringValue } from "@react-spring/three";
 
 type MarkAreaToolContextValue = {
   onMarkArea: (point: [number, number]) => void;
@@ -14,15 +13,21 @@ export const MarkAreaToolContext = React.createContext<MarkAreaToolContextValue>
 export const MarkAreaMapTool: MapTool<{}, MarkAreaToolContextValue> = {
   id: "mark-area-map-tool",
   Context: MarkAreaToolContext,
-  Component: () => null,
-  createLocalState: () => ({}),
-  onClick: (_, context, __, contextValue) => {
-    const position = context.pointerPosition.get();
-
-    contextValue.onMarkArea(
-      context.helper.coordinates.canvasToImage(
-        context.helper.coordinates.threeToCanvas([position[0], position[1]])
-      )
-    );
+  Component: (props) => {
+    props.useMapGesture({
+      onClick: () => {
+        const position = props.mapContext.pointerPosition.get();
+        props.contextState.onMarkArea(
+          props.mapContext.helper.coordinates.canvasToImage(
+            props.mapContext.helper.coordinates.threeToCanvas([
+              position[0],
+              position[1],
+            ])
+          )
+        );
+      },
+    });
+    return null;
   },
+  createLocalState: () => ({}),
 };

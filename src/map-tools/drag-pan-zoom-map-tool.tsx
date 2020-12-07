@@ -129,21 +129,23 @@ export const DragPanZoomMapTool: MapTool<unknown, unknown> = {
   Context: React.createContext<unknown>({}),
   Component: (props) => {
     usePinchWheelZoom(props.mapContext);
-    return null;
-  },
-  onDrag: ({ movement, memo, event }, context) => {
-    event.stopPropagation();
-    memo = memo ?? context.mapState.position.get();
-    context.setMapState({
-      position: [
-        memo[0] + movement[0] / context.viewport.factor,
-        memo[1] - movement[1] / context.viewport.factor,
-        0,
-      ],
-      immediate: true,
-    });
+    props.useMapGesture({
+      onDrag: ({ movement, memo, event }) => {
+        event.stopPropagation();
+        memo = memo ?? props.mapContext.mapState.position.get();
+        props.mapContext.setMapState({
+          position: [
+            memo[0] + movement[0] / props.mapContext.viewport.factor,
+            memo[1] - movement[1] / props.mapContext.viewport.factor,
+            0,
+          ],
+          immediate: true,
+        });
 
-    return memo;
+        return memo;
+      },
+    });
+    return null;
   },
 };
 

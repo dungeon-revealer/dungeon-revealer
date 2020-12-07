@@ -14,7 +14,11 @@ import { getOptimalDimensions } from "./util";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { buildUrl } from "./public-url";
 import { CanvasText } from "./canvas-text";
-import type { MapTool, SharedMapToolState } from "./map-tools/map-tool";
+import type {
+  MapTool,
+  MapToolMapGestureHandlers,
+  SharedMapToolState,
+} from "./map-tools/map-tool";
 import { useContextBridge } from "./hooks/use-context-bridge";
 import { MapGridEntity, MapTokenEntity, MarkedAreaEntity } from "./map-typings";
 import { useIsKeyPressed } from "./hooks/use-is-key-pressed";
@@ -651,6 +655,7 @@ const MapViewRenderer = (props: {
   const toolRef = React.useRef<{
     contextState: any;
     localState: any;
+    handlers?: MapToolMapGestureHandlers;
   } | null>(null);
 
   const bind = useGesture<{
@@ -661,76 +666,27 @@ const MapViewRenderer = (props: {
     onKeyDown: KeyboardEvent;
   }>(
     {
-      onPointerDown: ({ event }) => {
-        if (!toolRef.current || !props.activeTool) {
-          return;
-        }
-        props.activeTool.onPointerDown?.(
-          event,
-          toolContext,
-          toolRef.current.localState,
-          toolRef.current.contextState
-        );
-        return;
-      },
-      onPointerUp: ({ event }) => {
-        if (!toolRef.current || !props.activeTool) {
-          return;
-        }
-        props.activeTool.onPointerUp?.(
-          event,
-          toolContext,
-          toolRef.current.localState,
-          toolRef.current.contextState
-        );
-      },
-      onPointerMove: ({ event }) => {
-        if (!toolRef.current || !props.activeTool) {
-          return;
-        }
+      onPointerDown: (args) => toolRef.current?.handlers?.onPointerDown?.(args),
+      onPointerUp: (args) => toolRef.current?.handlers?.onPointerUp?.(args),
+      onPointerMove: (args) => {
         const position = toolContext.mapState.position.get();
         const scale = toolContext.mapState.scale.get();
 
         pointerPosition.set([
-          (event.point.x - position[0]) / scale[0],
-          (event.point.y - position[1]) / scale[1],
+          (args.event.point.x - position[0]) / scale[0],
+          (args.event.point.y - position[1]) / scale[1],
           0,
         ]);
 
-        return props.activeTool.onPointerMove?.(
-          event,
-          toolContext,
-          toolRef.current.localState,
-          toolRef.current.contextState
-        );
+        return toolRef.current?.handlers?.onPointerMove?.(args);
       },
       onDrag: (args) => {
-        if (
-          !toolRef.current ||
-          !props.activeTool ||
-          isDragAllowed.current === false
-        ) {
+        if (isDragAllowed.current === false) {
           return;
         }
-        return props.activeTool.onDrag?.(
-          // @ts-ignore
-          args,
-          toolContext,
-          toolRef.current.localState,
-          toolRef.current.contextState
-        );
+        return toolRef.current?.handlers?.onDrag?.(args);
       },
-      onClick: (args) => {
-        if (!toolRef.current || !props.activeTool) {
-          return;
-        }
-        return props.activeTool.onClick?.(
-          args.event,
-          toolContext,
-          toolRef.current.localState,
-          toolRef.current.contextState
-        );
-      },
+      onClick: (args) => toolRef.current?.handlers?.onClick?.(args),
     },
     {}
   );
@@ -841,6 +797,7 @@ const MapToolRenderer = <
       state: LocalState;
       setState: React.Dispatch<React.SetStateAction<LocalState>>;
     };
+    handlers?: any;
   } | null>;
   handlerContext: SharedMapToolState;
 }): React.ReactElement => {
@@ -854,21 +811,32 @@ const MapToolRenderer = <
     setState,
   };
 
+  const handlers = React.useRef<any>(null);
+
   React.useEffect(() => {
     props.toolRef.current = {
       contextState,
       localState,
+      handlers: handlers.current,
     };
 
     return () => {
       props.toolRef.current = null;
     };
   });
+
   return (
     <props.tool.Component
       contextState={contextState}
       localState={localState}
       mapContext={props.handlerContext}
+      useMapGesture={(config) => {
+        props.toolRef.current = {
+          contextState,
+          localState,
+          handlers: (handlers.current = config),
+        };
+      }}
     />
   );
 };

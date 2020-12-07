@@ -1,5 +1,4 @@
 import * as React from "react";
-import { useGesture } from "react-use-gesture";
 import { usePinchWheelZoom } from "./drag-pan-zoom-map-tool";
 import type { MapTool } from "./map-tool";
 import { ThreeLine } from "../three-line";
@@ -30,41 +29,32 @@ export const ConfigureGridMapTool: MapTool<
   Context: ConfigureGridMapToolContext,
   createLocalState: () => ({}),
   Component: (props) => {
-    const step = 0.02;
-
-    const isPressingAltKey = useIsKeyPressed("Alt");
-
     usePinchWheelZoom(props.mapContext);
 
-    useGesture<{
-      onKeyDown: KeyboardEvent;
-    }>(
-      {
-        onKeyDown: (args) => {
-          //   if (args.event.key === "ArrowUp") {
-          //     setPosition(([x, y, z]) => [x, y + step, z]);
-          //   }
-          //   if (args.event.key === "ArrowDown") {
-          //     setPosition(([x, y, z]) => [x, y - step, z]);
-          //   }
-          //   if (args.event.key === "ArrowLeft") {
-          //     setPosition(([x, y, z]) => [x - step, y, z]);
-          //   }
-          //   if (args.event.key === "ArrowRight") {
-          //     setPosition(([x, y, z]) => [x + step, y, z]);
-          //   }
-          if (args.event.key === "+") {
-            // setWidth((width) => width + 0.01);
-          }
-          if (args.event.key === "-") {
-            // setWidth((width) => width - 0.01);
-          }
-        },
+    props.useMapGesture({
+      onDrag: ({ delta, movement, memo, event }) => {
+        event.stopPropagation();
+
+        if (props.mapContext.isAltPressed) {
+          props.contextState.setState((state) => ({
+            ...state,
+            offsetX: state.offsetX + delta[0],
+            offsetY: state.offsetY + delta[1],
+          }));
+        } else {
+          memo = memo ?? props.mapContext.mapState.position.get();
+          props.mapContext.setMapState({
+            position: [
+              memo[0] + movement[0] / props.mapContext.viewport.factor,
+              memo[1] - movement[1] / props.mapContext.viewport.factor,
+              0,
+            ],
+            immediate: true,
+          });
+          return memo;
+        }
       },
-      {
-        domTarget: window.document,
-      }
-    );
+    });
 
     const [
       offsetX,
@@ -101,28 +91,6 @@ export const ConfigureGridMapTool: MapTool<
         />
       </>
     );
-  },
-  onDrag: ({ delta, movement, memo, event }, context, _, contextValue) => {
-    event.stopPropagation();
-
-    if (context.isAltPressed) {
-      contextValue.setState((state) => ({
-        ...state,
-        offsetX: state.offsetX + delta[0],
-        offsetY: state.offsetY + delta[1],
-      }));
-    } else {
-      memo = memo ?? context.mapState.position.get();
-      context.setMapState({
-        position: [
-          memo[0] + movement[0] / context.viewport.factor,
-          memo[1] - movement[1] / context.viewport.factor,
-          0,
-        ],
-        immediate: true,
-      });
-      return memo;
-    }
   },
 };
 
