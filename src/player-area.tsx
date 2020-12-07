@@ -383,36 +383,34 @@ const PlayerMap: React.FC<{
           height: "100vh",
         }}
       >
-        <React.Suspense fallback={null}>
-          {currentMap && mapImage ? (
-            <MapView
-              activeTool={DragPanZoomMapTool}
-              mapImage={mapImage}
-              fogImage={fogImage}
-              controlRef={controlRef}
-              tokens={currentMap.tokens}
-              updateTokenPosition={(id, position) =>
-                updateToken({ id, ...position })
-              }
-              markedAreas={markedAreas}
-              markArea={({ x, y }) => {
-                socket.emit("mark area", { x, y });
-              }}
-              removeMarkedArea={(id) => {
-                setMarkedAreas((markedAreas) =>
-                  markedAreas.filter((area) => area.id !== id)
-                );
-              }}
-              grid={
-                currentMap.grid && currentMap.showGridToPlayers
-                  ? currentMap.grid
-                  : null
-              }
-              sharedContexts={[DragPanZoomMapTool.Context]}
-              fogOpacity={1}
-            />
-          ) : null}
-        </React.Suspense>
+        {currentMap && mapImage ? (
+          <MapView
+            activeTool={DragPanZoomMapTool}
+            mapImage={mapImage}
+            fogImage={fogImage}
+            controlRef={controlRef}
+            tokens={currentMap.tokens}
+            updateTokenPosition={(id, position) =>
+              updateToken({ id, ...position })
+            }
+            markedAreas={markedAreas}
+            markArea={({ x, y }) => {
+              socket.emit("mark area", { x, y });
+            }}
+            removeMarkedArea={(id) => {
+              setMarkedAreas((markedAreas) =>
+                markedAreas.filter((area) => area.id !== id)
+              );
+            }}
+            grid={
+              currentMap.grid && currentMap.showGridToPlayers
+                ? currentMap.grid
+                : null
+            }
+            sharedContexts={[]}
+            fogOpacity={1}
+          />
+        ) : null}
       </div>
       {!showSplashScreen ? (
         <>

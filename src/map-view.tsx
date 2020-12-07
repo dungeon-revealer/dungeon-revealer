@@ -466,7 +466,7 @@ const MapViewRenderer = (props: {
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
   grid: MapGridEntity | null;
-  activeTool: MapTool<any, any> | null;
+  activeTool: MapTool | null;
   fogOpacity: number;
 }): React.ReactElement => {
   const three = useThree();
@@ -529,7 +529,7 @@ const MapViewRenderer = (props: {
       context.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
     }
     fogTexture.needsUpdate = true;
-  }, [optimalDimensions, fogCanvas, maximumSideLength]);
+  }, [optimalDimensions, fogCanvas, maximumSideLength, props.fogImage]);
 
   React.useEffect(() => {
     mapCanvas.width = optimalDimensions.width;
