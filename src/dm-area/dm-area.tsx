@@ -113,6 +113,8 @@ type SocketTokenEvent =
       };
     };
 
+type TokenPartial = Omit<Partial<MapTokenEntity>, "id">;
+
 const Content = ({
   socket,
   password: dmPassword,
@@ -345,7 +347,7 @@ const Content = ({
   );
 
   const updateToken = React.useCallback(
-    ({ id, ...updates }: { id: string; x: number; y: number }) => {
+    (id: string, updates: TokenPartial) => {
       setData(
         produce((data: null | MapData) => {
           if (data) {
@@ -611,6 +613,7 @@ const Content = ({
                   );
                 }}
                 updateToken={updateToken}
+                deleteToken={deleteToken}
                 updateMap={(map) => {
                   updateMap(liveMapId, map);
                 }}
@@ -635,7 +638,9 @@ const Content = ({
                 enterGridMode={enterGridMode}
                 updateMap={updateMap}
                 deleteToken={deleteToken}
-                updateToken={updateToken}
+                updateToken={({ id, ...changes }: MapTokenEntity) =>
+                  updateToken(id, changes)
+                }
                 onDropFile={onDropFile}
               />
             )}

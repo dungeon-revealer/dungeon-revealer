@@ -30,7 +30,7 @@ import { AreaSelectMapTool } from "../map-tools/area-select-map-tool";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
-import { MapEntity, MarkedAreaEntity } from "../map-typings";
+import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
 import { useConfirmationDialog } from "../hooks/use-confirmation-dialog";
 import { applyFogRectangle } from "../canvas-draw-utilities";
 import { ToggleSwitch } from "../toggle-switch";
@@ -45,6 +45,8 @@ import {
   FlatContextProvider,
   ComponentWithPropsTuple,
 } from "../flat-context-provider";
+import { TokenContextMenuContext } from "../token-context-menu-context";
+import { TokenContextRenderer } from "../token-context-menu";
 
 type ToolMapRecord = {
   name: string;
@@ -168,9 +170,6 @@ const parseMapColor = (
   b: number;
   a: number;
 } => {
-  if (!input) {
-    input = "red";
-  }
   // @ts-ignore
   const { red, green, blue, alpha = 1 } = parseToRgb(input);
   return {
@@ -384,7 +383,11 @@ export const NewDmSection = (props: {
   markArea: (point: [number, number]) => void;
   markedAreas: Array<MarkedAreaEntity>;
   removeMarkedArea: (id: string) => void;
-  updateToken: (params: { id: string; x: number; y: number }) => void;
+  updateToken: (
+    id: string,
+    changes: Omit<Partial<MapTokenEntity>, "id">
+  ) => void;
+  deleteToken: (id: string) => void;
   updateMap: (params: Partial<MapEntity>) => void;
 }) => {
   const currentMapRef = React.useRef(props.map);
@@ -580,6 +583,17 @@ export const NewDmSection = (props: {
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof ConfigureGridMapToolContext.Provider>
         >,
+        [
+          TokenContextRenderer,
+          {
+            updateToken: props.updateToken,
+            deleteToken: props.deleteToken,
+            children: null,
+            tokens: props.map.tokens,
+          },
+        ] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof TokenContextRenderer>
+        >,
       ]}
     >
       {mapImage ? (
@@ -590,7 +604,7 @@ export const NewDmSection = (props: {
           controlRef={controlRef}
           tokens={props.map.tokens}
           updateTokenPosition={(id, position) => {
-            props.updateToken({ id, ...position });
+            props.updateToken(id, position);
           }}
           markedAreas={props.markedAreas}
           removeMarkedArea={props.removeMarkedArea}
@@ -605,6 +619,7 @@ export const NewDmSection = (props: {
             MarkAreaToolContext,
             BrushToolContext,
             ConfigureGridMapToolContext,
+            TokenContextMenuContext,
           ]}
           fogOpacity={0.5}
         />

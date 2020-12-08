@@ -14,7 +14,7 @@ type ArrayOrOne<T> = T | Array<T>;
  */
 export const FlatContextProvider = (props: {
   value: Array<ComponentWithPropsTuple>;
-  children: ArrayOrOne<React.ReactElement | React.ReactElement | null>;
+  children: ArrayOrOne<React.ReactElement | React.ReactNode | null>;
 }): React.ReactElement => {
   return props.value
     .slice(0)

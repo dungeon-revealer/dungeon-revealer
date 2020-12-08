@@ -22,6 +22,7 @@ import type {
 import { useContextBridge } from "./hooks/use-context-bridge";
 import { MapGridEntity, MapTokenEntity, MarkedAreaEntity } from "./map-typings";
 import { useIsKeyPressed } from "./hooks/use-is-key-pressed";
+import { TokenContextMenuContext } from "./token-context-menu-context";
 
 enum LayerPosition {
   map = 0,
@@ -61,6 +62,7 @@ const Plane: React.FC<{
 };
 
 const TokenRenderer: React.FC<{
+  id: string;
   x: number;
   y: number;
   color: string;
@@ -75,9 +77,15 @@ const TokenRenderer: React.FC<{
   updateTokenPosition: ({ x, y }: { x: number; y: number }) => void;
   mapScale: SpringValue<[number, number, number]>;
 }> = (props) => {
+  const tokenMenuContext = React.useContext(TokenContextMenuContext);
+  const isDungeonMasterView = tokenMenuContext !== null;
+
   const initialRadius = useStaticRef(() => props.radius * props.factor);
 
-  const isLocked = props.isMovableByPlayers === false || props.isLocked;
+  const isMovable =
+    (isDungeonMasterView === true || props.isMovableByPlayers === true) &&
+    props.isLocked === false;
+  const isLocked = props.isLocked;
 
   const [isHover, setIsHover] = React.useState(false);
 
@@ -110,7 +118,10 @@ const TokenRenderer: React.FC<{
 
   const isDraggingRef = React.useRef(false);
 
-  const dragProps = useGesture(
+  const dragProps = useGesture<{
+    onClick: PointerEvent;
+    onContextMenu: PointerEvent;
+  }>(
     {
       onDrag: ({
         event,
@@ -118,6 +129,9 @@ const TokenRenderer: React.FC<{
         last,
         memo = animatedProps.position.get(),
       }) => {
+        if (isMovable === false) {
+          return;
+        }
         event.stopPropagation();
 
         const mapScale = props.mapScale.get();
@@ -142,23 +156,35 @@ const TokenRenderer: React.FC<{
         return memo;
       },
       onPointerDown: ({ event }) => {
+        if (isMovable === false) {
+          return;
+        }
         if (isLocked === false) {
           event.stopPropagation();
           setIsHover(true);
         }
       },
       onPointerOver: () => {
+        if (isMovable === false) {
+          return;
+        }
         if (isLocked === false) {
           setIsHover(true);
         }
       },
       onPointerUp: () => {
+        if (isMovable === false) {
+          return;
+        }
         if (isLocked === false) {
           // TODO: only on tablet
           setIsHover(false);
         }
       },
       onPointerOut: () => {
+        if (isMovable === false) {
+          return;
+        }
         if (isLocked === false) {
           if (isDraggingRef.current === false) {
             setIsHover(false);
@@ -171,13 +197,25 @@ const TokenRenderer: React.FC<{
           setIsHover(false);
         }
       },
+      onContextMenu: (args) => {
+        args.event.stopPropagation();
+        args.event.nativeEvent.preventDefault();
+
+        tokenMenuContext?.setState({
+          type: "selected",
+          tokenId: props.id,
+          position: new SpringValue({
+            from: [args.event.clientX, args.event.clientY] as [number, number],
+          }),
+        });
+      },
     },
     {
       enabled: isLocked === false,
     }
   );
 
-  const color = isHover ? lighten(0.1, props.color) : props.color;
+  const color = isHover && isMovable ? lighten(0.1, props.color) : props.color;
 
   return (
     <animated.group
@@ -414,6 +452,7 @@ const MapRenderer: React.FC<{
       <group>
         {props.tokens.map((token) => (
           <TokenRenderer
+            id={token.id}
             key={token.id}
             x={token.x}
             y={token.y}
