@@ -108,6 +108,7 @@ const CompleteGrid = (props: {
     do {
       elements.push(
         <ThreeLine
+          key={`y_${currentY}`}
           points={[
             [(-1 * props.dimensions.width) / 2, currentY, 0],
             [props.dimensions.width / 2, currentY, 0],
@@ -124,6 +125,7 @@ const CompleteGrid = (props: {
     do {
       elements.push(
         <ThreeLine
+          key={`y_${currentY}`}
           points={[
             [(-1 * props.dimensions.width) / 2, currentY, 0],
             [props.dimensions.width / 2, currentY, 0],
@@ -139,6 +141,7 @@ const CompleteGrid = (props: {
     do {
       elements.push(
         <ThreeLine
+          key={`x_${currentX}`}
           points={[
             [currentX, (-1 * props.dimensions.height) / 2, 0],
             [currentX, props.dimensions.height / 2, 0],
@@ -155,6 +158,7 @@ const CompleteGrid = (props: {
     do {
       elements.push(
         <ThreeLine
+          key={`x_${currentX}`}
           points={[
             [currentX, (-1 * props.dimensions.height) / 2, 0],
             [currentX, props.dimensions.height / 2, 0],
