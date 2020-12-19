@@ -816,6 +816,7 @@ export const MapView = (props: {
         <ambientLight intensity={1} />
         <ContextBridge>
           <MapViewRenderer
+            key={props.mapImage.id}
             activeTool={props.activeTool}
             mapImage={props.mapImage}
             fogImage={props.fogImage}

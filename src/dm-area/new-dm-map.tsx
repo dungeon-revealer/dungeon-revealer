@@ -487,6 +487,7 @@ export const NewDmSection = (props: {
 
     Promise.all([loadMapImageTask.promise, loadFogImageTask.promise])
       .then(([mapImage, fogImage]) => {
+        mapImage.id = createCacheBusterString();
         setMapImage(mapImage);
         setFogImage(fogImage);
       })
