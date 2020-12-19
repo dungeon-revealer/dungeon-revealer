@@ -11,11 +11,12 @@ import { Input } from "./input";
 import { MapTokenEntity } from "./map-typings";
 import { ToggleSwitch } from "./toggle-switch";
 import { useDebounceCallback } from "./hooks/use-debounce-callback";
-import { parseNumberSafe } from "./parse-number-safe";
 import * as Button from "./button";
 import * as Icon from "./feather-icons";
 import { useNoteWindowActions } from "./dm-area/token-info-aside";
 import { useShowSelectNoteModal } from "./dm-area/select-note-modal";
+import { StepInput } from "./step-input";
+import { ConfigureGridMapToolContext } from "./map-tools/configure-grid-map-tool";
 
 export const TokenContextRenderer = (props: {
   updateToken: (
@@ -95,6 +96,9 @@ const TokenContextMenu = (props: {
   const [label, setLabel] = useResetState(props.token.label, [
     props.token.label,
   ]);
+  const [radius, setRadius] = useResetState(props.token.radius, [
+    props.token.radius,
+  ]);
   const [isVisibleForPlayers, setIsVisibleForPlayers] = useResetState(
     props.token.isVisibleForPlayers,
     [props.token.isVisibleForPlayers]
@@ -112,19 +116,17 @@ const TokenContextMenu = (props: {
     props.token.isLocked,
   ]);
 
-  const rangeSliderRef = React.useRef<HTMLInputElement | null>(null);
-
   const sync = useDebounceCallback(() => {
     props.updateToken({
       label,
       isVisibleForPlayers,
       isMovableByPlayers,
-      radius: rangeSliderRef.current
-        ? parseNumberSafe(rangeSliderRef.current.value) ?? undefined
-        : undefined,
+      radius,
       color,
     });
   }, 300);
+
+  const gridContext = React.useContext(ConfigureGridMapToolContext);
 
   return (
     <>
@@ -149,18 +151,70 @@ const TokenContextMenu = (props: {
           </div>
           <label>
             <h6 style={{ marginBottom: 8, marginTop: 0 }}>Size</h6>
-            <input
-              ref={rangeSliderRef}
-              type="range"
-              min="1"
-              max="200"
-              step="1"
-              onChange={(ev) => {
+            <StepInput
+              label={null}
+              value={radius}
+              onStepChangeValue={(increment) => {
+                setRadius((value) => value + (increment ? 1 : -1) * 1);
                 sync();
               }}
-              style={{ width: "100%", display: "block", marginTop: 0 }}
-              defaultValue={props.token.radius}
+              onChangeValue={(value) => {
+                setRadius(value);
+                sync();
+              }}
             />
+            <div>
+              <Button.Tertiary
+                small
+                onClick={() => {
+                  props.updateToken({
+                    radius: (gridContext.state.columnWidth / 2) * 0.25 - 5,
+                  });
+                }}
+              >
+                0.25x
+              </Button.Tertiary>
+              <Button.Tertiary
+                small
+                onClick={() => {
+                  props.updateToken({
+                    radius: (gridContext.state.columnWidth / 2) * 0.5 - 8,
+                  });
+                }}
+              >
+                0.5x
+              </Button.Tertiary>
+              <Button.Tertiary
+                small
+                onClick={() => {
+                  props.updateToken({
+                    radius: (gridContext.state.columnWidth / 2) * 1 - 8,
+                  });
+                }}
+              >
+                1x
+              </Button.Tertiary>
+              <Button.Tertiary
+                small
+                onClick={() => {
+                  props.updateToken({
+                    radius: (gridContext.state.columnWidth / 2) * 2 - 8,
+                  });
+                }}
+              >
+                2x
+              </Button.Tertiary>
+              <Button.Tertiary
+                small
+                onClick={() => {
+                  props.updateToken({
+                    radius: (gridContext.state.columnWidth / 2) * 3 - 8,
+                  });
+                }}
+              >
+                3x
+              </Button.Tertiary>
+            </div>
           </label>
           <div>
             <h6 style={{ marginBottom: 16, marginTop: 0 }}>Color</h6>

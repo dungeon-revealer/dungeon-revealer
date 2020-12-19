@@ -48,7 +48,7 @@ export const StepInput = (props: {
       {props.label ? (
         <div style={{ fontWeight: "bold", marginBottom: 8 }}>{props.label}</div>
       ) : null}
-      <div style={{ display: "flex" }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
         <div style={{ flexGrow: 1 }}>
           <Input
             value={localTextValue}
