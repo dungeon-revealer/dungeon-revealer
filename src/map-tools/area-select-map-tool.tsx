@@ -1,16 +1,26 @@
 import * as React from "react";
 import { animated, SpringValue } from "@react-spring/three";
-import type { MapTool } from "./map-tool";
-import { ThreeLine, ThreeLine2 } from "../three-line";
-import { BrushToolContextValue, BrushToolContext } from "./brush-map-tool";
-import { applyFogRectangle } from "../canvas-draw-utilities";
 import { useFrame } from "react-three-fiber";
 import { useGesture } from "react-use-gesture";
+import * as io from "io-ts";
+import { pipe, identity } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
+import { ThreeLine, ThreeLine2 } from "../three-line";
+import { applyFogRectangle } from "../canvas-draw-utilities";
+import type { MapTool } from "./map-tool";
+import { BrushToolContext } from "./brush-map-tool";
+import { ConfigureGridMapToolContext } from "./configure-grid-map-tool";
+import {
+  PersistedStateModel,
+  usePersistedState,
+} from "../hooks/use-persisted-state";
+import { midBetweenPoints } from "../canvas-draw-utilities";
+import { Mesh, PlaneBufferGeometry } from "three";
 
 export const Rectangle = (props: {
   p1: SpringValue<[number, number, number]> | [number, number, number];
   p2: SpringValue<[number, number, number]> | [number, number, number];
-  color: string;
+  borderColor: string;
 }): React.ReactElement => {
   const getPoints = React.useCallback<
     () => Array<[number, number, number]>
@@ -33,7 +43,110 @@ export const Rectangle = (props: {
     }
   });
   return (
-    <ThreeLine points={points} color={props.color} ref={ref} transparent />
+    <ThreeLine
+      points={points}
+      color={props.borderColor}
+      ref={ref}
+      transparent
+    />
+  );
+};
+
+export const RectanglePlane = (props: {
+  p1: SpringValue<[number, number, number]> | [number, number, number];
+  p2: SpringValue<[number, number, number]> | [number, number, number];
+  color: string;
+}) => {
+  const getWidth = () =>
+    (props.p1 instanceof SpringValue ? props.p1.get() : props.p1)[0] -
+    (props.p2 instanceof SpringValue ? props.p2.get() : props.p2)[0];
+  const getHeight = () =>
+    (props.p1 instanceof SpringValue ? props.p1.get() : props.p1)[1] -
+    (props.p2 instanceof SpringValue ? props.p2.get() : props.p2)[1];
+  const ref = React.useRef<null | PlaneBufferGeometry>(null);
+  const ref1 = React.useRef<null | Mesh>(null);
+
+  const center = useFrame(() => {
+    if (ref.current && ref1.current) {
+      const [x1, y1] =
+        props.p1 instanceof SpringValue ? props.p1.get() : props.p1;
+      const [x2, y2] =
+        props.p2 instanceof SpringValue ? props.p2.get() : props.p2;
+
+      const [x, y] = midBetweenPoints([x1, y1], [x2, y2]);
+      ref1.current.position.x = x;
+      ref1.current.position.y = y;
+      ref1.current.scale.x = getWidth();
+      ref1.current.scale.y = getHeight();
+    }
+  });
+  return (
+    <mesh ref={ref1}>
+      <planeBufferGeometry attach="geometry" args={[1, 1]} ref={ref} />
+      <meshStandardMaterial attach="material" color={props.color} />
+    </mesh>
+  );
+};
+
+const AreaSelectModel = io.type({
+  snapToGrid: io.boolean,
+});
+
+type AreaSelectState = io.TypeOf<typeof AreaSelectModel>;
+
+type AreaSelectContextValue = {
+  state: AreaSelectState;
+  setState: React.Dispatch<React.SetStateAction<AreaSelectState>>;
+};
+
+const createDefaultValue = (): AreaSelectState => ({
+  snapToGrid: false,
+});
+
+const areaSelectStateModel: PersistedStateModel<AreaSelectState> = {
+  encode: (value) => JSON.stringify(value),
+  decode: (value) =>
+    pipe(
+      io.string.decode(value),
+      E.chainW((value) => E.parseJSON(value, identity)),
+      E.chainW(AreaSelectModel.decode),
+      E.fold((err) => {
+        if (value !== null) {
+          console.log(
+            "Error occured while trying to decode value.\n" +
+              JSON.stringify(err, null, 2)
+          );
+        }
+        return createDefaultValue();
+      }, identity)
+    ),
+};
+
+export const AreaSelectContext = React.createContext<AreaSelectContextValue>(
+  // TODO: use context that throw error if value is not provided
+  undefined as any
+);
+
+export const AreaSelectContextProvider = (props: {
+  children: React.ReactNode;
+}): React.ReactElement => {
+  const [state, setState] = usePersistedState(
+    "areaSelectTool",
+    areaSelectStateModel
+  );
+
+  const value = React.useMemo(
+    () => ({
+      state,
+      setState,
+    }),
+    [state, setState]
+  );
+
+  return (
+    <AreaSelectContext.Provider value={value}>
+      {props.children}
+    </AreaSelectContext.Provider>
   );
 };
 
@@ -41,6 +154,8 @@ export const AreaSelectMapTool: MapTool = {
   id: "area-select-map-tool",
   Component: (props) => {
     const brushContext = React.useContext(BrushToolContext);
+    const areaSelectContext = React.useContext(AreaSelectContext);
+    const gridContext = React.useContext(ConfigureGridMapToolContext);
     const [localState, setLocalState] = React.useState(() => ({
       lastPointerPosition: null as null | SpringValue<[number, number, number]>,
     }));
@@ -103,11 +218,20 @@ export const AreaSelectMapTool: MapTool = {
     });
 
     return localState.lastPointerPosition ? (
-      <Rectangle
-        p1={localState.lastPointerPosition}
-        p2={props.mapContext.pointerPosition}
-        color="red"
-      />
+      <>
+        {areaSelectContext.state.snapToGrid ? (
+          <RectanglePlane
+            p1={localState.lastPointerPosition}
+            p2={props.mapContext.pointerPosition}
+            color="aqua"
+          />
+        ) : null}
+        <Rectangle
+          p1={localState.lastPointerPosition}
+          p2={props.mapContext.pointerPosition}
+          borderColor="red"
+        />
+      </>
     ) : (
       <animated.group position={props.mapContext.pointerPosition}>
         <>

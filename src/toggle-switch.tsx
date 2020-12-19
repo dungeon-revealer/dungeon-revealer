@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "@emotion/styled/macro";
 
-const Switch = styled.div`
+const Switch = styled.label`
   position: relative;
   display: inline-block;
   width: 60px;

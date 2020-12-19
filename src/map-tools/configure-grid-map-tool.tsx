@@ -3,7 +3,6 @@ import { usePinchWheelZoom } from "./drag-pan-zoom-map-tool";
 import type { MapTool } from "./map-tool";
 import { ThreeLine } from "../three-line";
 import { Rectangle } from "./area-select-map-tool";
-import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 
 export type ConfigureMapToolState = {
   offsetY: number;
@@ -82,7 +81,7 @@ export const ConfigureGridMapTool: MapTool = {
         <Rectangle
           p1={[offsetX, offsetY, 0]}
           p2={[offsetX + columnWidth, offsetY - columnHeight, 0]}
-          color="blue"
+          borderColor="red"
         />
       </>
     );

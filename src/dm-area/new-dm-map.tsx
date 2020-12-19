@@ -26,7 +26,11 @@ import { MapView, MapControlInterface } from "../map-view";
 import { buildApiUrl } from "../public-url";
 import { ConditionalWrap, loadImage } from "../util";
 import { BrushShape, FogMode } from "../canvas-draw-utilities";
-import { AreaSelectMapTool } from "../map-tools/area-select-map-tool";
+import {
+  AreaSelectContext,
+  AreaSelectContextProvider,
+  AreaSelectMapTool,
+} from "../map-tools/area-select-map-tool";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
@@ -131,6 +135,27 @@ const BrushSettings = (): React.ReactElement => {
         </div>
       </div>
     </>
+  );
+};
+
+const AreaSelectSettings = (): React.ReactElement => {
+  const { state, setState } = React.useContext(AreaSelectContext);
+
+  return (
+    <div>
+      <h6 style={{ margin: 0, marginBottom: 12 }}>Snap to grid</h6>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <ToggleSwitch
+          checked={state.snapToGrid}
+          onChange={(checked) => {
+            setState((state) => ({ ...state, snapToGrid: checked }));
+          }}
+        />{" "}
+        <span style={{ fontWeight: "bold", marginLeft: 8 }}>
+          {state.snapToGrid ? "On" : "Off"}
+        </span>
+      </div>
+    </div>
   );
 };
 
@@ -357,7 +382,7 @@ const DM_TOOL_MAP: Array<ToolMapRecord> = [
     name: "Area",
     icon: <Icons.CropIcon size={20} />,
     tool: AreaSelectMapTool,
-    MenuComponent: null,
+    MenuComponent: AreaSelectSettings,
   },
   {
     name: "Mark",
@@ -594,6 +619,7 @@ export const NewDmSection = (props: {
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof TokenContextRenderer>
         >,
+        [AreaSelectContextProvider, {}],
       ]}
     >
       {mapImage ? (
@@ -620,6 +646,7 @@ export const NewDmSection = (props: {
             BrushToolContext,
             ConfigureGridMapToolContext,
             TokenContextMenuContext,
+            AreaSelectContext,
           ]}
           fogOpacity={0.5}
         />
