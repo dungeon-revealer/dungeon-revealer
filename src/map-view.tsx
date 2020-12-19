@@ -522,27 +522,10 @@ const MapViewRenderer = (props: {
     position: [0, 0, 0] as [number, number, number],
   }));
 
-  const [mapCanvas] = React.useState(() =>
-    window.document.createElement("canvas")
-  );
-  const [fogCanvas] = React.useState(() =>
-    window.document.createElement("canvas")
-  );
-
-  const [mapTexture] = React.useState(() => new THREE.CanvasTexture(mapCanvas));
-  const [fogTexture] = React.useState(() => new THREE.CanvasTexture(fogCanvas));
-
   // maximumSideLength * maximumSideLength = MAXIMUM_TEXTURE_SIZE * 1024
   const maximumSideLength = React.useMemo(() => {
     return Math.sqrt(maximumTextureSize * 1024);
   }, [maximumTextureSize]);
-
-  React.useEffect(() => {
-    set({
-      scale: [1, 1, 1],
-      position: [0, 0, 0],
-    });
-  }, [mapTexture, set]);
 
   const optimalDimensions = React.useMemo(
     () =>
@@ -554,6 +537,29 @@ const MapViewRenderer = (props: {
       ),
     [maximumSideLength, props.mapImage]
   );
+
+  const [mapCanvas] = React.useState(() => {
+    const canvas = window.document.createElement("canvas");
+    canvas.width = optimalDimensions.width;
+    canvas.height = optimalDimensions.height;
+    return canvas;
+  });
+  const [fogCanvas] = React.useState(() => {
+    const canvas = window.document.createElement("canvas");
+    canvas.width = optimalDimensions.width;
+    canvas.height = optimalDimensions.height;
+    return canvas;
+  });
+
+  const [mapTexture] = React.useState(() => new THREE.CanvasTexture(mapCanvas));
+  const [fogTexture] = React.useState(() => new THREE.CanvasTexture(fogCanvas));
+
+  React.useEffect(() => {
+    set({
+      scale: [1, 1, 1],
+      position: [0, 0, 0],
+    });
+  }, [mapTexture, set]);
 
   React.useEffect(() => {
     if (props.fogImage) {
@@ -580,9 +586,8 @@ const MapViewRenderer = (props: {
     mapCanvas.height = optimalDimensions.height;
     const context = mapCanvas.getContext("2d")!;
     context.drawImage(props.mapImage, 0, 0, mapCanvas.width, mapCanvas.height);
-
     mapTexture.needsUpdate = true;
-  }, [, props.mapImage, mapCanvas, maximumSideLength]);
+  }, [optimalDimensions, props.mapImage, mapCanvas, maximumSideLength]);
 
   const dimensions = React.useMemo(() => {
     return getOptimalDimensions(
@@ -684,6 +689,7 @@ const MapViewRenderer = (props: {
     };
   }, [
     fogCanvas,
+    mapCanvas,
     fogTexture,
     spring,
     set,
@@ -708,32 +714,29 @@ const MapViewRenderer = (props: {
     onPointerMove: PointerEvent;
     onClick: PointerEvent;
     onKeyDown: KeyboardEvent;
-  }>(
-    {
-      onPointerDown: (args) => toolRef.current?.handlers?.onPointerDown?.(args),
-      onPointerUp: (args) => toolRef.current?.handlers?.onPointerUp?.(args),
-      onPointerMove: (args) => {
-        const position = toolContext.mapState.position.get();
-        const scale = toolContext.mapState.scale.get();
+  }>({
+    onPointerDown: (args) => toolRef.current?.handlers?.onPointerDown?.(args),
+    onPointerUp: (args) => toolRef.current?.handlers?.onPointerUp?.(args),
+    onPointerMove: (args) => {
+      const position = toolContext.mapState.position.get();
+      const scale = toolContext.mapState.scale.get();
 
-        pointerPosition.set([
-          (args.event.point.x - position[0]) / scale[0],
-          (args.event.point.y - position[1]) / scale[1],
-          0,
-        ]);
+      pointerPosition.set([
+        (args.event.point.x - position[0]) / scale[0],
+        (args.event.point.y - position[1]) / scale[1],
+        0,
+      ]);
 
-        return toolRef.current?.handlers?.onPointerMove?.(args);
-      },
-      onDrag: (args) => {
-        if (isDragAllowed.current === false) {
-          return;
-        }
-        return toolRef.current?.handlers?.onDrag?.(args);
-      },
-      onClick: (args) => toolRef.current?.handlers?.onClick?.(args),
+      return toolRef.current?.handlers?.onPointerMove?.(args);
     },
-    {}
-  );
+    onDrag: (args) => {
+      if (isDragAllowed.current === false) {
+        return;
+      }
+      return toolRef.current?.handlers?.onDrag?.(args);
+    },
+    onClick: (args) => toolRef.current?.handlers?.onClick?.(args),
+  });
 
   return (
     <Plane position={spring.position} scale={spring.scale} {...bind()}>
