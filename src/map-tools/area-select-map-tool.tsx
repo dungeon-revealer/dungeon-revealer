@@ -1,5 +1,5 @@
 import * as React from "react";
-import { animated, SpringValue, Interpolation } from "@react-spring/three";
+import { animated, SpringValue, Interpolation, to } from "@react-spring/three";
 import { useFrame } from "react-three-fiber";
 import { useGesture } from "react-use-gesture";
 import * as io from "io-ts";
@@ -15,7 +15,6 @@ import {
   usePersistedState,
 } from "../hooks/use-persisted-state";
 import { midBetweenPoints } from "../canvas-draw-utilities";
-import { Mesh, PlaneBufferGeometry } from "three";
 
 type Point =
   | Interpolation<[number, number, number]>
@@ -63,36 +62,34 @@ export const Rectangle = (props: {
 };
 
 export const RectanglePlane = (props: {
-  p1: Point;
-  p2: Point;
+  p1:
+    | SpringValue<[number, number, number]>
+    | Interpolation<[number, number, number]>;
+  p2:
+    | SpringValue<[number, number, number]>
+    | Interpolation<[number, number, number]>;
   color: string;
 }) => {
-  const getWidth = () => getRawPoint(props.p1)[0] - getRawPoint(props.p2)[0];
-  const getHeight = () => getRawPoint(props.p1)[1] - getRawPoint(props.p2)[1];
-  const ref = React.useRef<null | PlaneBufferGeometry>(null);
-  const ref1 = React.useRef<null | Mesh>(null);
-
-  useFrame(() => {
-    if (ref.current && ref1.current) {
-      const [x1, y1] = getRawPoint(props.p1);
-      const [x2, y2] = getRawPoint(props.p2);
-      const [x, y] = midBetweenPoints([x1, y1], [x2, y2]);
-      ref1.current.position.x = x;
-      ref1.current.position.y = y;
-      ref1.current.scale.x = getWidth();
-      ref1.current.scale.y = getHeight();
-    }
-  });
   return (
-    <mesh ref={ref1}>
-      <planeBufferGeometry attach="geometry" args={[1, 1]} ref={ref} />
+    <animated.mesh
+      position={to([props.p1, props.p2] as const, ([x1, y1], [x2, y2]) => {
+        const [x, y] = midBetweenPoints([x1, y1], [x2, y2]);
+        return [x, y, 0];
+      })}
+      scale={to([props.p1, props.p2] as const, ([x1, y1], [x2, y2]) => [
+        x1 - x2,
+        y1 - y2,
+        1,
+      ])}
+    >
+      <planeBufferGeometry attach="geometry" args={[1, 1]} />
       <meshStandardMaterial
         attach="material"
         color={props.color}
         transparent={true}
         opacity={0.5}
       />
-    </mesh>
+    </animated.mesh>
   );
 };
 
@@ -168,6 +165,24 @@ export const AreaSelectMapTool: MapTool = {
       lastPointerPosition: null as null | SpringValue<[number, number, number]>,
     }));
 
+    const gridDimensions = React.useMemo(
+      () => ({
+        columnDimensions: props.mapContext.helper.vector.canvasToThree(
+          props.mapContext.helper.vector.imageToCanvas([
+            gridContext.state.columnWidth,
+            gridContext.state.columnHeight,
+          ])
+        ),
+        gridPosition: props.mapContext.helper.coordinates.canvasToThree(
+          props.mapContext.helper.coordinates.imageToCanvas([
+            gridContext.state.offsetX,
+            gridContext.state.offsetY,
+          ])
+        ),
+      }),
+      [gridContext.state]
+    );
+
     const fadeWidth = 0.05;
 
     useGesture<{ onKeyDown: KeyboardEvent }>(
@@ -185,6 +200,32 @@ export const AreaSelectMapTool: MapTool = {
         domTarget: window.document,
       }
     );
+
+    const getSnappedX = (x: number) => {
+      let currentX = gridDimensions.gridPosition[0];
+      let step =
+        (x > gridDimensions.gridPosition[0] ? 1 : -1) *
+        gridDimensions.columnDimensions[0];
+
+      while (Math.abs(currentX - x) > gridDimensions.columnDimensions[0] / 2) {
+        currentX = currentX + step;
+      }
+
+      return currentX;
+    };
+
+    const getSnappedY = (y: number) => {
+      let currentY = gridDimensions.gridPosition[1];
+      let step =
+        (y > gridDimensions.gridPosition[1] ? 1 : -1) *
+        gridDimensions.columnDimensions[1];
+
+      while (Math.abs(currentY - y) > gridDimensions.columnDimensions[1] / 2) {
+        currentY = currentY + step;
+      }
+
+      return currentY;
+    };
 
     props.useMapGesture({
       onPointerDown: (args) => {
@@ -205,8 +246,13 @@ export const AreaSelectMapTool: MapTool = {
       onPointerUp: () => {
         if (localState.lastPointerPosition) {
           const fogCanvasContext = props.mapContext.fogCanvas.getContext("2d")!;
-          const p1 = props.mapContext.pointerPosition.get();
-          const p2 = localState.lastPointerPosition.get();
+          let p1 = props.mapContext.pointerPosition.get();
+          let p2 = localState.lastPointerPosition.get();
+
+          if (areaSelectContext.state.snapToGrid === true) {
+            p1 = [getSnappedX(p1[0]), getSnappedY(p1[1]), 1];
+            p2 = [getSnappedX(p2[0]), getSnappedY(p2[1]), 1];
+          }
 
           applyFogRectangle(
             brushContext.state.fogMode,
@@ -229,20 +275,22 @@ export const AreaSelectMapTool: MapTool = {
       <>
         {areaSelectContext.state.snapToGrid ? (
           <RectanglePlane
-            p1={localState.lastPointerPosition}
-            p2={props.mapContext.pointerPosition}
+            p1={localState.lastPointerPosition.to((x, y, z) => [
+              getSnappedX(x),
+              getSnappedY(y),
+              z,
+            ])}
+            p2={props.mapContext.pointerPosition.to((x, y, z) => [
+              getSnappedX(x),
+              getSnappedY(y),
+              z,
+            ])}
             color="aqua"
           />
         ) : null}
         <Rectangle
-          p1={localState.lastPointerPosition.to((x, y, z) => {
-            // TODO: snap to gridContext values
-            return [x, y, z];
-          })}
-          p2={props.mapContext.pointerPosition.to((x, y, z) => {
-            // TODO: snap to gridContext values
-            return [x, y, z];
-          })}
+          p1={localState.lastPointerPosition}
+          p2={props.mapContext.pointerPosition}
           borderColor="red"
         />
       </>
