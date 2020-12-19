@@ -15,6 +15,7 @@ import {
   usePersistedState,
 } from "../hooks/use-persisted-state";
 import { midBetweenPoints } from "../canvas-draw-utilities";
+import { usePinchWheelZoom } from "./drag-pan-zoom-map-tool";
 
 type Point =
   | Interpolation<[number, number, number]>
@@ -227,8 +228,13 @@ export const AreaSelectMapTool: MapTool = {
       return currentY;
     };
 
+    usePinchWheelZoom(props.mapContext);
+
     props.useMapGesture({
       onPointerDown: (args) => {
+        if (props.mapContext.isAltPressed) {
+          return;
+        }
         const position = props.mapContext.mapState.position.get();
         const scale = props.mapContext.mapState.scale.get();
 
@@ -244,6 +250,9 @@ export const AreaSelectMapTool: MapTool = {
         }));
       },
       onPointerUp: () => {
+        if (props.mapContext.isAltPressed) {
+          return;
+        }
         if (localState.lastPointerPosition) {
           const fogCanvasContext = props.mapContext.fogCanvas.getContext("2d")!;
           let p1 = props.mapContext.pointerPosition.get();
@@ -269,32 +278,56 @@ export const AreaSelectMapTool: MapTool = {
           lastPointerPosition: null,
         }));
       },
+      onDrag: ({ movement, memo, event }) => {
+        if (props.mapContext.isAltPressed) {
+          event.stopPropagation();
+          memo = memo ?? props.mapContext.mapState.position.get();
+          props.mapContext.setMapState({
+            position: [
+              memo[0] + movement[0] / props.mapContext.viewport.factor,
+              memo[1] - movement[1] / props.mapContext.viewport.factor,
+              0,
+            ],
+            immediate: true,
+          });
+
+          return memo;
+        }
+      },
     });
 
-    return localState.lastPointerPosition ? (
-      <>
-        {areaSelectContext.state.snapToGrid ? (
-          <RectanglePlane
-            p1={localState.lastPointerPosition.to((x, y, z) => [
-              getSnappedX(x),
-              getSnappedY(y),
-              z,
-            ])}
-            p2={props.mapContext.pointerPosition.to((x, y, z) => [
-              getSnappedX(x),
-              getSnappedY(y),
-              z,
-            ])}
-            color="aqua"
+    if (props.mapContext.isAltPressed) {
+      return null;
+    }
+
+    if (localState.lastPointerPosition) {
+      return (
+        <>
+          {areaSelectContext.state.snapToGrid ? (
+            <RectanglePlane
+              p1={localState.lastPointerPosition.to((x, y, z) => [
+                getSnappedX(x),
+                getSnappedY(y),
+                z,
+              ])}
+              p2={props.mapContext.pointerPosition.to((x, y, z) => [
+                getSnappedX(x),
+                getSnappedY(y),
+                z,
+              ])}
+              color="aqua"
+            />
+          ) : null}
+          <Rectangle
+            p1={localState.lastPointerPosition}
+            p2={props.mapContext.pointerPosition}
+            borderColor="red"
           />
-        ) : null}
-        <Rectangle
-          p1={localState.lastPointerPosition}
-          p2={props.mapContext.pointerPosition}
-          borderColor="red"
-        />
-      </>
-    ) : (
+        </>
+      );
+    }
+
+    return (
       <animated.group position={props.mapContext.pointerPosition}>
         <>
           <ThreeLine

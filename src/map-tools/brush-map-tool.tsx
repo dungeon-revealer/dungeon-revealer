@@ -16,6 +16,7 @@ import {
   PersistedStateModel,
   usePersistedState,
 } from "../hooks/use-persisted-state";
+import { usePinchWheelZoom } from "./drag-pan-zoom-map-tool";
 
 const BrushToolStateModel = io.type({
   brushSize: io.number,
@@ -126,8 +127,13 @@ export const BrushMapTool: MapTool = {
       lastPointerPosition: null as null | [number, number],
     }));
 
+    usePinchWheelZoom(props.mapContext);
+
     props.useMapGesture({
       onPointerDown: () => {
+        if (props.mapContext.isAltPressed) {
+          return;
+        }
         const position: [number, number] = [
           props.mapContext.pointerPosition.get()[0],
           props.mapContext.pointerPosition.get()[1],
@@ -146,10 +152,16 @@ export const BrushMapTool: MapTool = {
         localState.lastPointerPosition = position;
       },
       onPointerUp: () => {
+        if (props.mapContext.isAltPressed) {
+          return;
+        }
         localState.lastPointerPosition = null;
         brushContext.handlers.onDrawEnd(props.mapContext.fogCanvas);
       },
       onPointerMove: () => {
+        if (props.mapContext.isAltPressed) {
+          return;
+        }
         if (localState.lastPointerPosition) {
           const canvasContext = props.mapContext.fogCanvas.getContext("2d")!;
 
@@ -172,7 +184,27 @@ export const BrushMapTool: MapTool = {
           localState.lastPointerPosition = position;
         }
       },
+      onDrag: ({ movement, memo, event }) => {
+        if (props.mapContext.isAltPressed) {
+          event.stopPropagation();
+          memo = memo ?? props.mapContext.mapState.position.get();
+          props.mapContext.setMapState({
+            position: [
+              memo[0] + movement[0] / props.mapContext.viewport.factor,
+              memo[1] - movement[1] / props.mapContext.viewport.factor,
+              0,
+            ],
+            immediate: true,
+          });
+
+          return memo;
+        }
+      },
     });
+
+    if (props.mapContext.isAltPressed) {
+      return null;
+    }
 
     switch (brushContext.state.brushShape) {
       case BrushShape.circle: {

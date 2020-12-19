@@ -16,6 +16,9 @@ export const MarkAreaMapTool: MapTool = {
     const markAreaContext = React.useContext(MarkAreaToolContext);
     props.useMapGesture({
       onClick: () => {
+        if (props.mapContext.isAltPressed) {
+          return;
+        }
         const position = props.mapContext.pointerPosition.get();
         markAreaContext.onMarkArea(
           props.mapContext.helper.coordinates.canvasToImage(
@@ -25,6 +28,22 @@ export const MarkAreaMapTool: MapTool = {
             ])
           )
         );
+      },
+      onDrag: ({ movement, memo, event }) => {
+        if (props.mapContext.isAltPressed) {
+          event.stopPropagation();
+          memo = memo ?? props.mapContext.mapState.position.get();
+          props.mapContext.setMapState({
+            position: [
+              memo[0] + movement[0] / props.mapContext.viewport.factor,
+              memo[1] - movement[1] / props.mapContext.viewport.factor,
+              0,
+            ],
+            immediate: true,
+          });
+
+          return memo;
+        }
       },
     });
     return null;

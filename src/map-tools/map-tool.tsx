@@ -49,11 +49,6 @@ export type SharedMapToolState = {
   };
 };
 
-type LocalStateFactory<State> = {
-  state: State;
-  setState: React.Dispatch<React.SetStateAction<State>>;
-};
-
 export type MapToolMapGestureHandlers = Handlers<{
   onPointerDown: PointerEvent;
   onPointerUp: PointerEvent;
