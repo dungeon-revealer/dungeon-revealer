@@ -1,5 +1,5 @@
 import * as React from "react";
-import { animated, SpringValue } from "@react-spring/three";
+import { animated, SpringValue, Interpolation } from "@react-spring/three";
 import { useFrame } from "react-three-fiber";
 import { useGesture } from "react-use-gesture";
 import * as io from "io-ts";
@@ -17,16 +17,26 @@ import {
 import { midBetweenPoints } from "../canvas-draw-utilities";
 import { Mesh, PlaneBufferGeometry } from "three";
 
+type Point =
+  | Interpolation<[number, number, number]>
+  | SpringValue<[number, number, number]>
+  | [number, number, number];
+
+const getRawPoint = (point: Point): [number, number, number] =>
+  point instanceof SpringValue || point instanceof Interpolation
+    ? point.get()
+    : point;
+
 export const Rectangle = (props: {
-  p1: SpringValue<[number, number, number]> | [number, number, number];
-  p2: SpringValue<[number, number, number]> | [number, number, number];
+  p1: Point;
+  p2: Point;
   borderColor: string;
 }): React.ReactElement => {
   const getPoints = React.useCallback<
     () => Array<[number, number, number]>
   >(() => {
-    const p1 = props.p1 instanceof SpringValue ? props.p1.get() : props.p1;
-    const p2 = props.p2 instanceof SpringValue ? props.p2.get() : props.p2;
+    const p1 = getRawPoint(props.p1);
+    const p2 = getRawPoint(props.p2);
     return [p1, [p2[0], p1[1], 0], p2, [p1[0], p2[1], 0], p1];
   }, [props.p1, props.p2]);
 
@@ -53,26 +63,19 @@ export const Rectangle = (props: {
 };
 
 export const RectanglePlane = (props: {
-  p1: SpringValue<[number, number, number]> | [number, number, number];
-  p2: SpringValue<[number, number, number]> | [number, number, number];
+  p1: Point;
+  p2: Point;
   color: string;
 }) => {
-  const getWidth = () =>
-    (props.p1 instanceof SpringValue ? props.p1.get() : props.p1)[0] -
-    (props.p2 instanceof SpringValue ? props.p2.get() : props.p2)[0];
-  const getHeight = () =>
-    (props.p1 instanceof SpringValue ? props.p1.get() : props.p1)[1] -
-    (props.p2 instanceof SpringValue ? props.p2.get() : props.p2)[1];
+  const getWidth = () => getRawPoint(props.p1)[0] - getRawPoint(props.p2)[0];
+  const getHeight = () => getRawPoint(props.p1)[1] - getRawPoint(props.p2)[1];
   const ref = React.useRef<null | PlaneBufferGeometry>(null);
   const ref1 = React.useRef<null | Mesh>(null);
 
-  const center = useFrame(() => {
+  useFrame(() => {
     if (ref.current && ref1.current) {
-      const [x1, y1] =
-        props.p1 instanceof SpringValue ? props.p1.get() : props.p1;
-      const [x2, y2] =
-        props.p2 instanceof SpringValue ? props.p2.get() : props.p2;
-
+      const [x1, y1] = getRawPoint(props.p1);
+      const [x2, y2] = getRawPoint(props.p2);
       const [x, y] = midBetweenPoints([x1, y1], [x2, y2]);
       ref1.current.position.x = x;
       ref1.current.position.y = y;
@@ -83,7 +86,12 @@ export const RectanglePlane = (props: {
   return (
     <mesh ref={ref1}>
       <planeBufferGeometry attach="geometry" args={[1, 1]} ref={ref} />
-      <meshStandardMaterial attach="material" color={props.color} />
+      <meshStandardMaterial
+        attach="material"
+        color={props.color}
+        transparent={true}
+        opacity={0.5}
+      />
     </mesh>
   );
 };
@@ -227,8 +235,14 @@ export const AreaSelectMapTool: MapTool = {
           />
         ) : null}
         <Rectangle
-          p1={localState.lastPointerPosition}
-          p2={props.mapContext.pointerPosition}
+          p1={localState.lastPointerPosition.to((x, y, z) => {
+            // TODO: snap to gridContext values
+            return [x, y, z];
+          })}
+          p2={props.mapContext.pointerPosition.to((x, y, z) => {
+            // TODO: snap to gridContext values
+            return [x, y, z];
+          })}
           borderColor="red"
         />
       </>
