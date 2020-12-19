@@ -80,7 +80,9 @@ const TokenRenderer: React.FC<{
   const tokenMenuContext = React.useContext(TokenContextMenuContext);
   const isDungeonMasterView = tokenMenuContext !== null;
 
-  const initialRadius = useStaticRef(() => props.radius * props.factor);
+  const initialRadius = useStaticRef(
+    () => Math.max(1, props.radius) * props.factor
+  );
 
   const isMovable =
     (isDungeonMasterView === true || props.isMovableByPlayers === true) &&

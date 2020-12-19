@@ -43,10 +43,7 @@ import { applyFogRectangle } from "../canvas-draw-utilities";
 import { ToggleSwitch } from "../toggle-switch";
 import { MapGridEntity } from "../map-typings";
 import { useResetState } from "../hooks/use-reset-state";
-import { Input } from "../input";
 import * as Button from "../button";
-import { useLongPress } from "../hooks/use-long-press";
-import { parseNumberSafe } from "../parse-number-safe";
 import { useDebounceCallback } from "../hooks/use-debounce-callback";
 import {
   FlatContextProvider,
@@ -58,6 +55,7 @@ import {
   PersistedStateModel,
   usePersistedState,
 } from "../hooks/use-persisted-state";
+import { StepInput } from "../step-input";
 
 type ToolMapRecord = {
   name: string;
@@ -972,74 +970,6 @@ const ShapeButton = styled.button<{ isActive: boolean }>`
     stroke: ${(p) => (p.isActive ? "rgba(0, 0, 0, 1)" : "hsl(211, 27%, 70%)")};
   }
 `;
-
-const StepInput = (props: {
-  label: string;
-  value: number;
-  onStepChangeValue: (increment: boolean) => void;
-  onChangeValue: (value: number) => void;
-}) => {
-  const plusHandler = React.useCallback(() => {
-    props.onStepChangeValue(true);
-  }, [props.onStepChangeValue, props.value]);
-
-  const minusHandler = React.useCallback(() => {
-    props.onStepChangeValue(false);
-  }, [props.onStepChangeValue, props.value]);
-
-  const plusLongPressProps = useLongPress(() => {
-    const interval = setInterval(plusHandler, 100);
-    return () => clearInterval(interval);
-  });
-
-  const minusLongPressProps = useLongPress(() => {
-    const interval = setInterval(minusHandler, 100);
-    return () => clearInterval(interval);
-  });
-
-  const [localTextValue, setLocalTextValue] = useResetState(
-    () => String(props.value),
-    [props.value]
-  );
-
-  const syncLocalValue = useDebounceCallback(() => {
-    const value = parseNumberSafe(localTextValue);
-    if (value) {
-      props.onChangeValue(value);
-    }
-  }, 500);
-
-  return (
-    <label>
-      <div style={{ fontWeight: "bold", marginBottom: 8 }}>{props.label}</div>
-      <div style={{ display: "flex" }}>
-        <div style={{ flexGrow: 1 }}>
-          <Input
-            value={localTextValue}
-            onChange={(ev) => {
-              setLocalTextValue(ev.target.value);
-              syncLocalValue();
-            }}
-          />
-        </div>
-        <div>
-          <Button.Tertiary {...plusLongPressProps} onClick={plusHandler} small>
-            <Icons.PlusIcon />
-          </Button.Tertiary>
-        </div>
-        <div>
-          <Button.Tertiary
-            {...minusLongPressProps}
-            onClick={minusHandler}
-            small
-          >
-            <Icons.MinusIcon />
-          </Button.Tertiary>
-        </div>
-      </div>
-    </label>
-  );
-};
 
 const GridConfigurator = (props: {
   onAbort: () => void;
