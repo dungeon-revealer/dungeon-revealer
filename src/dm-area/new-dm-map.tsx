@@ -4,6 +4,9 @@ import styled from "@emotion/styled/macro";
 import { useToasts } from "react-toast-notifications";
 import { AlphaPicker, HuePicker } from "react-color";
 import { parseToRgb, toColorString } from "polished";
+import * as io from "io-ts";
+import { pipe, identity } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
 import * as Icons from "../feather-icons";
 import { Toolbar } from "../toolbar";
 import type { MapTool } from "../map-tools/map-tool";
@@ -51,6 +54,10 @@ import {
 } from "../flat-context-provider";
 import { TokenContextMenuContext } from "../token-context-menu-context";
 import { TokenContextRenderer } from "../token-context-menu";
+import {
+  PersistedStateModel,
+  usePersistedState,
+} from "../hooks/use-persisted-state";
 
 type ToolMapRecord = {
   name: string;
@@ -392,6 +399,33 @@ const DM_TOOL_MAP: Array<ToolMapRecord> = [
   },
 ];
 
+const ActiveDmMapToolModel = io.union([
+  io.literal(DragPanZoomMapTool.id),
+  io.literal(MarkAreaMapTool.id),
+  io.literal(BrushMapTool.id),
+  io.literal(AreaSelectMapTool.id),
+  io.literal(MarkAreaMapTool.id),
+]);
+
+const activeDmMapToolIdModel: PersistedStateModel<
+  io.TypeOf<typeof ActiveDmMapToolModel>
+> = {
+  encode: identity,
+  decode: (value) =>
+    pipe(
+      ActiveDmMapToolModel.decode(value),
+      E.fold((err) => {
+        if (value !== null) {
+          console.log(
+            "Error occured while trying to decode value.\n" +
+              JSON.stringify(err, null, 2)
+          );
+        }
+        return DragPanZoomMapTool.id;
+      }, identity)
+    ),
+};
+
 const createCacheBusterString = () =>
   encodeURIComponent(`${Date.now()}_${uuid()}`);
 
@@ -472,11 +506,18 @@ export const NewDmSection = (props: {
     };
   }, [props.password, props.map.id]);
 
-  // TODO: this should be persisted state
-  const [
-    userSelectedTool,
-    setUserSelectedTool,
-  ] = React.useState<null | MapTool>(DM_TOOL_MAP[0].tool);
+  const [activeToolId, setActiveToolId] = usePersistedState(
+    "activeDmTool",
+    activeDmMapToolIdModel
+  );
+
+  const userSelectedTool = React.useMemo(() => {
+    return (
+      DM_TOOL_MAP.find((tool) => tool.tool.id === activeToolId) ??
+      DM_TOOL_MAP[0]
+    ).tool;
+  }, [activeToolId]);
+
   const [toolOverride, setToolOverride] = React.useState<null | MapTool>(null);
   const activeTool = toolOverride ?? userSelectedTool;
 
@@ -552,7 +593,7 @@ export const NewDmSection = (props: {
         case "3":
         case "4": {
           const toolIndex = parseInt(ev.key, 10) - 1;
-          setUserSelectedTool(DM_TOOL_MAP[toolIndex].tool);
+          setActiveToolId(DM_TOOL_MAP[toolIndex].tool.id);
           break;
         }
       }
@@ -663,7 +704,7 @@ export const NewDmSection = (props: {
                     record={record}
                     isActive={record.tool === userSelectedTool}
                     setActiveTool={() => {
-                      setUserSelectedTool(record.tool);
+                      setActiveToolId(record.tool.id);
                     }}
                   />
                 ))}

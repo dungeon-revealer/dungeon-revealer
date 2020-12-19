@@ -1,4 +1,5 @@
 import * as React from "react";
+import { usePinchWheelZoom } from "./drag-pan-zoom-map-tool";
 import type { MapTool } from "./map-tool";
 
 type MarkAreaToolContextValue = {
@@ -14,6 +15,7 @@ export const MarkAreaMapTool: MapTool = {
   id: "mark-area-map-tool",
   Component: (props) => {
     const markAreaContext = React.useContext(MarkAreaToolContext);
+    usePinchWheelZoom(props.mapContext);
     props.useMapGesture({
       onClick: () => {
         if (props.mapContext.isAltPressed) {
