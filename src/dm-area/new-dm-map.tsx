@@ -2,7 +2,7 @@ import * as React from "react";
 import { v4 as uuid } from "uuid";
 import styled from "@emotion/styled/macro";
 import { useToasts } from "react-toast-notifications";
-import { AlphaPicker, HuePicker } from "react-color";
+import { AlphaPicker, CirclePicker, HuePicker } from "react-color";
 import { parseToRgb, toColorString } from "polished";
 import * as io from "io-ts";
 import { pipe, identity } from "fp-ts/lib/function";
@@ -56,6 +56,11 @@ import {
   usePersistedState,
 } from "../hooks/use-persisted-state";
 import { StepInput } from "../step-input";
+import {
+  TokenMarkerContext,
+  TokenMarkerContextProvider,
+  TokenMarkerMapTool,
+} from "../map-tools/token-marker-map-tool";
 
 type ToolMapRecord = {
   name: string;
@@ -370,6 +375,110 @@ const GridSettingButton = (props: {
   );
 };
 
+const TokenMarkerSettings = (): React.ReactElement => {
+  const tokenMarkerContext = React.useContext(TokenMarkerContext);
+  const configureGridContext = React.useContext(ConfigureGridMapToolContext);
+
+  const updateTokenRadius = (factor: number) => {
+    tokenMarkerContext.setState((state) => ({
+      ...state,
+      tokenRadius: (configureGridContext.state.columnWidth / 2) * factor * 0.9,
+    }));
+  };
+
+  return (
+    <div
+      onKeyPress={(ev) => {
+        ev.stopPropagation();
+      }}
+    >
+      <div>
+        <StepInput
+          value={tokenMarkerContext.state.tokenRadius}
+          label="Radius"
+          onStepChangeValue={(isIncrement) => {
+            tokenMarkerContext.setState((state) => ({
+              ...state,
+              tokenRadius: state.tokenRadius + (isIncrement ? 10 : -10),
+            }));
+          }}
+          onChangeValue={(tokenRadius) => {
+            tokenMarkerContext.setState((state) => ({
+              ...state,
+              tokenRadius,
+            }));
+          }}
+        />
+      </div>
+
+      <div style={{ display: "flex" }}>
+        <Button.Tertiary
+          small
+          onClick={() => {
+            updateTokenRadius(0.25);
+          }}
+        >
+          0.25x
+        </Button.Tertiary>
+        <Button.Tertiary
+          small
+          onClick={() => {
+            updateTokenRadius(0.5);
+          }}
+        >
+          0.5x
+        </Button.Tertiary>
+        <Button.Tertiary
+          small
+          onClick={() => {
+            updateTokenRadius(1);
+          }}
+        >
+          1x
+        </Button.Tertiary>
+        <Button.Tertiary
+          small
+          onClick={() => {
+            updateTokenRadius(2);
+          }}
+        >
+          2x
+        </Button.Tertiary>
+        <Button.Tertiary
+          small
+          onClick={() => {
+            updateTokenRadius(3);
+          }}
+        >
+          3x
+        </Button.Tertiary>
+      </div>
+      <div>
+        <ColorPicker
+          color={tokenMarkerContext.state.tokenColor}
+          onChange={(color) => {
+            tokenMarkerContext.setState((state) => ({
+              ...state,
+              tokenColor: color,
+            }));
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const ColorPicker = React.memo(
+  (props: { color: string; onChange: (color: string) => void }) => {
+    return (
+      <CirclePicker
+        color={props.color}
+        onChangeComplete={(color) => props.onChange(color.hex)}
+      />
+    );
+  }
+);
+
 const DM_TOOL_MAP: Array<ToolMapRecord> = [
   {
     name: "Move",
@@ -395,6 +504,12 @@ const DM_TOOL_MAP: Array<ToolMapRecord> = [
     tool: MarkAreaMapTool,
     MenuComponent: null,
   },
+  {
+    name: "Token",
+    icon: <Icons.TargetIcon size={20} />,
+    tool: TokenMarkerMapTool,
+    MenuComponent: TokenMarkerSettings,
+  },
 ];
 
 const ActiveDmMapToolModel = io.union([
@@ -403,6 +518,7 @@ const ActiveDmMapToolModel = io.union([
   io.literal(BrushMapTool.id),
   io.literal(AreaSelectMapTool.id),
   io.literal(MarkAreaMapTool.id),
+  io.literal(TokenMarkerMapTool.id),
 ]);
 
 const activeDmMapToolIdModel: PersistedStateModel<
@@ -440,6 +556,12 @@ export const NewDmSection = (props: {
   markArea: (point: [number, number]) => void;
   markedAreas: Array<MarkedAreaEntity>;
   removeMarkedArea: (id: string) => void;
+  addToken: (token: {
+    x: number;
+    y: number;
+    color: string;
+    radius: number;
+  }) => void;
   updateToken: (
     id: string,
     changes: Omit<Partial<MapTokenEntity>, "id">
@@ -590,7 +712,8 @@ export const NewDmSection = (props: {
         case "1":
         case "2":
         case "3":
-        case "4": {
+        case "4":
+        case "5": {
           const toolIndex = parseInt(ev.key, 10) - 1;
           setActiveToolId(DM_TOOL_MAP[toolIndex].tool.id);
           break;
@@ -660,6 +783,14 @@ export const NewDmSection = (props: {
           React.ComponentProps<typeof TokenContextRenderer>
         >,
         [AreaSelectContextProvider, {}],
+        [
+          TokenMarkerContextProvider,
+          {
+            addToken: props.addToken,
+          },
+        ] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof TokenMarkerContextProvider>
+        >,
       ]}
     >
       {mapImage ? (
@@ -687,6 +818,7 @@ export const NewDmSection = (props: {
             ConfigureGridMapToolContext,
             TokenContextMenuContext,
             AreaSelectContext,
+            TokenMarkerContext,
           ]}
           fogOpacity={0.5}
         />

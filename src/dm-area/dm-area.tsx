@@ -320,6 +320,22 @@ const Content = ({
     [localFetch]
   );
 
+  const addToken = React.useCallback(
+    (token: { x: number; y: number; color: string; radius: number }) => {
+      localFetch(`/map/${loadedMapId}/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...token,
+          label: "1",
+        }),
+      });
+    },
+    [loadedMapId, localFetch]
+  );
+
   const deleteToken = React.useCallback(
     (tokenId) => {
       localFetch(`/map/${loadedMapId}/token/${tokenId}`, {
@@ -612,6 +628,7 @@ const Content = ({
                     areas.filter((area) => area.id !== id)
                   );
                 }}
+                addToken={addToken}
                 updateToken={updateToken}
                 deleteToken={deleteToken}
                 updateMap={(map) => {
