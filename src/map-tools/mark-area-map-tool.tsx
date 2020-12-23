@@ -17,20 +17,6 @@ export const MarkAreaMapTool: MapTool = {
     const markAreaContext = React.useContext(MarkAreaToolContext);
     usePinchWheelZoom(props.mapContext);
     props.useMapGesture({
-      onClick: () => {
-        if (props.mapContext.isAltPressed) {
-          return;
-        }
-        const position = props.mapContext.pointerPosition.get();
-        markAreaContext.onMarkArea(
-          props.mapContext.helper.coordinates.canvasToImage(
-            props.mapContext.helper.coordinates.threeToCanvas([
-              position[0],
-              position[1],
-            ])
-          )
-        );
-      },
       onDrag: ({ movement, memo, event }) => {
         if (props.mapContext.isAltPressed) {
           event.stopPropagation();
@@ -46,6 +32,17 @@ export const MarkAreaMapTool: MapTool = {
 
           return memo;
         }
+
+        // TODO: investigate why the typings are wrong here.
+        // @ts-ignore
+        const point: THREE.Vector3 = event.point;
+
+        markAreaContext.onMarkArea(
+          props.mapContext.helper.threePointToImageCoordinates([
+            point.x,
+            point.y,
+          ])
+        );
       },
     });
     return null;

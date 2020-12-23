@@ -23,6 +23,9 @@ import { useContextBridge } from "./hooks/use-context-bridge";
 import { MapGridEntity, MapTokenEntity, MarkedAreaEntity } from "./map-typings";
 import { useIsKeyPressed } from "./hooks/use-is-key-pressed";
 import { TokenContextMenuContext } from "./token-context-menu-context";
+import { useNoteWindowActions } from "./dm-area/token-info-aside";
+
+type Vector2D = [number, number];
 
 enum LayerPosition {
   map = 0,
@@ -76,6 +79,7 @@ const TokenRenderer: React.FC<{
   isVisibleForPlayers: boolean;
   updateTokenPosition: ({ x, y }: { x: number; y: number }) => void;
   mapScale: SpringValue<[number, number, number]>;
+  reference: null | { type: "note"; id: string };
 }> = (props) => {
   const tokenMenuContext = React.useContext(TokenContextMenuContext);
   const isDungeonMasterView = tokenMenuContext !== null;
@@ -118,11 +122,24 @@ const TokenRenderer: React.FC<{
     }
   }, [isLocked]);
 
-  const isDraggingRef = React.useRef(false);
+  const noteWindowActions = useNoteWindowActions();
+
+  const openContextMenu = (x: number, y: number) =>
+    tokenMenuContext?.setState({
+      type: "selected",
+      tokenId: props.id,
+      position: new SpringValue({
+        from: [x, y] as [number, number],
+      }),
+    });
+
+  const onPointerDown = React.useRef<null | (() => void)>(null);
 
   const dragProps = useGesture<{
     onClick: PointerEvent;
     onContextMenu: PointerEvent;
+    onDrag: PointerEvent;
+    onPointerDown: PointerEvent;
   }>(
     {
       onDrag: ({
@@ -130,10 +147,38 @@ const TokenRenderer: React.FC<{
         movement,
         last,
         memo = animatedProps.position.get(),
+        tap,
       }) => {
+        // onClick replacement
+        // events are handeled different in react-three-fiber
+        // @dbismut advised me that checking for tap in onDrag
+        // is the best solution when having both drag and click behaviour.
+        if (tap) {
+          if (onPointerDown.current) {
+            onPointerDown.current();
+            // left mouse
+            if (event.button === 0) {
+              if (props.reference) {
+                noteWindowActions.focusOrShowNoteInNewWindow(
+                  props.reference.id
+                );
+              }
+            }
+            // right mouse
+            if (event.button === 2) {
+              openContextMenu(event.clientX, event.clientY);
+            }
+          }
+
+          setIsHover(false);
+          return;
+        }
+
         if (isMovable === false) {
           return;
         }
+
+        onPointerDown.current?.();
         event.stopPropagation();
 
         const mapScale = props.mapScale.get();
@@ -152,12 +197,19 @@ const TokenRenderer: React.FC<{
             x: calculateRealX(newX, props.factor, props.dimensions.width),
             y: calculateRealY(newY, props.factor, props.dimensions.height),
           });
-          // isDraggingRef.current = false;
         }
 
         return memo;
       },
       onPointerDown: ({ event }) => {
+        // Context menu on tablet is opened via a long-press
+        const { clientX, clientY } = event;
+        const timeout = setTimeout(() => {
+          onPointerDown.current = null;
+          openContextMenu(clientX, clientY);
+        }, 1000);
+        onPointerDown.current = () => clearTimeout(timeout);
+
         if (isMovable === false) {
           return;
         }
@@ -175,6 +227,8 @@ const TokenRenderer: React.FC<{
         }
       },
       onPointerUp: () => {
+        onPointerDown.current?.();
+
         if (isMovable === false) {
           return;
         }
@@ -187,33 +241,18 @@ const TokenRenderer: React.FC<{
         if (isMovable === false) {
           return;
         }
-        if (isLocked === false) {
-          if (isDraggingRef.current === false) {
-            setIsHover(false);
-          }
-        }
-      },
-      onClick: () => {
-        if (isLocked === false) {
-          // TODO: only on tablet
-          setIsHover(false);
-        }
+        setIsHover(false);
       },
       onContextMenu: (args) => {
         args.event.stopPropagation();
         args.event.nativeEvent.preventDefault();
-
-        tokenMenuContext?.setState({
-          type: "selected",
-          tokenId: props.id,
-          position: new SpringValue({
-            from: [args.event.clientX, args.event.clientY] as [number, number],
-          }),
-        });
       },
     },
     {
       enabled: isLocked === false,
+      drag: {
+        filterTaps: true,
+      },
     }
   );
 
@@ -223,8 +262,11 @@ const TokenRenderer: React.FC<{
     <animated.group
       position={animatedProps.position}
       scale={animatedProps.circleScale}
-      {...dragProps()}
     >
+      <mesh {...dragProps()}>
+        {/* This one is for attaching the gesture handlers */}
+        <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
+      </mesh>
       <mesh>
         <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
         <meshStandardMaterial
@@ -471,6 +513,7 @@ const MapRenderer: React.FC<{
               props.updateTokenPosition(token.id, position)
             }
             mapScale={props.scale}
+            reference={token.reference}
           />
         ))}
       </group>
@@ -642,6 +685,32 @@ const MapViewRenderer = (props: {
   const toolContext = React.useMemo<SharedMapToolState>(() => {
     const factor = dimensions.width / mapCanvas.width;
 
+    const vector = {
+      threeToCanvas: ([x, y]: Vector2D) => [x / factor, y / factor] as Vector2D,
+      canvasToThree: ([x, y]: Vector2D) => [x * factor, y * factor] as Vector2D,
+      canvasToImage: ([x, y]: Vector2D) =>
+        [x / optimalDimensions.ratio, y / optimalDimensions.ratio] as Vector2D,
+      imageToCanvas: ([x, y]: Vector2D) =>
+        [x * optimalDimensions.ratio, y * optimalDimensions.ratio] as Vector2D,
+    };
+
+    const coordinates = {
+      threeToCanvas: ([x, y]: Vector2D) =>
+        [
+          calculateRealX(x, factor, dimensions.width),
+          calculateRealY(y, factor, dimensions.height),
+        ] as Vector2D,
+      canvasToThree: ([x, y]: Vector2D) =>
+        [
+          calculateX(x, factor, dimensions.width),
+          calculateY(y, factor, dimensions.height),
+        ] as Vector2D,
+      canvasToImage: ([x, y]: Vector2D) =>
+        [x / optimalDimensions.ratio, y / optimalDimensions.ratio] as Vector2D,
+      imageToCanvas: ([x, y]: Vector2D) =>
+        [x * optimalDimensions.ratio, y * optimalDimensions.ratio] as Vector2D,
+    };
+
     return {
       fogCanvas,
       fogTexture,
@@ -654,39 +723,19 @@ const MapViewRenderer = (props: {
       isAltPressed,
       pointerPosition,
       helper: {
-        vector: {
-          threeToCanvas: ([x, y]) => [x / factor, y / factor],
-          canvasToThree: ([x, y]) => [x * factor, y * factor],
-          canvasToImage: ([x, y]) => [
-            x / optimalDimensions.ratio,
-            y / optimalDimensions.ratio,
-          ],
-          imageToCanvas: ([x, y]) => [
-            x * optimalDimensions.ratio,
-            y * optimalDimensions.ratio,
-          ],
+        threePointToImageCoordinates: ([x, y]) => {
+          const position = spring.position.get();
+          const scale = spring.scale.get();
+
+          return coordinates.canvasToImage(
+            coordinates.threeToCanvas([
+              (x - position[0]) / scale[0],
+              (y - position[1]) / scale[1],
+            ]) as Vector2D
+          );
         },
-        coordinates: {
-          threeToCanvas: ([x, y]: [number, number]) =>
-            [
-              calculateRealX(x, factor, dimensions.width),
-              calculateRealY(y, factor, dimensions.height),
-            ] as [number, number],
-          canvasToThree: ([x, y]: [number, number]) =>
-            [
-              calculateX(x, factor, dimensions.width),
-              calculateY(y, factor, dimensions.height),
-            ] as [number, number],
-          canvasToImage: ([x, y]: [number, number]) =>
-            [x / optimalDimensions.ratio, y / optimalDimensions.ratio] as [
-              number,
-              number
-            ],
-          imageToCanvas: ([x, y]) => [
-            x * optimalDimensions.ratio,
-            y * optimalDimensions.ratio,
-          ],
-        },
+        vector,
+        coordinates,
       },
     };
   }, [

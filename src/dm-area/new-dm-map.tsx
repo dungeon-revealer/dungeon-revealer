@@ -61,6 +61,7 @@ import {
   TokenMarkerContextProvider,
   TokenMarkerMapTool,
 } from "../map-tools/token-marker-map-tool";
+import { NoteWindowActionsContext } from "./token-info-aside";
 
 type ToolMapRecord = {
   name: string;
@@ -819,6 +820,7 @@ export const NewDmSection = (props: {
             TokenContextMenuContext,
             AreaSelectContext,
             TokenMarkerContext,
+            NoteWindowActionsContext,
           ]}
           fogOpacity={0.5}
         />

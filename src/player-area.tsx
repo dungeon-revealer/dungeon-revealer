@@ -26,6 +26,7 @@ import {
   FlatContextProvider,
 } from "./flat-context-provider";
 import { MarkAreaToolContext } from "./map-tools/mark-area-map-tool";
+import { NoteWindowActionsContext } from "./dm-area/token-info-aside";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -408,7 +409,7 @@ const PlayerMap: React.FC<{
                   ? currentMap.grid
                   : null
               }
-              sharedContexts={[MarkAreaToolContext]}
+              sharedContexts={[MarkAreaToolContext, NoteWindowActionsContext]}
               fogOpacity={1}
             />
           ) : null}

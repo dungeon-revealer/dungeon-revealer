@@ -79,7 +79,7 @@ export const TokenMarkerMapTool: MapTool = {
     const tokenMarkerContext = React.useContext(TokenMarkerContext);
 
     props.useMapGesture({
-      onDrag: ({ movement, memo, event }) => {
+      onDrag: ({ movement, memo, event, tap }) => {
         if (props.mapContext.isAltPressed) {
           event.stopPropagation();
           memo = memo ?? props.mapContext.mapState.position.get();
@@ -94,22 +94,23 @@ export const TokenMarkerMapTool: MapTool = {
 
           return memo;
         }
-      },
-      onClick: () => {
-        const position = props.mapContext.pointerPosition.get();
-        const [x, y] = props.mapContext.helper.coordinates.canvasToImage(
-          props.mapContext.helper.coordinates.threeToCanvas([
-            position[0],
-            position[1],
-          ])
-        );
 
-        tokenMarkerContext.addToken({
-          color: tokenMarkerContext.state.tokenColor,
-          radius: tokenMarkerContext.state.tokenRadius,
-          x,
-          y,
-        });
+        if (tap) {
+          // TODO: investigate why the typings are wrong here.
+          // @ts-ignore
+          const point: THREE.Vector3 = event.point;
+          const [x, y] = props.mapContext.helper.threePointToImageCoordinates([
+            point.x,
+            point.y,
+          ]);
+
+          tokenMarkerContext.addToken({
+            color: tokenMarkerContext.state.tokenColor,
+            radius: tokenMarkerContext.state.tokenRadius,
+            x,
+            y,
+          });
+        }
       },
     });
 

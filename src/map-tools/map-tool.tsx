@@ -26,6 +26,7 @@ export type SharedMapToolState = {
   /* The current pointer position on the three.js canvas */
   pointerPosition: SpringValue<Vector3D>;
   helper: {
+    threePointToImageCoordinates: (vector: Vector2D) => Vector2D;
     vector: {
       /* convert three.js vector to canvas vector */
       threeToCanvas: (vector: Vector2D) => Vector2D;
