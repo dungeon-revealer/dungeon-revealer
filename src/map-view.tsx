@@ -166,7 +166,9 @@ const TokenRenderer: React.FC<{
             }
             // right mouse
             if (event.button === 2) {
-              openContextMenu(event.clientX, event.clientY);
+              setTimeout(() => {
+                openContextMenu(event.clientX, event.clientY);
+              });
             }
           }
 
@@ -263,10 +265,6 @@ const TokenRenderer: React.FC<{
       position={animatedProps.position}
       scale={animatedProps.circleScale}
     >
-      <mesh {...dragProps()}>
-        {/* This one is for attaching the gesture handlers */}
-        <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
-      </mesh>
       <mesh>
         <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
         <meshStandardMaterial
@@ -296,6 +294,10 @@ const TokenRenderer: React.FC<{
       >
         {props.textLabel}
       </CanvasText>
+      <mesh {...dragProps()}>
+        {/* This one is for attaching the gesture handlers */}
+        <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
+      </mesh>
     </animated.group>
   );
 };

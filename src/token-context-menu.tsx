@@ -1,5 +1,5 @@
 import * as React from "react";
-import { animated } from "react-spring";
+import { animated, to } from "react-spring";
 import { CirclePicker } from "react-color";
 import {
   TokenContextMenuContext,
@@ -7,6 +7,7 @@ import {
 } from "./token-context-menu-context";
 import { useOnClickOutside } from "./hooks/use-on-click-outside";
 import { useResetState } from "./hooks/use-reset-state";
+import { useAnimatedWindowDimensions } from "./hooks/use-window-dimensions";
 import { Input } from "./input";
 import { MapTokenEntity } from "./map-typings";
 import { ToggleSwitch } from "./toggle-switch";
@@ -47,6 +48,9 @@ export const TokenContextRenderer = (props: {
     return props.tokens.find((token) => token.id === state.tokenId) ?? null;
   }, [props.tokens, state]);
 
+  const width = 600;
+  const windowDimensions = useAnimatedWindowDimensions();
+
   return (
     <TokenContextMenuContext.Provider value={{ state, setState }}>
       {props.children}
@@ -60,7 +64,17 @@ export const TokenContextRenderer = (props: {
             top: 0,
             left: 0,
             borderRadius: 12,
-            transform: state.position.to((x, y) => `translate(${x}px, ${y}px)`),
+            transform: to(
+              [state.position, windowDimensions] as const,
+              ([clickX, clickY], [windowWidth]) => {
+                const x =
+                  clickX + width / 2 > windowWidth
+                    ? windowWidth - width
+                    : clickX - width / 2;
+                return `translate(${x}px, ${clickY}px)`;
+              }
+            ),
+            width: width,
           }}
           onKeyPress={(ev) => {
             ev.stopPropagation();
