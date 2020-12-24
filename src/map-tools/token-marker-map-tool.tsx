@@ -95,7 +95,7 @@ export const TokenMarkerMapTool: MapTool = {
           return memo;
         }
 
-        if (tap) {
+        if (tap && event.button === 0) {
           // TODO: investigate why the typings are wrong here.
           // @ts-ignore
           const point: THREE.Vector3 = event.point;

@@ -606,7 +606,10 @@ export const NewDmSection = (props: {
       loadFogImageTask.cancel();
     };
 
-    Promise.all([loadMapImageTask.promise, loadFogImageTask.promise])
+    Promise.all([
+      loadMapImageTask.promise,
+      loadFogImageTask.promise.catch(() => null),
+    ])
       .then(([mapImage, fogImage]) => {
         mapImage.id = createCacheBusterString();
         setMapImage(mapImage);
@@ -696,8 +699,6 @@ export const NewDmSection = (props: {
     }
   };
 
-  const isAltPressed = useIsKeyPressed("Alt");
-
   const isConfiguringGrid = userSelectedTool === ConfigureGridMapTool;
   const isConfiguringGridRef = React.useRef(isConfiguringGrid);
   React.useEffect(() => {
@@ -719,11 +720,28 @@ export const NewDmSection = (props: {
           setActiveToolId(DM_TOOL_MAP[toolIndex].tool.id);
           break;
         }
+        case "s": {
+          /**
+           * overwrite CMD + S
+           * @source: https://michilehr.de/overwrite-cmds-and-ctrls-in-javascript/
+           */
+          if (
+            window.navigator.platform.match("Mac") ? ev.metaKey : ev.ctrlKey
+          ) {
+            ev.preventDefault();
+            const context = controlRef.current?.getContext();
+            if (!context) {
+              return;
+            }
+            props.sendLiveMap(context.fogCanvas);
+          }
+          break;
+        }
       }
     };
-    window.document.addEventListener("keypress", listener);
+    window.document.addEventListener("keydown", listener);
 
-    return () => window.document.removeEventListener("keypress", listener);
+    return () => window.document.removeEventListener("keydown", listener);
   }, []);
 
   const [confirmDialogNode, showDialog] = useConfirmationDialog();

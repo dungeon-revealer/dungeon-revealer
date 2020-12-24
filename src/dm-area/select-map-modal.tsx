@@ -1,5 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
-
+import * as React from "react";
 import { Modal, ModalDialogSize } from "../modal";
 import * as Icons from "../feather-icons";
 import { Input, InputGroup } from "../input";
@@ -26,7 +25,6 @@ const CreateNewMapButton: React.FC<
     </>
   );
 };
-
 enum ModalType {
   EDIT_TITLE = "EDIT_TITLE",
   DELETE_MAP = "DELETE_MAP",
@@ -68,7 +66,6 @@ type SelectMapModalProps = {
   ) => void;
   createMap: (opts: { file: File; title: string }) => void;
   canClose: boolean;
-  enterGridMode: (mapId: string) => void;
   dmPassword: string;
 };
 
@@ -82,14 +79,13 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
   updateMap,
   createMap,
   canClose,
-  enterGridMode,
   dmPassword,
 }) => {
-  const [activeMapId, setActiveMapId] = useState(loadedMapId);
-  const [modalState, setModalState] = useState<ModalStates | null>(null);
-  const [filter, setFilterValue] = useState("");
+  const [activeMapId, setActiveMapId] = React.useState(loadedMapId);
+  const [modalState, setModalState] = React.useState<ModalStates | null>(null);
+  const [filter, setFilterValue] = React.useState("");
 
-  const onChangeFilter = useCallback(
+  const onChangeFilter = React.useCallback(
     (ev) => {
       setFilterValue(ev.target.value);
     },
@@ -264,18 +260,6 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                       <span>Delete</span>
                     </Button.Tertiary>
                   </div>
-                  <div>
-                    <Button.Tertiary
-                      tabIndex={2}
-                      onClick={() => {
-                        enterGridMode(activeMap.id);
-                      }}
-                    >
-                      <Icons.GridIcon size={20} />
-                      <span>Grid</span>
-                    </Button.Tertiary>
-                  </div>
-
                   <div style={{ marginLeft: "auto" }}>
                     <Button.Primary
                       tabIndex={1}
@@ -370,12 +354,12 @@ const CreateNewMapModal: React.FC<{
   file: File;
   createMap: (title: string) => void;
 }> = ({ closeModal, file, createMap }) => {
-  const [inputValue, setInputValue] = useState(() =>
+  const [inputValue, setInputValue] = React.useState(() =>
     extractDefaultTitleFromFileName(file.name)
   );
-  const [error, setError] = useState<string | null>("");
+  const [error, setError] = React.useState<string | null>("");
 
-  const onChangeInputValue = useCallback(
+  const onChangeInputValue = React.useCallback(
     (ev) => {
       setInputValue(ev.target.value);
       setError(null);
@@ -433,15 +417,15 @@ const ChangeMapTitleModal: React.FC<{
   closeModal: () => void;
   updateMap: (opts: { title: string }) => void;
 }> = ({ closeModal, updateMap }) => {
-  const [inputValue, setInputValue] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const onChangeInputValue = useCallback(
+  const [inputValue, setInputValue] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+  const onChangeInputValue = React.useCallback(
     (ev) => {
       setInputValue(ev.target.value);
     },
     [setInputValue]
   );
-  const submit = useCallback(() => {
+  const submit = React.useCallback(() => {
     if (inputValue.trim().length === 0) {
       setError("Please enter a map name.");
       return;
