@@ -18,7 +18,7 @@ import { ISendRequestTask, sendRequest } from "../http-request";
 import { AuthenticatedAppShell } from "../authenticated-app-shell";
 import { AccessTokenProvider } from "../hooks/use-access-token";
 import { usePersistedState } from "../hooks/use-persisted-state";
-import { NewDmSection } from "./new-dm-map";
+import { DmMap } from "./dm-map";
 import { Socket } from "socket.io-client";
 import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
 import { useDropZone } from "../hooks/use-drop-zone";
@@ -571,7 +571,7 @@ const Content = ({
               overflow: "hidden",
             }}
           >
-            <NewDmSection
+            <DmMap
               password={dmPassword}
               map={loadedMap}
               liveMapId={liveMapId}

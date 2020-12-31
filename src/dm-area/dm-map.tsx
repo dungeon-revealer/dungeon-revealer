@@ -544,7 +544,7 @@ const activeDmMapToolIdModel: PersistedStateModel<
 const createCacheBusterString = () =>
   encodeURIComponent(`${Date.now()}_${uuid()}`);
 
-export const NewDmSection = (props: {
+export const DmMap = (props: {
   password: string;
   map: MapEntity;
   liveMapId: string | null;
@@ -569,7 +569,7 @@ export const NewDmSection = (props: {
   ) => void;
   deleteToken: (id: string) => void;
   updateMap: (params: Partial<MapEntity>) => void;
-}) => {
+}): React.ReactElement => {
   const currentMapRef = React.useRef(props.map);
 
   const [mapImage, setMapImage] = React.useState<HTMLImageElement | null>(null);
