@@ -102,10 +102,12 @@ export const getPaginatedNotes = (params: {
             ORDER BY
               "created_at" DESC,
               "id" DESC
-            LIMIT ?
+            LIMIT $first
             ;
           `,
-          params.first
+          {
+            $first: params.first,
+          }
         ),
       E.toError
     ),
@@ -138,18 +140,20 @@ export const getMorePaginatedNotes = (params: {
             FROM
               "notes"
             WHERE
-              "created_at" <= ?
-              AND "id" < ?
+              "created_at" <= $last_created_at
+              AND "id" < $last_id
               AND "is_entry_point" = 1
             ORDER BY
               "created_at" DESC,
               "id" DESC
-            LIMIT ?
+            LIMIT $first
             ;
           `,
-          params.lastCreatedAt,
-          params.lastId,
-          params.first
+          {
+            $last_created_at: params.lastCreatedAt,
+            $last_id: params.lastId,
+            $first: params.first,
+          }
         ),
       E.toError
     ),
@@ -165,20 +169,24 @@ export const deleteNote = (
         /* SQL */ `
           DELETE FROM "notes"
           WHERE
-            "id" = ?
+            "id" = $id
           ;
         `,
-        noteId
+        {
+          $id: noteId,
+        }
       );
       await db.run(
         /* SQL */ `
           DELETE
           FROM "notes_search"
           WHERE
-            "id" = ?
+            "id" = $id
           ;
         `,
-        noteId
+        {
+          $id: noteId,
+        }
       );
     }, E.toError),
     TE.map(() => noteId)
@@ -205,23 +213,24 @@ export const updateOrInsertNote = (record: {
             "created_at",
             "updated_at"
           ) VALUES (
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            COALESCE((SELECT "created_at" FROM "notes" WHERE id = ?), ?),
-            ?
+            $id,
+            $title,
+            $content,
+            $type,
+            $is_entry_point,
+            COALESCE((SELECT "created_at" FROM "notes" WHERE id = $id), $created_at),
+            $updated_at
           );
         `,
-        record.id,
-        record.title,
-        record.content,
-        record.access,
-        BooleanFromNumber.encode(record.isEntryPoint),
-        record.id,
-        getTimestamp(),
-        getTimestamp()
+        {
+          $id: record.id,
+          $title: record.title,
+          $content: record.content,
+          $type: record.access,
+          $is_entry_point: BooleanFromNumber.encode(record.isEntryPoint),
+          $created_at: getTimestamp(),
+          $updated_at: getTimestamp(),
+        }
       );
 
       await db.run(
@@ -233,18 +242,19 @@ export const updateOrInsertNote = (record: {
             "content",
             "access"
           ) VALUES (
-            COALESCE((SELECT "rowid" FROM "notes_search" WHERE id = ?), NULL),
-            ?,
-            ?,
-            ?,
-            ?
+            COALESCE((SELECT "rowid" FROM "notes_search" WHERE id = $id), NULL),
+            $id,
+            $title,
+            $sanitized_content,
+            $access
           );
         `,
-        record.id,
-        record.id,
-        record.title,
-        record.sanitizedContent,
-        record.access
+        {
+          $id: record.id,
+          $title: record.title,
+          $sanitized_content: record.sanitizedContent,
+          $access: record.access,
+        }
       );
     }, E.toError),
     TE.map(() => record.id)
@@ -296,12 +306,14 @@ export const findAllNotes = (
             snippet("notes_search", 2, '!', '!', "...", 16) as "preview"
           FROM "notes_search"
           WHERE
-            "notes_search" MATCH ?
+            "notes_search" MATCH $query
           ORDER BY bm25("notes_search", 1.0, 100.0, 0.0) ASC
           LIMIT 10
           ;
         `,
-          `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*))`
+          {
+            $query: `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*))`,
+          }
         ),
       E.toError
     ),
@@ -326,13 +338,15 @@ export const findPublicNotes = (
             snippet("notes_search", 2, '!', '!', "...", 16) as "preview"
           FROM "notes_search"
           WHERE
-            "notes_search" MATCH ?
+            "notes_search" MATCH $query
           ORDER BY
             bm25("notes_search", 1.0, 100.0, 0.0) ASC
           LIMIT 10
           ;
         `,
-          `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*)) AND access:"public"`
+          {
+            $query: `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*)) AND access:"public"`,
+          }
         ),
       E.toError
     ),
