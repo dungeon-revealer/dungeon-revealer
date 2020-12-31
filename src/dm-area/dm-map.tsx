@@ -338,7 +338,8 @@ const GridSettingButton = (props: {
   updateMap: (params: Partial<MapEntity>) => void;
 }): React.ReactElement => {
   const [showMenu, setShowMenu] = React.useState(false);
-  const ref = useOnClickOutside<HTMLLIElement>(() => {
+  const ref = React.useRef<null | HTMLLIElement>(null);
+  useOnClickOutside<HTMLLIElement>(ref, () => {
     setShowMenu(false);
   });
 
@@ -1186,7 +1187,8 @@ const MenuItemRenderer = (props: {
   isActive: boolean;
 }): React.ReactElement => {
   const [showMenu, setShowMenu] = React.useState(false);
-  const ref = useOnClickOutside<HTMLLIElement>(() => {
+  const ref = React.useRef<null | HTMLLIElement>(null);
+  useOnClickOutside<HTMLLIElement>(ref, () => {
     setShowMenu(false);
   });
 

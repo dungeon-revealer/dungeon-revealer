@@ -18,6 +18,7 @@ import { useNoteWindowActions } from "./dm-area/token-info-aside";
 import { useShowSelectNoteModal } from "./dm-area/select-note-modal";
 import { StepInput } from "./step-input";
 import { ConfigureGridMapToolContext } from "./map-tools/configure-grid-map-tool";
+import { useAnimatedDimensions } from "./hooks/use-animated-dimensions";
 
 export const TokenContextRenderer = (props: {
   updateToken: (
@@ -31,8 +32,8 @@ export const TokenContextRenderer = (props: {
   const [state, setState] = React.useState<TokenContextMenuState>(() => ({
     type: "none-selected",
   }));
-
-  const ref = useOnClickOutside<HTMLDivElement>(() => {
+  const ref = React.useRef<null | HTMLDivElement>(null);
+  useOnClickOutside<HTMLDivElement>(ref, () => {
     setState((state) =>
       state.type === "none-selected"
         ? state
@@ -41,6 +42,7 @@ export const TokenContextRenderer = (props: {
           }
     );
   });
+
   const activeToken = React.useMemo(() => {
     if (state.type === "none-selected") {
       return null;
@@ -50,6 +52,7 @@ export const TokenContextRenderer = (props: {
 
   const width = 600;
   const windowDimensions = useAnimatedWindowDimensions();
+  const dimensions = useAnimatedDimensions(ref);
 
   return (
     <TokenContextMenuContext.Provider value={{ state, setState }}>
@@ -65,13 +68,28 @@ export const TokenContextRenderer = (props: {
             left: 0,
             borderRadius: 12,
             transform: to(
-              [state.position, windowDimensions] as const,
-              ([clickX, clickY], [windowWidth]) => {
-                const x =
-                  clickX + width / 2 > windowWidth
-                    ? windowWidth - width
-                    : clickX - width / 2;
-                return `translate(${x}px, ${clickY}px)`;
+              [state.position, windowDimensions, dimensions] as const,
+              (
+                [clickX, clickY],
+                [windowWidth, windowHeight],
+                [menuWidth, menuHeight]
+              ) => {
+                let x = clickX - menuWidth / 2;
+
+                if (x + menuWidth > windowWidth) {
+                  x = windowWidth - menuWidth;
+                }
+                if (x < 0) {
+                  x = 0;
+                }
+
+                let y = clickY;
+
+                if (y + menuHeight > windowHeight) {
+                  y = windowHeight - menuHeight;
+                }
+
+                return `translate(${x}px, ${y}px)`;
               }
             ),
             width: width,
