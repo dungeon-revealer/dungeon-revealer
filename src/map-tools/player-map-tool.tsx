@@ -15,17 +15,14 @@ export const PlayerMapTool: MapTool = {
       onPointerUp: () => {
         timeoutRef.current?.();
       },
-      onPointerDown: () => {
+      onPointerDown: ({ event }) => {
+        const point: THREE.Vector3 = event.point;
+        const [x, y] = props.mapContext.helper.threePointToImageCoordinates([
+          point.x,
+          point.y,
+        ]);
         const timeout = setTimeout(() => {
-          const position = props.mapContext.pointerPosition.get();
-          markAreaContext.onMarkArea(
-            props.mapContext.helper.coordinates.canvasToImage(
-              props.mapContext.helper.coordinates.threeToCanvas([
-                position[0],
-                position[1],
-              ])
-            )
-          );
+          markAreaContext.onMarkArea([x, y]);
         }, 300);
         timeoutRef.current = () => clearTimeout(timeout);
       },
