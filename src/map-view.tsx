@@ -251,7 +251,6 @@ const TokenRenderer: React.FC<{
       },
     },
     {
-      enabled: isLocked === false,
       drag: {
         filterTaps: true,
       },

@@ -384,14 +384,14 @@ const TokenContextMenu = (props: {
             onClick={() => {
               props.updateToken({ isLocked: !isLocked });
             }}
-            title={isLocked ? "Unlock" : "Lock"}
+            title={isLocked ? "Unlock position" : "Lock position"}
           >
             {isLocked ? (
               <Icon.LockIcon height={16} />
             ) : (
               <Icon.UnlockIcon height={16} />
             )}
-            <span>{isLocked ? "Unlock" : "Lock"}</span>
+            <span>{isLocked ? "Unlock position" : "Lock position"}</span>
           </Button.Tertiary>
         </div>
         <div style={{ marginLeft: 8 }}>
