@@ -197,11 +197,12 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                     paddingRight: 16,
                     paddingTop: 8,
                     paddingBottom: 16,
+                    alignItems: "center",
                   }}
                 >
                   <h3
                     style={{
-                      margin: `1rem 16px 1rem 0`,
+                      margin: `0.5rem 16px 0.5rem 0`,
                       overflow: "hidden",
                       whiteSpace: "nowrap",
                       textOverflow: "ellipsis",
@@ -211,6 +212,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                   </h3>
                   <Button.Tertiary
                     iconOnly
+                    small
                     onClick={() => {
                       setModalState({
                         type: ModalType.EDIT_TITLE,

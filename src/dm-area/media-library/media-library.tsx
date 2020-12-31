@@ -276,7 +276,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
 
   return (
     <Modal onClickOutside={onClose} onPressEscape={onClose}>
-      <Content onClick={(ev) => ev.stopPropagation()} tabIndex={1}>
+      <Content
+        onClick={(ev) => ev.stopPropagation()}
+        tabIndex={1}
+        style={{ maxWidth: 1600 }}
+      >
         <Modal.Header>
           <Modal.Heading2>
             <Icon.ImageIcon size={28} /> Media Library
