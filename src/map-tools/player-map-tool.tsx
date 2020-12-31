@@ -9,16 +9,14 @@ export const PlayerMapTool: MapTool = {
     const markAreaContext = React.useContext(MarkAreaToolContext);
     usePinchWheelZoom(props.mapContext);
 
-    const timeoutRef = React.useRef<null | number>(null);
+    const timeoutRef = React.useRef<null | (() => void)>(null);
 
     props.useMapGesture({
       onPointerUp: () => {
-        if (timeoutRef.current !== null) {
-          clearTimeout(timeoutRef.current);
-        }
+        timeoutRef.current?.();
       },
       onPointerDown: () => {
-        timeoutRef.current = (setTimeout(() => {
+        const timeout = setTimeout(() => {
           const position = props.mapContext.pointerPosition.get();
           markAreaContext.onMarkArea(
             props.mapContext.helper.coordinates.canvasToImage(
@@ -28,9 +26,14 @@ export const PlayerMapTool: MapTool = {
               ])
             )
           );
-        }, 300) as unknown) as number;
+        }, 300);
+        timeoutRef.current = () => clearTimeout(timeout);
       },
-      onDrag: ({ movement, memo, event }) => {
+      onDrag: ({ movement, memo, event, tap }) => {
+        if (tap) {
+          return;
+        }
+        timeoutRef.current?.();
         event.stopPropagation();
         memo = memo ?? props.mapContext.mapState.position.get();
         props.mapContext.setMapState({
