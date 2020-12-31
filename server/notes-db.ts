@@ -77,10 +77,9 @@ export const getNoteById = (
     TE.chainW(flow(decodeNote, TE.fromEither))
   );
 
-export const getPaginatedNotes = ({
-  maximumAmountOfRecords,
-}: {
-  maximumAmountOfRecords: number;
+export const getPaginatedNotes = (params: {
+  /* amount of items to fetch */
+  first: number;
 }): RTE.ReaderTaskEither<Dependencies, DecodeError, NodeModelListType> => ({
   db,
 }) =>
@@ -106,21 +105,20 @@ export const getPaginatedNotes = ({
             LIMIT ?
             ;
           `,
-          maximumAmountOfRecords
+          params.first
         ),
       E.toError
     ),
     TE.chainW(flow(decodeNoteList, TE.fromEither))
   );
 
-export const getMorePaginatedNotes = ({
-  lastCreatedAt,
-  lastId,
-  maximumAmountOfRecords,
-}: {
+export const getMorePaginatedNotes = (params: {
+  /* createdAt date of the item after which items should be fetched */
   lastCreatedAt: number;
+  /* id of the item after which items should be fetched */
   lastId: string;
-  maximumAmountOfRecords: number;
+  /* amount of items to fetch */
+  first: number;
 }): RTE.ReaderTaskEither<Dependencies, DecodeError, NoteModelType[]> => ({
   db,
 }) =>
@@ -149,9 +147,9 @@ export const getMorePaginatedNotes = ({
             LIMIT ?
             ;
           `,
-          lastCreatedAt,
-          lastId,
-          maximumAmountOfRecords
+          params.lastCreatedAt,
+          params.lastId,
+          params.first
         ),
       E.toError
     ),
