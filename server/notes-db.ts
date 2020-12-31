@@ -1,25 +1,12 @@
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as E from "fp-ts/lib/Either";
-import { flow } from "fp-ts/lib/function";
-import { pipe } from "fp-ts/lib/pipeable";
-import toCamelCase from "lodash/camelCase";
-import isObject from "lodash/isObject";
+import * as A from "fp-ts/lib/Array";
+import { flow, pipe } from "fp-ts/lib/function";
 import * as t from "io-ts";
 import type { Database } from "sqlite";
-
-const BooleanFromNumber = new t.Type(
-  "BooleanFromNumber",
-  (input: unknown): input is boolean => typeof input === "boolean",
-  (input, context) =>
-    pipe(
-      t.number.validate(input, context),
-      E.chain((value) => {
-        return t.success(Boolean(value));
-      })
-    ),
-  (value) => (value ? 1 : 0)
-);
+import { camelCaseKeys } from "./util/camelcase-keys";
+import { BooleanFromNumber } from "./io-types/boolean-from-number";
 
 export const NoteAccessTypeModel = t.union([
   t.literal("admin"),
@@ -37,35 +24,35 @@ export const NoteModel = t.type({
 });
 
 export type NoteModelType = t.TypeOf<typeof NoteModel>;
-const NoteModelList = t.array(NoteModel);
+export type NodeModelListType = Array<NoteModelType>;
+
+type DecodeError = Error | t.Errors;
+type Dependencies = {
+  db: Database;
+};
 
 const getTimestamp = () => new Date().getTime();
 
-const camelCaseKeys = flow(
-  Object.entries,
-  (entries) => entries.map(([key, value]) => [toCamelCase(key), value]),
-  Object.fromEntries
+export const decodeNote: (
+  input: unknown
+) => E.Either<DecodeError, NoteModelType> = flow(
+  t.UnknownRecord.decode,
+  E.map(camelCaseKeys),
+  E.chain(NoteModel.decode)
 );
 
-export const decodeNote = flow(
-  (obj) => (isObject(obj) ? camelCaseKeys(obj) : obj),
-  NoteModel.decode
-);
-
-const decodeNoteList = flow(
-  (sth) =>
-    Array.isArray(sth)
-      ? sth.map((obj) => (isObject(obj) ? camelCaseKeys(obj) : obj))
-      : sth,
-  NoteModelList.decode,
-  TE.fromEither
+const decodeNoteList: (
+  input: unknown
+) => E.Either<DecodeError, NodeModelListType> = flow(
+  t.UnknownArray.decode,
+  E.chain((arr) =>
+    A.sequence(E.either)(arr.map((element) => decodeNote(element)))
+  )
 );
 
 export const getNoteById = (
   id: string
-): RTE.ReaderTaskEither<{ db: Database }, Error | t.Errors, NoteModelType> => ({
-  db,
-}) =>
+): RTE.ReaderTaskEither<Dependencies, DecodeError, NoteModelType> => ({ db }) =>
   pipe(
     TE.tryCatch(
       () =>
@@ -94,11 +81,9 @@ export const getPaginatedNotes = ({
   maximumAmountOfRecords,
 }: {
   maximumAmountOfRecords: number;
-}): RTE.ReaderTaskEither<
-  { db: Database },
-  Error | t.Errors,
-  NoteModelType[]
-> => ({ db }) =>
+}): RTE.ReaderTaskEither<Dependencies, DecodeError, NodeModelListType> => ({
+  db,
+}) =>
   pipe(
     TE.tryCatch(
       () =>
@@ -125,7 +110,7 @@ export const getPaginatedNotes = ({
         ),
       E.toError
     ),
-    TE.chainW(decodeNoteList)
+    TE.chainW(flow(decodeNoteList, TE.fromEither))
   );
 
 export const getMorePaginatedNotes = ({
@@ -136,11 +121,9 @@ export const getMorePaginatedNotes = ({
   lastCreatedAt: number;
   lastId: string;
   maximumAmountOfRecords: number;
-}): RTE.ReaderTaskEither<
-  { db: Database },
-  Error | t.Errors,
-  NoteModelType[]
-> => ({ db }) =>
+}): RTE.ReaderTaskEither<Dependencies, DecodeError, NoteModelType[]> => ({
+  db,
+}) =>
   pipe(
     TE.tryCatch(
       () =>
@@ -172,14 +155,12 @@ export const getMorePaginatedNotes = ({
         ),
       E.toError
     ),
-    TE.chainW(decodeNoteList)
+    TE.chainW(flow(decodeNoteList, TE.fromEither))
   );
 
 export const deleteNote = (
   noteId: string
-): RTE.ReaderTaskEither<{ db: Database }, Error | t.Errors, string> => ({
-  db,
-}) =>
+): RTE.ReaderTaskEither<Dependencies, DecodeError, string> => ({ db }) =>
   pipe(
     TE.tryCatch(async () => {
       await db.run(
@@ -212,7 +193,7 @@ export const updateOrInsertNote = (record: {
   sanitizedContent: string;
   access: "public" | "admin";
   isEntryPoint: boolean;
-}): RTE.ReaderTaskEither<{ db: Database }, Error, string> => ({ db }) =>
+}): RTE.ReaderTaskEither<Dependencies, Error, string> => ({ db }) =>
   pipe(
     TE.tryCatch(async () => {
       await db.run(
@@ -282,23 +263,28 @@ export const NoteSearchMatch = t.type(
 
 export type NoteSearchMatchType = t.TypeOf<typeof NoteSearchMatch>;
 
-export const NoteSearchMatchList = t.array(NoteSearchMatch);
+type NoteSearchMatchListType = Array<NoteSearchMatchType>;
 
-type NoteSearchMatchListType = t.TypeOf<typeof NoteSearchMatchList>;
+const decodeNoteSearchMatch = flow(
+  t.UnknownRecord.decode,
+  E.map(camelCaseKeys),
+  E.chain(NoteSearchMatch.decode)
+);
 
-export const decodeNoteSearchMatchList = flow(
-  (obj) =>
-    Array.isArray(obj)
-      ? obj.map((obj) => (isObject(obj) ? camelCaseKeys(obj) : obj))
-      : obj,
-  NoteSearchMatchList.decode
+export const decodeNoteSearchMatchList: (
+  input: unknown
+) => E.Either<DecodeError, NoteSearchMatchListType> = flow(
+  t.UnknownArray.decode,
+  E.chain((arr) =>
+    A.sequence(E.either)(arr.map((element) => decodeNoteSearchMatch(element)))
+  )
 );
 
 export const findAllNotes = (
   query: string
 ): RTE.ReaderTaskEither<
-  { db: Database },
-  Error | t.Errors,
+  Dependencies,
+  DecodeError,
   NoteSearchMatchListType
 > => ({ db }) =>
   pipe(
@@ -327,8 +313,8 @@ export const findAllNotes = (
 export const findPublicNotes = (
   query: string
 ): RTE.ReaderTaskEither<
-  { db: Database },
-  Error | t.Errors,
+  Dependencies,
+  DecodeError,
   NoteSearchMatchListType
 > => ({ db }) =>
   pipe(
