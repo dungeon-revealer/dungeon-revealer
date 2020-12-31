@@ -46,7 +46,9 @@ export const StepInput = (props: {
   return (
     <label>
       {props.label ? (
-        <div style={{ fontWeight: "bold", marginBottom: 8 }}>{props.label}</div>
+        <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "left" }}>
+          {props.label}
+        </div>
       ) : null}
       <div style={{ display: "flex", alignItems: "center" }}>
         <div style={{ flexGrow: 1 }}>

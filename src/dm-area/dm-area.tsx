@@ -314,7 +314,6 @@ const Content = ({
         },
         body: JSON.stringify({
           ...token,
-          label: "1",
         }),
       });
     },

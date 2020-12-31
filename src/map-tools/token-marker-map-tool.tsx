@@ -13,6 +13,10 @@ import { MapTool } from "./map-tool";
 const TokenMarkerStateModel = io.type({
   tokenRadius: io.number,
   tokenColor: io.string,
+  tokenText: io.string,
+  tokenCounter: io.number,
+  /* whether the value of tokenCounter should be appended to the tokenText */
+  includeTokenCounter: io.boolean,
 });
 
 type TokenMarkerState = io.TypeOf<typeof TokenMarkerStateModel>;
@@ -22,6 +26,7 @@ type AddTokenFunction = (token: {
   radius: number;
   x: number;
   y: number;
+  label: string;
 }) => void;
 
 type TokenMarkerContextValue = {
@@ -34,6 +39,14 @@ export const TokenMarkerContext = React.createContext<TokenMarkerContextValue>(
   // TODO: use context that throws if no value is provided.
   undefined as any
 );
+
+const createDefaultTokenMarkerState = (): TokenMarkerState => ({
+  tokenColor: "red",
+  tokenRadius: 100,
+  tokenText: "Token #",
+  tokenCounter: 1,
+  includeTokenCounter: false,
+});
 
 const tokenMarkerPersistedStateModel: PersistedStateModel<TokenMarkerState> = {
   encode: (value) => JSON.stringify(value),
@@ -50,7 +63,7 @@ const tokenMarkerPersistedStateModel: PersistedStateModel<TokenMarkerState> = {
           );
         }
 
-        return { tokenRadius: 100, tokenColor: "red" };
+        return createDefaultTokenMarkerState();
       }, identity)
     ),
 };
@@ -104,11 +117,22 @@ export const TokenMarkerMapTool: MapTool = {
             point.y,
           ]);
 
+          let label = tokenMarkerContext.state.tokenText;
+
+          if (tokenMarkerContext.state.includeTokenCounter) {
+            label = `${label}${tokenMarkerContext.state.tokenCounter}`;
+            tokenMarkerContext.setState((state) => ({
+              ...state,
+              tokenCounter: state.tokenCounter + 1,
+            }));
+          }
+
           tokenMarkerContext.addToken({
             color: tokenMarkerContext.state.tokenColor,
             radius: tokenMarkerContext.state.tokenRadius,
             x,
             y,
+            label,
           });
         }
       },

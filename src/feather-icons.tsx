@@ -909,3 +909,25 @@ export const ShieldIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 );
+
+export const RotateCCW = ({
+  color = "currentColor",
+  size = 30,
+}: {
+  color?: string;
+  size?: number;
+}): React.ReactElement => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={size}
+    width={size}
+  >
+    <path d="M1 4v6h6" />
+    <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+  </svg>
+);

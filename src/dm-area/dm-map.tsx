@@ -62,6 +62,8 @@ import {
   TokenMarkerMapTool,
 } from "../map-tools/token-marker-map-tool";
 import { NoteWindowActionsContext } from "./token-info-aside";
+import { Input } from "../input";
+import { parseNumberSafe } from "../parse-number-safe";
 
 type ToolMapRecord = {
   name: string;
@@ -454,7 +456,10 @@ const TokenMarkerSettings = (): React.ReactElement => {
           3x
         </Button.Tertiary>
       </div>
-      <div>
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "left" }}>
+          Color
+        </div>
         <ColorPicker
           color={tokenMarkerContext.state.tokenColor}
           onChange={(color) => {
@@ -464,6 +469,103 @@ const TokenMarkerSettings = (): React.ReactElement => {
             }));
           }}
         />
+      </div>
+      <div>
+        <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "left" }}>
+          Label
+        </div>
+        <div style={{ display: "flex", marginBottom: 8, alignItems: "center" }}>
+          <div style={{ flex: 3, marginRight: 8 }}>
+            <Input
+              value={tokenMarkerContext.state.tokenText}
+              onChange={(ev) => {
+                const tokenText = ev.target.value;
+                tokenMarkerContext.setState((state) => ({
+                  ...state,
+                  tokenText,
+                }));
+              }}
+            />
+          </div>
+        </div>
+        <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "left" }}>
+          Label Counter
+        </div>
+        <div style={{ display: "flex", marginBottom: 8, alignItems: "center" }}>
+          <div style={{ flex: 2, marginRight: 8 }}>
+            <NumberInput
+              disabled={tokenMarkerContext.state.includeTokenCounter === false}
+              value={tokenMarkerContext.state.tokenCounter}
+              onChange={(tokenCounter) => {
+                tokenMarkerContext.setState((state) => ({
+                  ...state,
+                  tokenCounter,
+                }));
+              }}
+            />
+          </div>
+          <div>
+            <ToggleSwitch
+              checked={tokenMarkerContext.state.includeTokenCounter}
+              onChange={(isChecked) => {
+                tokenMarkerContext.setState((state) => ({
+                  ...state,
+                  includeTokenCounter: isChecked,
+                }));
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const NumberInput = (props: {
+  disabled?: boolean;
+  value: number;
+  onChange: (value: number) => void;
+}): React.ReactElement => {
+  const [value, setValue] = useResetState(() => String(props.value), [
+    props.value,
+  ]);
+
+  const isFirstRender = React.useRef(true);
+
+  React.useEffect(() => {
+    if (isFirstRender.current == true) {
+      isFirstRender.current = false;
+      return;
+    }
+    const parsedNumber = parseNumberSafe(value);
+    if (parsedNumber !== null) {
+      props.onChange(parsedNumber);
+    }
+  }, [value]);
+
+  return (
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <div style={{ flex: 1, marginRight: 4 }}>
+        <Input
+          disabled={props.disabled}
+          value={value}
+          onChange={(ev) => {
+            setValue(ev.target.value);
+          }}
+        />
+      </div>
+      <div style={{ flexShrink: 0 }}>
+        <label>
+          <Button.Tertiary
+            small
+            onClick={() => {
+              setValue("1");
+            }}
+          >
+            <Icons.RotateCCW size={20} />
+            <span>Reset counter</span>
+          </Button.Tertiary>
+        </label>
       </div>
     </div>
   );
@@ -562,6 +664,7 @@ export const DmMap = (props: {
     y: number;
     color: string;
     radius: number;
+    label: string;
   }) => void;
   updateToken: (
     id: string,
