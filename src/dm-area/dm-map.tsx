@@ -2,7 +2,8 @@ import * as React from "react";
 import { v4 as uuid } from "uuid";
 import styled from "@emotion/styled/macro";
 import { useToasts } from "react-toast-notifications";
-import { AlphaPicker, CirclePicker, HuePicker } from "react-color";
+import { CirclePicker } from "react-color";
+import { RgbaColorPicker } from "react-colorful";
 import { parseToRgb, toColorString } from "polished";
 import * as io from "io-ts";
 import { pipe, identity } from "fp-ts/lib/function";
@@ -35,7 +36,6 @@ import {
   AreaSelectMapTool,
 } from "../map-tools/area-select-map-tool";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
-import { useIsKeyPressed } from "../hooks/use-is-key-pressed";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
 import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
 import { useConfirmationDialog } from "../hooks/use-confirmation-dialog";
@@ -267,7 +267,7 @@ const ShowGridSettingsPopup = React.memo(
           </div>
         </div>
 
-        <div>
+        <div style={{ minWidth: 300 }}>
           <div>
             <label
               style={{
@@ -309,21 +309,23 @@ const ShowGridSettingsPopup = React.memo(
               </div>
             </label>
           </div>
-          <div style={{ marginTop: 16, marginBottom: 8 }}>
-            <HuePicker
+          <div
+            style={{
+              marginTop: 16,
+              marginBottom: 8,
+              display: "flex",
+              alignItems: "center",
+              textAlign: "left",
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ flexGrow: 1, alignSelf: "baseline" }}>Color</div>
+            <RgbaColorPicker
               color={gridColor}
               onChange={(color) => {
-                setGridColor({ ...color.rgb, a: color.rgb.a ?? 1 });
+                setGridColor(color);
+                syncState();
               }}
-              onChangeComplete={syncState}
-            />
-            <div style={{ height: 16 }} />
-            <AlphaPicker
-              color={gridColor}
-              onChange={(color) => {
-                setGridColor({ ...color.rgb, a: color.rgb.a ?? 1 });
-              }}
-              onChangeComplete={syncState}
             />
           </div>
         </div>
