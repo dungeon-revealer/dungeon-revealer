@@ -17,7 +17,7 @@ export const MarkAreaMapTool: MapTool = {
     const markAreaContext = React.useContext(MarkAreaToolContext);
     usePinchWheelZoom(props.mapContext);
     props.useMapGesture({
-      onDrag: ({ movement, memo, event }) => {
+      onDrag: ({ movement, memo, event, tap }) => {
         if (props.mapContext.isAltPressed) {
           event.stopPropagation();
           memo = memo ?? props.mapContext.mapState.position.get();
@@ -37,12 +37,14 @@ export const MarkAreaMapTool: MapTool = {
         // @ts-ignore
         const point: THREE.Vector3 = event.point;
 
-        markAreaContext.onMarkArea(
-          props.mapContext.helper.threePointToImageCoordinates([
-            point.x,
-            point.y,
-          ])
-        );
+        if (event.button === 0 && tap === true) {
+          markAreaContext.onMarkArea(
+            props.mapContext.helper.threePointToImageCoordinates([
+              point.x,
+              point.y,
+            ])
+          );
+        }
       },
     });
     return null;
