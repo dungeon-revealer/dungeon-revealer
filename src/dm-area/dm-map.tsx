@@ -64,6 +64,18 @@ import {
 import { NoteWindowActionsContext } from "./token-info-aside";
 import { Input } from "../input";
 import { parseNumberSafe } from "../parse-number-safe";
+import { ColorPickerInput } from "../color-picker-input";
+import {
+  Box,
+  FormControl,
+  FormLabel,
+  Heading,
+  Switch,
+  VStack,
+  HStack,
+  Text,
+  Stack,
+} from "@chakra-ui/react";
 
 type ToolMapRecord = {
   name: string;
@@ -200,24 +212,6 @@ const ShroudRevealSettings = (): React.ReactElement => {
   );
 };
 
-const parseMapColor = (
-  input: string
-): {
-  r: number;
-  g: number;
-  b: number;
-  a: number;
-} => {
-  // @ts-ignore
-  const { red, green, blue, alpha = 1 } = parseToRgb(input);
-  return {
-    r: red,
-    g: green,
-    b: blue,
-    a: alpha,
-  };
-};
-
 const ShowGridSettingsPopup = React.memo(
   (props: {
     grid: MapGridEntity;
@@ -226,9 +220,9 @@ const ShowGridSettingsPopup = React.memo(
     updateMap: (params: Partial<MapEntity>) => void;
     enterConfigureGridMode: () => void;
   }) => {
-    const [gridColor, setGridColor] = useResetState(() =>
-      parseMapColor(props.grid.color)
-    );
+    const [gridColor, setGridColor] = useResetState(() => props.grid.color, [
+      props.grid.color,
+    ]);
     const [showGrid, setShowGrid] = useResetState(props.showGrid, [
       props.showGrid,
     ]);
@@ -243,92 +237,72 @@ const ShowGridSettingsPopup = React.memo(
         showGridToPlayers,
         grid: {
           ...props.grid,
-          color: toColorString({
-            red: gridColor.r,
-            green: gridColor.g,
-            blue: gridColor.b,
-            alpha: gridColor.a,
-          }),
+          color: gridColor,
         },
       });
     }, 300);
 
     return (
       <Toolbar.Popup>
-        <div style={{ display: "flex" }}>
-          <div style={{ flex: 1 }}>
-            <h4 style={{ textAlign: "left", marginTop: 8 }}>Grid Settings</h4>
-          </div>
-          <div>
-            <Button.Tertiary small onClick={props.enterConfigureGridMode}>
-              <span>Edit Grid </span>
-              <Icons.SettingsIcon size={12} />
-            </Button.Tertiary>
-          </div>
-        </div>
+        <VStack minWidth="300px">
+          <HStack width="100%" justifyContent="space-between">
+            <Box>
+              <Heading size="xs">Grid Settings</Heading>
+            </Box>
 
-        <div style={{ minWidth: 300 }}>
-          <div>
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                textAlign: "left",
-                cursor: "pointer",
-              }}
-            >
-              <div style={{ flexGrow: 1 }}>Show Grid</div>
-              <div style={{ marginLeft: 8 }}>
-                <ToggleSwitch
-                  checked={showGrid}
-                  onChange={(checked) => {
-                    setShowGrid(checked);
-                    syncState();
-                  }}
-                />
-              </div>
-            </label>
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                textAlign: "left",
-                marginTop: 8,
-                cursor: "pointer",
-              }}
-            >
-              <div style={{ flexGrow: 1 }}>Show Grid to Players</div>
-              <div style={{ marginLeft: 8 }}>
-                <ToggleSwitch
-                  checked={showGridToPlayers}
-                  onChange={(checked) => {
-                    setShowGridToPlayers(checked);
-                    syncState();
-                  }}
-                />
-              </div>
-            </label>
-          </div>
-          <div
-            style={{
-              marginTop: 16,
-              marginBottom: 8,
-              display: "flex",
-              alignItems: "center",
-              textAlign: "left",
-              cursor: "pointer",
-            }}
+            <Box>
+              <Button.Tertiary small onClick={props.enterConfigureGridMode}>
+                <span>Edit Grid </span>
+                <Icons.SettingsIcon size={12} />
+              </Button.Tertiary>
+            </Box>
+          </HStack>
+
+          <FormControl
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
           >
-            <div style={{ flexGrow: 1, alignSelf: "baseline" }}>Color</div>
-            <RgbaColorPicker
+            <FormLabel htmlFor="show-grid-toggle">Show Grid</FormLabel>
+            <Switch
+              id="show-grid-toggle"
+              size="lg"
+              isChecked={showGrid}
+              onChange={(ev) => {
+                setShowGrid(ev.target.checked);
+                syncState();
+              }}
+            />
+          </FormControl>
+          <FormControl
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            <FormLabel htmlFor="show-grid-to-players-toggle">
+              Show Grid to players
+            </FormLabel>
+            <Switch
+              id="show-grid-to-players-toggle"
+              size="lg"
+              isChecked={showGridToPlayers}
+              onChange={(ev) => {
+                setShowGridToPlayers(ev.target.checked);
+                syncState();
+              }}
+            />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Color</FormLabel>
+            <ColorPickerInput
               color={gridColor}
               onChange={(color) => {
                 setGridColor(color);
                 syncState();
               }}
             />
-          </div>
-        </div>
+          </FormControl>
+        </VStack>
       </Toolbar.Popup>
     );
   }
@@ -1237,23 +1211,21 @@ const GridConfigurator = (props: {
   const { state, setState } = React.useContext(ConfigureGridMapToolContext);
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 12,
-        right: 12,
-        width: "100%",
-        background: "white",
-        maxWidth: "500px",
-        borderRadius: 12,
-        padding: 12,
-      }}
+    <Stack
+      position="absolute"
+      bottom="12px"
+      right="12px"
+      width="100%"
+      maxWidth="500px"
+      borderRadius="12px"
+      padding="2"
+      backgroundColor="white"
     >
-      <h1>Grid Configurator</h1>
-      <p>
+      <Heading size="lg">Grid Configurator</Heading>
+      <Text>
         Press and hold <strong>Alt</strong> for dragging the grid with your
         mouse.
-      </p>
+      </Text>
       <div style={{ display: "flex", marginTop: 16 }}>
         <div style={{ marginRight: 8, flex: 1 }}>
           <StepInput
@@ -1360,6 +1332,6 @@ const GridConfigurator = (props: {
           </Button.Primary>
         </div>
       </div>
-    </div>
+    </Stack>
   );
 };

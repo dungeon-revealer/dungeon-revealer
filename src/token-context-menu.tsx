@@ -8,17 +8,34 @@ import {
 import { useOnClickOutside } from "./hooks/use-on-click-outside";
 import { useResetState } from "./hooks/use-reset-state";
 import { useAnimatedWindowDimensions } from "./hooks/use-window-dimensions";
-import { Input } from "./input";
 import { MapTokenEntity } from "./map-typings";
-import { ToggleSwitch } from "./toggle-switch";
 import { useDebounceCallback } from "./hooks/use-debounce-callback";
 import * as Button from "./button";
 import * as Icon from "./feather-icons";
 import { useNoteWindowActions } from "./dm-area/token-info-aside";
 import { useShowSelectNoteModal } from "./dm-area/select-note-modal";
-import { StepInput } from "./step-input";
 import { ConfigureGridMapToolContext } from "./map-tools/configure-grid-map-tool";
 import { useAnimatedDimensions } from "./hooks/use-animated-dimensions";
+import {
+  Box,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  Text,
+  InputGroup,
+  InputLeftAddon,
+  Stack,
+  FormControl,
+  FormLabel,
+  Input,
+  HStack,
+  Switch,
+  Flex,
+  Center,
+} from "@chakra-ui/react";
+import { ColorPickerInput } from "./color-picker-input";
 
 export const TokenContextRenderer = (props: {
   updateToken: (
@@ -131,6 +148,8 @@ const TokenContextMenu = (props: {
   const [radius, setRadius] = useResetState(props.token.radius, [
     props.token.radius,
   ]);
+  const [x, setX] = useResetState(props.token.x, [props.token.x]);
+  const [y, setY] = useResetState(props.token.y, [props.token.x]);
   const [isVisibleForPlayers, setIsVisibleForPlayers] = useResetState(
     props.token.isVisibleForPlayers,
     [props.token.isVisibleForPlayers]
@@ -155,6 +174,8 @@ const TokenContextMenu = (props: {
       isMovableByPlayers,
       radius,
       color,
+      x,
+      y,
     });
   }, 300);
 
@@ -163,163 +184,121 @@ const TokenContextMenu = (props: {
   return (
     <>
       {showSelectTokenMarkerModalNode}
-      <div style={{ display: "flex" }}>
-        <div style={{ paddingRight: 8, flex: 1 }}>
-          <div style={{ display: "flex", width: "100%" }}>
-            <div style={{ flexGrow: 1 }}>
-              <label>
-                <h6 style={{ marginBottom: 8, marginTop: 0 }}>Label</h6>
-                <Input
-                  placeholder="Label"
-                  value={label}
-                  onChange={(ev) => {
-                    setLabel(ev.target.value);
-                    sync();
-                  }}
-                  style={{ marginBottom: 24 }}
-                />
-              </label>
-            </div>
-          </div>
-          <label>
-            <h6 style={{ marginBottom: 8, marginTop: 0 }}>Size</h6>
-            <StepInput
-              label={null}
-              value={radius}
-              onStepChangeValue={(increment) => {
-                setRadius((value) => value + (increment ? 1 : -1) * 1);
-                sync();
-              }}
-              onChangeValue={(value) => {
-                setRadius(value);
+      <HStack alignItems="stretch" spacing="5">
+        <Stack width="100%">
+          <FormControl size="sm">
+            <FormLabel>Label</FormLabel>
+            <Input
+              placeholder=""
+              value={label}
+              onChange={(ev) => {
+                setLabel(ev.target.value);
                 sync();
               }}
             />
-            <div>
-              <Button.Tertiary
-                small
-                onClick={() => {
-                  props.updateToken({
-                    radius: (gridContext.state.columnWidth / 2) * 0.25 - 5,
-                  });
+          </FormControl>
+          <FormControl size="sm">
+            <FormLabel>Size</FormLabel>
+            <InputGroup>
+              <NumberInput
+                value={radius}
+                onChange={(valueString) => {
+                  let radius = parseFloat(valueString);
+                  if (Number.isNaN(radius)) {
+                    radius = 1;
+                  }
+                  setRadius(radius);
+                  sync();
                 }}
               >
-                0.25x
-              </Button.Tertiary>
-              <Button.Tertiary
-                small
-                onClick={() => {
-                  props.updateToken({
-                    radius: (gridContext.state.columnWidth / 2) * 0.5 - 8,
-                  });
-                }}
-              >
-                0.5x
-              </Button.Tertiary>
-              <Button.Tertiary
-                small
-                onClick={() => {
-                  props.updateToken({
-                    radius: (gridContext.state.columnWidth / 2) * 1 - 8,
-                  });
-                }}
-              >
-                1x
-              </Button.Tertiary>
-              <Button.Tertiary
-                small
-                onClick={() => {
-                  props.updateToken({
-                    radius: (gridContext.state.columnWidth / 2) * 2 - 8,
-                  });
-                }}
-              >
-                2x
-              </Button.Tertiary>
-              <Button.Tertiary
-                small
-                onClick={() => {
-                  props.updateToken({
-                    radius: (gridContext.state.columnWidth / 2) * 3 - 8,
-                  });
-                }}
-              >
-                3x
-              </Button.Tertiary>
-            </div>
-          </label>
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </InputGroup>
+          </FormControl>
           <div>
-            <h6 style={{ marginBottom: 16, marginTop: 0 }}>Color</h6>
-            <ColorPicker
-              color={color}
-              onChange={(color) => {
-                setColor(color);
-                sync();
+            <Button.Tertiary
+              small
+              onClick={() => {
+                props.updateToken({
+                  radius: (gridContext.state.columnWidth / 2) * 0.25 - 5,
+                });
               }}
-            />
+            >
+              0.25x
+            </Button.Tertiary>
+            <Button.Tertiary
+              small
+              onClick={() => {
+                props.updateToken({
+                  radius: (gridContext.state.columnWidth / 2) * 0.5 - 8,
+                });
+              }}
+            >
+              0.5x
+            </Button.Tertiary>
+            <Button.Tertiary
+              small
+              onClick={() => {
+                props.updateToken({
+                  radius: (gridContext.state.columnWidth / 2) * 1 - 8,
+                });
+              }}
+            >
+              1x
+            </Button.Tertiary>
+            <Button.Tertiary
+              small
+              onClick={() => {
+                props.updateToken({
+                  radius: (gridContext.state.columnWidth / 2) * 2 - 8,
+                });
+              }}
+            >
+              2x
+            </Button.Tertiary>
+            <Button.Tertiary
+              small
+              onClick={() => {
+                props.updateToken({
+                  radius: (gridContext.state.columnWidth / 2) * 3 - 8,
+                });
+              }}
+            >
+              3x
+            </Button.Tertiary>
           </div>
-        </div>
-        <div style={{ paddingLeft: 8, flex: 1 }}>
-          <label>
-            <h6 style={{ marginBottom: 8, marginTop: 0 }}>Player Appearance</h6>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                cursor: "pointer",
-              }}
-            >
-              <div style={{ flexGrow: 1 }}>Visible to Players</div>
-              <div style={{ marginLeft: 8 }}>
-                <ToggleSwitch
-                  checked={isVisibleForPlayers}
-                  onChange={(checked) => {
-                    setIsVisibleForPlayers(checked);
-                    sync();
-                  }}
-                />
-              </div>
-            </div>
-          </label>
-          <label>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                cursor: "pointer",
-                marginTop: 8,
-              }}
-            >
-              <div style={{ flexGrow: 1 }}>Moveable by Players</div>
-              <div style={{ marginLeft: 8 }}>
-                <ToggleSwitch
-                  checked={isMovableByPlayers}
-                  onChange={(checked) => {
-                    setIsMovableByPlayers(checked);
-                    sync();
-                  }}
-                />
-              </div>
-            </div>
-          </label>
-          <div>
-            <h6 style={{ marginBottom: 8 }}>Reference</h6>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "center",
-              }}
-            >
-              <div>{props.token.reference ? "Note" : "None"}</div>
-              <div
-                style={{
-                  flexGrow: 1,
-                  paddingLeft: 8,
-                  display: "flex",
-                  justifyContent: "flex-end",
+          <FormControl size="sm">
+            <FormLabel>Color</FormLabel>
+            <Stack>
+              <ColorPickerInput
+                size="sm"
+                width="250px"
+                color={color}
+                onChange={(color) => {
+                  setColor(color);
+                  sync();
                 }}
-              >
+              />
+              <ColorPicker
+                color={color}
+                onChange={(color) => {
+                  setColor(color);
+                  sync();
+                }}
+              />
+            </Stack>
+          </FormControl>
+        </Stack>
+        <Stack width="100%">
+          <FormControl>
+            <FormLabel>Reference</FormLabel>
+            <Flex>
+              <Box flex="1">{props.token.reference ? "Note" : "None"}</Box>
+              <Center>
                 {props.token.reference ? (
                   <>
                     <div>
@@ -371,11 +350,90 @@ const TokenContextMenu = (props: {
                     </Button.Tertiary>
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+              </Center>
+            </Flex>
+          </FormControl>
+          <FormControl size="sm">
+            <FormLabel as="div">Position</FormLabel>
+            <Stack>
+              <InputGroup size="sm">
+                <InputLeftAddon
+                  pointerEvents="none"
+                  children={<Text fontWeight="bold">X</Text>}
+                />
+                <NumberInput
+                  value={x}
+                  onChange={(valueString) => {
+                    let x = parseFloat(valueString);
+                    if (Number.isNaN(x)) {
+                      x = 0;
+                    }
+                    setX(x);
+                    sync();
+                  }}
+                  isDisabled={isLocked}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </InputGroup>
+              <InputGroup size="sm">
+                <InputLeftAddon
+                  pointerEvents="none"
+                  children={<Text fontWeight="bold">Y</Text>}
+                />
+                <NumberInput
+                  value={y}
+                  onChange={(valueString) => {
+                    let y = parseFloat(valueString);
+                    if (Number.isNaN(y)) {
+                      y = 0;
+                    }
+                    setY(y);
+                    sync();
+                  }}
+                  isDisabled={isLocked}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </InputGroup>
+            </Stack>
+          </FormControl>
+          <FormControl display="flex" alignItems="center">
+            <FormLabel htmlFor="label-is-visible-to-players" mb="0">
+              Visible to Players
+            </FormLabel>
+            <Switch
+              id="label-is-visible-to-players"
+              isChecked={isVisibleForPlayers}
+              onChange={(ev) => {
+                setIsVisibleForPlayers(ev.target.checked);
+                sync();
+              }}
+            />
+          </FormControl>
+          <FormControl display="flex" alignItems="center">
+            <FormLabel htmlFor="label-is-movable-by-players" mb="0">
+              Visible to Players
+            </FormLabel>
+            <Switch
+              id="label-is-movable-by-players"
+              isChecked={isMovableByPlayers}
+              onChange={(ev) => {
+                setIsMovableByPlayers(ev.target.checked);
+                sync();
+              }}
+            />
+          </FormControl>
+        </Stack>
+      </HStack>
       <hr style={{ borderWidth: 0.3, marginTop: 12, marginBottom: 12 }} />
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <div>

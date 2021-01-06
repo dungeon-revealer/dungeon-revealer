@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Global } from "@emotion/react";
 import { render } from "react-dom";
+import { ChakraProvider } from "@chakra-ui/react";
 import { getUrlPrefix } from "./public-url";
 import { globalStyles } from "./global-styles";
 import { Modal } from "./modal";
@@ -41,10 +42,12 @@ const main = async () => {
   }
   if (element) {
     render(
-      <Modal.Provider>
-        <Global styles={globalStyles}></Global>
-        {component}
-      </Modal.Provider>,
+      <ChakraProvider>
+        <Modal.Provider>
+          <Global styles={globalStyles}></Global>
+          {component}
+        </Modal.Provider>
+      </ChakraProvider>,
       element
     );
   }
