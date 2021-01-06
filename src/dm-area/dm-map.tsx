@@ -1375,7 +1375,7 @@ const GridConfigurator = (props: {
             small
             onClick={() => {
               props.onConfirm({
-                color: "red",
+                color: "rgba(0, 0, 0, 0.08)",
                 columnWidth: state.columnWidth,
                 columnHeight: state.columnHeight,
                 offsetX: state.offsetX,
