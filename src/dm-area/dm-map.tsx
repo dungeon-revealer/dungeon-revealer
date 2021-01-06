@@ -1250,6 +1250,7 @@ const GridConfigurator = (props: {
       borderRadius="12px"
       padding="2"
       backgroundColor="white"
+      zIndex="1"
     >
       <Heading size="lg">Grid Configurator</Heading>
       <Text>
