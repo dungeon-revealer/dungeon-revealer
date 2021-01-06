@@ -8,7 +8,7 @@ import {
   InputRightElement,
 } from "@chakra-ui/react";
 import * as React from "react";
-import { RgbaStringColorPicker } from "react-colorful";
+import { RgbaStringColorPicker, RgbStringColorPicker } from "react-colorful";
 import { isColor } from "./color-lib";
 import { useResetState } from "./hooks/use-reset-state";
 
@@ -17,9 +17,13 @@ export const ColorPickerInput = (props: {
   color: string;
   width?: number | string;
   onChange: (color: string) => void;
+  disableAlpha?: boolean;
 }) => {
   const [value, setValue] = useResetState(props.color, [props.color]);
-  React.useEffect(() => {}, [value]);
+
+  const Picker = props.disableAlpha
+    ? RgbStringColorPicker
+    : RgbaStringColorPicker;
   return (
     <InputGroup size={props.size} width={props.width}>
       <Input
@@ -49,7 +53,7 @@ export const ColorPickerInput = (props: {
                 />
               </PopoverTrigger>
               <PopoverContent width="min-content" p={2}>
-                <RgbaStringColorPicker
+                <Picker
                   color={value}
                   onChange={(value) => {
                     setValue(value);

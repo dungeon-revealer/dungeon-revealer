@@ -3,8 +3,6 @@ import { v4 as uuid } from "uuid";
 import styled from "@emotion/styled/macro";
 import { useToasts } from "react-toast-notifications";
 import { CirclePicker } from "react-color";
-import { RgbaColorPicker } from "react-colorful";
-import { parseToRgb, toColorString } from "polished";
 import * as io from "io-ts";
 import { pipe, identity } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
@@ -40,7 +38,6 @@ import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
 import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
 import { useConfirmationDialog } from "../hooks/use-confirmation-dialog";
 import { applyFogRectangle } from "../canvas-draw-utilities";
-import { ToggleSwitch } from "../toggle-switch";
 import { MapGridEntity } from "../map-typings";
 import { useResetState } from "../hooks/use-reset-state";
 import * as Button from "../button";
@@ -55,14 +52,13 @@ import {
   PersistedStateModel,
   usePersistedState,
 } from "../hooks/use-persisted-state";
-import { StepInput } from "../step-input";
 import {
   TokenMarkerContext,
   TokenMarkerContextProvider,
   TokenMarkerMapTool,
 } from "../map-tools/token-marker-map-tool";
 import { NoteWindowActionsContext } from "./token-info-aside";
-import { Input } from "../input";
+import { Input as OldInput, InputGroup as OldInputGroup } from "../input";
 import { parseNumberSafe } from "../parse-number-safe";
 import { ColorPickerInput } from "../color-picker-input";
 import {
@@ -74,7 +70,14 @@ import {
   VStack,
   HStack,
   Text,
+  InputGroup,
   Stack,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Input,
 } from "@chakra-ui/react";
 
 type ToolMapRecord = {
@@ -170,12 +173,13 @@ const AreaSelectSettings = (): React.ReactElement => {
     <div>
       <h6 style={{ margin: 0, marginBottom: 12 }}>Snap to grid</h6>
       <div style={{ display: "flex", alignItems: "center" }}>
-        <ToggleSwitch
-          checked={state.snapToGrid}
-          onChange={(checked) => {
-            setState((state) => ({ ...state, snapToGrid: checked }));
+        <Switch
+          isChecked={state.snapToGrid}
+          onChange={(ev) => {
+            const snapToGrid = ev.target.checked;
+            setState((state) => ({ ...state, snapToGrid }));
           }}
-        />{" "}
+        />
         <span style={{ fontWeight: "bold", marginLeft: 8 }}>
           {state.snapToGrid ? "On" : "Off"}
         </span>
@@ -220,16 +224,12 @@ const ShowGridSettingsPopup = React.memo(
     updateMap: (params: Partial<MapEntity>) => void;
     enterConfigureGridMode: () => void;
   }) => {
-    const [gridColor, setGridColor] = useResetState(() => props.grid.color, [
-      props.grid.color,
-    ]);
-    const [showGrid, setShowGrid] = useResetState(props.showGrid, [
-      props.showGrid,
-    ]);
-    const [
-      showGridToPlayers,
-      setShowGridToPlayers,
-    ] = useResetState(props.showGridToPlayers, [props.showGridToPlayers]);
+    const [gridColor, setGridColor] = useResetState(() => props.grid.color, []);
+    const [showGrid, setShowGrid] = useResetState(props.showGrid, []);
+    const [showGridToPlayers, setShowGridToPlayers] = useResetState(
+      props.showGridToPlayers,
+      []
+    );
 
     const syncState = useDebounceCallback(() => {
       props.updateMap({
@@ -367,138 +367,168 @@ const TokenMarkerSettings = (): React.ReactElement => {
   };
 
   return (
-    <div
+    <Stack
       onKeyPress={(ev) => {
         ev.stopPropagation();
       }}
     >
-      <div>
-        <StepInput
-          value={tokenMarkerContext.state.tokenRadius}
-          label="Radius"
-          onStepChangeValue={(isIncrement) => {
-            tokenMarkerContext.setState((state) => ({
-              ...state,
-              tokenRadius: state.tokenRadius + (isIncrement ? 10 : -10),
-            }));
-          }}
-          onChangeValue={(tokenRadius) => {
-            tokenMarkerContext.setState((state) => ({
-              ...state,
-              tokenRadius,
-            }));
-          }}
-        />
-      </div>
-
-      <div style={{ display: "flex" }}>
-        <Button.Tertiary
-          small
-          onClick={() => {
-            updateTokenRadius(0.25);
-          }}
-        >
-          0.25x
-        </Button.Tertiary>
-        <Button.Tertiary
-          small
-          onClick={() => {
-            updateTokenRadius(0.5);
-          }}
-        >
-          0.5x
-        </Button.Tertiary>
-        <Button.Tertiary
-          small
-          onClick={() => {
-            updateTokenRadius(1);
-          }}
-        >
-          1x
-        </Button.Tertiary>
-        <Button.Tertiary
-          small
-          onClick={() => {
-            updateTokenRadius(2);
-          }}
-        >
-          2x
-        </Button.Tertiary>
-        <Button.Tertiary
-          small
-          onClick={() => {
-            updateTokenRadius(3);
-          }}
-        >
-          3x
-        </Button.Tertiary>
-      </div>
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "left" }}>
-          Color
-        </div>
-        <ColorPicker
-          color={tokenMarkerContext.state.tokenColor}
-          onChange={(color) => {
-            tokenMarkerContext.setState((state) => ({
-              ...state,
-              tokenColor: color,
-            }));
-          }}
-        />
-      </div>
-      <div>
-        <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "left" }}>
-          Label
-        </div>
-        <div style={{ display: "flex", marginBottom: 8, alignItems: "center" }}>
-          <div style={{ flex: 3, marginRight: 8 }}>
-            <Input
-              value={tokenMarkerContext.state.tokenText}
-              onChange={(ev) => {
-                const tokenText = ev.target.value;
+      <FormControl size="sm">
+        <FormLabel>Radius</FormLabel>
+        <Stack>
+          <InputGroup size="sm">
+            <NumberInput
+              size="sm"
+              value={tokenMarkerContext.state.tokenRadius}
+              min={1}
+              onChange={(valueString) => {
+                let tokenRadius = parseFloat(valueString);
+                if (Number.isNaN(tokenRadius)) {
+                  tokenRadius = 1;
+                }
                 tokenMarkerContext.setState((state) => ({
                   ...state,
-                  tokenText,
+                  tokenRadius,
                 }));
               }}
-            />
-          </div>
-        </div>
-        <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "left" }}>
-          Label Counter
-        </div>
-        <div style={{ display: "flex", marginBottom: 8, alignItems: "center" }}>
-          <div style={{ flex: 2, marginRight: 8 }}>
+            >
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </InputGroup>
+          <HStack>
+            <Button.Tertiary
+              small
+              onClick={() => {
+                updateTokenRadius(0.25);
+              }}
+            >
+              0.25x
+            </Button.Tertiary>
+            <Button.Tertiary
+              small
+              onClick={() => {
+                updateTokenRadius(0.5);
+              }}
+            >
+              0.5x
+            </Button.Tertiary>
+            <Button.Tertiary
+              small
+              onClick={() => {
+                updateTokenRadius(1);
+              }}
+            >
+              1x
+            </Button.Tertiary>
+            <Button.Tertiary
+              small
+              onClick={() => {
+                updateTokenRadius(2);
+              }}
+            >
+              2x
+            </Button.Tertiary>
+            <Button.Tertiary
+              small
+              onClick={() => {
+                updateTokenRadius(3);
+              }}
+            >
+              3x
+            </Button.Tertiary>
+          </HStack>
+        </Stack>
+      </FormControl>
+      <FormControl size="sm">
+        <FormLabel>Color</FormLabel>
+        <Stack>
+          <ColorPickerInput
+            size="sm"
+            color={tokenMarkerContext.state.tokenColor}
+            disableAlpha={true}
+            onChange={(color) => {
+              tokenMarkerContext.setState((state) => ({
+                ...state,
+                tokenColor: color,
+              }));
+            }}
+          />
+          <ColorPicker
+            color={tokenMarkerContext.state.tokenColor}
+            onChange={(color) => {
+              tokenMarkerContext.setState((state) => ({
+                ...state,
+                tokenColor: color,
+              }));
+            }}
+          />
+        </Stack>
+      </FormControl>
+      <FormControl size="sm">
+        <FormLabel>Label</FormLabel>
+        <Input
+          size="sm"
+          type="text"
+          value={tokenMarkerContext.state.tokenText}
+          onChange={(ev) => {
+            const tokenText = ev.target.value;
+            tokenMarkerContext.setState((state) => ({
+              ...state,
+              tokenText,
+            }));
+          }}
+        />
+      </FormControl>
+      <FormControl display="flex" alignItems="center">
+        <FormLabel htmlFor="switch-include-token-counter" mb="0">
+          Append Counter
+        </FormLabel>
+        <Switch
+          id="switch-include-token-counter"
+          isChecked={tokenMarkerContext.state.includeTokenCounter}
+          onChange={(ev) => {
+            const includeTokenCounter = ev.target.checked;
+            tokenMarkerContext.setState((state) => ({
+              ...state,
+              includeTokenCounter,
+            }));
+          }}
+        />
+      </FormControl>
+      {tokenMarkerContext.state.includeTokenCounter ? (
+        <FormControl size="sm">
+          <InputGroup size="sm">
             <NumberInput
-              disabled={tokenMarkerContext.state.includeTokenCounter === false}
               value={tokenMarkerContext.state.tokenCounter}
-              onChange={(tokenCounter) => {
+              min={1}
+              onChange={(valueString) => {
+                let tokenCounter = parseFloat(valueString);
+                if (Number.isNaN(tokenCounter)) {
+                  tokenCounter = 1;
+                }
                 tokenMarkerContext.setState((state) => ({
                   ...state,
                   tokenCounter,
                 }));
               }}
-            />
-          </div>
-          <div>
-            <ToggleSwitch
-              checked={tokenMarkerContext.state.includeTokenCounter}
-              onChange={(isChecked) => {
-                tokenMarkerContext.setState((state) => ({
-                  ...state,
-                  includeTokenCounter: isChecked,
-                }));
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+            >
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </InputGroup>
+        </FormControl>
+      ) : null}
+    </Stack>
   );
 };
 
-const NumberInput = (props: {
+const OldNumberInput = (props: {
   disabled?: boolean;
   value: number;
   onChange: (value: number) => void;
@@ -523,7 +553,7 @@ const NumberInput = (props: {
   return (
     <div style={{ display: "flex", alignItems: "center" }}>
       <div style={{ flex: 1, marginRight: 4 }}>
-        <Input
+        <OldInput
           disabled={props.disabled}
           value={value}
           onChange={(ev) => {
@@ -580,7 +610,7 @@ const DM_TOOL_MAP: Array<ToolMapRecord> = [
   },
   {
     name: "Mark",
-    icon: <Icons.TargetIcon size={20} />,
+    icon: <Icons.CrosshairIcon size={20} />,
     tool: MarkAreaMapTool,
     MenuComponent: null,
   },
@@ -1226,82 +1256,107 @@ const GridConfigurator = (props: {
         Press and hold <strong>Alt</strong> for dragging the grid with your
         mouse.
       </Text>
-      <div style={{ display: "flex", marginTop: 16 }}>
-        <div style={{ marginRight: 8, flex: 1 }}>
-          <StepInput
-            label="X-Coordinate"
-            value={state.offsetX}
-            onStepChangeValue={(increment) => {
-              setState((state) => ({
-                ...state,
-                offsetX: state.offsetX + (increment ? 1 : -1),
-              }));
-            }}
-            onChangeValue={(value) => {
-              setState((state) => ({
-                ...state,
-                offsetX: value,
-              }));
-            }}
-          />
-        </div>
-        <div style={{ marginLeft: 8, flex: 1 }}>
-          <StepInput
-            label="Y-Coordinate"
-            value={state.offsetY}
-            onStepChangeValue={(increment) => {
-              setState((state) => ({
-                ...state,
-                offsetY: state.offsetY + (increment ? 1 : -1),
-              }));
-            }}
-            onChangeValue={(value) => {
-              setState((state) => ({
-                ...state,
-                offsetY: value,
-              }));
-            }}
-          />
-        </div>
-      </div>
-      <div style={{ display: "flex" }}>
-        <div style={{ marginRight: 8, flex: 1 }}>
-          <StepInput
-            label="Column Width"
-            value={state.columnWidth}
-            onStepChangeValue={(increment) => {
-              setState((state) => ({
-                ...state,
-                columnWidth: state.columnWidth + (increment ? 1 : -1),
-              }));
-            }}
-            onChangeValue={(value) => {
-              setState((state) => ({
-                ...state,
-                columnWidth: value,
-              }));
-            }}
-          />
-        </div>
-        <div style={{ marginLeft: 8, flex: 1 }}>
-          <StepInput
-            label="Column Height"
-            value={state.columnHeight}
-            onStepChangeValue={(increment) => {
-              setState((state) => ({
-                ...state,
-                columnHeight: state.columnHeight + (increment ? 1 : -1),
-              }));
-            }}
-            onChangeValue={(value) => {
-              setState((state) => ({
-                ...state,
-                columnHeight: value,
-              }));
-            }}
-          />
-        </div>
-      </div>
+      <HStack>
+        <FormControl>
+          <FormLabel>X-Coordinate</FormLabel>
+          <InputGroup size="sm">
+            <NumberInput
+              value={state.offsetX}
+              onChange={(valueString) => {
+                let offsetX = parseFloat(valueString);
+                if (Number.isNaN(offsetX)) {
+                  offsetX = 0;
+                }
+                setState((state) => ({
+                  ...state,
+                  offsetX,
+                }));
+              }}
+            >
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </InputGroup>
+        </FormControl>
+        <FormControl>
+          <FormLabel>Y-Coordinate</FormLabel>
+          <InputGroup size="sm">
+            <NumberInput
+              value={state.offsetY}
+              onChange={(valueString) => {
+                let offsetY = parseFloat(valueString);
+                if (Number.isNaN(offsetY)) {
+                  offsetY = 0;
+                }
+                setState((state) => ({
+                  ...state,
+                  offsetY,
+                }));
+              }}
+            >
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </InputGroup>
+        </FormControl>
+      </HStack>
+      <HStack>
+        <FormControl>
+          <FormLabel>Column Width</FormLabel>
+          <InputGroup size="sm">
+            <NumberInput
+              value={state.columnWidth}
+              onChange={(valueString) => {
+                let columnWidth = parseFloat(valueString);
+                if (Number.isNaN(columnWidth)) {
+                  columnWidth = 0;
+                }
+                setState((state) => ({
+                  ...state,
+                  columnWidth,
+                }));
+              }}
+            >
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </InputGroup>
+        </FormControl>
+        <FormControl>
+          <FormLabel>Column Height</FormLabel>
+          <InputGroup size="sm">
+            <NumberInput
+              value={state.columnHeight}
+              onChange={(valueString) => {
+                let columnHeight = parseFloat(valueString);
+                if (Number.isNaN(columnHeight)) {
+                  columnHeight = 0;
+                }
+                setState((state) => ({
+                  ...state,
+                  columnHeight,
+                }));
+              }}
+            >
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </InputGroup>
+        </FormControl>
+      </HStack>
+
       <div
         style={{ display: "flex", marginTop: 16, justifyContent: "flex-end" }}
       >
