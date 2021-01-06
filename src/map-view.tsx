@@ -373,20 +373,22 @@ const drawGridToContext = (
 
   const gridX = grid.offsetX * ratio;
   const gridY = grid.offsetY * ratio;
-  const sideLength = grid.columnWidth * ratio;
-  const offsetX = reduceOffsetToMinimum(gridX, sideLength);
-  const offsetY = reduceOffsetToMinimum(gridY, sideLength);
+  const sideWidth = grid.columnWidth * ratio;
+  const sideHeight = grid.columnHeight * ratio;
 
-  for (let i = 0; i < canvas.width / sideLength; i++) {
+  const offsetX = reduceOffsetToMinimum(gridX, sideWidth);
+  const offsetY = reduceOffsetToMinimum(gridY, sideHeight);
+
+  for (let i = 0; i < canvas.width / sideWidth; i++) {
     context.beginPath();
-    context.moveTo(offsetX + i * sideLength, 0);
-    context.lineTo(offsetX + i * sideLength, canvas.height);
+    context.moveTo(offsetX + i * sideWidth, 0);
+    context.lineTo(offsetX + i * sideWidth, canvas.height);
     context.stroke();
   }
-  for (let i = 0; i < canvas.height / sideLength; i++) {
+  for (let i = 0; i < canvas.height / sideHeight; i++) {
     context.beginPath();
-    context.moveTo(0, offsetY + i * sideLength);
-    context.lineTo(canvas.width, offsetY + i * sideLength);
+    context.moveTo(0, offsetY + i * sideHeight);
+    context.lineTo(canvas.width, offsetY + i * sideHeight);
     context.stroke();
   }
 };
