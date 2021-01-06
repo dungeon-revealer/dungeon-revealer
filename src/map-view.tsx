@@ -307,6 +307,7 @@ const MarkedAreaRenderer: React.FC<{
   factor: number;
   dimensions: Dimensions;
   remove: () => void;
+  radius: number;
 }> = (props) => {
   const initialRadius = 10 * props.factor;
 
@@ -316,7 +317,11 @@ const MarkedAreaRenderer: React.FC<{
       opacity: 1,
     },
     to: {
-      scale: [30, 30, 30] as [number, number, number],
+      scale: [props.radius, props.radius, props.radius] as [
+        number,
+        number,
+        number
+      ],
       opacity: 0,
     },
     config: {
@@ -338,7 +343,7 @@ const MarkedAreaRenderer: React.FC<{
     >
       <ringBufferGeometry
         attach="geometry"
-        args={[initialRadius * (1 - 0.1), initialRadius, 128]}
+        args={[initialRadius * (1 - 0.05), initialRadius, 128]}
       />
       <animated.meshStandardMaterial
         attach="material"
@@ -463,6 +468,7 @@ const MapRenderer: React.FC<{
   factor: number;
   dimensions: Dimensions;
   fogOpacity: number;
+  markerRadius: number;
 }> = (props) => {
   return (
     <>
@@ -529,6 +535,7 @@ const MapRenderer: React.FC<{
             factor={props.factor}
             dimensions={props.dimensions}
             remove={() => props.removeMarkedArea(markedArea.id)}
+            radius={props.markerRadius}
           />
         ))}
       </group>
@@ -808,6 +815,7 @@ const MapViewRenderer = (props: {
           y: token.y * optimalDimensions.ratio,
           radius: token.radius * optimalDimensions.ratio,
         }))}
+        markerRadius={20}
         markedAreas={props.markedAreas.map((area) => ({
           ...area,
           x: area.x * optimalDimensions.ratio,
