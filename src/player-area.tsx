@@ -19,6 +19,14 @@ import { ToastProvider } from "react-toast-notifications";
 import { v4 as uuid } from "uuid";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
 import { usePersistedState } from "./hooks/use-persisted-state";
+import { PlayerMapTool } from "./map-tools/player-map-tool";
+import { MapEntity } from "./map-typings";
+import {
+  ComponentWithPropsTuple,
+  FlatContextProvider,
+} from "./flat-context-provider";
+import { MarkAreaToolContext } from "./map-tools/mark-area-map-tool";
+import { NoteWindowActionsContext } from "./dm-area/token-info-aside";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -38,32 +46,6 @@ const AbsoluteFullscreenContainer = styled.div`
   height: 100%;
 `;
 
-type Grid = {
-  x: number;
-  y: number;
-  sideLength: number;
-};
-
-type Token = {
-  id: string;
-  radius: number;
-  color: string;
-  label: string;
-  x: number;
-  y: number;
-  isVisibleForPlayers: boolean;
-  isMovableByPlayers: boolean;
-  isLocked: boolean;
-};
-
-type Map = {
-  id: string;
-  showGridToPlayers: boolean;
-  grid: null | Grid;
-  gridColor: string;
-  tokens: Token[];
-};
-
 type MarkedArea = {
   id: string;
   x: number;
@@ -73,16 +55,12 @@ type MarkedArea = {
 const createCacheBusterString = () =>
   encodeURIComponent(`${Date.now()}_${uuid()}`);
 
-const isFirefoxOnWindows = () =>
-  window.navigator.userAgent.toLowerCase().includes("firefox") &&
-  window.navigator.platform.toLowerCase().startsWith("win");
-
 const PlayerMap: React.FC<{
   fetch: typeof fetch;
   pcPassword: string;
   socket: ReturnType<typeof useSocket>;
 }> = ({ fetch, pcPassword, socket }) => {
-  const [currentMap, setCurrentMap] = React.useState<null | Map>(null);
+  const [currentMap, setCurrentMap] = React.useState<null | MapEntity>(null);
   const currentMapRef = React.useRef(currentMap);
 
   const [mapImage, setMapImage] = React.useState<HTMLImageElement | null>(null);
@@ -101,7 +79,7 @@ const PlayerMap: React.FC<{
 
   const [refetchTrigger, setRefetchTrigger] = React.useState(0);
 
-  const onReceiveMap = React.useCallback((data: { map: Map }) => {
+  const onReceiveMap = React.useCallback((data: { map: MapEntity }) => {
     if (!data) {
       return;
     }
@@ -245,7 +223,7 @@ const PlayerMap: React.FC<{
         );
       } else if (type === "update") {
         setCurrentMap(
-          produce((map: Map | null) => {
+          produce((map: MapEntity | null) => {
             if (map) {
               map.tokens = map.tokens.map((token) => {
                 if (token.id !== data.token.id) return token;
@@ -259,7 +237,7 @@ const PlayerMap: React.FC<{
         );
       } else if (type === "remove") {
         setCurrentMap(
-          produce((map: Map | null) => {
+          produce((map: MapEntity | null) => {
             if (map) {
               map.tokens = map.tokens = map.tokens.filter(
                 (token) => token.id !== data.tokenId
@@ -313,7 +291,7 @@ const PlayerMap: React.FC<{
   const updateToken = React.useCallback(
     ({ id, ...updates }) => {
       setCurrentMap(
-        produce((map: Map | null) => {
+        produce((map: MapEntity | null) => {
           if (map) {
             map.tokens = map.tokens.map((token) => {
               if (token.id !== id) return token;
@@ -383,7 +361,6 @@ const PlayerMap: React.FC<{
       },
     }
   );
-
   return (
     <>
       <div
@@ -393,20 +370,35 @@ const PlayerMap: React.FC<{
           height: "100vh",
         }}
       >
-        <React.Suspense fallback={null}>
+        <FlatContextProvider
+          value={[
+            [
+              MarkAreaToolContext.Provider,
+              {
+                value: {
+                  onMarkArea: ([x, y]) => {
+                    socket.emit("mark area", { x, y });
+                  },
+                },
+              },
+            ] as ComponentWithPropsTuple<
+              React.ComponentProps<typeof MarkAreaToolContext.Provider>
+            >,
+          ]}
+        >
           {currentMap && mapImage ? (
             <MapView
+              activeTool={PlayerMapTool}
               mapImage={mapImage}
               fogImage={fogImage}
               controlRef={controlRef}
-              tokens={currentMap.tokens}
+              tokens={currentMap.tokens.filter(
+                (token) => token.isVisibleForPlayers === true
+              )}
               updateTokenPosition={(id, position) =>
                 updateToken({ id, ...position })
               }
               markedAreas={markedAreas}
-              markArea={({ x, y }) => {
-                socket.emit("mark area", { x, y });
-              }}
               removeMarkedArea={(id) => {
                 setMarkedAreas((markedAreas) =>
                   markedAreas.filter((area) => area.id !== id)
@@ -414,85 +406,84 @@ const PlayerMap: React.FC<{
               }}
               grid={
                 currentMap.grid && currentMap.showGridToPlayers
-                  ? {
-                      x: currentMap.grid.x,
-                      y: currentMap.grid.y,
-                      sideLength: currentMap.grid.sideLength,
-                      color: currentMap.gridColor || "red",
-                    }
+                  ? currentMap.grid
                   : null
               }
+              sharedContexts={[MarkAreaToolContext, NoteWindowActionsContext]}
+              fogOpacity={1}
             />
           ) : null}
-        </React.Suspense>
+        </FlatContextProvider>
       </div>
       {!showSplashScreen ? (
-        <ToolbarContainer
-          style={{
-            transform: to(
-              [toolbarPosition.position],
-              ([x, y]) => `translate(${x}px, ${y}px)`
-            ),
-          }}
-        >
-          <Toolbar horizontal>
-            <Toolbar.Logo {...handler()} cursor="grab" />
-            {showItems ? (
-              <React.Fragment>
-                <Toolbar.Group>
-                  <Toolbar.Item isActive>
-                    <Toolbar.Button
-                      onClick={() => {
-                        controlRef.current?.center();
-                      }}
-                      onTouchStart={(ev) => {
-                        ev.preventDefault();
-                        controlRef.current?.center();
-                      }}
-                    >
-                      <Icons.Compass size={20} />
-                      <Icons.Label>Center Map</Icons.Label>
-                    </Toolbar.Button>
-                  </Toolbar.Item>
-                  <Toolbar.Item isActive>
-                    <Toolbar.LongPressButton
-                      onClick={() => {
-                        controlRef.current?.zoomIn();
-                      }}
-                      onLongPress={() => {
-                        const interval = setInterval(() => {
-                          controlRef.current?.zoomIn();
-                        }, 100);
+        <>
+          <ToolbarContainer
+            style={{
+              transform: to(
+                [toolbarPosition.position],
+                ([x, y]) => `translate(${x}px, ${y}px)`
+              ),
+            }}
+          >
+            <Toolbar horizontal>
+              <Toolbar.Logo {...handler()} cursor="grab" />
+              {showItems ? (
+                <React.Fragment>
+                  <Toolbar.Group>
+                    <Toolbar.Item isActive>
+                      <Toolbar.Button
+                        onClick={() => {
+                          controlRef.current?.controls.center();
+                        }}
+                        onTouchStart={(ev) => {
+                          ev.preventDefault();
+                          controlRef.current?.controls.center();
+                        }}
+                      >
+                        <Icons.Compass size={20} />
+                        <Icons.Label>Center Map</Icons.Label>
+                      </Toolbar.Button>
+                    </Toolbar.Item>
+                    <Toolbar.Item isActive>
+                      <Toolbar.LongPressButton
+                        onClick={() => {
+                          controlRef.current?.controls.zoomIn();
+                        }}
+                        onLongPress={() => {
+                          const interval = setInterval(() => {
+                            controlRef.current?.controls.zoomIn();
+                          }, 100);
 
-                        return () => clearInterval(interval);
-                      }}
-                    >
-                      <Icons.ZoomIn size={20} />
-                      <Icons.Label>Zoom In</Icons.Label>
-                    </Toolbar.LongPressButton>
-                  </Toolbar.Item>
-                  <Toolbar.Item isActive>
-                    <Toolbar.LongPressButton
-                      onClick={() => {
-                        controlRef.current?.zoomOut();
-                      }}
-                      onLongPress={() => {
-                        const interval = setInterval(() => {
-                          controlRef.current?.zoomOut();
-                        }, 100);
+                          return () => clearInterval(interval);
+                        }}
+                      >
+                        <Icons.ZoomIn size={20} />
+                        <Icons.Label>Zoom In</Icons.Label>
+                      </Toolbar.LongPressButton>
+                    </Toolbar.Item>
+                    <Toolbar.Item isActive>
+                      <Toolbar.LongPressButton
+                        onClick={() => {
+                          controlRef.current?.controls.zoomOut();
+                        }}
+                        onLongPress={() => {
+                          const interval = setInterval(() => {
+                            controlRef.current?.controls.zoomOut();
+                          }, 100);
 
-                        return () => clearInterval(interval);
-                      }}
-                    >
-                      <Icons.ZoomOut size={20} />
-                      <Icons.Label>Zoom Out</Icons.Label>
-                    </Toolbar.LongPressButton>
-                  </Toolbar.Item>
-                </Toolbar.Group>
-              </React.Fragment>
-            ) : null}
-          </Toolbar>
-        </ToolbarContainer>
+                          return () => clearInterval(interval);
+                        }}
+                      >
+                        <Icons.ZoomOut size={20} />
+                        <Icons.Label>Zoom Out</Icons.Label>
+                      </Toolbar.LongPressButton>
+                    </Toolbar.Item>
+                  </Toolbar.Group>
+                </React.Fragment>
+              ) : null}
+            </Toolbar>
+          </ToolbarContainer>
+        </>
       ) : (
         <AbsoluteFullscreenContainer>
           <SplashScreen text="Ready." />

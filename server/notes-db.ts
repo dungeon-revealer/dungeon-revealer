@@ -1,25 +1,12 @@
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as E from "fp-ts/lib/Either";
-import { flow } from "fp-ts/lib/function";
-import { pipe } from "fp-ts/lib/pipeable";
-import toCamelCase from "lodash/camelCase";
-import isObject from "lodash/isObject";
+import * as A from "fp-ts/lib/Array";
+import { flow, pipe } from "fp-ts/lib/function";
 import * as t from "io-ts";
 import type { Database } from "sqlite";
-
-const BooleanFromNumber = new t.Type(
-  "BooleanFromNumber",
-  (input: unknown): input is boolean => typeof input === "boolean",
-  (input, context) =>
-    pipe(
-      t.number.validate(input, context),
-      E.chain((value) => {
-        return t.success(Boolean(value));
-      })
-    ),
-  (value) => (value ? 1 : 0)
-);
+import { camelCaseKeys } from "./util/camelcase-keys";
+import { BooleanFromNumber } from "./io-types/boolean-from-number";
 
 export const NoteAccessTypeModel = t.union([
   t.literal("admin"),
@@ -37,35 +24,35 @@ export const NoteModel = t.type({
 });
 
 export type NoteModelType = t.TypeOf<typeof NoteModel>;
-const NoteModelList = t.array(NoteModel);
+export type NodeModelListType = Array<NoteModelType>;
+
+type DecodeError = Error | t.Errors;
+type Dependencies = {
+  db: Database;
+};
 
 const getTimestamp = () => new Date().getTime();
 
-const camelCaseKeys = flow(
-  Object.entries,
-  (entries) => entries.map(([key, value]) => [toCamelCase(key), value]),
-  Object.fromEntries
+export const decodeNote: (
+  input: unknown
+) => E.Either<DecodeError, NoteModelType> = flow(
+  t.UnknownRecord.decode,
+  E.map(camelCaseKeys),
+  E.chain(NoteModel.decode)
 );
 
-export const decodeNote = flow(
-  (obj) => (isObject(obj) ? camelCaseKeys(obj) : obj),
-  NoteModel.decode
-);
-
-const decodeNoteList = flow(
-  (sth) =>
-    Array.isArray(sth)
-      ? sth.map((obj) => (isObject(obj) ? camelCaseKeys(obj) : obj))
-      : sth,
-  NoteModelList.decode,
-  TE.fromEither
+const decodeNoteList: (
+  input: unknown
+) => E.Either<DecodeError, NodeModelListType> = flow(
+  t.UnknownArray.decode,
+  E.chain((arr) =>
+    A.sequence(E.either)(arr.map((element) => decodeNote(element)))
+  )
 );
 
 export const getNoteById = (
   id: string
-): RTE.ReaderTaskEither<{ db: Database }, Error | t.Errors, NoteModelType> => ({
-  db,
-}) =>
+): RTE.ReaderTaskEither<Dependencies, DecodeError, NoteModelType> => ({ db }) =>
   pipe(
     TE.tryCatch(
       () =>
@@ -90,15 +77,12 @@ export const getNoteById = (
     TE.chainW(flow(decodeNote, TE.fromEither))
   );
 
-export const getPaginatedNotes = ({
-  maximumAmountOfRecords,
-}: {
-  maximumAmountOfRecords: number;
-}): RTE.ReaderTaskEither<
-  { db: Database },
-  Error | t.Errors,
-  NoteModelType[]
-> => ({ db }) =>
+export const getPaginatedNotes = (params: {
+  /* amount of items to fetch */
+  first: number;
+}): RTE.ReaderTaskEither<Dependencies, DecodeError, NodeModelListType> => ({
+  db,
+}) =>
   pipe(
     TE.tryCatch(
       () =>
@@ -118,29 +102,28 @@ export const getPaginatedNotes = ({
             ORDER BY
               "created_at" DESC,
               "id" DESC
-            LIMIT ?
+            LIMIT $first
             ;
           `,
-          maximumAmountOfRecords
+          {
+            $first: params.first,
+          }
         ),
       E.toError
     ),
-    TE.chainW(decodeNoteList)
+    TE.chainW(flow(decodeNoteList, TE.fromEither))
   );
 
-export const getMorePaginatedNotes = ({
-  lastCreatedAt,
-  lastId,
-  maximumAmountOfRecords,
-}: {
+export const getMorePaginatedNotes = (params: {
+  /* createdAt date of the item after which items should be fetched */
   lastCreatedAt: number;
+  /* id of the item after which items should be fetched */
   lastId: string;
-  maximumAmountOfRecords: number;
-}): RTE.ReaderTaskEither<
-  { db: Database },
-  Error | t.Errors,
-  NoteModelType[]
-> => ({ db }) =>
+  /* amount of items to fetch */
+  first: number;
+}): RTE.ReaderTaskEither<Dependencies, DecodeError, NoteModelType[]> => ({
+  db,
+}) =>
   pipe(
     TE.tryCatch(
       () =>
@@ -157,49 +140,53 @@ export const getMorePaginatedNotes = ({
             FROM
               "notes"
             WHERE
-              "created_at" <= ?
-              AND "id" < ?
+              "created_at" <= $last_created_at
+              AND "id" < $last_id
               AND "is_entry_point" = 1
             ORDER BY
               "created_at" DESC,
               "id" DESC
-            LIMIT ?
+            LIMIT $first
             ;
           `,
-          lastCreatedAt,
-          lastId,
-          maximumAmountOfRecords
+          {
+            $last_created_at: params.lastCreatedAt,
+            $last_id: params.lastId,
+            $first: params.first,
+          }
         ),
       E.toError
     ),
-    TE.chainW(decodeNoteList)
+    TE.chainW(flow(decodeNoteList, TE.fromEither))
   );
 
 export const deleteNote = (
   noteId: string
-): RTE.ReaderTaskEither<{ db: Database }, Error | t.Errors, string> => ({
-  db,
-}) =>
+): RTE.ReaderTaskEither<Dependencies, DecodeError, string> => ({ db }) =>
   pipe(
     TE.tryCatch(async () => {
       await db.run(
         /* SQL */ `
           DELETE FROM "notes"
           WHERE
-            "id" = ?
+            "id" = $id
           ;
         `,
-        noteId
+        {
+          $id: noteId,
+        }
       );
       await db.run(
         /* SQL */ `
           DELETE
           FROM "notes_search"
           WHERE
-            "id" = ?
+            "id" = $id
           ;
         `,
-        noteId
+        {
+          $id: noteId,
+        }
       );
     }, E.toError),
     TE.map(() => noteId)
@@ -212,7 +199,7 @@ export const updateOrInsertNote = (record: {
   sanitizedContent: string;
   access: "public" | "admin";
   isEntryPoint: boolean;
-}): RTE.ReaderTaskEither<{ db: Database }, Error, string> => ({ db }) =>
+}): RTE.ReaderTaskEither<Dependencies, Error, string> => ({ db }) =>
   pipe(
     TE.tryCatch(async () => {
       await db.run(
@@ -226,23 +213,24 @@ export const updateOrInsertNote = (record: {
             "created_at",
             "updated_at"
           ) VALUES (
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            COALESCE((SELECT "created_at" FROM "notes" WHERE id = ?), ?),
-            ?
+            $id,
+            $title,
+            $content,
+            $type,
+            $is_entry_point,
+            COALESCE((SELECT "created_at" FROM "notes" WHERE id = $id), $created_at),
+            $updated_at
           );
         `,
-        record.id,
-        record.title,
-        record.content,
-        record.access,
-        BooleanFromNumber.encode(record.isEntryPoint),
-        record.id,
-        getTimestamp(),
-        getTimestamp()
+        {
+          $id: record.id,
+          $title: record.title,
+          $content: record.content,
+          $type: record.access,
+          $is_entry_point: BooleanFromNumber.encode(record.isEntryPoint),
+          $created_at: getTimestamp(),
+          $updated_at: getTimestamp(),
+        }
       );
 
       await db.run(
@@ -254,18 +242,19 @@ export const updateOrInsertNote = (record: {
             "content",
             "access"
           ) VALUES (
-            COALESCE((SELECT "rowid" FROM "notes_search" WHERE id = ?), NULL),
-            ?,
-            ?,
-            ?,
-            ?
+            COALESCE((SELECT "rowid" FROM "notes_search" WHERE id = $id), NULL),
+            $id,
+            $title,
+            $sanitized_content,
+            $access
           );
         `,
-        record.id,
-        record.id,
-        record.title,
-        record.sanitizedContent,
-        record.access
+        {
+          $id: record.id,
+          $title: record.title,
+          $sanitized_content: record.sanitizedContent,
+          $access: record.access,
+        }
       );
     }, E.toError),
     TE.map(() => record.id)
@@ -282,23 +271,28 @@ export const NoteSearchMatch = t.type(
 
 export type NoteSearchMatchType = t.TypeOf<typeof NoteSearchMatch>;
 
-export const NoteSearchMatchList = t.array(NoteSearchMatch);
+type NoteSearchMatchListType = Array<NoteSearchMatchType>;
 
-type NoteSearchMatchListType = t.TypeOf<typeof NoteSearchMatchList>;
+const decodeNoteSearchMatch = flow(
+  t.UnknownRecord.decode,
+  E.map(camelCaseKeys),
+  E.chain(NoteSearchMatch.decode)
+);
 
-export const decodeNoteSearchMatchList = flow(
-  (obj) =>
-    Array.isArray(obj)
-      ? obj.map((obj) => (isObject(obj) ? camelCaseKeys(obj) : obj))
-      : obj,
-  NoteSearchMatchList.decode
+export const decodeNoteSearchMatchList: (
+  input: unknown
+) => E.Either<DecodeError, NoteSearchMatchListType> = flow(
+  t.UnknownArray.decode,
+  E.chain((arr) =>
+    A.sequence(E.either)(arr.map((element) => decodeNoteSearchMatch(element)))
+  )
 );
 
 export const findAllNotes = (
   query: string
 ): RTE.ReaderTaskEither<
-  { db: Database },
-  Error | t.Errors,
+  Dependencies,
+  DecodeError,
   NoteSearchMatchListType
 > => ({ db }) =>
   pipe(
@@ -312,12 +306,14 @@ export const findAllNotes = (
             snippet("notes_search", 2, '!', '!', "...", 16) as "preview"
           FROM "notes_search"
           WHERE
-            "notes_search" MATCH ?
+            "notes_search" MATCH $query
           ORDER BY bm25("notes_search", 1.0, 100.0, 0.0) ASC
           LIMIT 10
           ;
         `,
-          `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*))`
+          {
+            $query: `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*))`,
+          }
         ),
       E.toError
     ),
@@ -327,8 +323,8 @@ export const findAllNotes = (
 export const findPublicNotes = (
   query: string
 ): RTE.ReaderTaskEither<
-  { db: Database },
-  Error | t.Errors,
+  Dependencies,
+  DecodeError,
   NoteSearchMatchListType
 > => ({ db }) =>
   pipe(
@@ -342,13 +338,15 @@ export const findPublicNotes = (
             snippet("notes_search", 2, '!', '!', "...", 16) as "preview"
           FROM "notes_search"
           WHERE
-            "notes_search" MATCH ?
+            "notes_search" MATCH $query
           ORDER BY
             bm25("notes_search", 1.0, 100.0, 0.0) ASC
           LIMIT 10
           ;
         `,
-          `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*)) AND access:"public"`
+          {
+            $query: `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*)) AND access:"public"`,
+          }
         ),
       E.toError
     ),

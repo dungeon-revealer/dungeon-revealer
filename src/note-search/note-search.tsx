@@ -122,9 +122,12 @@ const ResultTitle = styled.div`
 
 const ResultContent = styled.div``;
 
-export const NoteSearch: React.FC<{ close: () => void }> = ({ close }) => {
+export const NoteSearch = (props: {
+  close: () => void;
+}): React.ReactElement => {
   const [query, setQuery] = React.useState("");
-  const ref = useOnClickOutside<HTMLDivElement>(close);
+  const ref = React.useRef<null | HTMLDivElement>(null);
+  useOnClickOutside<HTMLDivElement>(ref, props.close);
   const noteWindowActions = useNoteWindowActions();
 
   const _data = useQuery<noteSearch_SearchQuery>(NoteSearch_SearchQuery, {

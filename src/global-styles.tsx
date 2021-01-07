@@ -106,4 +106,9 @@ export const globalStyles = css`
       font-size: 2.5rem;
     }
   }
+
+  .react-colorful__pointer {
+    width: 20px;
+    height: 20px;
+  }
 `;

@@ -120,7 +120,8 @@ const PermissionsMenu: React.FC<{
   const [mutate] = useMutation<tokenInfoAside_noteUpdateAccessMutation>(
     TokenInfoAside_noteUpdateAccessMutation
   );
-  const ref = useOnClickOutside<HTMLDivElement>(props.close);
+  const ref = React.useRef<null | HTMLDivElement>(null);
+  useOnClickOutside<HTMLDivElement>(ref, props.close);
 
   return (
     <PermissionMenuContainer
@@ -179,9 +180,10 @@ const WindowRenderer: React.FC<{
     TokenInfoAside_shareResourceMutation
   );
 
-  const [permissionPopUpNode, setPermissionPopUpNode] = React.useState<
-    React.ReactNode
-  >(null);
+  const [
+    permissionPopUpNode,
+    setPermissionPopUpNode,
+  ] = React.useState<React.ReactNode>(null);
 
   const canEditOptions = node?.viewerCanEdit
     ? [

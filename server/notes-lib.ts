@@ -61,7 +61,7 @@ export const getNoteById = (id: string) =>
 export const getPaginatedNotes = ({ first }: { first: number }) =>
   pipe(
     checkAdmin(null),
-    RTE.chainW(() => db.getPaginatedNotes({ maximumAmountOfRecords: first }))
+    RTE.chainW(() => db.getPaginatedNotes({ first }))
   );
 
 export const getMorePaginatedNotes = ({
@@ -79,7 +79,7 @@ export const getMorePaginatedNotes = ({
       db.getMorePaginatedNotes({
         lastCreatedAt,
         lastId,
-        maximumAmountOfRecords: first,
+        first,
       })
     )
   );

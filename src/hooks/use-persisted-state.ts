@@ -1,6 +1,6 @@
 import * as React from "react";
 
-type PersistedStateModel<T = unknown> = {
+export type PersistedStateModel<T = unknown> = {
   encode: (input: T) => string;
   decode: (input: unknown) => T;
 };

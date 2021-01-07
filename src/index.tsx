@@ -1,10 +1,12 @@
 import * as React from "react";
 import { Global } from "@emotion/react";
 import { render } from "react-dom";
+import { ChakraProvider } from "@chakra-ui/react";
 import { getUrlPrefix } from "./public-url";
 import { globalStyles } from "./global-styles";
 import { Modal } from "./modal";
 import { registerSoundPlayback } from "./register-sound-playback";
+import "react-colorful/dist/index.css";
 
 const element = document.querySelector("#root");
 
@@ -24,7 +26,7 @@ const main = async () => {
   let component = null;
   switch (pathname) {
     case "/dm": {
-      const { DmArea } = await import("./dm-area");
+      const { DmArea } = await import("./dm-area/dm-area");
       component = <DmArea />;
       break;
     }
@@ -40,10 +42,12 @@ const main = async () => {
   }
   if (element) {
     render(
-      <Modal.Provider>
-        <Global styles={globalStyles}></Global>
-        {component}
-      </Modal.Provider>,
+      <ChakraProvider>
+        <Modal.Provider>
+          <Global styles={globalStyles}></Global>
+          {component}
+        </Modal.Provider>
+      </ChakraProvider>,
       element
     );
   }

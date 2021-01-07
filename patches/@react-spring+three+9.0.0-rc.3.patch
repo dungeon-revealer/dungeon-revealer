@@ -6,7 +6,7 @@ index 4546043..1b3df8a 100644
  import { ForwardRefExoticComponent, CSSProperties, FC } from 'react';
  import { ElementType, ComponentPropsWithRef, AssignableKeys, FluidValue } from '@react-spring/shared';
  export * from '@react-spring/core';
-+import { SpringValue } from '@react-spring/core';
++import { SpringValue, Interpolation } from '@react-spring/core';
  
  declare type Primitives = keyof JSX.IntrinsicElements;
  
@@ -22,7 +22,7 @@ index 4546043..1b3df8a 100644
 +    : DT extends void
 +    ? undefined
 +    : DT extends ThreeThing
-+    ? ThreeThing | SpringValue<[number, number, number]>
++    ? ThreeThing | SpringValue<[number, number, number]> | Interpolation<[number, number, number]> 
 +    : DT extends object
 +    ? [AssignableKeys<DT, CSSProperties>] extends [never]
 +      ? DT extends ReadonlyArray<any>

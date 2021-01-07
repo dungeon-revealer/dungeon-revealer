@@ -23,7 +23,7 @@ type NoteWindowActions = {
 };
 
 const NoteWindowContext = React.createContext<NoteWindowInterface | null>(null);
-const NoteWindowActionsContext = React.createContext<NoteWindowActions | null>(
+export const NoteWindowActionsContext = React.createContext<NoteWindowActions | null>(
   null
 );
 
