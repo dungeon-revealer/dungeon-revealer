@@ -73,7 +73,7 @@
     "serve-favicon": "2.5.0",
     "showdown": "1.9.1",
     "socket.io": "3.0.3",
-    "sqlite": "4.0.12",
+    "sqlite": "4.0.19",
     "sqlite3": "4.2.0",
     "unzipper": "0.10.11",
     "uuid": "8.3.1"
