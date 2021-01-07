@@ -133,7 +133,7 @@
     "react-scripts": "3.4.4",
     "react-showdown": "2.1.0",
     "react-spring": "9.0.0-rc.3",
-    "react-three-fiber": "5.3.3",
+    "react-three-fiber": "5.3.11",
     "react-toast-notifications": "2.4.0",
     "react-use-gesture": "9.0.0-beta.11",
     "react-virtualized": "9.22.2",
