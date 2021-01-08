@@ -23,6 +23,19 @@
         "^react$",
         "^react-dom$"
       ]
+    },
+    {
+      "groupName": "relay packages",
+      "packagePatterns": [
+        "^react-relay",
+        "^relay-config",
+        "^relay-runtime",
+        "^relay-compiler",
+        "^babel-plugin-relay",
+        "^@types/react-relay",
+        "^@types/relay-runtime",
+        "^relay-compiler-language-typescript"
+      ]
     }
   ],
   "postUpdateOptions": ["npmDedupe"]
