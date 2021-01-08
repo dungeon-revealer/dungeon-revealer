@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-virtuoso/dist/components.d.ts b/node_modules/react-virtuoso/dist/components.d.ts
+index 18d613a..e5264f3 100644
+--- a/node_modules/react-virtuoso/dist/components.d.ts
++++ b/node_modules/react-virtuoso/dist/components.d.ts
+@@ -13,7 +13,7 @@ export interface VirtuosoProps<D> extends Omit<ListProps, 'groupCounts' | 'group
+     /**
+      * The data items to be rendered. If data is set, the total count will be inferred from the length of the array.
+      */
+-    data?: D[];
++    data?: D[] | readonly D[];
+     /**
+      * Increases the visual window which is used to calculate the rendered items with the specified **amount in pixels**.
+      * Effectively, this makes the component "chunk" the rendering of new items by renderng more items than the necessary, but reducing the re-renders on scroll.
