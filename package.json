@@ -76,7 +76,7 @@
     "sqlite": "4.0.19",
     "sqlite3": "5.0.1",
     "unzipper": "0.10.11",
-    "uuid": "8.3.1"
+    "uuid": "8.3.2"
   },
   "devDependencies": {
     "@chakra-ui/react": "1.1.2",
