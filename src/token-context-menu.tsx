@@ -408,7 +408,7 @@ const TokenContextMenu = (props: {
           </FormControl>
           <FormControl display="flex" alignItems="center">
             <FormLabel htmlFor="label-is-visible-to-players" mb="0">
-              Visible to Players
+              Visible to players
             </FormLabel>
             <Switch
               id="label-is-visible-to-players"
@@ -421,7 +421,7 @@ const TokenContextMenu = (props: {
           </FormControl>
           <FormControl display="flex" alignItems="center">
             <FormLabel htmlFor="label-is-movable-by-players" mb="0">
-              Visible to Players
+              Movable by players
             </FormLabel>
             <Switch
               id="label-is-movable-by-players"
