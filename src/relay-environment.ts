@@ -9,12 +9,11 @@ import {
 } from "relay-runtime";
 import { Socket as IOSocket } from "socket.io-client";
 import { createSocketIOGraphQLClient } from "@n1ru4l/socket-io-graphql-client";
+import { applyAsyncIterableIteratorToSink } from "@n1ru4l/push-pull-async-iterable-iterator";
 import { Variables } from "react-relay";
 
 export const createEnvironment = (socket: IOSocket) => {
-  const networkInterface = createSocketIOGraphQLClient<GraphQLResponse, Error>(
-    socket
-  );
+  const networkInterface = createSocketIOGraphQLClient<GraphQLResponse>(socket);
 
   const executeOperation = (
     request: RequestParameters,
@@ -24,12 +23,12 @@ export const createEnvironment = (socket: IOSocket) => {
     const { text: operation, name } = request;
 
     return Observable.create((sink) =>
-      networkInterface.execute(
-        {
+      applyAsyncIterableIteratorToSink(
+        networkInterface.execute({
           operation,
           variables,
           operationName: name,
-        },
+        }),
         sink
       )
     );
