@@ -8,7 +8,7 @@ export async function* iterateStream<T = unknown>(stream: Duplex) {
 
   let resolveStreamEndedPromise: () => void = () => undefined;
   const streamEndedPromise = new Promise((resolve) => {
-    resolveStreamEndedPromise = once(resolve);
+    resolveStreamEndedPromise = once(resolve) as () => void;
   });
 
   let hasEnded = false;
@@ -46,7 +46,7 @@ export async function* iterateStream<T = unknown>(stream: Duplex) {
 const waitOnceEmitted = (eventEmitter: EventEmitter, type: string) => {
   let destroy: () => void = () => undefined;
   return {
-    done: new Promise((resolve) => {
+    done: new Promise<void>((resolve) => {
       const resolvePromise = once(resolve);
       destroy = () => {
         resolve();
