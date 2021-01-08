@@ -141,8 +141,8 @@ export const NoteSearch = (props: {
     <Container
       onContextMenu={(ev) => ev.stopPropagation()}
       onKeyDown={(ev) => {
-        if (ev.keyCode === 27) {
-          close();
+        if (ev.key === "Escape") {
+          props.close();
         }
       }}
       ref={ref}
@@ -166,7 +166,7 @@ export const NoteSearch = (props: {
                   noteWindowActions.focusOrShowNoteInNewWindow(
                     edge.node.documentId
                   );
-                  close();
+                  props.close();
                 }}
               >
                 <ResultTitle>{edge.node.title}</ResultTitle>
