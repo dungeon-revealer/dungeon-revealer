@@ -148,7 +148,7 @@
     "troika-three-text": "0.36.1",
     "ts-jest": "26.4.4",
     "ts-node-dev": "1.1.1",
-    "typescript": "4.0.5",
+    "typescript": "4.1.3",
     "use-sound": "2.0.1"
   },
   "pkg": {
