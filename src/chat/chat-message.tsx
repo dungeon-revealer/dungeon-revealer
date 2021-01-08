@@ -12,10 +12,9 @@ import { useFragment } from "relay-hooks";
 import { chatMessage_SharedResourceChatMessageFragment$key } from "./__generated__/chatMessage_SharedResourceChatMessageFragment.graphql";
 import { useNoteWindowActions } from "../dm-area/token-info-aside";
 import { SharableImage } from "../dm-area/components/sharable-image";
-import { useCellMeasure } from "../cell-measure-context";
 
 const Container = styled.div`
-  margin-bottom: 4px;
+  padding-bottom: 4px;
   > * {
     line-height: 24px;
   }
@@ -54,11 +53,6 @@ const sanitizeHtml = (html: string) =>
   });
 
 const TextRenderer: React.FC<{ text: string }> = ({ text }) => {
-  const measure = useCellMeasure();
-  React.useEffect(() => {
-    measure();
-  }, []);
-
   return <MarkdownView markdown={text} sanitizeHtml={sanitizeHtml} />;
 };
 
@@ -69,11 +63,6 @@ const UserMessageRenderer: React.FC<{
     { __typename: "UserChatMessage" }
   >["diceRolls"];
 }> = ({ content, diceRolls }) => {
-  const measure = useCellMeasure();
-  React.useEffect(() => {
-    measure();
-  }, []);
-
   return (
     <MarkdownView
       markdown={content}
@@ -161,11 +150,6 @@ const NotePreview: React.FC<{
   contentPreview: string;
 }> = ({ documentId, title, contentPreview }) => {
   const noteWindowActions = useNoteWindowActions();
-  const measure = useCellMeasure();
-  React.useEffect(() => {
-    measure();
-  }, []);
-
   return (
     <NoteCard>
       <NoteTitle>{title}</NoteTitle>

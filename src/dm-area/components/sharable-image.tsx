@@ -5,7 +5,6 @@ import { useShareImageAction } from "../../hooks/use-share-image-action";
 import * as Icon from "../../feather-icons";
 import * as Button from "../../button";
 import { ImageLightBoxModal } from "../../image-lightbox-modal";
-import { useCellMeasure } from "../../cell-measure-context";
 import { useSplashShareImageAction } from "../../hooks/use-splash-share-image-action";
 import { useViewerRole } from "../../authenticated-app-shell";
 
@@ -39,7 +38,6 @@ export const SharableImage: React.FC<{ id: string }> = (props) => {
   const [showLightboxImage, setShowLightBoxImage] = React.useState(false);
   const shareImage = useShareImageAction();
   const splashShareImage = useSplashShareImageAction();
-  const measure = useCellMeasure();
   const role = useViewerRole();
 
   return (
@@ -50,7 +48,6 @@ export const SharableImage: React.FC<{ id: string }> = (props) => {
           ev.preventDefault();
           setShowLightBoxImage(true);
         }}
-        onLoad={measure}
       />
       <Menu data-menu>
         {role === "DM" ? (

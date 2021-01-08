@@ -1,11 +1,6 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
-import {
-  List,
-  AutoSizer,
-  CellMeasurerCache,
-  CellMeasurer,
-} from "react-virtualized";
+import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import * as Button from "../button";
 import { Modal } from "../modal";
 import { useAsyncTask } from "../hooks/use-async-task";
@@ -14,7 +9,6 @@ import { buildApiUrl } from "../public-url";
 import { useAccessToken } from "../hooks/use-access-token";
 import { LoadingSpinner } from "../loading-spinner";
 import { AnimatedDotDotDot } from "../animated-dot-dot-dot";
-import { useStaticRef } from "../hooks/use-static-ref";
 
 const OrSeperator = styled.span`
   padding-left: 18px;
@@ -168,7 +162,7 @@ const NoteImportLogFilter = styled.div`
 const NoteImportLogRenderer = (props: {
   logs: ImportFileLogRecord[];
 }): React.ReactElement => {
-  const listRef = React.useRef<List | null>(null);
+  const virtuosoRef = React.useRef<VirtuosoHandle | null>(null);
 
   const [filter, setFilter] = React.useState(
     "failure" as "none" | "success" | "failure"
@@ -185,51 +179,22 @@ const NoteImportLogRenderer = (props: {
     }
   }, [props.logs, filter]);
 
-  const cache = useStaticRef(
-    () =>
-      new CellMeasurerCache({
-        fixedWidth: true,
-      })
-  );
-
   // TODO: Is there a better way to start the list at the end?
   React.useEffect(() => {
-    setTimeout(() => listRef.current?.scrollToRow(logs.length - 1));
+    setTimeout(() => virtuosoRef.current?.scrollToIndex(logs.length - 1));
   }, [logs]);
 
   return (
     <React.Fragment>
-      <AutoSizer disableHeight>
-        {({ width }) => (
-          <List
-            ref={listRef}
-            style={{ background: "black" }}
-            height={300}
-            width={width}
-            rowCount={logs.length}
-            rowHeight={cache.rowHeight}
-            rowRenderer={(rowProps) => (
-              <CellMeasurer
-                cache={cache}
-                columnIndex={0}
-                key={rowProps.key}
-                rowIndex={rowProps.index}
-                parent={rowProps.parent}
-              >
-                {(cellMeasurerProps) => (
-                  <NoteImportLogRow
-                    style={rowProps.style}
-                    // @ts-ignore
-                    ref={cellMeasurerProps.registerChild}
-                  >
-                    {logs[rowProps.index].message}
-                  </NoteImportLogRow>
-                )}
-              </CellMeasurer>
-            )}
-          />
-        )}
-      </AutoSizer>
+      <Virtuoso
+        ref={virtuosoRef}
+        initialTopMostItemIndex={props.logs.length - 1}
+        followOutput={true}
+        data={props.logs}
+        itemContent={(_, logRow) => {
+          return <NoteImportLogRow>{logRow.message}</NoteImportLogRow>;
+        }}
+      />
       <NoteImportLogFilter>
         <label>
           <strong>Filter </strong>

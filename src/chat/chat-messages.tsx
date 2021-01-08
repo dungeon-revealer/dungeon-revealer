@@ -2,21 +2,15 @@ import React from "react";
 import { createPaginationContainer } from "react-relay";
 import styled from "@emotion/styled/macro";
 import graphql from "babel-plugin-relay/macro";
-import * as ReactVirtualized from "react-virtualized";
+import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { chatMessages_chat } from "./__generated__/chatMessages_chat.graphql";
 import { ChatMessage } from "./chat-message";
-import { useStaticRef } from "../hooks/use-static-ref";
-import { CellMeasureContext } from "../cell-measure-context";
 import { ButtonBadge, IconButton } from "../chat-toggle-button";
 import { ChevronDownIcon } from "../feather-icons";
 
-const ChatMessageContainer = styled.div<{ disableScrollbar: boolean }>`
+const ChatMessageContainer = styled.div`
   position: relative;
   height: 100%;
-
-  .react-virtualized-list::-webkit-scrollbar {
-    width: ${(p) => (p.disableScrollbar ? "0 !important" : null)};
-  }
 `;
 
 const FollowButtonContainer = styled.div<{ isVisible: boolean }>`
@@ -29,118 +23,66 @@ const FollowButtonContainer = styled.div<{ isVisible: boolean }>`
 const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
   chat: { chat },
 }) => {
-  const [follow, setFollow] = React.useState(true);
-  const listRef = React.useRef<ReactVirtualized.List | null>(null);
+  const [atBottom, setAtBottom] = React.useState(false);
+  const showButtonTimeoutRef = React.useRef<(() => void) | null>(null);
+  const [showButton, setShowButton] = React.useState(false);
+
+  React.useEffect(
+    () => () => {
+      showButtonTimeoutRef.current?.();
+    },
+    []
+  );
+
+  React.useEffect(() => {
+    showButtonTimeoutRef.current?.();
+    if (!atBottom) {
+      const timeout = setTimeout(() => setShowButton(true), 500);
+      showButtonTimeoutRef.current = () => clearTimeout(timeout);
+    } else {
+      setShowButton(false);
+    }
+  }, [atBottom]);
 
   const initialEdgeLength = React.useRef(chat.edges.length);
-
   const [hasNewMessage, setHasNewMessages] = React.useState(false);
 
   React.useEffect(() => {
-    if (follow === true) {
-      listRef.current?.scrollToRow(chat.edges.length - 1);
-      setHasNewMessages(false);
-    } else {
+    if (showButton) {
       setHasNewMessages(chat.edges.length > initialEdgeLength.current);
     }
-  }, [chat.edges, follow]);
+    initialEdgeLength.current = chat.edges.length;
+  }, [showButton, chat.edges.length]);
 
-  React.useEffect(() => {
-    if (follow) {
-      initialEdgeLength.current = chat.edges.length;
-    }
-  });
-
-  // TODO: Is there a better way to start the list at the end?
-  React.useEffect(() => {
-    listRef.current?.scrollToRow(chat.edges.length - 1);
-  }, []);
-
-  const cache = useStaticRef(
-    () =>
-      new ReactVirtualized.CellMeasurerCache({
-        fixedWidth: true,
-      })
-  );
+  const virtuosoRef = React.useRef<VirtuosoHandle | null>(null);
 
   return (
-    <ChatMessageContainer disableScrollbar={follow}>
-      {/* Virtualization based on https://github.com/bvaughn/react-virtualized/blob/master/playground/chat.js */}
-      <ReactVirtualized.AutoSizer>
-        {(autoSizerParams) => {
-          // TODO: Resize chat and stuff
-          // if (mostRecentWidth && mostRecentWidth !== autoSizerParams.width) {
-          //   cache.clearAll();
-          //   list.recomputeRowHeights();
-          // }
-
-          return (
-            <>
-              <FollowButtonContainer isVisible={follow === false}>
-                <IconButton
-                  colorVariant="green"
-                  onClick={() => setFollow(true)}
-                >
-                  <ChevronDownIcon />
-                  {hasNewMessage ? <ButtonBadge /> : null}
-                </IconButton>
-              </FollowButtonContainer>
-              <ReactVirtualized.List
-                scrollToAlignment="end"
-                className="react-virtualized-list"
-                ref={listRef}
-                deferredMeasurementCache={cache}
-                height={autoSizerParams.height}
-                rowCount={chat.edges.length}
-                rowHeight={cache.rowHeight}
-                width={autoSizerParams.width}
-                // TODO: Why do I need to add the type definition
-                onScroll={(target: ReactVirtualized.OnScrollParams) => {
-                  if (target.scrollTop === 0) {
-                    return;
-                  }
-                  setFollow(
-                    target.scrollTop ===
-                      target.scrollHeight - target.clientHeight
-                  );
-                }}
-                rowRenderer={(params) => {
-                  return (
-                    <ReactVirtualized.CellMeasurer
-                      cache={cache}
-                      columnIndex={0}
-                      key={params.key}
-                      parent={params.parent}
-                      rowIndex={params.index}
-                      width={undefined}
-                    >
-                      {({ measure }) => (
-                        <CellMeasureContext.Provider
-                          key={params.key}
-                          value={() => {
-                            measure();
-                            if (follow) {
-                              listRef.current?.scrollToRow(
-                                chat.edges.length - 1
-                              );
-                            }
-                          }}
-                        >
-                          <div style={params.style}>
-                            <ChatMessage
-                              message={chat.edges[params.index].node}
-                            />
-                          </div>
-                        </CellMeasureContext.Provider>
-                      )}
-                    </ReactVirtualized.CellMeasurer>
-                  );
-                }}
-              />
-            </>
-          );
+    <ChatMessageContainer>
+      <Virtuoso
+        ref={virtuosoRef}
+        initialTopMostItemIndex={chat.edges.length - 1}
+        data={chat.edges}
+        followOutput={true}
+        atBottomStateChange={(bottom) => {
+          setAtBottom(bottom);
         }}
-      </ReactVirtualized.AutoSizer>
+        itemContent={(_, edge) => {
+          return <ChatMessage message={edge.node} />;
+        }}
+      />
+      <FollowButtonContainer isVisible={showButton}>
+        <IconButton
+          colorVariant="green"
+          onClick={() =>
+            virtuosoRef.current?.scrollToIndex({
+              index: chat.edges.length - 1,
+            })
+          }
+        >
+          <ChevronDownIcon />
+          {hasNewMessage ? <ButtonBadge /> : null}
+        </IconButton>
+      </FollowButtonContainer>
     </ChatMessageContainer>
   );
 };
