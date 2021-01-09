@@ -26,7 +26,10 @@ import {
   FlatContextProvider,
 } from "./flat-context-provider";
 import { MarkAreaToolContext } from "./map-tools/mark-area-map-tool";
-import { NoteWindowActionsContext } from "./dm-area/token-info-aside";
+import {
+  NoteWindowActionsContext,
+  useNoteWindowActions,
+} from "./dm-area/token-info-aside";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -361,6 +364,7 @@ const PlayerMap: React.FC<{
       },
     }
   );
+  const noteWindowActions = useNoteWindowActions();
   return (
     <>
       <div
@@ -476,6 +480,20 @@ const PlayerMap: React.FC<{
                       >
                         <Icons.ZoomOut size={20} />
                         <Icons.Label>Zoom Out</Icons.Label>
+                      </Toolbar.LongPressButton>
+                    </Toolbar.Item>
+                    <Toolbar.Item isActive>
+                      <Toolbar.LongPressButton
+                        onClick={() => {
+                          noteWindowActions.showNoteInWindow(
+                            null,
+                            "note-editor",
+                            true
+                          );
+                        }}
+                      >
+                        <Icons.BookOpen size={20} />
+                        <Icons.Label>Notes</Icons.Label>
                       </Toolbar.LongPressButton>
                     </Toolbar.Item>
                   </Toolbar.Group>
