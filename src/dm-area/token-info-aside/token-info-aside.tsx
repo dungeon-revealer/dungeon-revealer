@@ -339,7 +339,7 @@ const WindowRenderer: React.FC<{
     <WindowContext.Provider value={props.windowId}>
       {confirmationDialog}
       <DraggableWindow
-        onMouseDown={focus}
+        onMouseDown={props.focus}
         onKeyDown={(ev) => {
           ev.stopPropagation();
           if (ev.key !== "Escape") {
