@@ -23,6 +23,7 @@ import { TokenInfoSideBar } from "./token-info-side-bar";
 import { tokenInfoAside_NoteCreateMutation } from "./__generated__/tokenInfoAside_NoteCreateMutation.graphql";
 import { tokenInfoAside_NoteDeleteMutation } from "./__generated__/tokenInfoAside_NoteDeleteMutation.graphql";
 import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
+import { useViewerRole } from "../../authenticated-app-shell";
 
 const TokenInfoAside_permissionsPopUpFragment = graphql`
   fragment tokenInfoAside_permissionsPopUpFragment on Note {
@@ -234,62 +235,65 @@ const WindowRenderer: React.FC<{
     permissionPopUpNode,
     setPermissionPopUpNode,
   ] = React.useState<React.ReactNode>(null);
+  const viewerRole = useViewerRole();
+  const isDm = viewerRole === "DM";
 
-  const canEditOptions = node?.viewerCanEdit
-    ? [
-        {
-          onClick: () => setIsEditMode((isEditMode) => !isEditMode),
-          title: isEditMode ? "Save" : "Edit",
-          icon: isEditMode ? (
-            <Icon.SaveIcon size={16} />
-          ) : (
-            <Icon.EditIcon size={16} />
-          ),
-          isDisabled: props.noteId === null || !data.props,
-        },
-        {
-          onClick: () => {
-            showConfirmationDialog({
-              header: "Delete Note",
-              body: "Do you really want to delete this note?",
-              cancelButtonText: "Abort",
-              confirmButtonText: "Delete",
-              onConfirm: () => {
-                const noteId = node.id;
+  const canEditOptions =
+    node?.viewerCanEdit && isDm
+      ? [
+          {
+            onClick: () => setIsEditMode((isEditMode) => !isEditMode),
+            title: isEditMode ? "Save" : "Edit",
+            icon: isEditMode ? (
+              <Icon.SaveIcon size={16} />
+            ) : (
+              <Icon.EditIcon size={16} />
+            ),
+            isDisabled: props.noteId === null || !data.props,
+          },
+          {
+            onClick: () => {
+              showConfirmationDialog({
+                header: "Delete Note",
+                body: "Do you really want to delete this note?",
+                cancelButtonText: "Abort",
+                confirmButtonText: "Delete",
+                onConfirm: () => {
+                  const noteId = node.id;
 
-                deleteNoteMutation({
-                  variables: {
-                    input: { noteId },
-                  },
-                  onCompleted: () => {
-                    props.replaceCurrent(null);
-                  },
-                });
-              },
-            });
+                  deleteNoteMutation({
+                    variables: {
+                      input: { noteId },
+                    },
+                    onCompleted: () => {
+                      props.replaceCurrent(null);
+                    },
+                  });
+                },
+              });
+            },
+            title: "Delete note",
+            icon: <Icon.TrashIcon size={16} />,
+            isDisabled: props.noteId === null || !data.props,
           },
-          title: "Delete note",
-          icon: <Icon.TrashIcon size={16} />,
-          isDisabled: props.noteId === null || !data.props,
-        },
-        {
-          onClick: (ev: React.MouseEvent) => {
-            if (!node) return;
-            const coords = ev.currentTarget.getBoundingClientRect();
-            setPermissionPopUpNode(
-              <PermissionsMenu
-                close={() => setPermissionPopUpNode(null)}
-                position={{ x: coords.left, y: coords.bottom }}
-                fragmentRef={node}
-              />
-            );
+          {
+            onClick: (ev: React.MouseEvent) => {
+              if (!node) return;
+              const coords = ev.currentTarget.getBoundingClientRect();
+              setPermissionPopUpNode(
+                <PermissionsMenu
+                  close={() => setPermissionPopUpNode(null)}
+                  position={{ x: coords.left, y: coords.bottom }}
+                  fragmentRef={node}
+                />
+              );
+            },
+            title: "Edit permissions",
+            icon: <Icon.ShieldIcon size={16} />,
+            isDisabled: props.noteId === null || !data.props,
           },
-          title: "Edit permissions",
-          icon: <Icon.ShieldIcon size={16} />,
-          isDisabled: props.noteId === null || !data.props,
-        },
-      ]
-    : [];
+        ]
+      : [];
 
   const canShareOptions = node?.viewerCanShare
     ? [
@@ -359,17 +363,19 @@ const WindowRenderer: React.FC<{
                 <Icon.BookOpen size={16} />
               </Button.Tertiary>
             </Tooltip>
-            <Tooltip label="Create new note">
-              <Button.Tertiary
-                small
-                iconOnly
-                onClick={() => {
-                  createNewNote();
-                }}
-              >
-                <Icon.FilePlus size={16} />
-              </Button.Tertiary>
-            </Tooltip>
+            {isDm ? (
+              <Tooltip label="Create new note">
+                <Button.Tertiary
+                  small
+                  iconOnly
+                  onClick={() => {
+                    createNewNote();
+                  }}
+                >
+                  <Icon.FilePlus size={16} />
+                </Button.Tertiary>
+              </Tooltip>
+            ) : null}
 
             <Button.Tertiary
               small
@@ -440,17 +446,19 @@ const WindowRenderer: React.FC<{
                 <>
                   <VStack>
                     <Text>Open a note on the right</Text>
-                    <Box>
-                      <Button.Primary
-                        small
-                        onClick={() => {
-                          createNewNote();
-                        }}
-                      >
-                        <Icon.FilePlus size={16} />
-                        <span>Create new note</span>
-                      </Button.Primary>
-                    </Box>
+                    {viewerRole === "DM" ? (
+                      <Box>
+                        <Button.Primary
+                          small
+                          onClick={() => {
+                            createNewNote();
+                          }}
+                        >
+                          <Icon.FilePlus size={16} />
+                          <span>Create new note</span>
+                        </Button.Primary>
+                      </Box>
+                    ) : null}
                   </VStack>
                 </>
               ) : (

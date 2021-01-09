@@ -60,8 +60,10 @@ export const getNoteById = (id: string) =>
 
 export const getPaginatedNotes = ({ first }: { first: number }) =>
   pipe(
-    checkAdmin(null),
-    RTE.chainW(() => db.getPaginatedNotes({ first }))
+    RTE.ask<{ session: SocketSessionRecord }>(),
+    RTE.chainW(({ session }) =>
+      db.getPaginatedNotes({ first, onlyPublic: session.role === "user" })
+    )
   );
 
 export const getMorePaginatedNotes = ({
@@ -74,12 +76,13 @@ export const getMorePaginatedNotes = ({
   lastId: string;
 }) =>
   pipe(
-    checkAdmin(null),
-    RTE.chainW(() =>
+    RTE.ask<{ session: SocketSessionRecord }>(),
+    RTE.chainW(({ session }) =>
       db.getMorePaginatedNotes({
         lastCreatedAt,
         lastId,
         first,
+        onlyPublic: session.role === "user",
       })
     )
   );

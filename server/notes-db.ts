@@ -80,6 +80,7 @@ export const getNoteById = (
 export const getPaginatedNotes = (params: {
   /* amount of items to fetch */
   first: number;
+  onlyPublic: boolean;
 }): RTE.ReaderTaskEither<Dependencies, DecodeError, NodeModelListType> => ({
   db,
 }) =>
@@ -99,6 +100,7 @@ export const getPaginatedNotes = (params: {
             FROM "notes"
             WHERE
               "is_entry_point" = 1
+              ${params.onlyPublic ? `AND "type" = 'public'` : ""}
             ORDER BY
               "created_at" DESC,
               "id" DESC
@@ -121,6 +123,7 @@ export const getMorePaginatedNotes = (params: {
   lastId: string;
   /* amount of items to fetch */
   first: number;
+  onlyPublic: boolean;
 }): RTE.ReaderTaskEither<Dependencies, DecodeError, NoteModelType[]> => ({
   db,
 }) =>
@@ -143,6 +146,7 @@ export const getMorePaginatedNotes = (params: {
               "created_at" <= $last_created_at
               AND "id" < $last_id
               AND "is_entry_point" = 1
+              ${params.onlyPublic ? `AND "type" = 'public'` : ""}
             ORDER BY
               "created_at" DESC,
               "id" DESC
