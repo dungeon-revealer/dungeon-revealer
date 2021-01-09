@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "@emotion/styled/macro";
 import graphql from "babel-plugin-relay/macro";
-import { Flex, VStack, Tooltip, Text, Box } from "@chakra-ui/react";
+import { Input, Flex, VStack, Tooltip, Text, Box } from "@chakra-ui/react";
 import { useNoteWindows, useNoteWindowActions } from ".";
 import { NoteEditorActiveItem } from "../note-editor/note-editor-active-item";
 import { useQuery, useMutation, useFragment } from "relay-hooks";
@@ -119,7 +119,9 @@ const extractNode = (
 const TitleAutoSaveInput: React.FC<{ id: string; title: string }> = (props) => {
   const [title, setTitle] = useNoteTitleAutoSave(props.id, props.title);
   return (
-    <input
+    <Input
+      variant="filled"
+      size="sm"
       value={title}
       style={{ width: "100%" }}
       onChange={(ev) => setTitle(ev.target.value)}
