@@ -9,7 +9,6 @@ export const Container = styled.div`
   justify-content: center;
   align-items: center;
 
-  color: white;
   background-image: url("${buildUrl("/images/DungeonEntranceMedium.jpg")}");
   background-repeat: no-repeat;
   background-attachment: fixed;
