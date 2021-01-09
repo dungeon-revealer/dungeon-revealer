@@ -460,10 +460,6 @@ const WindowRenderer: React.FC<{
           )
         }
         close={props.close}
-        style={{
-          top: window.innerHeight / 2 - window.innerHeight / 4,
-          left: window.innerWidth / 2 - 500 / 2,
-        }}
         options={options}
         onDidResize={() => {
           editorOnResizeRef.current?.();

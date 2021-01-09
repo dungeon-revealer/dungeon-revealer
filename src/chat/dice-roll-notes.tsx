@@ -157,10 +157,6 @@ export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
           </WindowContent>
         ) : null
       }
-      style={{
-        top: window.innerHeight / 2 - window.innerHeight / 4,
-        left: window.innerWidth / 2 - 500 / 2,
-      }}
       close={close}
       onKeyDown={(ev) => {
         ev.stopPropagation();

@@ -72,7 +72,6 @@ export const DraggableWindow = ({
   onKeyDown,
   onMouseDown,
   close,
-  style,
   headerLeftContent = null,
   options = [],
   onDidResize,
@@ -83,7 +82,6 @@ export const DraggableWindow = ({
   onKeyDown: React.ComponentProps<"div">["onKeyDown"];
   onMouseDown?: React.ComponentProps<"div">["onMouseDown"];
   close: () => void;
-  style?: Pick<React.CSSProperties, "top" | "left" | "right">;
   headerLeftContent?: React.ReactNode;
   options?: {
     title: string;
@@ -95,8 +93,8 @@ export const DraggableWindow = ({
   sideBarContent?: React.ReactElement | null | undefined;
 }): JSX.Element => {
   const [props, set] = useSpring(() => ({
-    x: 0,
-    y: 0,
+    x: window.innerWidth / 2 - 500 / 2,
+    y: window.innerHeight / 4,
     width: 500,
     height: window.innerHeight / 2,
   }));
@@ -109,7 +107,7 @@ export const DraggableWindow = ({
 
   const bind = useGesture({
     onDrag: ({
-      offset: [mx, my],
+      movement: [mx, my],
       memo = [props.x.get(), props.y.get()],
       event,
       cancel,
@@ -123,8 +121,8 @@ export const DraggableWindow = ({
       }
 
       set({
-        x: mx,
-        y: my,
+        x: memo[0] + mx,
+        y: memo[1] + my,
         immediate: true,
       });
 
@@ -174,7 +172,8 @@ export const DraggableWindow = ({
         ev.stopPropagation();
       }}
       style={{
-        ...style,
+        top: 0,
+        left: 0,
         x: props.x,
         y: props.y,
         width: props.width,
