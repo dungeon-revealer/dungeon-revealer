@@ -153,8 +153,8 @@ export const TokenInfoSideBar = (props: {
   }
   return (
     <>
-      <Box padding="2">
-        <InputGroup>
+      <Box padding="2" height="50px" borderBottom="1px solid lightgray">
+        <InputGroup size="sm">
           <InputLeftElement
             pointerEvents="none"
             children={<Icon.SearchIcon color="gray" size={16} />}
