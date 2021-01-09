@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "@emotion/styled/macro";
 import graphql from "babel-plugin-relay/macro";
+import { Flex, VStack, Tooltip, Text, Box } from "@chakra-ui/react";
 import { useNoteWindows, useNoteWindowActions } from ".";
 import { NoteEditorActiveItem } from "../note-editor/note-editor-active-item";
 import { useQuery, useMutation, useFragment } from "relay-hooks";
@@ -18,6 +19,10 @@ import { useCurrent } from "../../hooks/use-current";
 import { useNoteTitleAutoSave } from "../../hooks/use-note-title-auto-save";
 import { useOnClickOutside } from "../../hooks/use-on-click-outside";
 import { tokenInfoAside_noteUpdateAccessMutation } from "./__generated__/tokenInfoAside_noteUpdateAccessMutation.graphql";
+import { TokenInfoSideBar } from "./token-info-side-bar";
+import { tokenInfoAside_NoteCreateMutation } from "./__generated__/tokenInfoAside_NoteCreateMutation.graphql";
+import { tokenInfoAside_NoteDeleteMutation } from "./__generated__/tokenInfoAside_NoteDeleteMutation.graphql";
+import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
 
 const TokenInfoAside_permissionsPopUpFragment = graphql`
   fragment tokenInfoAside_permissionsPopUpFragment on Note {
@@ -59,9 +64,39 @@ const TokenInfoAside_noteUpdateAccessMutation = graphql`
   }
 `;
 
+const TokenInfoAside_NoteDeleteMutation = graphql`
+  mutation tokenInfoAside_NoteDeleteMutation($input: NoteDeleteInput!) {
+    noteDelete(input: $input) {
+      success
+      deletedNoteId
+        @deleteEdge(
+          connections: ["client:root:__tokenInfoSideBar_notes_connection"]
+        )
+    }
+  }
+`;
+
+const TokenInfoAside_NoteCreateMutation = graphql`
+  mutation tokenInfoAside_NoteCreateMutation($input: NoteCreateInput!) {
+    noteCreate(input: $input) {
+      note
+        @prependNode(
+          connections: ["client:root:__tokenInfoSideBar_notes_connection"]
+          edgeTypeName: "NoteEdge"
+        ) {
+        id
+        documentId
+        title
+        content
+        access
+      }
+    }
+  }
+`;
+
 const NoteEditorSideReference = styled.div`
   position: absolute;
-  right: calc(100% + 12px);
+  left: calc(100% + 12px);
   top: 25%;
   width: 300px;
   background: white;
@@ -158,26 +193,41 @@ const PermissionsMenu: React.FC<{
 
 const WindowRenderer: React.FC<{
   windowId: string;
-  noteId: string;
+  noteId: string | null;
   close: () => void;
   focus: () => void;
   navigateNext: null | (() => void);
   navigateBack: null | (() => void);
-}> = ({ windowId, noteId, close, focus, navigateNext, navigateBack }) => {
+  replaceCurrent: (noteId: string | null) => void;
+  initialShowLibrary: boolean;
+}> = (props) => {
+  const isSkipped = props.noteId === null;
   const data = useQuery<tokenInfoAside_nodeQuery>(
     TokenInfoAside_nodeQuery,
-    React.useMemo(() => ({ documentId: noteId }), [noteId])
+    React.useMemo(() => ({ documentId: props.noteId ?? "" }), [props.noteId]),
+    { skip: isSkipped }
   );
 
-  const isLoading = !data.props && !data.error;
+  const [showLibrary, setShowLibrary] = React.useState(
+    props.initialShowLibrary
+  );
+
+  const isLoading = !data.props && !data.error && !isSkipped;
 
   const [, node] = useCurrent(extractNode(data.props), isLoading, 300);
 
   const [isEditMode, setIsEditMode] = React.useState(false);
   const sideBarRef = React.useRef<HTMLDivElement>(null);
 
-  const [mutate] = useMutation<tokenInfoAside_shareNoteMutation>(
+  const [shareNoteMutation] = useMutation<tokenInfoAside_shareNoteMutation>(
     TokenInfoAside_shareResourceMutation
+  );
+
+  const [createNoteMutation] = useMutation<tokenInfoAside_NoteCreateMutation>(
+    TokenInfoAside_NoteCreateMutation
+  );
+  const [deleteNoteMutation] = useMutation<tokenInfoAside_NoteDeleteMutation>(
+    TokenInfoAside_NoteDeleteMutation
   );
 
   const [
@@ -190,9 +240,39 @@ const WindowRenderer: React.FC<{
         {
           onClick: () => setIsEditMode((isEditMode) => !isEditMode),
           title: isEditMode ? "Save" : "Edit",
-          //TODO: Make types more strict
-          Icon: isEditMode ? (Icon.SaveIcon as any) : (Icon.EditIcon as any),
+          icon: isEditMode ? (
+            <Icon.SaveIcon size={16} />
+          ) : (
+            <Icon.EditIcon size={16} />
+          ),
+          isDisabled: props.noteId === null || !data.props,
         },
+        {
+          onClick: () => {
+            showConfirmationDialog({
+              header: "Delete Note",
+              body: "Do you really want to delete this note?",
+              cancelButtonText: "Abort",
+              confirmButtonText: "Delete",
+              onConfirm: () => {
+                const noteId = node.id;
+
+                deleteNoteMutation({
+                  variables: {
+                    input: { noteId },
+                  },
+                  onCompleted: () => {
+                    props.replaceCurrent(null);
+                  },
+                });
+              },
+            });
+          },
+          title: "Delete note",
+          icon: <Icon.TrashIcon size={16} />,
+          isDisabled: props.noteId === null || !data.props,
+        },
+
         {
           onClick: (ev: React.MouseEvent) => {
             if (!node) return;
@@ -206,7 +286,8 @@ const WindowRenderer: React.FC<{
             );
           },
           title: "Edit permissions",
-          Icon: Icon.ShieldIcon as any,
+          icon: <Icon.ShieldIcon size={16} />,
+          isDisabled: props.noteId === null || !data.props,
         },
       ]
     : [];
@@ -216,63 +297,115 @@ const WindowRenderer: React.FC<{
         {
           onClick: () =>
             node
-              ? mutate({ variables: { input: { contentId: node.id } } })
+              ? shareNoteMutation({
+                  variables: { input: { contentId: node.id } },
+                })
               : () => undefined,
           title: "Share",
-          //TODO: Make types more strict
-          Icon: Icon.Share as any,
+          icon: <Icon.Share size={16} />,
+          isDisabled: props.noteId === null || !data.props,
         },
       ]
     : [];
 
-  const options = [...canShareOptions, ...canEditOptions];
+  const options = [...canEditOptions, ...canShareOptions];
 
   // Ref with callback for resizing the editor.
   const editorOnResizeRef = React.useRef(() => undefined);
 
-  if (!node && isLoading) return null;
+  const actions = useNoteWindowActions();
+  const [confirmationDialog, showConfirmationDialog] = useConfirmationDialog();
+
+  const createNewNote = () => {
+    createNoteMutation({
+      variables: {
+        input: {
+          title: "<Untitled Note>",
+          content: "",
+          isEntryPoint: true,
+        },
+      },
+      onCompleted: (data) => {
+        actions.showNoteInWindow(
+          data.noteCreate.note.documentId,
+          props.windowId
+        );
+        setIsEditMode(true);
+      },
+    });
+  };
 
   return (
-    <WindowContext.Provider value={windowId}>
+    <WindowContext.Provider value={props.windowId}>
+      {confirmationDialog}
       <DraggableWindow
         onMouseDown={focus}
         onKeyDown={(ev) => {
           ev.stopPropagation();
-          if (ev.key !== "Escape") return;
-          if (!isEditMode) close();
+          if (ev.key !== "Escape") {
+            return;
+          }
+          if (!isEditMode) {
+            props.close();
+          }
         }}
         headerLeftContent={
           <>
+            <Tooltip label="Open library">
+              <Button.Tertiary
+                small
+                iconOnly
+                onClick={() => setShowLibrary((showLibrary) => !showLibrary)}
+              >
+                <Icon.BookOpen size={16} />
+              </Button.Tertiary>
+            </Tooltip>
+            <Tooltip label="Create new note">
+              <Button.Tertiary
+                small
+                iconOnly
+                onClick={() => {
+                  createNewNote();
+                }}
+              >
+                <Icon.FilePlus size={16} />
+              </Button.Tertiary>
+            </Tooltip>
+
             <Button.Tertiary
               small
               iconOnly
-              onClick={navigateBack || undefined}
-              disabled={!navigateBack}
+              onClick={props.navigateBack || undefined}
+              disabled={!props.navigateBack}
               style={{ paddingLeft: 4, paddingRight: 4 }}
             >
-              <Icon.ChevronLeftIcon height={16} />
+              <Icon.ChevronLeftIcon size={16} />
             </Button.Tertiary>
             <Button.Tertiary
               small
               iconOnly
-              onClick={navigateNext || undefined}
-              disabled={!navigateNext}
+              onClick={props.navigateNext || undefined}
+              disabled={!props.navigateNext}
               style={{ paddingLeft: 4, paddingRight: 4 }}
             >
-              <Icon.ChevronRightIcon height={16} />
+              <Icon.ChevronRightIcon size={16} />
             </Button.Tertiary>
           </>
         }
         headerContent={
           node ? (
             isEditMode ? (
-              <TitleAutoSaveInput id={node.id} title={node.title} />
+              <TitleAutoSaveInput
+                id={node.id}
+                title={node.title}
+                key={node.id}
+              />
             ) : (
               node.title
             )
           ) : isLoading ? (
             "Loading..."
-          ) : (
+          ) : isSkipped ? null : (
             "NOT FOUND"
           )
         }
@@ -302,11 +435,32 @@ const WindowRenderer: React.FC<{
                 height: "100%",
               }}
             >
-              {isLoading ? "Loading..." : "This note does no longer exist."}
+              {isLoading ? (
+                "Loading..."
+              ) : isSkipped ? (
+                <>
+                  <VStack>
+                    <Text>Open a note on the right</Text>
+                    <Box>
+                      <Button.Primary
+                        small
+                        onClick={() => {
+                          createNewNote();
+                        }}
+                      >
+                        <Icon.FilePlus size={16} />
+                        <span>Create new note</span>
+                      </Button.Primary>
+                    </Box>
+                  </VStack>
+                </>
+              ) : (
+                "This note does no longer exist."
+              )}
             </div>
           )
         }
-        close={close}
+        close={props.close}
         style={{
           top: window.innerHeight / 2 - window.innerHeight / 4,
           left: window.innerWidth / 2 - 500 / 2,
@@ -315,6 +469,16 @@ const WindowRenderer: React.FC<{
         onDidResize={() => {
           editorOnResizeRef.current?.();
         }}
+        sideBarContent={
+          showLibrary ? (
+            <Flex height="100%" flexDirection="column">
+              <TokenInfoSideBar
+                windowId={props.windowId}
+                activeNoteId={props.noteId}
+              />
+            </Flex>
+          ) : null
+        }
       />
       {permissionPopUpNode}
     </WindowContext.Provider>
@@ -342,8 +506,12 @@ export const TokenInfoAside: React.FC<{}> = () => {
               ? () => noteWindowActions.navigateNext(window.id)
               : null
           }
+          replaceCurrent={(noteId: string | null) =>
+            noteWindowActions.replaceCurrent(window.id, noteId)
+          }
           close={() => noteWindowActions.destroyWindow(window.id)}
           focus={() => noteWindowActions.focusWindow(window.id)}
+          initialShowLibrary={window.initialShowLibrary}
         />
       ))}
     </>

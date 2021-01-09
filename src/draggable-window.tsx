@@ -2,10 +2,11 @@ import * as React from "react";
 import styled from "@emotion/styled/macro";
 import { animated, useSpring } from "react-spring";
 import { useDrag, useGesture } from "react-use-gesture";
+import { Tooltip } from "@chakra-ui/react";
 import * as Icon from "./feather-icons";
 import * as Button from "./button";
 
-const WindowContainer = styled(animated.div)`
+const WindowContainer = styled(animated.div)<{ isSideBarVisible: boolean }>`
   position: absolute;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
@@ -13,9 +14,12 @@ const WindowContainer = styled(animated.div)`
   position: absolute;
   z-index: 100;
   user-select: text;
+  border-top-left-radius: ${(props) => (props.isSideBarVisible ? 0 : null)};
+  border-bottom-left-radius: ${(props) => (props.isSideBarVisible ? 0 : null)};
 `;
 
 const WindowHeader = styled.div`
+  height: 50px;
   display: flex;
   padding: 8px 12px;
   border-bottom: 1px solid lightgray;
@@ -40,6 +44,28 @@ const WindowsResizeHandle = styled.button`
   width: 15px;
 `;
 
+const WindowSideBar = styled.div`
+  position: absolute;
+  top: 0;
+  transform: translateX(-250px);
+  max-width: 250px;
+  width: 100%;
+  background: white;
+  height: 100%;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+`;
+
+const hasButtonParent = (el: any) => {
+  let isButton = false;
+  while (isButton === false && el) {
+    isButton = el instanceof HTMLButtonElement;
+    el = el?.parentNode ?? null;
+  }
+
+  return isButton;
+};
+
 export const DraggableWindow = ({
   headerContent,
   bodyContent,
@@ -50,6 +76,7 @@ export const DraggableWindow = ({
   headerLeftContent = null,
   options = [],
   onDidResize,
+  sideBarContent,
 }: {
   headerContent: React.ReactNode;
   bodyContent: React.ReactNode;
@@ -61,9 +88,11 @@ export const DraggableWindow = ({
   options?: {
     title: string;
     onClick: (ev: React.MouseEvent) => void;
-    Icon: (p: { height?: number }) => React.ReactElement;
+    icon: React.ReactElement;
+    isDisabled?: boolean;
   }[];
   onDidResize?: () => void;
+  sideBarContent?: React.ReactElement | null | undefined;
 }): JSX.Element => {
   const [props, set] = useSpring(() => ({
     x: 0,
@@ -79,12 +108,26 @@ export const DraggableWindow = ({
   const windowHeaderRef = React.useRef<HTMLDivElement | null>(null);
 
   const bind = useGesture({
-    onDrag: ({ offset: [mx, my], memo = [props.x.get(), props.y.get()] }) => {
+    onDrag: ({
+      offset: [mx, my],
+      memo = [props.x.get(), props.y.get()],
+      event,
+      cancel,
+    }) => {
+      // cancel dragging on buttons and inputs
+      if (
+        event.target instanceof HTMLInputElement ||
+        hasButtonParent(event.target)
+      ) {
+        return cancel();
+      }
+
       set({
         x: mx,
         y: my,
         immediate: true,
       });
+
       return memo;
     },
     onMouseDown: ({ event }) => {
@@ -124,6 +167,7 @@ export const DraggableWindow = ({
 
   return (
     <WindowContainer
+      isSideBarVisible={sideBarContent != null}
       onKeyDown={onKeyDown}
       onMouseDown={onMouseDown}
       onContextMenu={(ev) => {
@@ -153,11 +197,18 @@ export const DraggableWindow = ({
         >
           {headerContent}
         </div>
-        {options.map(({ title, onClick, Icon }) => (
-          <div style={{ marginRight: 4 }} key={title}>
-            <Button.Tertiary small iconOnly onClick={onClick} title={title}>
-              <Icon height={16} />
-            </Button.Tertiary>
+        {options.map((option) => (
+          <div style={{ marginRight: 4 }} key={option.title}>
+            <Tooltip label={option.title}>
+              <Button.Tertiary
+                small
+                iconOnly
+                onClick={option.onClick}
+                disabled={option.isDisabled}
+              >
+                {option.icon}
+              </Button.Tertiary>
+            </Tooltip>
           </div>
         ))}
         <div style={{ marginRight: 0 }}>
@@ -174,6 +225,7 @@ export const DraggableWindow = ({
         {bodyContent}
       </WindowBody>
       <WindowsResizeHandle {...dimensionDragBind()} />
+      {sideBarContent ? <WindowSideBar>{sideBarContent}</WindowSideBar> : null}
     </WindowContainer>
   );
 };

@@ -220,7 +220,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                       });
                     }}
                   >
-                    <Icons.EditIcon height={16} />
+                    <Icons.EditIcon size={16} />
                   </Button.Tertiary>
                 </div>
                 <div

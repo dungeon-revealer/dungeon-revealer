@@ -314,19 +314,22 @@ export const ZoomIn: React.FC<{ color?: string; size?: number }> = ({
   </svg>
 );
 
-export const EditIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
-  fill = "currentColor",
-  ...props
-}) => (
+export const EditIcon = ({
+  color = "currentColor",
+  size = 30,
+}: {
+  color?: string;
+  size?: number;
+}): React.ReactElement => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke={fill}
+    stroke={color}
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
-    height={30}
-    {...props}
+    height={size}
+    width={size}
   >
     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -480,37 +483,43 @@ export const ChevronUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
   </svg>
 );
 
-export const ChevronRightIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
-  fill = "currentColor",
-  ...props
-}) => (
+export const ChevronRightIcon = ({
+  color = "currentColor",
+  size = 30,
+}: {
+  color?: string;
+  size?: number;
+}): React.ReactElement => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke={fill}
+    stroke={color}
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
-    height={30}
-    {...props}
+    height={size}
+    width={size}
   >
     <path d="M9 18l6-6-6-6" />
   </svg>
 );
 
-export const ChevronLeftIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
-  fill = "currentColor",
-  ...props
-}) => (
+export const ChevronLeftIcon = ({
+  color = "currentColor",
+  size = 30,
+}: {
+  color?: string;
+  size?: number;
+}): React.ReactElement => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke={fill}
+    stroke={color}
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
-    height={30}
-    {...props}
+    height={size}
+    width={size}
   >
     <path d="M15 18l-6-6 6-6" />
   </svg>
@@ -534,10 +543,13 @@ export const XIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
   </svg>
 );
 
-export const TargetIcon: React.FC<{ color?: string; size?: number }> = ({
+export const TargetIcon = ({
   color = "currentColor",
   size = 30,
-}) => (
+}: {
+  color?: string;
+  size?: number;
+}): React.ReactElement => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -610,19 +622,22 @@ export const BookOpen: React.FC<{
   </svg>
 );
 
-export const SaveIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
-  fill = "currentColor",
-  ...props
-}) => (
+export const SaveIcon = ({
+  color = "currentColor",
+  size = 30,
+}: {
+  color?: string;
+  size?: number;
+}): React.ReactElement => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke={fill}
+    stroke={color}
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
-    height={30}
-    {...props}
+    height={size}
+    width={size}
   >
     <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
     <path d="M17 21v-8H7v8M7 3v5h8" />
@@ -665,19 +680,22 @@ export const Maximize: React.FC<React.SVGProps<SVGSVGElement>> = ({
   </svg>
 );
 
-export const Share: React.FC<React.SVGProps<SVGSVGElement>> = ({
-  fill = "currentColor",
-  ...props
-}) => (
+export const Share = ({
+  color = "currentColor",
+  size = 30,
+}: {
+  color?: string;
+  size?: number;
+}): React.ReactElement => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke={fill}
+    stroke={color}
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
-    height={30}
-    {...props}
+    height={size}
+    width={size}
   >
     <circle cx={18} cy={5} r={3} />
     <circle cx={6} cy={12} r={3} />
@@ -892,19 +910,22 @@ export const SearchIcon: React.FC<{ color?: string; size?: number }> = ({
   </svg>
 );
 
-export const ShieldIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
-  fill = "currentColor",
-  ...props
+export const ShieldIcon = ({
+  color = "currentColor",
+  size = 30,
+}: {
+  color?: string;
+  size?: number;
 }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke={fill}
+    stroke={color}
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
-    height={30}
-    {...props}
+    height={size}
+    width={size}
   >
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
@@ -929,5 +950,27 @@ export const RotateCCW = ({
   >
     <path d="M1 4v6h6" />
     <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+  </svg>
+);
+
+export const FilePlus = ({
+  color = "currentColor",
+  size = 30,
+}: {
+  color?: string;
+  size?: number;
+}): React.ReactElement => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={size}
+    width={size}
+  >
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+    <path d="M14 2v6h6M12 18v-6M9 15h6" />
   </svg>
 );

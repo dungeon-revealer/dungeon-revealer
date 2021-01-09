@@ -57,7 +57,7 @@ export const SharableImage: React.FC<{ id: string }> = (props) => {
             iconOnly
             onClick={() => splashShareImage(props.id)}
           >
-            <Icon.Share height={16} />
+            <Icon.Share size={16} />
           </Button.Primary>
         ) : null}
         <Button.Primary

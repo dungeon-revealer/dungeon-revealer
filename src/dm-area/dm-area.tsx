@@ -5,7 +5,6 @@ import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import { SelectMapModal } from "./select-map-modal";
 import { ImportFileModal } from "./import-file-modal";
-import { NoteEditor } from "./note-editor";
 import { MediaLibrary } from "./media-library";
 import { useSocket } from "../socket";
 import { buildApiUrl } from "../public-url";
@@ -22,6 +21,7 @@ import { DmMap } from "./dm-map";
 import { Socket } from "socket.io-client";
 import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
 import { useDropZone } from "../hooks/use-drop-zone";
+import { useNoteWindowActions } from "./token-info-aside";
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -68,9 +68,6 @@ type Mode =
     }
   | {
       title: "EDIT_MAP";
-    }
-  | {
-      title: "SHOW_NOTES";
     }
   | {
       title: "MEDIA_LIBRARY";
@@ -518,6 +515,8 @@ const Content = ({
     };
   }, [socket]);
 
+  const actions = useNoteWindowActions();
+
   return (
     <FetchContext.Provider value={localFetch}>
       {data && mode.title === "SHOW_MAP_LIBRARY" ? (
@@ -538,15 +537,6 @@ const Content = ({
           createMap={createMap}
           dmPassword={dmPassword}
         />
-      ) : null}
-      {mode.title === "SHOW_NOTES" ? (
-        <React.Suspense fallback={null}>
-          <NoteEditor
-            onClose={() => {
-              setMode({ title: "EDIT_MAP" });
-            }}
-          />
-        </React.Suspense>
       ) : null}
       {mode.title === "MEDIA_LIBRARY" ? (
         <MediaLibrary
@@ -579,7 +569,7 @@ const Content = ({
               hideMap={hideMap}
               showMapModal={showMapModal}
               openNotes={() => {
-                setMode({ title: "SHOW_NOTES" });
+                actions.showNoteInWindow(null, "note-editor", true);
               }}
               openMediaLibrary={() => {
                 setMode({ title: "MEDIA_LIBRARY" });

@@ -1384,7 +1384,7 @@ const GridConfigurator = (props: {
               });
             }}
           >
-            <span>Confirm</span> <Icons.ChevronRightIcon height={20} />
+            <span>Confirm</span> <Icons.ChevronRightIcon size={20} />
           </Button.Primary>
         </div>
       </div>
