@@ -272,7 +272,6 @@ const WindowRenderer: React.FC<{
           icon: <Icon.TrashIcon size={16} />,
           isDisabled: props.noteId === null || !data.props,
         },
-
         {
           onClick: (ev: React.MouseEvent) => {
             if (!node) return;
