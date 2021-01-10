@@ -7,6 +7,7 @@ const SplashScreenText = styled.div`
   text-align: center;
   font-size: 20px;
   font-weight: bold;
+  color: white;
 `;
 
 export const SplashScreen: React.FC<{ text?: string }> = ({ text = null }) => {
