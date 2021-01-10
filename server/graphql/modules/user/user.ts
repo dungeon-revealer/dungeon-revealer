@@ -73,15 +73,15 @@ export const queryFields = [
       first: t.arg(t.Int),
       after: t.arg(t.ID),
     },
-    resolve: (_, args, ctx) => ctx.user.getUsers(),
+    resolve: (_, __, ctx) => ctx.user.getUsers(),
   }),
   t.field("usersCount", {
     type: t.NonNull(t.Int),
-    resolve: (_, args, ctx) => ctx.user.getUsers().length,
+    resolve: (_, __, ctx) => ctx.user.getUsers().length,
   }),
   t.field("me", {
     type: t.NonNull(GraphQLUserType),
-    resolve: (_, args, ctx) => {
+    resolve: (_, __, ctx) => {
       const user = ctx.user.get(ctx.session.id);
       if (!user) {
         throw new Error("Invalid state.");
@@ -146,7 +146,7 @@ export const mutationFields = [
     args: {
       input: t.arg(GraphQLLogInInputType),
     },
-    resolve: (obj, args, context) => {
+    resolve: (_, args, context) => {
       if (args.input) {
         let user = context.user.userConnects({
           id: args.input.id,
@@ -179,7 +179,7 @@ export const mutationFields = [
     args: {
       input: t.arg(t.NonNullInput(GraphQLChangeNameInputType)),
     },
-    resolve: (obj, args, context) => {
+    resolve: (_, args, context) => {
       context.user.update({
         id: context.session.id,
         name: args.input.name,
@@ -202,7 +202,7 @@ const GraphQLUserAddUpdateType = t.objectType<
   fields: () => [
     t.field("user", {
       type: t.NonNull(GraphQLUserType),
-      resolve: (obj, args, context) => {
+      resolve: (obj, _, context) => {
         const user = context.user.get(obj.data.userId);
         if (!user) {
           throw new Error("Invalid state. Could not find user.");
@@ -212,7 +212,7 @@ const GraphQLUserAddUpdateType = t.objectType<
     }),
     t.field("usersCount", {
       type: t.NonNull(t.Int),
-      resolve: (obj, args, context) => context.user.getUsers().length,
+      resolve: (_, __, context) => context.user.getUsers().length,
     }),
   ],
 });
@@ -224,7 +224,7 @@ const GraphQLUserChangeUpdateType = t.objectType<
   fields: () => [
     t.field("user", {
       type: t.NonNull(GraphQLUserType),
-      resolve: (obj, args, context) => {
+      resolve: (obj, _, context) => {
         const user = context.user.get(obj.data.userId);
         if (!user) {
           throw new Error("Invalid state. Could not find user.");
@@ -246,7 +246,7 @@ const GraphQLUserRemoveType = t.objectType<
     }),
     t.field("usersCount", {
       type: t.NonNull(t.Int),
-      resolve: (obj, args, context) => context.user.getUsers().length,
+      resolve: (_, __, context) => context.user.getUsers().length,
     }),
   ],
 });
@@ -269,7 +269,7 @@ const GraphQLUserUpdateSubscriptionType = t.unionType<UserUpdate>({
 export const subscriptionFields = [
   t.subscriptionField("userUpdate", {
     type: t.NonNull(GraphQLUserUpdateSubscriptionType),
-    subscribe: (obj, args, context) => context.user.subscribe.userUpdate(),
+    subscribe: (_, __, context) => context.user.subscribe.userUpdate(),
     resolve: (obj) => obj as any,
   }),
 ];

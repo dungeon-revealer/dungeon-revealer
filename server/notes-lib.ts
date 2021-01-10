@@ -81,7 +81,10 @@ export const getPaginatedNotes = ({ first }: { first: number }) =>
     checkAuthenticated(),
     RTE.chainW(() => RTE.ask<{ session: SocketSessionRecord }>()),
     RTE.chainW(({ session }) =>
-      db.getPaginatedNotes({ first, onlyPublic: session.role === "user" })
+      db.getPaginatedNotes({
+        first,
+        onlyPublic: session.role === "user",
+      })
     )
   );
 
