@@ -16,16 +16,30 @@ export const NoteModel = db.NoteModel;
 
 export type NoteSearchMatchType = db.NoteSearchMatchType;
 
+type SessionDependency = { session: SocketSessionRecord };
+
 const isAdmin = (viewerRole: ViewerRole) => viewerRole === "admin";
 
-const checkAdmin = <T>(
-  input: T
-): RTE.ReaderTaskEither<{ session: SocketSessionRecord }, Error, T> => ({
-  session,
-}) =>
-  isAdmin(session.role)
-    ? TE.right(input)
+const checkAdmin = (): RTE.ReaderTaskEither<SessionDependency, Error, void> => (
+  d
+) =>
+  isAdmin(d.session.role)
+    ? TE.right(undefined)
     : TE.left(new Error("Insufficient permissions."));
+
+const checkAuthenticated = (): RTE.ReaderTaskEither<
+  SessionDependency,
+  Error,
+  void
+> =>
+  pipe(
+    RTE.ask<SessionDependency>(),
+    RTE.chain((d) =>
+      d.session.role === "unauthenticated"
+        ? RTE.left(new Error("Unauthenticated access."))
+        : RTE.right(undefined)
+    )
+  );
 
 const sanitizeNoteContent = (content: string) => {
   const [, ...contentLines] = content.split("\n");
@@ -49,7 +63,10 @@ export const getNoteById = (id: string) =>
     RTE.chainW((note) => {
       switch (note.type) {
         case "admin":
-          return checkAdmin(note);
+          return pipe(
+            checkAdmin(),
+            RTE.map(() => note)
+          );
         case "public":
           return RTE.right(note);
         default:
@@ -60,7 +77,8 @@ export const getNoteById = (id: string) =>
 
 export const getPaginatedNotes = ({ first }: { first: number }) =>
   pipe(
-    RTE.ask<{ session: SocketSessionRecord }>(),
+    checkAuthenticated(),
+    RTE.chainW(() => RTE.ask<{ session: SocketSessionRecord }>()),
     RTE.chainW(({ session }) =>
       db.getPaginatedNotes({ first, onlyPublic: session.role === "user" })
     )
@@ -76,7 +94,8 @@ export const getMorePaginatedNotes = ({
   lastId: string;
 }) =>
   pipe(
-    RTE.ask<{ session: SocketSessionRecord }>(),
+    checkAuthenticated(),
+    RTE.chainW(() => RTE.ask<SessionDependency>()),
     RTE.chainW(({ session }) =>
       db.getMorePaginatedNotes({
         lastCreatedAt,
@@ -97,7 +116,7 @@ export const createNote = ({
   isEntryPoint: boolean;
 }) =>
   pipe(
-    checkAdmin({ title, content }),
+    checkAdmin(),
     RTE.chainW(() =>
       db.updateOrInsertNote({
         id: uuid(),
@@ -118,7 +137,7 @@ export const updateNoteContent = ({
   content: string;
 }) =>
   pipe(
-    checkAdmin(null),
+    checkAdmin(),
     RTE.chainW(() => db.getNoteById(id)),
     RTE.chainW((note) =>
       db.updateOrInsertNote({
@@ -140,7 +159,7 @@ export const updateNoteAccess = ({
   access: string;
 }) =>
   pipe(
-    checkAdmin(null),
+    checkAdmin(),
     RTE.chainW(() =>
       pipe(db.NoteAccessTypeModel.decode(access), RTE.fromEither)
     ),
@@ -163,7 +182,7 @@ export const updateNoteAccess = ({
 
 export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
   pipe(
-    checkAdmin(null),
+    checkAdmin(),
     RTE.chainW(() => db.getNoteById(id)),
     RTE.chainW((note) =>
       db.updateOrInsertNote({
@@ -178,19 +197,23 @@ export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
   );
 
 export const deleteNote = (noteId: string) =>
-  pipe(checkAdmin(noteId), RTE.chainW(db.deleteNote));
+  pipe(
+    checkAdmin(),
+    RTE.chainW(() => db.deleteNote(noteId))
+  );
 
 export const findPublicNotes = (query: string) =>
   pipe(
-    RTE.ask<{ session: SocketSessionRecord }>(),
+    checkAuthenticated(),
+    RTE.chainW(() => RTE.ask<{ session: SocketSessionRecord }>()),
     RTE.chainW((d) => {
       switch (d.session.role) {
         case "admin":
           return db.findAllNotes(query);
         case "user":
           return db.findPublicNotes(query);
-        case "unauthenticated":
-          return RTE.of([]);
+        default:
+          throw new Error("Unexpected error occured.");
       }
     })
   );
