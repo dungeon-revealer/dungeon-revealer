@@ -292,40 +292,9 @@ export const decodeNoteSearchMatchList: (
   )
 );
 
-export const findAllNotes = (
-  query: string
-): RTE.ReaderTaskEither<
-  Dependencies,
-  DecodeError,
-  NoteSearchMatchListType
-> => ({ db }) =>
-  pipe(
-    TE.tryCatch(
-      () =>
-        db.all(
-          /* SQL */ `
-          SELECT
-            "id" as "note_id",
-            "title",
-            snippet("notes_search", 2, '!', '!', "...", 16) as "preview"
-          FROM "notes_search"
-          WHERE
-            "notes_search" MATCH $query
-          ORDER BY bm25("notes_search", 1.0, 100.0, 0.0) ASC
-          LIMIT 10
-          ;
-        `,
-          {
-            $query: `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*))`,
-          }
-        ),
-      E.toError
-    ),
-    TE.chainW(flow(decodeNoteSearchMatchList, TE.fromEither))
-  );
-
-export const findPublicNotes = (
-  query: string
+export const searchNotes = (
+  query: string,
+  onlyPublic: boolean
 ): RTE.ReaderTaskEither<
   Dependencies,
   DecodeError,
@@ -349,7 +318,9 @@ export const findPublicNotes = (
           ;
         `,
           {
-            $query: `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*)) AND access:"public"`,
+            $query: `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*))${
+              onlyPublic ? ` AND access:"public"` : ""
+            }`,
           }
         ),
       E.toError

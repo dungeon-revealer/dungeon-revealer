@@ -59,7 +59,8 @@ const sanitizeNoteContent = (content: string) => {
 
 export const getNoteById = (id: string) =>
   pipe(
-    db.getNoteById(id),
+    checkAuthenticated(),
+    RTE.chainW(() => db.getNoteById(id)),
     RTE.chainW((note) => {
       switch (note.type) {
         case "admin":
@@ -205,17 +206,8 @@ export const deleteNote = (noteId: string) =>
 export const findPublicNotes = (query: string) =>
   pipe(
     checkAuthenticated(),
-    RTE.chainW(() => RTE.ask<{ session: SocketSessionRecord }>()),
-    RTE.chainW((d) => {
-      switch (d.session.role) {
-        case "admin":
-          return db.findAllNotes(query);
-        case "user":
-          return db.findPublicNotes(query);
-        default:
-          throw new Error("Unexpected error occured.");
-      }
-    })
+    RTE.chainW(() => RTE.ask<SessionDependency>()),
+    RTE.chainW((d) => db.searchNotes(query, d.session.role === "user"))
   );
 
 export const importNote = flow(
