@@ -5,7 +5,8 @@ export { TokenInfoAside } from "./token-info-aside";
 type NoteWindow = {
   id: string;
   currentIndex: number;
-  history: string[];
+  history: Array<string | null>;
+  initialShowLibrary: boolean;
 };
 
 type NoteWindowInterface = {
@@ -13,13 +14,18 @@ type NoteWindowInterface = {
 };
 
 type NoteWindowActions = {
-  showNoteInWindow: (noteId: string, windowId: string) => void;
+  showNoteInWindow: (
+    noteId: string | null,
+    windowId: string,
+    initialShowLibrary?: boolean
+  ) => void;
   showNoteInNewWindow: (noteId: string) => void;
   destroyWindow: (windowId: string) => void;
   focusOrShowNoteInNewWindow: (noteId: string) => void;
   focusWindow: (windowId: string) => void;
   navigateNext: (windowId: string) => void;
   navigateBack: (windowId: string) => void;
+  replaceCurrent: (windowId: string, noteId: string | null) => void;
 };
 
 const NoteWindowContext = React.createContext<NoteWindowInterface | null>(null);
@@ -30,21 +36,33 @@ export const NoteWindowActionsContext = React.createContext<NoteWindowActions | 
 export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
   const [windows, setWindows] = React.useState([] as NoteWindow[]);
 
-  const showNoteInNewWindow = React.useCallback((noteId: string) => {
-    setWindows((windows) => [
-      ...windows,
-      { id: uuid(), currentIndex: 0, history: [noteId] },
-    ]);
-  }, []);
+  const showNoteInNewWindow = React.useCallback(
+    (noteId: string, initialShowLibrary: boolean = false) => {
+      setWindows((windows) => [
+        ...windows,
+        { id: uuid(), currentIndex: 0, history: [noteId], initialShowLibrary },
+      ]);
+    },
+    []
+  );
 
   const showNoteInWindow = React.useCallback(
-    (noteId: string, windowId: string) => {
+    (
+      noteId: string | null,
+      windowId: string,
+      initialShowLibrary: boolean = false
+    ) => {
       setWindows((windows) => {
         const record = windows.find((window) => window.id === windowId);
         if (!record) {
           return [
             ...windows,
-            { id: windowId, currentIndex: 0, history: [noteId] },
+            {
+              id: windowId,
+              currentIndex: 0,
+              history: [noteId],
+              initialShowLibrary,
+            },
           ];
         }
         const newWindows = windows.filter((window) => window.id !== windowId);
@@ -55,6 +73,7 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
             ...record.history.slice(0, record.currentIndex + 1),
             noteId,
           ],
+          initialShowLibrary,
         });
         return newWindows;
       });
@@ -72,7 +91,15 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
         (window) => window.history[window.currentIndex] === noteId
       );
       if (!record) {
-        return [...windows, { id: uuid(), currentIndex: 0, history: [noteId] }];
+        return [
+          ...windows,
+          {
+            id: uuid(),
+            currentIndex: 0,
+            history: [noteId],
+            initialShowLibrary: false,
+          },
+        ];
       }
       const newWindows = windows.filter(
         (window) => window.history[window.currentIndex] !== noteId
@@ -105,6 +132,7 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
         id: record.id,
         currentIndex: record.currentIndex - 1,
         history: record.history,
+        initialShowLibrary: false,
       });
       return newWindows;
     });
@@ -121,10 +149,42 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
         id: record.id,
         currentIndex: record.currentIndex + 1,
         history: record.history,
+        initialShowLibrary: true,
       });
       return newWindows;
     });
   }, []);
+
+  const replaceCurrent = React.useCallback(
+    (windowId: string, noteId: string | null) => {
+      setWindows((windows) => {
+        let targetWindow = windows.find((window) => window.id === windowId);
+        if (!targetWindow) {
+          return windows;
+        }
+        let newCurrentIndex = targetWindow.currentIndex;
+        const newHistory = targetWindow.history.slice(0);
+        if (newCurrentIndex > 0 && noteId === null) {
+          newCurrentIndex = newCurrentIndex - 1;
+          newHistory.pop();
+        } else {
+          newHistory[targetWindow.currentIndex] = noteId;
+        }
+
+        targetWindow = {
+          ...targetWindow,
+          currentIndex: newCurrentIndex,
+          history: newHistory,
+        };
+
+        return [
+          ...windows.filter((window) => window.id !== windowId),
+          targetWindow,
+        ];
+      });
+    },
+    []
+  );
 
   const value = React.useMemo(() => {
     return {
@@ -135,6 +195,7 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
       focusWindow,
       navigateNext,
       navigateBack,
+      replaceCurrent,
     };
   }, [
     showNoteInNewWindow,
@@ -144,6 +205,7 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
     focusWindow,
     navigateNext,
     navigateBack,
+    replaceCurrent,
   ]);
 
   return (

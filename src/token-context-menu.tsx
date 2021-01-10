@@ -322,7 +322,7 @@ const TokenContextMenu = (props: {
                           props.close();
                         }}
                       >
-                        <Icon.EditIcon height={16} />
+                        <Icon.EditIcon size={16} />
                         <span>Edit</span>
                       </Button.Tertiary>
                     </div>

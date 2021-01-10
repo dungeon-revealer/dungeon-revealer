@@ -1,6 +1,6 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
-import { Input } from "./input";
+import { Input } from "@chakra-ui/react";
 import * as Button from "./button";
 import { BackgroundImageContainer } from "./background-image-container";
 import { BrandLogoText } from "./brand-logo-text";
@@ -52,6 +52,7 @@ export const AuthenticationScreen: React.FC<{
         }}
       >
         <Input
+          background="white"
           placeholder={`${requiredRole === "DM" ? "DM" : "Player"} Password`}
           value={password}
           onChange={(ev) => setPassword(ev.target.value)}

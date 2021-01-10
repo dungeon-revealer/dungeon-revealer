@@ -353,7 +353,7 @@ const Item: React.FC<{
           iconOnly
           onClick={() => setShowEditModal(true)}
         >
-          <Icon.EditIcon height={16} />
+          <Icon.EditIcon size={16} />
         </Button.Primary>
         <Button.Primary
           small
@@ -361,7 +361,7 @@ const Item: React.FC<{
           iconOnly
           onClick={() => splashShareImage(item.id)}
         >
-          <Icon.Share height={16} />
+          <Icon.Share size={16} />
         </Button.Primary>
         <Button.Primary
           small
