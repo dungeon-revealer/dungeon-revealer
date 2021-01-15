@@ -7,12 +7,46 @@ import _sanitizeHtml from "sanitize-html";
 import { ChatMessageButton } from "./chat-message-button";
 import { useStaticRef } from "../../hooks/use-static-ref";
 import { NoteLink } from "./note-link";
+import {
+  Heading,
+  UnorderedList,
+  OrderedList,
+  ListItem,
+  Text,
+  Divider,
+} from "@chakra-ui/react";
+
+const H1: React.FC = (props) => <Heading as="h1">{props.children}</Heading>;
+const H2: React.FC = (props) => (
+  <Heading as="h2" size="md">
+    {props.children}
+  </Heading>
+);
+const H3: React.FC = (props) => (
+  <Heading as="h3" size="sm">
+    {props.children}
+  </Heading>
+);
+const H4: React.FC = (props) => (
+  <Heading as="h4" size="xs">
+    {props.children}
+  </Heading>
+);
 
 const components = {
   Image: SharableImage,
   ChatMessage: ChatMessageButton,
   ChatMacro: ChatMessageButton,
   Link: NoteLink,
+  h1: H1,
+  h2: H2,
+  h3: H3,
+  h4: H4,
+  ul: UnorderedList,
+  ol: OrderedList,
+  li: ListItem,
+  hr: Divider,
+  p: Text,
 };
 
 const allowedTags = [
@@ -29,8 +63,6 @@ const allowedTags = [
   "h2",
   "h3",
   "h4",
-  "h5",
-  "h6",
   "table",
   "thead",
   "tbody",
@@ -40,6 +72,7 @@ const allowedTags = [
   "ul",
   "ol",
   "li",
+  "hr",
   ...Object.keys(components),
 ];
 
@@ -123,6 +156,10 @@ const HtmlContainerStyled = styled.div`
   min-height: 100%;
   font-size: 12px;
   line-height: 1.5;
+
+  > div > * {
+    margin-bottom: 12px;
+  }
 
   blockquote {
     margin-left: 0;

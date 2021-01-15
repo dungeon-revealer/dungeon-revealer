@@ -83,30 +83,6 @@ export const globalStyles = css`
     outline: none !important;
   }
 
-  h1,
-  h2,
-  h3 {
-    margin: 0;
-  }
-
-  h1 {
-    font-size: 2rem;
-  }
-
-  h2 {
-    font-size: 2rem;
-  }
-
-  h3 {
-    font-size: 1.75rem;
-  }
-
-  @media screen and (min-width: 900px) {
-    h1 {
-      font-size: 2.5rem;
-    }
-  }
-
   .react-colorful__pointer {
     width: 20px;
     height: 20px;

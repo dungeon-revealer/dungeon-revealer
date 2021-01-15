@@ -227,10 +227,11 @@ const Header = styled.div`
 
 const Heading2 = styled.h2`
   margin: 0;
+  font-size: 2rem;
 
   > svg:first-child {
     display: inline-block;
-    transform: translateY(3px);
+    transform: translateY(-3px);
     margin-right: 12px;
   }
 `;
