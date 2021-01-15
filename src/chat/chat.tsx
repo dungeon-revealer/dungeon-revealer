@@ -3,6 +3,7 @@ import graphql from "babel-plugin-relay/macro";
 import { QueryRenderer, requestSubscription } from "react-relay";
 import { useRelayEnvironment } from "relay-hooks";
 import { ConnectionHandler } from "relay-runtime";
+import { Stack } from "@chakra-ui/react";
 import { ChatUserList } from "./chat-user-list";
 import { ChatMessages } from "./chat-messages";
 import { ChatSettings } from "./chat-settings";
@@ -300,7 +301,7 @@ export const Chat: React.FC<{
               </HorizontalNavigation.Group>
               <div style={{ height: 8 }} />
               {mode === "chat" ? (
-                <>
+                <Stack height="100%">
                   <ChatMessages chat={props} />
                   <ChatTextArea />
                   <Button.Tertiary
@@ -310,7 +311,7 @@ export const Chat: React.FC<{
                   >
                     <Icon.DiceIcon height={16} /> <span> Dice Roll Notes</span>
                   </Button.Tertiary>
-                </>
+                </Stack>
               ) : mode === "user" ? (
                 <div style={{ marginTop: 16 }}>
                   <ChatUserList data={props} />

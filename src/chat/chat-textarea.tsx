@@ -1,23 +1,7 @@
 import * as React from "react";
-import styled from "@emotion/styled/macro";
+import { Textarea, FormControl } from "@chakra-ui/react";
 import { useMessageAddMutation } from "./message-add-mutation";
 import { usePersistedState } from "../hooks/use-persisted-state";
-
-const Container = styled.form`
-  display: flex;
-  padding-top: 8px;
-  margin-top: auto;
-`;
-
-const TextArea = styled.textarea`
-  display: block;
-  width: 100%;
-  resize: none;
-  font-size: inherit;
-  font-family: inherit;
-  letter-spacing: 0.2px;
-  padding: 4px;
-`;
 
 const useRawChatHistory = () =>
   usePersistedState<Array<string>>("chat.history", {
@@ -110,12 +94,20 @@ export const ChatTextArea: React.FC<{}> = () => {
   );
 
   return (
-    <Container
+    <FormControl
       onSubmit={onSubmit}
       onKeyPress={onKeyPress}
       onKeyDown={onKeyDown}
     >
-      <TextArea value={value} onChange={onChange} rows={5} />
-    </Container>
+      <Textarea
+        placeholder="Write something!"
+        value={value}
+        onChange={onChange}
+        rows={5}
+        resize="none"
+        fontSize="sm"
+        variant="filled"
+      />
+    </FormControl>
   );
 };
