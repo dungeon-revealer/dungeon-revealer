@@ -447,20 +447,24 @@ const WindowRenderer: React.FC<{
               ) : isSkipped ? (
                 <>
                   <VStack>
-                    <Text>Open a note on the right</Text>
                     {viewerRole === "DM" ? (
-                      <Box>
-                        <Button.Primary
-                          small
-                          onClick={() => {
-                            createNewNote();
-                          }}
-                        >
-                          <Icon.FilePlus size={16} />
-                          <span>Create new note</span>
-                        </Button.Primary>
-                      </Box>
-                    ) : null}
+                      <>
+                        <Text>Open or create a new note</Text>
+                        <Box>
+                          <Button.Primary
+                            small
+                            onClick={() => {
+                              createNewNote();
+                            }}
+                          >
+                            <Icon.FilePlus size={16} />
+                            <span>Create new note</span>
+                          </Button.Primary>
+                        </Box>
+                      </>
+                    ) : (
+                      <Text>Open a note!</Text>
+                    )}
                   </VStack>
                 </>
               ) : (
