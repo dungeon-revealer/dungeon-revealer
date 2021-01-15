@@ -92,7 +92,7 @@
     "@types/howler": "2.2.1",
     "@types/jest": "26.0.20",
     "@types/lodash": "4.14.167",
-    "@types/node": "13.13.39",
+    "@types/node": "13.13.40",
     "@types/react": "17.0.0",
     "@types/react-color": "3.0.4",
     "@types/react-dom": "17.0.0",
