@@ -1,12 +1,12 @@
-import { t } from "../..";
-import { GraphQLPageInfoType } from "../relay-spec";
-import * as ImageModule from "../image";
-import * as NotesModule from "../notes";
+import { t } from "..";
+import { GraphQLPageInfoType } from "./relay-spec";
+import * as ImageModule from "./image";
+import * as NotesModule from "./notes";
 import type {
   DiceRollDetail,
   ApplicationRecordSchema,
   DiceRollResult,
-} from "../../../chat";
+} from "../../chat";
 import * as E from "fp-ts/lib/Either";
 import * as RT from "fp-ts/lib/ReaderTask";
 
