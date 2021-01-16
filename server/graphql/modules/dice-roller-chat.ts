@@ -201,75 +201,75 @@ type SharedResourceResourceResolveType = Promise<
   NotesModule.NoteModelType | ImageModule.ImageModelType
 >;
 
-const GraphQLSharedResourceChatMessageType = t.objectType<
-  SharedResourceChatMessageType
->({
-  name: "SharedResourceChatMessage",
-  interfaces: [GraphQLChatMessageInterfaceType],
-  isTypeOf: (input) => input?.type === "SHARED_RESOURCE",
-  fields: () => [
-    t.field("id", {
-      type: t.NonNull(t.ID),
-      resolve: (obj) => obj.id,
-    }),
-    t.field("authorName", {
-      type: t.NonNull(t.String),
-      resolve: (obj) => obj.authorName,
-    }),
-    t.field("resource", {
-      type: GraphQLSharedResourceEnumType,
-      resolve: (
-        input,
-        args,
-        context
-      ): Promise<NotesModule.NoteModelType | ImageModule.ImageModelType> => {
-        switch (input.resource.type) {
-          case "NOTE": {
-            return RT.run(
-              NotesModule.resolveNote(input.resource.id),
-              context
-            ) as SharedResourceResourceResolveType;
+const GraphQLSharedResourceChatMessageType = t.objectType<SharedResourceChatMessageType>(
+  {
+    name: "SharedResourceChatMessage",
+    interfaces: [GraphQLChatMessageInterfaceType],
+    isTypeOf: (input) => input?.type === "SHARED_RESOURCE",
+    fields: () => [
+      t.field("id", {
+        type: t.NonNull(t.ID),
+        resolve: (obj) => obj.id,
+      }),
+      t.field("authorName", {
+        type: t.NonNull(t.String),
+        resolve: (obj) => obj.authorName,
+      }),
+      t.field("resource", {
+        type: GraphQLSharedResourceEnumType,
+        resolve: (
+          input,
+          args,
+          context
+        ): Promise<NotesModule.NoteModelType | ImageModule.ImageModelType> => {
+          switch (input.resource.type) {
+            case "NOTE": {
+              return RT.run(
+                NotesModule.resolveNote(input.resource.id),
+                context
+              ) as SharedResourceResourceResolveType;
+            }
+            case "IMAGE": {
+              return RT.run(
+                ImageModule.resolveImage(input.resource.id),
+                context
+              ) as SharedResourceResourceResolveType;
+            }
           }
-          case "IMAGE": {
-            return RT.run(
-              ImageModule.resolveImage(input.resource.id),
-              context
-            ) as SharedResourceResourceResolveType;
-          }
-        }
-      },
-    }),
-  ],
-});
+        },
+      }),
+    ],
+  }
+);
 
-const GraphQLOperationalChatMessageType = t.objectType<
-  OperationalChatMessageType
->({
-  interfaces: [
-    GraphQLChatMessageInterfaceType,
-    GraphQLTextChatMessageInterfaceType,
-  ],
-  name: "OperationalChatMessage",
-  fields: () => [
-    t.field("id", {
-      type: t.NonNull(t.ID),
-      resolve: (message) => message.id,
-    }),
-    t.field("content", {
-      type: t.NonNull(t.String),
-      resolve: (message) => message.content,
-    }),
-    t.field("createdAt", {
-      type: t.NonNull(t.String),
-      resolve: (message) => new Date(message.createdAt).toISOString(),
-    }),
-    t.field("containsDiceRoll", {
-      type: t.NonNull(t.Boolean),
-      resolve: () => false,
-    }),
-  ],
-  isTypeOf: (src) => src?.type === "OPERATIONAL_MESSAGE",
-});
+const GraphQLOperationalChatMessageType = t.objectType<OperationalChatMessageType>(
+  {
+    interfaces: [
+      GraphQLChatMessageInterfaceType,
+      GraphQLTextChatMessageInterfaceType,
+    ],
+    name: "OperationalChatMessage",
+    fields: () => [
+      t.field("id", {
+        type: t.NonNull(t.ID),
+        resolve: (message) => message.id,
+      }),
+      t.field("content", {
+        type: t.NonNull(t.String),
+        resolve: (message) => message.content,
+      }),
+      t.field("createdAt", {
+        type: t.NonNull(t.String),
+        resolve: (message) => new Date(message.createdAt).toISOString(),
+      }),
+      t.field("containsDiceRoll", {
+        type: t.NonNull(t.Boolean),
+        resolve: () => false,
+      }),
+    ],
+    isTypeOf: (src) => src?.type === "OPERATIONAL_MESSAGE",
+  }
+);
 
 const GraphQLUserChatMessageType = t.objectType<UserChatMessageType>({
   interfaces: [
