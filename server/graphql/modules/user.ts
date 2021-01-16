@@ -1,6 +1,6 @@
-import { t } from "../..";
-import { GraphQLPageInfoType } from "../relay-spec";
-import type { UserRecord, UserUpdate } from "../../../user";
+import { t } from "..";
+import { GraphQLPageInfoType } from "./relay-spec";
+import type { UserRecord, UserUpdate } from "../../user";
 
 export const GraphQLUserType = t.objectType<UserRecord>({
   name: "User",
