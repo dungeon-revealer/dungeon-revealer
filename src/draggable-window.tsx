@@ -47,7 +47,7 @@ const WindowsResizeHandle = styled.button`
 const WindowSideBar = styled.div`
   position: absolute;
   top: 0;
-  transform: translateX(-250px);
+  transform: translateX(-249px);
   max-width: 250px;
   width: 100%;
   background: white;
