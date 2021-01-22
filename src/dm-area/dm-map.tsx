@@ -528,56 +528,6 @@ const TokenMarkerSettings = (): React.ReactElement => {
   );
 };
 
-const OldNumberInput = (props: {
-  disabled?: boolean;
-  value: number;
-  onChange: (value: number) => void;
-}): React.ReactElement => {
-  const [value, setValue] = useResetState(() => String(props.value), [
-    props.value,
-  ]);
-
-  const isFirstRender = React.useRef(true);
-
-  React.useEffect(() => {
-    if (isFirstRender.current == true) {
-      isFirstRender.current = false;
-      return;
-    }
-    const parsedNumber = parseNumberSafe(value);
-    if (parsedNumber !== null) {
-      props.onChange(parsedNumber);
-    }
-  }, [value]);
-
-  return (
-    <div style={{ display: "flex", alignItems: "center" }}>
-      <div style={{ flex: 1, marginRight: 4 }}>
-        <OldInput
-          disabled={props.disabled}
-          value={value}
-          onChange={(ev) => {
-            setValue(ev.target.value);
-          }}
-        />
-      </div>
-      <div style={{ flexShrink: 0 }}>
-        <label>
-          <Button.Tertiary
-            small
-            onClick={() => {
-              setValue("1");
-            }}
-          >
-            <Icons.RotateCCW size={20} />
-            <span>Reset counter</span>
-          </Button.Tertiary>
-        </label>
-      </div>
-    </div>
-  );
-};
-
 const ColorPicker = React.memo(
   (props: { color: string; onChange: (color: string) => void }) => {
     return (
