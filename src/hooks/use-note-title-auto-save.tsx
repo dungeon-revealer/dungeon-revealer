@@ -1,5 +1,5 @@
 import * as React from "react";
-import { debounce } from "lodash";
+import debounce from "lodash/debounce";
 import { useStaticRef } from "./use-static-ref";
 import { useMutation } from "relay-hooks";
 import graphql from "babel-plugin-relay/macro";

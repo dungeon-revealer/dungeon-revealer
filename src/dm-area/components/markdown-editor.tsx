@@ -6,7 +6,7 @@ import {
   Position as MonacoPosition,
   editor,
 } from "monaco-editor";
-import { parseDOM } from "htmlparser2";
+import { parseDocument } from "htmlparser2";
 import MonacoEditor from "react-monaco-editor";
 import * as Button from "../../button";
 import { sendRequest, ISendRequestTask } from "../../http-request";
@@ -167,12 +167,12 @@ const Container = styled.div`
  * Takes a string that includes a single HTML element and invokes the callback with the corresponding AST.
  */
 const parseTagAstFromHtmlTagString = (input: string) => {
-  const result = parseDOM(input, {
+  const result = parseDocument(input, {
     lowerCaseTags: false,
     lowerCaseAttributeNames: false,
   });
 
-  return result.length ? result[0] : null;
+  return result.children.length ? result.children[0] : null;
 };
 
 const getParseLinkRegex = () => /\[([^\]]*)\]\(([^)]*)\)/;

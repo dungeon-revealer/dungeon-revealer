@@ -6,7 +6,6 @@ import { useStaticRef } from "./hooks/use-static-ref";
 import { SplashScreen } from "./splash-screen";
 import { ChatToggleButton, IconButton } from "./chat-toggle-button";
 import { Chat } from "./chat";
-import { DiceRollNotes } from "./chat/dice-roll-notes";
 import { useChatSoundsAndUnreadCount } from "./chat/chat";
 import { useLogInMutation } from "./chat/log-in-mutation";
 import styled from "@emotion/styled/macro";
@@ -186,13 +185,21 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
             <NoteSearch close={() => setShowSearch(false)} />
           ) : null}
           {diceRollNotesState === "show" ? (
-            <DiceRollNotes close={toggleShowDiceRollNotes} />
+            <React.Suspense fallback={null}>
+              <DiceRollNotes close={toggleShowDiceRollNotes} />
+            </React.Suspense>
           ) : null}
         </React.Fragment>
       ) : null}
     </NoteWindowContextProvider>
   );
 };
+
+const DiceRollNotes = React.lazy(() =>
+  import("./chat/dice-roll-notes").then((mod) => ({
+    default: mod.DiceRollNotes,
+  }))
+);
 
 type ConnectionMode =
   | "connected"

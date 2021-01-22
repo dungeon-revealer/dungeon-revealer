@@ -5,7 +5,6 @@ import { useMutation, useFragment } from "relay-hooks";
 import type { noteEditorActiveItem_nodeFragment$key } from "./__generated__/noteEditorActiveItem_nodeFragment.graphql";
 import { noteEditorActiveItemNoteUpdateContentMutation } from "./__generated__/noteEditorActiveItemNoteUpdateContentMutation.graphql";
 import styled from "@emotion/styled/macro";
-import { MarkdownEditor } from "../components/markdown-editor";
 import { HtmlContainer } from "../components/html-container";
 import { useStaticRef } from "../../hooks/use-static-ref";
 
@@ -76,12 +75,14 @@ export const NoteEditorActiveItem: React.FC<{
     <>
       {isEditMode ? (
         <EditorContainer>
-          <MarkdownEditor
-            value={content}
-            onChange={setContent}
-            sideBarRef={sideBarRef}
-            editorOnResizeRef={editorOnResizeRef}
-          />
+          <React.Suspense fallback="Loading...">
+            <MarkdownEditor
+              value={content}
+              onChange={setContent}
+              sideBarRef={sideBarRef}
+              editorOnResizeRef={editorOnResizeRef}
+            />
+          </React.Suspense>
         </EditorContainer>
       ) : (
         <HtmlContainerWrapper>
@@ -107,3 +108,9 @@ const EditorContainer = styled.div`
   height: 100%;
   padding-top: 8px;
 `;
+
+const MarkdownEditor = React.lazy(() =>
+  import("../components/markdown-editor").then((mod) => ({
+    default: mod.MarkdownEditor,
+  }))
+);

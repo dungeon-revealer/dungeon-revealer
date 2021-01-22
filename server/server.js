@@ -209,16 +209,20 @@ const bootstrapServer = async () => {
     .readFileSync(indexHtml, "utf-8")
     .replace(/__PUBLIC_URL_PLACEHOLDER__/g, env.PUBLIC_URL);
 
-  app.get("/", (req, res) => {
+  app.get("/", (_, res) => {
     res.send(indexHtmlContent);
   });
 
-  app.get("/dm", (req, res) => {
+  app.get("/dm", (_, res) => {
     res.send(indexHtmlContent);
   });
 
   // Consider all URLs under /public/ as static files, and return them raw.
-  app.use(express.static(path.join(env.PUBLIC_PATH)));
+  app.use(
+    express.static(path.join(env.PUBLIC_PATH), {
+      maxAge: "1y",
+    })
+  );
 
   // catch 404 and forward to error handler
   app.use((req, res, next) => {
