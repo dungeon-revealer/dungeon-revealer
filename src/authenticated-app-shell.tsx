@@ -227,7 +227,10 @@ export const AuthenticatedAppShell: React.FC<{
    */
   React.useEffect(() => {
     const authenticate = () => {
-      socket.emit("authenticate", { password: password });
+      socket.emit("authenticate", {
+        password: password,
+        desiredRole: role === "DM" ? "admin" : "user",
+      });
     };
 
     socket.on("connect", () => {

@@ -262,7 +262,7 @@ const bootstrapServer = async () => {
       role: "unauthenticated",
     });
 
-    socket.on("authenticate", ({ password }) => {
+    socket.on("authenticate", ({ password, desiredRole }) => {
       socketIOGraphQLServer.disposeSocket(socket);
       socket.removeAllListeners();
 
@@ -281,7 +281,7 @@ const bootstrapServer = async () => {
       authenticatedSockets.add(socket);
       socketSessionStore.set(socket, {
         id: socket.id,
-        role: role === "DM" ? "admin" : "user",
+        role: role === "DM" ? desiredRole : "user",
       });
 
       socketIOGraphQLServer.registerSocket(socket);
