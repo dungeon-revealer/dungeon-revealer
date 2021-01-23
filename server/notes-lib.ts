@@ -76,7 +76,24 @@ export const getNoteById = (id: string) =>
     })
   );
 
-export const getPaginatedNotes = ({ first }: { first: number }) =>
+export const getPaginatedNotes = ({
+  first,
+  onlyEntryPoints,
+  cursor,
+}: {
+  /* amount of items to fetch */
+  first: number;
+  /* whether only public notes should be returned */
+  /* whether only entrypoints should be returned */
+  onlyEntryPoints: boolean;
+  /* cursor which can be used to fetch more */
+  cursor: null | {
+    /* createdAt date of the item after which items should be fetched */
+    lastCreatedAt: number;
+    /* id of the item after which items should be fetched */
+    lastId: string;
+  };
+}) =>
   pipe(
     checkAuthenticated(),
     RTE.chainW(() => RTE.ask<{ session: SocketSessionRecord }>()),
@@ -84,28 +101,8 @@ export const getPaginatedNotes = ({ first }: { first: number }) =>
       db.getPaginatedNotes({
         first,
         onlyPublic: session.role === "user",
-      })
-    )
-  );
-
-export const getMorePaginatedNotes = ({
-  first,
-  lastCreatedAt,
-  lastId,
-}: {
-  first: number;
-  lastCreatedAt: number;
-  lastId: string;
-}) =>
-  pipe(
-    checkAuthenticated(),
-    RTE.chainW(() => RTE.ask<SessionDependency>()),
-    RTE.chainW(({ session }) =>
-      db.getMorePaginatedNotes({
-        lastCreatedAt,
-        lastId,
-        first,
-        onlyPublic: session.role === "user",
+        onlyEntryPoints,
+        cursor,
       })
     )
   );

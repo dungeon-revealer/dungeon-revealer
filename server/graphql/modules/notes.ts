@@ -1,9 +1,7 @@
 import { t } from "..";
-import last from "lodash/last";
-import first from "lodash/first";
 import * as io from "io-ts";
 import * as Relay from "./relay-spec";
-import { flow } from "fp-ts/lib/function";
+import { flow, identity } from "fp-ts/lib/function";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as RT from "fp-ts/lib/ReaderTask";
 import * as E from "fp-ts/lib/Either";
@@ -121,71 +119,30 @@ const GraphQLNoteConnectionType = t.objectType<NoteConnectionType>({
   ],
 });
 
-const resolvePaginatedNotes = (amount: number) =>
+const resolvePaginatedNotes = ({
+  first,
+  onlyEntryPoints,
+  cursor,
+}: {
+  first: number;
+  onlyEntryPoints: boolean;
+  cursor: null | {
+    lastCreatedAt: number;
+    lastId: string;
+  };
+}) =>
   pipe(
-    notes.getPaginatedNotes({ first: amount + 1 }),
-    RTE.map((notes) => {
-      let hasNextPage = false;
-      if (notes.length > amount) {
-        notes.pop();
-        hasNextPage = true;
-      }
-
-      const edges = notes.map((node) => ({
-        cursor: encodeNotesConnectionCursor(node),
-        node: node,
-      }));
-
-      return {
-        edges,
-        pageInfo: {
-          hasNextPage,
-          hasPreviousPage: false,
-          startCursor: first(edges)?.cursor || "",
-          endCursor: last(edges)?.cursor || "",
-        },
-      };
-    }),
+    notes.getPaginatedNotes({ first: first + 1, onlyEntryPoints, cursor }),
+    RTE.map((notes) =>
+      Relay.buildConnectionObject({
+        listData: notes,
+        amount: first,
+        encodeCursor: encodeNotesConnectionCursor,
+      })
+    ),
     RTE.fold(
       (err) => {
-        throw err;
-      },
-      (obj) => RT.of(obj)
-    )
-  );
-
-const resolveMorePaginatedNotes = (
-  amount: number,
-  lastCreatedAt: number,
-  lastId: string
-) =>
-  pipe(
-    notes.getMorePaginatedNotes({ first: amount + 1, lastCreatedAt, lastId }),
-    RTE.map((notes) => {
-      let hasNextPage = false;
-      if (notes.length > amount) {
-        notes.pop();
-        hasNextPage = true;
-      }
-
-      const edges = notes.map((node) => ({
-        cursor: encodeNotesConnectionCursor(node),
-        node: node,
-      }));
-
-      return {
-        edges,
-        pageInfo: {
-          hasNextPage,
-          hasPreviousPage: true,
-          startCursor: first(edges)?.cursor || "",
-          endCursor: last(edges)?.cursor || "",
-        },
-      };
-    }),
-    RTE.fold(
-      (err) => {
-        throw err;
+        return () => () => Promise.reject(err);
       },
       (obj) => RT.of(obj)
     )
@@ -313,20 +270,23 @@ const decodeNotesConnectionCursor = flow(
             () => O.none,
             () => StringUtilities.split1(":")(rest)
           ),
-          O.chain(([rawCreatedAt, rest]) => {
-            const createdAt = parseIntegerSafe(rawCreatedAt);
+          O.chain(([rawCreatedAt, lastId]) => {
+            const lastCreatedAt = parseIntegerSafe(rawCreatedAt);
             return pipe(
-              NotesConnectionCreatedAt.decode(createdAt),
+              NotesConnectionCreatedAt.decode(lastCreatedAt),
               E.fold(
                 () => O.none,
-                () => O.some([createdAt, rest] as const)
+                () => O.some({ lastCreatedAt, lastId })
               )
             );
           })
         )
       )
     );
-  })
+  }),
+  O.fold(() => {
+    throw new Error("Invalid cursor provided");
+  }, identity)
 );
 
 const encodeNotesConnectionCursor = ({
@@ -342,34 +302,45 @@ const encodeNotesConnectionCursor = ({
     Relay.base64Encode
   );
 
+const GraphQLNotesFilterEnum = t.enumType<"entrypoint" | "all">({
+  name: "NotesFilter",
+  description: "A filter that can be applied to the paginated notes.",
+  values: [
+    {
+      name: "Entrypoint",
+      description: "Only return notes that are marked as entrypoints.",
+      value: "entrypoint",
+    },
+    {
+      name: "All",
+      description: "Return all notes.",
+      value: "all",
+    },
+  ],
+});
+
 export const queryFields = [
   t.field("notes", {
     type: t.NonNull(GraphQLNoteConnectionType),
     args: {
       first: t.arg(t.Int),
       after: t.arg(t.String),
+      filter: t.arg(GraphQLNotesFilterEnum),
     },
-    resolve: (obj, args, context) => {
+    resolve: (_, args, context) => {
       // @TODO: strict first validation max/min & negative
       const first = args.first || 10;
-      if (args.after) {
-        return pipe(
-          decodeNotesConnectionCursor(args.after),
-          O.fold(
-            () => {
-              throw Error("Invalid cursor.");
-            },
-            ([lastCreatedAt, lastId]) => {
-              return RT.run(
-                resolveMorePaginatedNotes(first, lastCreatedAt, lastId),
-                context
-              );
-            }
-          )
-        );
-      } else {
-        return RT.run(resolvePaginatedNotes(first), context);
-      }
+      const cursor = args.after
+        ? decodeNotesConnectionCursor(args.after)
+        : null;
+      return RT.run(
+        resolvePaginatedNotes({
+          first,
+          onlyEntryPoints: args.filter === "entrypoint",
+          cursor,
+        }),
+        context
+      );
     },
   }),
   t.field("notesSearch", {
@@ -379,7 +350,7 @@ export const queryFields = [
       after: t.arg(t.String),
       query: t.arg(t.String),
     },
-    resolve: (obj, args, context) =>
+    resolve: (_, args, context) =>
       RT.run(resolveNotesSearch(args.query || ""), context),
   }),
   t.field("note", {
@@ -387,7 +358,7 @@ export const queryFields = [
     args: {
       documentId: t.arg(t.NonNullInput(t.ID)),
     },
-    resolve: (obj, args, context) =>
+    resolve: (_, args, context) =>
       RT.run(resolveNote(args.documentId), context),
   }),
 ];

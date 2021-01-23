@@ -1,5 +1,7 @@
 import { flow } from "fp-ts/lib/function";
 import * as t from "io-ts";
+import last from "lodash/last";
+import first from "lodash/first";
 
 export * from "./graphql-page-info-type";
 
@@ -23,3 +25,31 @@ export const decodeId = flow(
   (content: string) => content.split(":"),
   IDParts.decode
 );
+
+export const buildConnectionObject = <T>(params: {
+  listData: T[];
+  amount: number;
+  encodeCursor: (input: T) => string;
+}) => {
+  let hasNextPage = false;
+  let listData = params.listData;
+  if (listData.length > params.amount) {
+    listData = listData.slice(0, listData.length);
+    hasNextPage = true;
+  }
+
+  const edges = listData.map((node) => ({
+    cursor: params.encodeCursor(node),
+    node,
+  }));
+
+  return {
+    edges,
+    pageInfo: {
+      hasNextPage,
+      hasPreviousPage: false,
+      startCursor: first(edges)?.cursor || "",
+      endCursor: last(edges)?.cursor || "",
+    },
+  };
+};
