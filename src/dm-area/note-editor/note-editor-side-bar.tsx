@@ -9,10 +9,10 @@ import { noteEditorSideBar_searchQuery } from "./__generated__/noteEditorSideBar
 
 const NoteEditorSideBar_notesFragment = graphql`
   fragment noteEditorSideBar_notesFragment on Query
-    @argumentDefinitions(
-      count: { type: "Int", defaultValue: 20 }
-      cursor: { type: "String" }
-    ) {
+  @argumentDefinitions(
+    count: { type: "Int", defaultValue: 20 }
+    cursor: { type: "String" }
+  ) {
     notes(first: $count, after: $cursor)
       @connection(key: "noteEditorSideBar_notes", filters: []) {
       edges {
@@ -27,7 +27,7 @@ const NoteEditorSideBar_notesFragment = graphql`
 `;
 
 const connectionConfig: ConnectionConfig = {
-  getVariables(props, { count, cursor }) {
+  getVariables(_, { count, cursor }) {
     return {
       count,
       cursor,

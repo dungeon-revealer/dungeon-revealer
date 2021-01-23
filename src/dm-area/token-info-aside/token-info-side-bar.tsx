@@ -2,7 +2,17 @@ import * as React from "react";
 import * as ScrollableList from "../components/scrollable-list";
 import graphql from "babel-plugin-relay/macro";
 import { usePagination, ConnectionConfig, useQuery } from "relay-hooks";
-import { Input, Box, InputLeftElement, InputGroup } from "@chakra-ui/react";
+import {
+  Input,
+  Box,
+  InputLeftElement,
+  InputGroup,
+  InputRightElement,
+  Button,
+  FormControl,
+  FormLabel,
+  Switch,
+} from "@chakra-ui/react";
 import * as Icon from "../../feather-icons";
 import { useCurrent } from "../../hooks/use-current";
 import { tokenInfoSideBar_NotesFragment$key } from "./__generated__/tokenInfoSideBar_NotesFragment.graphql";
@@ -15,8 +25,9 @@ const TokenInfoSideBar_NotesFragment = graphql`
   @argumentDefinitions(
     count: { type: "Int", defaultValue: 20 }
     cursor: { type: "String" }
+    filter: { type: "NotesFilter" }
   ) {
-    notes(first: $count, after: $cursor)
+    notes(first: $count, after: $cursor, filter: $filter)
       @connection(key: "tokenInfoSideBar_notes", filters: []) {
       edges {
         node {
@@ -30,8 +41,8 @@ const TokenInfoSideBar_NotesFragment = graphql`
 `;
 
 const TokenInfoSideBar_NotesQuery = graphql`
-  query tokenInfoSideBar_NotesQuery {
-    ...tokenInfoSideBar_NotesFragment
+  query tokenInfoSideBar_NotesQuery($filter: NotesFilter!) {
+    ...tokenInfoSideBar_NotesFragment @arguments(filter: $filter)
   }
 `;
 
@@ -54,6 +65,8 @@ const TokenInfoSideBarRenderer = (props: {
   windowId: string;
   activeNoteId: string | null;
   notesRef: tokenInfoSideBar_NotesFragment$key;
+  setShowAll: (showAll: boolean) => void;
+  showAll: boolean;
 }): React.ReactElement => {
   const [data, { isLoading, hasMore, loadMore, ...p }] = usePagination(
     TokenInfoSideBar_NotesFragment,
@@ -71,36 +84,51 @@ const TokenInfoSideBarRenderer = (props: {
   const actions = useNoteWindowActions();
 
   return (
-    <ScrollableList.List
-      style={{ marginTop: 0 }}
-      ref={elementRef}
-      onScroll={() => {
-        if (elementRef.current) {
-          const htmlElement = elementRef.current;
-          if (
-            htmlElement.offsetHeight + htmlElement.scrollTop >=
-            0.95 * htmlElement.scrollHeight
-          ) {
-            _loadMore();
+    <>
+      <ScrollableList.List
+        style={{ marginTop: 0 }}
+        ref={elementRef}
+        onScroll={() => {
+          if (elementRef.current) {
+            const htmlElement = elementRef.current;
+            if (
+              htmlElement.offsetHeight + htmlElement.scrollTop >=
+              0.95 * htmlElement.scrollHeight
+            ) {
+              _loadMore();
+            }
           }
-        }
-      }}
-    >
-      {data.notes.edges.map((edge) => (
-        <ScrollableList.ListItem key={edge.node.id}>
-          <ScrollableList.ListItemButton
-            isActive={props.activeNoteId === edge.node.documentId}
-            onClick={() => {
-              if (props.activeNoteId !== edge.node.documentId) {
-                actions.showNoteInWindow(edge.node.documentId, props.windowId);
-              }
-            }}
-          >
-            {edge.node.title || "<Untitled Note>"}
-          </ScrollableList.ListItemButton>
-        </ScrollableList.ListItem>
-      ))}
-    </ScrollableList.List>
+        }}
+      >
+        {data.notes.edges.map((edge) => (
+          <ScrollableList.ListItem key={edge.node.id}>
+            <ScrollableList.ListItemButton
+              isActive={props.activeNoteId === edge.node.documentId}
+              onClick={() => {
+                if (props.activeNoteId !== edge.node.documentId) {
+                  actions.showNoteInWindow(
+                    edge.node.documentId,
+                    props.windowId
+                  );
+                }
+              }}
+            >
+              {edge.node.title || "<Untitled Note>"}
+            </ScrollableList.ListItemButton>
+          </ScrollableList.ListItem>
+        ))}
+      </ScrollableList.List>
+      <FormControl display="flex" alignItems="center" padding="2">
+        <FormLabel htmlFor="show-entrypoints" mb="0">
+          Show all notes
+        </FormLabel>
+        <Switch
+          id="show-entrypoints"
+          isChecked={props.showAll}
+          onChange={(ev) => props.setShowAll(ev.target.checked)}
+        />
+      </FormControl>
+    </>
   );
 };
 
@@ -124,8 +152,12 @@ export const TokenInfoSideBar = (props: {
   activeNoteId: string | null;
 }): React.ReactElement | null => {
   const [filter, setFilter] = React.useState("");
+  const [showAll, setShowAll] = React.useState(false);
   const notesResult = useQuery<tokenInfoSideBar_NotesQuery>(
-    TokenInfoSideBar_NotesQuery
+    TokenInfoSideBar_NotesQuery,
+    {
+      filter: showAll ? "All" : "Entrypoint",
+    }
   );
   const notesSearchResult = useQuery<tokenInfoSideBar_SearchQuery>(
     TokenInfoSideBar_SearchQuery,
@@ -137,6 +169,12 @@ export const TokenInfoSideBar = (props: {
     }
   );
 
+  const [, cachedNotesResult] = useCurrent(
+    notesResult,
+    !notesResult.error && !notesResult.props,
+    0
+  );
+
   const [, cachedData] = useCurrent(
     notesSearchResult,
     !notesSearchResult.error && !notesSearchResult.props,
@@ -145,10 +183,10 @@ export const TokenInfoSideBar = (props: {
 
   const actions = useNoteWindowActions();
 
-  if (notesResult.error) {
+  if (cachedNotesResult?.error) {
     return <div>{String(notesResult.error)}</div>;
   }
-  if (!notesResult.props) {
+  if (!cachedNotesResult?.props) {
     return null;
   }
   return (
@@ -164,6 +202,13 @@ export const TokenInfoSideBar = (props: {
             value={filter}
             onChange={(ev) => setFilter(ev.target.value)}
           />
+          {filter !== "" ? (
+            <InputRightElement width="3.5rem">
+              <Button h="1.5rem" size="xs" onClick={() => setFilter("")}>
+                Clear
+              </Button>
+            </InputRightElement>
+          ) : null}
         </InputGroup>
       </Box>
       {filter !== "" && cachedData?.props ? (
@@ -190,7 +235,9 @@ export const TokenInfoSideBar = (props: {
         <TokenInfoSideBarRenderer
           windowId={props.windowId}
           activeNoteId={props.activeNoteId}
-          notesRef={notesResult.props}
+          notesRef={cachedNotesResult.props}
+          showAll={showAll}
+          setShowAll={setShowAll}
         />
       )}
     </>

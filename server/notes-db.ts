@@ -77,10 +77,25 @@ export const getNoteById = (
     TE.chainW(flow(decodeNote, TE.fromEither))
   );
 
+const whereSqlAnd = (...args: Array<String | null>) => {
+  const conditions = args.filter((value) => value !== null).join(" AND ");
+  return conditions.length ? "WHERE " + conditions : "";
+};
+
 export const getPaginatedNotes = (params: {
   /* amount of items to fetch */
   first: number;
+  /* whether only public notes should be returned */
   onlyPublic: boolean;
+  /* whether only entrypoints should be returned */
+  onlyEntryPoints: boolean;
+  /* cursor which can be used to fetch more */
+  cursor: null | {
+    /* createdAt date of the item after which items should be fetched */
+    lastCreatedAt: number;
+    /* id of the item after which items should be fetched */
+    lastId: string;
+  };
 }): RTE.ReaderTaskEither<Dependencies, DecodeError, NodeModelListType> => ({
   db,
 }) =>
@@ -98,9 +113,14 @@ export const getPaginatedNotes = (params: {
               "created_at",
               "updated_at"
             FROM "notes"
-            WHERE
-              "is_entry_point" = 1
-              ${params.onlyPublic ? `AND "type" = 'public'` : ""}
+            ${whereSqlAnd(
+              params.cursor?.lastCreatedAt
+                ? `"created_at" <= $last_created_at`
+                : null,
+              params.cursor?.lastId ? `"id" < $last_id` : null,
+              params.onlyEntryPoints ? `"is_entry_point" = 1` : null,
+              params.onlyPublic ? `"type" = 'public'` : null
+            )}
             ORDER BY
               "created_at" DESC,
               "id" DESC
@@ -108,54 +128,8 @@ export const getPaginatedNotes = (params: {
             ;
           `,
           {
-            $first: params.first,
-          }
-        ),
-      E.toError
-    ),
-    TE.chainW(flow(decodeNoteList, TE.fromEither))
-  );
-
-export const getMorePaginatedNotes = (params: {
-  /* createdAt date of the item after which items should be fetched */
-  lastCreatedAt: number;
-  /* id of the item after which items should be fetched */
-  lastId: string;
-  /* amount of items to fetch */
-  first: number;
-  onlyPublic: boolean;
-}): RTE.ReaderTaskEither<Dependencies, DecodeError, NoteModelType[]> => ({
-  db,
-}) =>
-  pipe(
-    TE.tryCatch(
-      () =>
-        db.all(
-          /* SQL */ `
-            SELECT
-              "id",
-              "title",
-              "content",
-              "type",
-              "is_entry_point",
-              "created_at",
-              "updated_at"
-            FROM
-              "notes"
-            WHERE
-              "created_at" <= $last_created_at
-              AND "id" < $last_id
-              AND "is_entry_point" = 1
-              ${params.onlyPublic ? `AND "type" = 'public'` : ""}
-            ORDER BY
-              "created_at" DESC,
-              "id" DESC
-            LIMIT $first
-            ;
-          `,
-          {
-            $last_created_at: params.lastCreatedAt,
-            $last_id: params.lastId,
+            $last_created_at: params.cursor?.lastCreatedAt,
+            $last_id: params.cursor?.lastId,
             $first: params.first,
           }
         ),
