@@ -2,7 +2,14 @@ import * as React from "react";
 import * as ScrollableList from "../components/scrollable-list";
 import graphql from "babel-plugin-relay/macro";
 import { usePagination, ConnectionConfig, useQuery } from "relay-hooks";
-import { Input, Box, InputLeftElement, InputGroup } from "@chakra-ui/react";
+import {
+  Input,
+  Box,
+  InputLeftElement,
+  InputGroup,
+  InputRightElement,
+  Button,
+} from "@chakra-ui/react";
 import * as Icon from "../../feather-icons";
 import { useCurrent } from "../../hooks/use-current";
 import { tokenInfoSideBar_NotesFragment$key } from "./__generated__/tokenInfoSideBar_NotesFragment.graphql";
@@ -164,6 +171,13 @@ export const TokenInfoSideBar = (props: {
             value={filter}
             onChange={(ev) => setFilter(ev.target.value)}
           />
+          {filter !== "" ? (
+            <InputRightElement width="3.5rem">
+              <Button h="1.5rem" size="xs" onClick={() => setFilter("")}>
+                Clear
+              </Button>
+            </InputRightElement>
+          ) : null}
         </InputGroup>
       </Box>
       {filter !== "" && cachedData?.props ? (
