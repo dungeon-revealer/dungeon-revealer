@@ -59,15 +59,19 @@ export const GraphQLNoteType = t.objectType<notes.NoteModelType>({
     }),
     t.field("viewerCanEdit", {
       type: t.NonNull(t.Boolean),
-      resolve: (obj, args, context) => context.session.role === "admin",
+      resolve: (_, __, context) => context.session.role === "admin",
     }),
     t.field("viewerCanShare", {
       type: t.NonNull(t.Boolean),
-      resolve: (obj, args, context) => obj.type === "public",
+      resolve: (obj) => obj.type === "public",
     }),
     t.field("access", {
       type: t.NonNull(t.String),
-      resolve: (obj, args, context) => obj.type,
+      resolve: (obj) => obj.type,
+    }),
+    t.field("isEntryPoint", {
+      type: t.NonNull(t.Boolean),
+      resolve: (obj) => obj.isEntryPoint,
     }),
     t.field("updatedAt", {
       type: t.NonNull(t.Int),
@@ -450,6 +454,14 @@ const GraphQLNoteUpdateAccessInputType = t.inputObjectType({
   }),
 });
 
+const GraphQLNoteUpdateIsEntryPointInputType = t.inputObjectType({
+  name: "NoteUpdateIsEntryPointInput",
+  fields: () => ({
+    id: { type: t.NonNullInput(t.String) },
+    isEntryPoint: { type: t.NonNullInput(t.Boolean) },
+  }),
+});
+
 const GraphQLNoteUpdateResult = t.objectType<{ note: notes.NoteModelType }>({
   name: "NoteUpdateResult",
   fields: () => [
@@ -475,6 +487,11 @@ const resolveNoteContentUpdate = flow(notes.updateNoteContent, findNoteById);
 const resolveNoteTitleUpdate = flow(notes.updateNoteTitle, findNoteById);
 
 const resolveNoteAccessUpdate = flow(notes.updateNoteAccess, findNoteById);
+
+const resolveNoteIsEntryPointUpdate = flow(
+  notes.updateNoteIsEntryPoint,
+  findNoteById
+);
 
 const tryDecodeId = flow(
   decodeNoteId,
@@ -516,7 +533,7 @@ export const mutationFields = [
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteUpdateContentInputType)),
     },
-    resolve: (src, args, context) => {
+    resolve: (_, args, context) => {
       return RT.run(
         resolveNoteContentUpdate({
           ...args.input,
@@ -531,7 +548,7 @@ export const mutationFields = [
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteUpdateTitleInputType)),
     },
-    resolve: (src, args, context) => {
+    resolve: (_, args, context) => {
       return RT.run(
         resolveNoteTitleUpdate({
           ...args.input,
@@ -546,9 +563,24 @@ export const mutationFields = [
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteUpdateAccessInputType)),
     },
-    resolve: (src, args, context) => {
+    resolve: (_, args, context) => {
       return RT.run(
         resolveNoteAccessUpdate({
+          ...args.input,
+          id: tryDecodeId(args.input.id),
+        }),
+        context
+      );
+    },
+  }),
+  t.field("noteUpdateIsEntryPoint", {
+    type: t.NonNull(GraphQLNoteUpdateResult),
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLNoteUpdateIsEntryPointInputType)),
+    },
+    resolve: (_, args, context) => {
+      return RT.run(
+        resolveNoteIsEntryPointUpdate({
           ...args.input,
           id: tryDecodeId(args.input.id),
         }),

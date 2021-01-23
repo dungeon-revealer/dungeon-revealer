@@ -99,6 +99,7 @@ type Note implements Node {
   viewerCanEdit: Boolean!
   viewerCanShare: Boolean!
   access: String!
+  isEntryPoint: Boolean!
   updatedAt: Int!
 }
 
@@ -210,6 +211,7 @@ type Mutation {
   noteUpdateContent(input: NoteUpdateContentInput!): NoteUpdateResult!
   noteUpdateTitle(input: NoteUpdateTitleInput!): NoteUpdateResult!
   noteUpdateAccess(input: NoteUpdateAccessInput!): NoteUpdateResult!
+  noteUpdateIsEntryPoint(input: NoteUpdateIsEntryPointInput!): NoteUpdateResult!
 }
 
 type LogInResult {
@@ -281,6 +283,11 @@ input NoteUpdateTitleInput {
 input NoteUpdateAccessInput {
   id: String!
   access: String!
+}
+
+input NoteUpdateIsEntryPointInput {
+  id: String!
+  isEntryPoint: Boolean!
 }
 
 type Subscription {

@@ -181,6 +181,32 @@ export const updateNoteAccess = ({
     )
   );
 
+export const updateNoteIsEntryPoint = ({
+  id,
+  isEntryPoint,
+}: {
+  id: string;
+  isEntryPoint: boolean;
+}) =>
+  pipe(
+    checkAdmin(),
+    RTE.chainW(() =>
+      pipe(
+        db.getNoteById(id),
+        RTE.chainW((note) =>
+          db.updateOrInsertNote({
+            id,
+            title: note.title,
+            content: note.content,
+            access: note.type,
+            sanitizedContent: sanitizeNoteContent(note.content),
+            isEntryPoint,
+          })
+        )
+      )
+    )
+  );
+
 export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
   pipe(
     checkAdmin(),
