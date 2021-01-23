@@ -22,7 +22,7 @@ const getListeningAddresses = () => {
   }
 };
 
-bootstrapServer().then(({ httpServer }) => {
+bootstrapServer(env).then(({ httpServer }) => {
   const server = httpServer.listen(env.PORT, env.HOST, () => {
     console.log(`\nStarting dungeon-revealer.
 

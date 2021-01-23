@@ -20,10 +20,9 @@ const { Settings } = require("./settings");
 const { FileStorage } = require("./file-storage");
 const { createResourceTaskProcessor } = require("./util");
 const database = require("./database");
-const env = require("./env");
 const { createSocketSessionStore } = require("./socket-session-store");
 
-const bootstrapServer = async () => {
+const bootstrapServer = async (env) => {
   fs.mkdirpSync(env.DATA_DIRECTORY);
 
   const db = await database.initialize({ dataPath: env.DATA_DIRECTORY });
@@ -236,7 +235,7 @@ const bootstrapServer = async () => {
   // development error handler
   // will print stacktrace
   if (app.get("env") === "development") {
-    app.use((err, req, res) => {
+    app.use((err, _, res) => {
       res.status(err.status || 500);
       res.render("error", {
         message: err.message,
