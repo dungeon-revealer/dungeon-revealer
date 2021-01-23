@@ -3,7 +3,12 @@
 """
 Instruction for establishing a live connection that is updated once the underlying data changes.
 """
-directive @live on QUERY
+directive @live(
+  """
+  Whether the query should be live or not.
+  """
+  if: Boolean = true
+) on QUERY
 
 type DiceRollOperatorNode implements DiceRollDetail {
   content: String!
@@ -113,7 +118,7 @@ type Query {
   users(first: Int, after: ID): ConnectedUserConnection!
   usersCount: Int!
   me: User!
-  notes(first: Int, after: String): NoteConnection!
+  notes(first: Int, after: String, filter: NotesFilter): NoteConnection!
   notesSearch(first: Int, after: String, query: String): NoteSearchConnection!
   note(documentId: ID!): Note
   node(id: ID!): Node
@@ -159,6 +164,21 @@ type NoteConnection {
 type NoteEdge {
   cursor: String!
   node: Note!
+}
+
+"""
+A filter that can be applied to the paginated notes.
+"""
+enum NotesFilter {
+  """
+  Only return notes that are marked as entrypoints.
+  """
+  Entrypoint
+
+  """
+  Return all notes.
+  """
+  All
 }
 
 type NoteSearchConnection {
