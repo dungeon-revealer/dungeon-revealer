@@ -11,6 +11,7 @@ import type {
 import { registerSocketIOGraphQLServer } from "@n1ru4l/socket-io-graphql-server";
 import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
 import { createSplashImageState } from "../splash-image-state";
+import { PubSub } from "graphql-subscriptions";
 
 type Dependencies = {
   roleMiddleware: any;
@@ -20,7 +21,8 @@ type Dependencies = {
 };
 
 export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
-  const chat = createChat();
+  const pubSub = new PubSub();
+  const chat = createChat({ pubSub });
   const user = createUser({
     sendUserConnectedMessage: ({ name }) =>
       chat.addOperationalMessage({ content: `**${name}** connected.` }),
@@ -56,6 +58,13 @@ export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
           liveQueryStore,
           splashImageState,
           socket,
+          notesUpdates: {
+            subscribe: () =>
+              // pubsub is typed incorrectly.
+              // @ts-ignore
+              pubSub.asyncIterator("NOTES_UPDATES") as AsyncIterableIterator,
+            publish: (payload) => pubSub.publish("NOTES_UPDATES", payload),
+          },
         } as GraphQLContextType,
       },
     }),

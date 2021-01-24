@@ -2,6 +2,8 @@ import { createTypesFactory, buildGraphQLSchema } from "gqtx";
 import type { Socket as IOSocket } from "socket.io";
 import type { createChat } from "../chat";
 import type { createUser } from "../user";
+import type { NotesUpdates } from "../notes-lib";
+
 import type { SocketSessionRecord } from "../socket-session-store";
 import type { Database } from "sqlite";
 import type { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
@@ -16,6 +18,7 @@ export type GraphQLContextType = {
   liveQueryStore: InMemoryLiveQueryStore;
   splashImageState: SplashImageState;
   socket: IOSocket;
+  notesUpdates: NotesUpdates;
 };
 
 export const t = createTypesFactory<GraphQLContextType>();
@@ -67,6 +70,7 @@ const Subscription = t.subscriptionType({
   fields: [
     ...UserModule.subscriptionFields,
     ...DiceRollerChatModule.subscriptionFields,
+    ...NotesModule.subscriptionFields,
   ],
 });
 

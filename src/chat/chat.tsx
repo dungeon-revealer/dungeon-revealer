@@ -180,7 +180,7 @@ export const Chat: React.FC<{
     const subscription = requestSubscription<chatSubscription>(environment, {
       subscription: AppSubscription,
       variables: {},
-      updater: (store, data) => {
+      updater: (store) => {
         const chat = ConnectionHandler.getConnection(
           store.getRoot(),
           "chatMessages_chat"

@@ -9,6 +9,8 @@ import * as notes from "../../notes-lib";
 import { pipe } from "fp-ts/lib/pipeable";
 import * as util from "../../markdown-to-plain-text";
 import * as O from "fp-ts/lib/Option";
+import first from "lodash/first";
+import type { SubscriptionField } from "gqtx/dist/types";
 
 export const NOTE_URI = "Note" as const;
 
@@ -517,7 +519,7 @@ export const mutationFields = [
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteCreateInput)),
     },
-    resolve: (src, { input }, context) =>
+    resolve: (_, { input }, context) =>
       RT.run(resolveNoteCreate(input), context),
   }),
   t.field("noteDelete", {
@@ -587,5 +589,113 @@ export const mutationFields = [
         context
       );
     },
+  }),
+];
+
+const GraphQLNotesConnectionEdgeInsertionUpdateType = t.objectType<{
+  previousNote: null | notes.NoteModelType;
+  note: notes.NoteModelType;
+}>({
+  name: "NotesConnectionEdgeInsertionUpdate",
+  description:
+    "Describes where a edge should be inserted inside a NotesConnection.",
+  fields: () => [
+    t.field("previousCursor", {
+      type: t.String,
+      description:
+        "The cursor of the item before which the node should be inserted.",
+      resolve: (obj) =>
+        obj.previousNote ? encodeNotesConnectionCursor(obj.previousNote) : null,
+    }),
+    t.field("edge", {
+      type: GraphQLNoteEdgeType,
+      description: "The edge that should be inserted.",
+      resolve: (obj) => ({
+        cursor: encodeNotesConnectionCursor(obj.note),
+        node: obj.note,
+      }),
+    }),
+  ],
+});
+
+const GraphQLNotesUpdatesType = t.objectType<{
+  removedNoteId: null | string;
+  addedNodeId: null | string;
+  updatedNoteId: null | string;
+  onlyEntryPoints: boolean;
+}>({
+  name: "NotesUpdates",
+  description: "Describes update instructions for the NoteConnection type.",
+  fields: () => [
+    t.field("addedNode", {
+      type: GraphQLNotesConnectionEdgeInsertionUpdateType,
+      description: "A node that was added to the connection.",
+      resolve: (obj, _, context) =>
+        obj.addedNodeId
+          ? RT.run(
+              pipe(
+                notes.getNoteById(obj.addedNodeId),
+                RTE.chainW((note) =>
+                  pipe(
+                    notes.getPaginatedNotes({
+                      first: 10,
+                      onlyEntryPoints: obj.onlyEntryPoints,
+                      cursor: {
+                        lastCreatedAt: note.createdAt,
+                        lastId: note.id,
+                      },
+                    }),
+                    RTE.map((records) => ({
+                      previousNote: first(records) ?? null,
+                      note,
+                    }))
+                  )
+                ),
+                RTE.fold(
+                  (err) => () => () => Promise.reject(err),
+                  (payload) => RT.of(payload)
+                )
+              ),
+              context
+            )
+          : null,
+    }),
+    t.field("updatedNote", {
+      type: GraphQLNoteType,
+      description: "A note that was updated.",
+      resolve: (obj, _, context) =>
+        obj.updatedNoteId
+          ? RT.run(resolveNote(obj.updatedNoteId), context)
+          : null,
+    }),
+    t.field("removedNoteId", {
+      type: t.ID,
+      description: "A note that was removed.",
+      resolve: (obj) =>
+        obj.removedNoteId ? encodeNoteId(obj.removedNoteId) : null,
+    }),
+  ],
+});
+
+export const subscriptionFields: SubscriptionField<any, any, any, any>[] = [
+  t.subscriptionField("notesUpdates", {
+    type: t.NonNull(GraphQLNotesUpdatesType),
+    args: {
+      filter: t.arg(GraphQLNotesFilterEnum),
+    },
+    resolve: (obj) => obj as any,
+    subscribe: (_, args, context) =>
+      RT.run(
+        pipe(
+          notes.subscribeToNotesUpdates({
+            onlyEntryPoints: args.filter !== "all",
+          }),
+          RTE.fold(
+            (err) => () => () => Promise.reject(err),
+            (value) => RT.of(value)
+          )
+        ),
+        context
+      ),
   }),
 ];

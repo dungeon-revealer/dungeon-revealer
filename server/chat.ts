@@ -149,9 +149,8 @@ type NewMessagesPayload = {
 
 const MAXIMUM_CHAT_SIZE = 500;
 
-export const createChat = () => {
+export const createChat = ({ pubSub }: { pubSub: PubSub }) => {
   let state: Array<ApplicationRecordSchema> = [];
-  const pubSub = new PubSub({});
 
   const addMessageToStack = (message: ApplicationRecordSchema) => {
     state.push(message);

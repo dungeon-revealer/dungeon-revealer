@@ -1,0 +1,14 @@
+diff --git a/node_modules/relay-compiler/bin/relay-compiler b/node_modules/relay-compiler/bin/relay-compiler
+index 404d662..7612759 100644
+--- a/node_modules/relay-compiler/bin/relay-compiler
++++ b/node_modules/relay-compiler/bin/relay-compiler
+@@ -7,6 +7,9 @@
+  * This source code is licensed under the MIT license found in the
+  * LICENSE file in the root directory of this source tree.
+  */
++
++require('relay-runtime').RelayFeatureFlags.ENABLE_VARIABLE_CONNECTION_KEY = true
++
+ module.exports =
+ /******/ (function(modules) { // webpackBootstrap
+ /******/ 	// The module cache
