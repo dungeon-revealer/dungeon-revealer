@@ -114,10 +114,9 @@ export const getPaginatedNotes = (params: {
               "updated_at"
             FROM "notes"
             ${whereSqlAnd(
-              params.cursor?.lastCreatedAt
-                ? `"created_at" <= $last_created_at`
+              params.cursor
+                ? `("created_at" < $last_created_at OR ("created_at" = $last_created_at AND "id" < $last_id))`
                 : null,
-              params.cursor?.lastId ? `"id" < $last_id` : null,
               params.onlyEntryPoints ? `"is_entry_point" = 1` : null,
               params.onlyPublic ? `"type" = 'public'` : null
             )}
