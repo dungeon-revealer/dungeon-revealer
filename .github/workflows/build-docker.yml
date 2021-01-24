@@ -143,6 +143,9 @@ jobs:
         run: |
           export TAG="${GITHUB_REF#'refs/tags/'}"
           echo "GH_TAG=$TAG" >> $GITHUB_ENV
+          echo "COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
 
       - name: Set up QEMU
         id: qemu
@@ -177,7 +180,9 @@ jobs:
             --cache-from=type=local,src=docker-cache/linux/arm/v7 \
             --cache-from=type=local,src=docker-cache/linux/arm64 \
             --build-arg SKIP_BUILD="true" \
-            -t ${{ secrets.DOCKER_REPO }}:dev .
+            -t ${{ secrets.DOCKER_REPO }}:dev \
+            -t ${{ secrets.DOCKER_REPO }}:$COMMIT \
+            -t ${{ secrets.DOCKER_REPO }}:$COMMIT_SHORT .
 
       - name: Run Buildx Release
         if: startsWith(github.ref, 'refs/tags/') # Just the tags
