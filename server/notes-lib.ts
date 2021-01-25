@@ -1,6 +1,5 @@
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as E from "fp-ts/lib/Either";
-import * as RT from "fp-ts/lib/ReaderTask";
 import * as TE from "fp-ts/lib/TaskEither";
 import { flow, pipe } from "fp-ts/lib/function";
 import { v4 as uuid } from "uuid";
@@ -19,7 +18,7 @@ export const NoteModel = db.NoteModel;
 
 export type NoteSearchMatchType = db.NoteSearchMatchType;
 
-type SessionDependency = { session: SocketSessionRecord };
+export type SessionDependency = { session: SocketSessionRecord };
 
 const isAdmin = (viewerRole: ViewerRole) => viewerRole === "admin";
 
@@ -182,12 +181,14 @@ export const updateNoteAccess = ({
             }),
             RTE.chainW((noteId) =>
               pipe(
-                publishNotesUpdate({
-                  type: "NOTE_CHANGE_ACCESS",
-                  noteId,
-                  access,
-                  isEntryPoint: note.isEntryPoint,
-                }),
+                note.type !== access
+                  ? publishNotesUpdate({
+                      type: "NOTE_CHANGE_ACCESS",
+                      noteId,
+                      access,
+                      isEntryPoint: note.isEntryPoint,
+                    })
+                  : RTE.right(undefined),
                 RTE.map(() => noteId)
               )
             )
@@ -232,12 +233,14 @@ export const updateNoteIsEntryPoint = ({
             }),
             RTE.chainW((noteId) =>
               pipe(
-                publishNotesUpdate({
-                  type: "NOTE_CHANGE_ENTRY_POINT",
-                  noteId,
-                  access: note.type,
-                  isEntryPoint: isEntryPoint,
-                }),
+                isEntryPoint !== note.isEntryPoint
+                  ? publishNotesUpdate({
+                      type: "NOTE_CHANGE_ENTRY_POINT",
+                      noteId,
+                      access: note.type,
+                      isEntryPoint: isEntryPoint,
+                    })
+                  : RTE.right(undefined),
                 RTE.map(() => noteId)
               )
             )
@@ -263,13 +266,14 @@ export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
         }),
         RTE.chainW((noteId) =>
           pipe(
-            publishNotesUpdate({
-              type: "NOTE_CHANGE_TITLE",
-              noteId,
-              title,
-              access: note.type,
-              isEntryPoint: note.isEntryPoint,
-            }),
+            title !== note.title
+              ? publishNotesUpdate({
+                  type: "NOTE_CHANGE_TITLE",
+                  noteId,
+                  access: note.type,
+                  isEntryPoint: note.isEntryPoint,
+                })
+              : RTE.right(undefined),
             RTE.map(() => noteId)
           )
         )
@@ -319,12 +323,11 @@ interface NotesChangedIsEntryPointPayload {
 interface NotesChangedTitlePayload {
   type: "NOTE_CHANGE_TITLE";
   noteId: string;
-  title: string;
   isEntryPoint: boolean;
   access: "admin" | "public";
 }
 
-type NotesUpdatesPayload =
+export type NotesUpdatesPayload =
   | NotesChangedAccessPayload
   | NotesChangedIsEntryPointPayload
   | NotesChangedTitlePayload;
@@ -391,16 +394,28 @@ export const subscribeToNotesUpdates = (params: { onlyEntryPoints: boolean }) =>
                   onlyEntryPoints: params.onlyEntryPoints,
                 };
               }
+
               return {
                 addedNodeId:
                   hasAccess && payload.isEntryPoint ? payload.noteId : null,
                 updatedNoteId: null,
                 removedNoteId:
-                  !hasAccess || !payload.isEntryPoint ? payload.noteId : null,
+                  hasAccess && !payload.isEntryPoint ? payload.noteId : null,
                 onlyEntryPoints: params.onlyEntryPoints,
               };
             }
             case "NOTE_CHANGE_TITLE": {
+              if (
+                params.onlyEntryPoints === true &&
+                payload.isEntryPoint === false
+              ) {
+                return {
+                  addedNodeId: null,
+                  updatedNoteId: null,
+                  removedNoteId: null,
+                  onlyEntryPoints: params.onlyEntryPoints,
+                };
+              }
               return {
                 addedNodeId: null,
                 updatedNoteId: hasAccess ? payload.noteId : null,
