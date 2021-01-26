@@ -396,7 +396,6 @@ const GraphQLNoteCreateResult = t.objectType<{ note: notes.NoteModelType }>({
 
 const resolveNoteCreate = flow(
   notes.createNote,
-  RTE.chain((id) => notes.getNoteById(id)),
   RTE.fold(
     (err) => {
       throw err;
@@ -409,7 +408,7 @@ const resolveNoteDelete = flow(
   decodeNoteId,
   RTE.fromEither,
   RTE.chain(notes.deleteNote),
-  RTE.map((id) => encodeNoteId(id)),
+  RTE.map(encodeNoteId),
   RTE.fold(
     (err) => {
       console.log(JSON.stringify(err, null, 2));
@@ -683,6 +682,7 @@ export const subscriptionFields: SubscriptionField<any, any, any, any>[] = [
     args: {
       filter: t.arg(GraphQLNotesFilterEnum),
       endCursor: t.arg(t.NonNullInput(t.String)),
+      hasNextPage: t.arg(t.NonNullInput(t.Boolean)),
     },
     resolve: (obj) => obj as any,
     subscribe: (_, args, context) =>
@@ -691,6 +691,7 @@ export const subscriptionFields: SubscriptionField<any, any, any, any>[] = [
           notes.subscribeToNotesUpdates({
             mode: args.filter ?? "entrypoint",
             cursor: decodeNotesConnectionCursor(args.endCursor),
+            hasNextPage: args.hasNextPage,
           }),
           RTE.fold(
             (err) => () => () => Promise.reject(err),

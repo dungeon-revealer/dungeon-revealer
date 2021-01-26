@@ -293,7 +293,11 @@ input NoteUpdateIsEntryPointInput {
 type Subscription {
   userUpdate: UserUpdateSubscription!
   chatMessagesAdded: ChatMessagesAddedSubscription!
-  notesUpdates(filter: NotesFilter): NotesUpdates!
+  notesUpdates(
+    filter: NotesFilter
+    endCursor: String!
+    hasNextPage: Boolean!
+  ): NotesUpdates!
 }
 
 union UserUpdateSubscription =

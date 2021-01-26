@@ -96,9 +96,6 @@ const TokenInfoAside_NoteDeleteMutation = graphql`
     noteDelete(input: $input) {
       success
       deletedNoteId
-        @deleteEdge(
-          connections: ["client:root:__tokenInfoSideBar_notes_connection"]
-        )
     }
   }
 `;
@@ -106,11 +103,7 @@ const TokenInfoAside_NoteDeleteMutation = graphql`
 const TokenInfoAside_NoteCreateMutation = graphql`
   mutation tokenInfoAside_NoteCreateMutation($input: NoteCreateInput!) {
     noteCreate(input: $input) {
-      note
-        @prependNode(
-          connections: ["client:root:__tokenInfoSideBar_notes_connection"]
-          edgeTypeName: "NoteEdge"
-        ) {
+      note {
         id
         documentId
         title

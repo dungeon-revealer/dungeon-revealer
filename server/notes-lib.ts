@@ -129,6 +129,19 @@ export const createNote = ({
         sanitizedContent: sanitizeNoteContent(content),
         isEntryPoint,
       })
+    ),
+    RTE.chain(getNoteById),
+    RTE.chainW((note) =>
+      pipe(
+        publishNotesUpdate({
+          type: "NOTE_CREATED",
+          noteId: note.id,
+          createdAt: note.createdAt,
+          isEntryPoint: note.isEntryPoint,
+          access: note.type,
+        }),
+        RTE.map(() => note)
+      )
     )
   );
 
@@ -287,7 +300,19 @@ export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
 export const deleteNote = (noteId: string) =>
   pipe(
     checkAdmin(),
-    RTE.chainW(() => db.deleteNote(noteId))
+    RTE.chainW(() => db.getNoteById(noteId)),
+    RTE.chainW((note) =>
+      pipe(
+        publishNotesUpdate({
+          type: "NOTE_DELETED",
+          noteId: note.id,
+          createdAt: note.createdAt,
+          isEntryPoint: note.isEntryPoint,
+          access: note.type,
+        }),
+        RTE.chainW(() => db.deleteNote(note.id))
+      )
+    )
   );
 
 export const findPublicNotes = (query: string) =>
@@ -333,10 +358,28 @@ interface NotesChangedTitlePayload {
   access: "admin" | "public";
 }
 
+interface NotesDeletedNotePayload {
+  type: "NOTE_DELETED";
+  noteId: string;
+  createdAt: number;
+  isEntryPoint: boolean;
+  access: "admin" | "public";
+}
+
+interface NotesCreatedNotePayload {
+  type: "NOTE_CREATED";
+  noteId: string;
+  createdAt: number;
+  isEntryPoint: boolean;
+  access: "admin" | "public";
+}
+
 export type NotesUpdatesPayload =
   | NotesChangedAccessPayload
   | NotesChangedIsEntryPointPayload
-  | NotesChangedTitlePayload;
+  | NotesChangedTitlePayload
+  | NotesDeletedNotePayload
+  | NotesCreatedNotePayload;
 
 export interface NotesUpdates {
   subscribe: () => AsyncIterableIterator<NotesUpdatesPayload>;
@@ -371,6 +414,7 @@ export const subscribeToNotesUpdates = (params: {
     lastId: string;
     lastCreatedAt: number;
   };
+  hasNextPage: boolean;
 }) =>
   pipe(
     checkAuthenticated(),
@@ -382,13 +426,13 @@ export const subscribeToNotesUpdates = (params: {
         // as those notes are not relevant for the client
         AsyncIterator.filter(
           (payload) =>
-            isAfterCursor(
+            !isAfterCursor(
               {
                 lastId: payload.noteId,
                 lastCreatedAt: payload.createdAt,
               },
               params.cursor
-            ) === false
+            ) || !params.hasNextPage
         ),
         AsyncIterator.map((payload) => {
           const hasAccess =
@@ -454,6 +498,46 @@ export const subscribeToNotesUpdates = (params: {
                 addedNodeId: null,
                 updatedNoteId: hasAccess ? payload.noteId : null,
                 removedNoteId: null,
+                mode: params.mode,
+              };
+            }
+            case "NOTE_CREATED": {
+              if (
+                params.mode === "entrypoint" &&
+                payload.isEntryPoint === false
+              ) {
+                return {
+                  addedNodeId: null,
+                  updatedNoteId: null,
+                  removedNoteId: null,
+                  mode: params.mode,
+                };
+              }
+
+              return {
+                addedNodeId: hasAccess ? payload.noteId : null,
+                updatedNoteId: null,
+                removedNoteId: null,
+                mode: params.mode,
+              };
+            }
+            case "NOTE_DELETED": {
+              if (
+                params.mode === "entrypoint" &&
+                payload.isEntryPoint === false
+              ) {
+                return {
+                  addedNodeId: null,
+                  updatedNoteId: null,
+                  removedNoteId: null,
+                  mode: params.mode,
+                };
+              }
+
+              return {
+                addedNodeId: null,
+                updatedNoteId: null,
+                removedNoteId: hasAccess ? payload.noteId : null,
                 mode: params.mode,
               };
             }

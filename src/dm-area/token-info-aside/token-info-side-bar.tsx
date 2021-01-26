@@ -52,6 +52,7 @@ const TokenInfoSideBar_NotesFragment = graphql`
       }
       pageInfo {
         endCursor
+        hasNextPage
       }
     }
   }
@@ -125,6 +126,7 @@ const TokenInfoSideBarRenderer = (props: {
         variables: {
           filter: props.showAll ? "All" : "Entrypoint",
           endCursor: data.notes.pageInfo.endCursor,
+          hasNextPage: data.notes.pageInfo.hasNextPage,
         },
         updater: (store, payload) => {
           console.log(JSON.stringify(payload, null, 2));
@@ -252,8 +254,13 @@ const TokenInfoSideBar_NotesUpdatesSubscription = graphql`
   subscription tokenInfoSideBar_NotesUpdatesSubscription(
     $filter: NotesFilter!
     $endCursor: String!
+    $hasNextPage: Boolean!
   ) {
-    notesUpdates(filter: $filter, endCursor: $endCursor) {
+    notesUpdates(
+      filter: $filter
+      endCursor: $endCursor
+      hasNextPage: $hasNextPage
+    ) {
       removedNoteId
       updatedNote {
         id

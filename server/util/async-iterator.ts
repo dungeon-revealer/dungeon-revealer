@@ -1,3 +1,6 @@
+/**
+ * map the events published by a AsyncIterableIterator
+ */
 export const map = <T, O>(map: (input: T) => Promise<O> | O) =>
   async function* mapGenerator(asyncIterable: AsyncIterableIterator<T>) {
     for await (const value of asyncIterable) {
@@ -5,6 +8,9 @@ export const map = <T, O>(map: (input: T) => Promise<O> | O) =>
     }
   };
 
+/**
+ * filter the events published by a AsyncIterableIterator
+ */
 export function filter<T, U extends T>(
   filter: (input: T) => input is U
 ): (
