@@ -622,7 +622,7 @@ const GraphQLNotesUpdatesType = t.objectType<{
   removedNoteId: null | string;
   addedNodeId: null | string;
   updatedNoteId: null | string;
-  onlyEntryPoints: boolean;
+  mode: "entrypoint" | "all";
 }>({
   name: "NotesUpdates",
   description: "Describes update instructions for the NoteConnection type.",
@@ -639,7 +639,7 @@ const GraphQLNotesUpdatesType = t.objectType<{
                   pipe(
                     notes.getPaginatedNotes({
                       first: 10,
-                      onlyEntryPoints: obj.onlyEntryPoints,
+                      onlyEntryPoints: obj.mode === "entrypoint",
                       cursor: {
                         lastCreatedAt: note.createdAt,
                         lastId: note.id,
@@ -682,13 +682,15 @@ export const subscriptionFields: SubscriptionField<any, any, any, any>[] = [
     type: t.NonNull(GraphQLNotesUpdatesType),
     args: {
       filter: t.arg(GraphQLNotesFilterEnum),
+      endCursor: t.arg(t.NonNullInput(t.String)),
     },
     resolve: (obj) => obj as any,
     subscribe: (_, args, context) =>
       RT.run(
         pipe(
           notes.subscribeToNotesUpdates({
-            onlyEntryPoints: args.filter !== "all",
+            mode: args.filter ?? "entrypoint",
+            cursor: decodeNotesConnectionCursor(args.endCursor),
           }),
           RTE.fold(
             (err) => () => () => Promise.reject(err),

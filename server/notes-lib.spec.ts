@@ -43,15 +43,26 @@ const getAllValues = async <T>(
   }
   return values;
 };
+test.each([
+  [{ lastCreatedAt: 1, lastId: "a" }, { lastCreatedAt: 1, lastId: "a" }, false],
+  [{ lastCreatedAt: 1, lastId: "a" }, { lastCreatedAt: 2, lastId: "a" }, true],
+  [{ lastCreatedAt: 2, lastId: "a" }, { lastCreatedAt: 1, lastId: "a" }, false],
+  [{ lastCreatedAt: 1, lastId: "b" }, { lastCreatedAt: 1, lastId: "a" }, true],
+])("isAfterCursor(%o, %o) = %s", (a, b, expectedValue) => {
+  expect(lib.isAfterCursor(a, b)).toEqual(expectedValue);
+});
+
+const createNoopCursor = () => ({ lastId: "a", lastCreatedAt: 0 });
 
 describe("subscribeToNotesUpdates", () => {
   test("cannot setup if unauthenticated", async () => {
-    const result = await lib.subscribeToNotesUpdates({ onlyEntryPoints: true })(
-      {
-        session: createSession(),
-        notesUpdates: createNotesUpdates(),
-      }
-    )();
+    const result = await lib.subscribeToNotesUpdates({
+      mode: "all",
+      cursor: createNoopCursor(),
+    })({
+      session: createSession(),
+      notesUpdates: createNotesUpdates(),
+    })();
 
     expect(E.isLeft(result)).toEqual(true);
     expect(result).toMatchInlineSnapshot(`
@@ -63,35 +74,39 @@ describe("subscribeToNotesUpdates", () => {
   });
 
   it("can setup if viewer has role 'user'", async () => {
-    const result = await lib.subscribeToNotesUpdates({ onlyEntryPoints: true })(
-      {
-        session: createSession("user"),
-        notesUpdates: createNotesUpdates(),
-      }
-    )();
+    const result = await lib.subscribeToNotesUpdates({
+      mode: "all",
+      cursor: createNoopCursor(),
+    })({
+      session: createSession("user"),
+      notesUpdates: createNotesUpdates(),
+    })();
     expect(E.isRight(result)).toEqual(true);
   });
 
   it("can setup if viewer has role 'admin'", async () => {
-    const result = await lib.subscribeToNotesUpdates({ onlyEntryPoints: true })(
-      {
-        session: createSession("admin"),
-        notesUpdates: createNotesUpdates(),
-      }
-    )();
+    const result = await lib.subscribeToNotesUpdates({
+      mode: "all",
+      cursor: createNoopCursor(),
+    })({
+      session: createSession("admin"),
+      notesUpdates: createNotesUpdates(),
+    })();
     expect(E.isRight(result)).toEqual(true);
   });
 
   describe("NOTE_CHANGE_ACCESS event without entry point filter", () => {
     it("publishes correct event for 'user' role in case the access is changed to 'admin'", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -100,7 +115,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: null,
-          onlyEntryPoints: false,
+          mode: "all",
           removedNoteId: "1",
           updatedNoteId: null,
         },
@@ -108,13 +123,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes correct event for 'user' role in case the access is changed to 'public'", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ACCESS",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -123,7 +140,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: "1",
-          onlyEntryPoints: false,
+          mode: "all",
           removedNoteId: null,
           updatedNoteId: null,
         },
@@ -131,13 +148,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'admin' role in case the access is changed to 'public'", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ACCESS",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -147,13 +166,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'admin' role when access is changed to 'admin'", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -166,13 +187,15 @@ describe("subscribeToNotesUpdates", () => {
   describe("NOTE_CHANGE_ACCESS event with entry point filter", () => {
     it("publishes no event for 'user' role when note is no entry point and the role is changed to 'admin'", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -182,13 +205,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes correct event for 'user' role when note is entry point and access is changed to 'public'", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ACCESS",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -197,7 +222,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: "1",
-          onlyEntryPoints: true,
+          mode: "entrypoint",
           removedNoteId: null,
           updatedNoteId: null,
         },
@@ -205,13 +230,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'user' role when note is no entry point and access is changed to 'admin'", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -221,13 +248,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes correct event for 'user' role when note is entry point and access is changed to 'admin'", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -236,7 +265,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: null,
-          onlyEntryPoints: true,
+          mode: "entrypoint",
           removedNoteId: "1",
           updatedNoteId: null,
         },
@@ -244,13 +273,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'admin' role when note is entry pomt and access is changed to 'admin'", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -260,13 +291,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'admin' role when note is entry pomt and access is changed to 'public'", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ACCESS",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -279,13 +312,15 @@ describe("subscribeToNotesUpdates", () => {
   describe("NOTE_CHANGE_ENTRY_POINT event without entry point filter", () => {
     it("publishes no event for 'user' role for public note when entry point is removed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -294,13 +329,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'user' role for public note when entry point is added", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -309,13 +346,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'user' role for admin note when entry point is removed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -324,13 +363,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'user' role for admin note when entry point is added", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -339,13 +380,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'admin' role for public note when entry point is removed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -354,13 +397,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'admin' role for public note when entry point is added", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -369,13 +414,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'admin' role for admin note when entry point is removed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -384,13 +431,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'admin' role for admin note when entry point is added", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -401,13 +450,15 @@ describe("subscribeToNotesUpdates", () => {
   describe("NOTE_CHANGE_ENTRY_POINT event with entry point filter", () => {
     it("publishes event for 'user' role for public note when entry point is removed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -415,7 +466,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: null,
-          onlyEntryPoints: true,
+          mode: "entrypoint",
           removedNoteId: "1",
           updatedNoteId: null,
         },
@@ -423,13 +474,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes event for 'user' role for public note when entry point is added", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -437,7 +490,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: "1",
-          onlyEntryPoints: true,
+          mode: "entrypoint",
           removedNoteId: null,
           updatedNoteId: null,
         },
@@ -445,13 +498,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'user' role for admin note when entry point is added", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -460,13 +515,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'user' role for admin note when entry point is removed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -475,13 +532,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes event for 'admin' role for public note when entry point is removed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -489,7 +548,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: null,
-          onlyEntryPoints: true,
+          mode: "entrypoint",
           removedNoteId: "1",
           updatedNoteId: null,
         },
@@ -497,13 +556,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes event for 'admin' role for public note when entry point is added", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -511,7 +572,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: "1",
-          onlyEntryPoints: true,
+          mode: "entrypoint",
           removedNoteId: null,
           updatedNoteId: null,
         },
@@ -519,13 +580,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes event for 'admin' role for admin note when entry point is removed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -533,7 +596,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: null,
-          onlyEntryPoints: true,
+          mode: "entrypoint",
           removedNoteId: "1",
           updatedNoteId: null,
         },
@@ -541,13 +604,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes event for 'admin' role for admin note when entry point is added", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -555,7 +620,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: "1",
-          onlyEntryPoints: true,
+          mode: "entrypoint",
           removedNoteId: null,
           updatedNoteId: null,
         },
@@ -565,13 +630,15 @@ describe("subscribeToNotesUpdates", () => {
   describe("NOTE_CHANGE_TITLE event without entry point filter", () => {
     it("publishes event for 'user' role in case public note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -579,7 +646,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: null,
-          onlyEntryPoints: false,
+          mode: "all",
           removedNoteId: null,
           updatedNoteId: "1",
         },
@@ -587,13 +654,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'user' role in case admin note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -602,13 +671,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes event for 'admin' role in case public note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -616,7 +687,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: null,
-          onlyEntryPoints: false,
+          mode: "all",
           removedNoteId: null,
           updatedNoteId: "1",
         },
@@ -624,13 +695,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes event for 'admin' role in case admin note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: false,
+        mode: "all",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -638,7 +711,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: null,
-          onlyEntryPoints: false,
+          mode: "all",
           removedNoteId: null,
           updatedNoteId: "1",
         },
@@ -648,13 +721,15 @@ describe("subscribeToNotesUpdates", () => {
   describe("NOTE_CHANGE_TITLE event with entry point filter", () => {
     it("publishes event for 'user' role in case public entry point note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -662,7 +737,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: null,
-          onlyEntryPoints: true,
+          mode: "entrypoint",
           removedNoteId: null,
           updatedNoteId: "1",
         },
@@ -670,13 +745,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'user' role in case admin entry point note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -685,13 +762,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'user' role in case public non entry point note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -700,13 +779,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'user' role in case admin non entry point note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -715,13 +796,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'admin' role in case public non entry point note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -731,13 +814,15 @@ describe("subscribeToNotesUpdates", () => {
 
     it("publishes event for 'admin' role in case admin entry point note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -745,7 +830,7 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: null,
-          onlyEntryPoints: true,
+          mode: "entrypoint",
           removedNoteId: null,
           updatedNoteId: "1",
         },
@@ -753,13 +838,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes no event for 'admin' role in case admin non entry point note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "admin",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: false,
         }),
       })();
@@ -768,13 +855,15 @@ describe("subscribeToNotesUpdates", () => {
     });
     it("publishes event for 'admin' role in case public entry point note title is changed", async () => {
       const result = await lib.subscribeToNotesUpdates({
-        onlyEntryPoints: true,
+        mode: "entrypoint",
+        cursor: createNoopCursor(),
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
+          createdAt: 1,
           isEntryPoint: true,
         }),
       })();
@@ -782,11 +871,58 @@ describe("subscribeToNotesUpdates", () => {
       expect(values).toEqual([
         {
           addedNodeId: null,
-          onlyEntryPoints: true,
+          mode: "entrypoint",
           removedNoteId: null,
           updatedNoteId: "1",
         },
       ]);
     });
+  });
+  it("publishes no event for out of range cursor", async () => {
+    const result = await lib.subscribeToNotesUpdates({
+      mode: "all",
+      cursor: {
+        lastCreatedAt: 10,
+        lastId: "a",
+      },
+    })({
+      session: createSession("admin"),
+      notesUpdates: createNotesUpdates({
+        type: "NOTE_CHANGE_TITLE",
+        access: "public",
+        noteId: "a",
+        createdAt: 1,
+        isEntryPoint: true,
+      }),
+    })();
+    const values = await getAllValues(getRight(result));
+    expect(values).toEqual([]);
+  });
+  it("publishes event for in range cursor", async () => {
+    const result = await lib.subscribeToNotesUpdates({
+      mode: "all",
+      cursor: {
+        lastCreatedAt: 10,
+        lastId: "a",
+      },
+    })({
+      session: createSession("admin"),
+      notesUpdates: createNotesUpdates({
+        type: "NOTE_CHANGE_TITLE",
+        access: "public",
+        noteId: "a",
+        createdAt: 10,
+        isEntryPoint: true,
+      }),
+    })();
+    const values = await getAllValues(getRight(result));
+    expect(values).toEqual([
+      {
+        addedNodeId: null,
+        mode: "all",
+        removedNoteId: null,
+        updatedNoteId: "a",
+      },
+    ]);
   });
 });

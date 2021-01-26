@@ -37,7 +37,11 @@ const TokenInfoSideBar_NotesFragment = graphql`
     key: { type: "String!" }
   ) {
     notes(first: $count, after: $cursor, filter: $filter)
-      @connection(key: "tokenInfoSideBar_notes", dynamicKey_UNSTABLE: $key) {
+      @connection(
+        key: "tokenInfoSideBar_notes"
+        filters: []
+        dynamicKey_UNSTABLE: $key
+      ) {
       __id
       edges {
         node {
@@ -45,6 +49,9 @@ const TokenInfoSideBar_NotesFragment = graphql`
           documentId
           title
         }
+      }
+      pageInfo {
+        endCursor
       }
     }
   }
@@ -117,6 +124,7 @@ const TokenInfoSideBarRenderer = (props: {
         subscription: TokenInfoSideBar_NotesUpdatesSubscription,
         variables: {
           filter: props.showAll ? "All" : "Entrypoint",
+          endCursor: data.notes.pageInfo.endCursor,
         },
         updater: (store, payload) => {
           console.log(JSON.stringify(payload, null, 2));
@@ -167,7 +175,13 @@ const TokenInfoSideBarRenderer = (props: {
     );
 
     return () => subscription.dispose();
-  }, [environment, props.showAll, props.windowId, data.notes.__id]);
+  }, [
+    environment,
+    props.showAll,
+    props.windowId,
+    data.notes.__id,
+    data.notes.pageInfo.endCursor,
+  ]);
 
   return (
     <>
@@ -237,8 +251,9 @@ const TokenInfoSideBar_SearchQuery = graphql`
 const TokenInfoSideBar_NotesUpdatesSubscription = graphql`
   subscription tokenInfoSideBar_NotesUpdatesSubscription(
     $filter: NotesFilter!
+    $endCursor: String!
   ) {
-    notesUpdates(filter: $filter) {
+    notesUpdates(filter: $filter, endCursor: $endCursor) {
       removedNoteId
       updatedNote {
         id

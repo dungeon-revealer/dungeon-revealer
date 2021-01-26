@@ -185,6 +185,7 @@ export const updateNoteAccess = ({
                   ? publishNotesUpdate({
                       type: "NOTE_CHANGE_ACCESS",
                       noteId,
+                      createdAt: note.createdAt,
                       access,
                       isEntryPoint: note.isEntryPoint,
                     })
@@ -237,6 +238,7 @@ export const updateNoteIsEntryPoint = ({
                   ? publishNotesUpdate({
                       type: "NOTE_CHANGE_ENTRY_POINT",
                       noteId,
+                      createdAt: note.createdAt,
                       access: note.type,
                       isEntryPoint: isEntryPoint,
                     })
@@ -270,6 +272,7 @@ export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
               ? publishNotesUpdate({
                   type: "NOTE_CHANGE_TITLE",
                   noteId,
+                  createdAt: note.createdAt,
                   access: note.type,
                   isEntryPoint: note.isEntryPoint,
                 })
@@ -309,6 +312,7 @@ export const importNote = flow(
 interface NotesChangedAccessPayload {
   type: "NOTE_CHANGE_ACCESS";
   noteId: string;
+  createdAt: number;
   access: "admin" | "public";
   isEntryPoint: boolean;
 }
@@ -316,6 +320,7 @@ interface NotesChangedAccessPayload {
 interface NotesChangedIsEntryPointPayload {
   type: "NOTE_CHANGE_ENTRY_POINT";
   noteId: string;
+  createdAt: number;
   isEntryPoint: boolean;
   access: "admin" | "public";
 }
@@ -323,6 +328,7 @@ interface NotesChangedIsEntryPointPayload {
 interface NotesChangedTitlePayload {
   type: "NOTE_CHANGE_TITLE";
   noteId: string;
+  createdAt: number;
   isEntryPoint: boolean;
   access: "admin" | "public";
 }
@@ -341,22 +347,50 @@ interface NotesUpdatesDependency {
   notesUpdates: NotesUpdates;
 }
 
-export const subscribeToNotesUpdates = (params: { onlyEntryPoints: boolean }) =>
+interface NoteCursor {
+  lastId: string;
+  lastCreatedAt: number;
+}
+
+/**
+ * Whether the cursor a is located after cursor b
+ */
+export const isAfterCursor = (a: NoteCursor, b: NoteCursor) => {
+  if (a.lastCreatedAt === b.lastCreatedAt) {
+    return a.lastId > b.lastId;
+  }
+  if (a.lastCreatedAt > b.lastCreatedAt) {
+    return false;
+  }
+  return true;
+};
+
+export const subscribeToNotesUpdates = (params: {
+  mode: "all" | "entrypoint";
+  cursor: {
+    lastId: string;
+    lastCreatedAt: number;
+  };
+}) =>
   pipe(
     checkAuthenticated(),
     RTE.chainW(() => RTE.ask<NotesUpdatesDependency & SessionDependency>()),
     RTE.map((deps) =>
       pipe(
         deps.notesUpdates.subscribe(),
-        AsyncIterator.map<
-          NotesUpdatesPayload,
-          {
-            removedNoteId: null | string;
-            addedNodeId: null | string;
-            updatedNoteId: null | string;
-            onlyEntryPoints: boolean;
-          }
-        >((payload) => {
+        // skip all events that are after our last cursor
+        // as those notes are not relevant for the client
+        AsyncIterator.filter(
+          (payload) =>
+            isAfterCursor(
+              {
+                lastId: payload.noteId,
+                lastCreatedAt: payload.createdAt,
+              },
+              params.cursor
+            ) === false
+        ),
+        AsyncIterator.map((payload) => {
           const hasAccess =
             (payload.access === "admin" && deps.session.role === "admin") ||
             payload.access === "public";
@@ -364,7 +398,7 @@ export const subscribeToNotesUpdates = (params: { onlyEntryPoints: boolean }) =>
           switch (payload.type) {
             case "NOTE_CHANGE_ACCESS": {
               if (
-                (params.onlyEntryPoints === true &&
+                (params.mode === "entrypoint" &&
                   payload.isEntryPoint === false) ||
                 deps.session.role === "admin"
               ) {
@@ -372,7 +406,7 @@ export const subscribeToNotesUpdates = (params: { onlyEntryPoints: boolean }) =>
                   addedNodeId: null,
                   updatedNoteId: null,
                   removedNoteId: null,
-                  onlyEntryPoints: params.onlyEntryPoints,
+                  mode: params.mode,
                 };
               }
               // deps.session.role === "user"
@@ -382,16 +416,16 @@ export const subscribeToNotesUpdates = (params: { onlyEntryPoints: boolean }) =>
                 updatedNoteId: null,
                 removedNoteId:
                   payload.access === "admin" ? payload.noteId : null,
-                onlyEntryPoints: params.onlyEntryPoints,
+                mode: params.mode,
               };
             }
             case "NOTE_CHANGE_ENTRY_POINT": {
-              if (params.onlyEntryPoints === false) {
+              if (params.mode === "all") {
                 return {
                   addedNodeId: null,
                   updatedNoteId: null,
                   removedNoteId: null,
-                  onlyEntryPoints: params.onlyEntryPoints,
+                  mode: params.mode,
                 };
               }
 
@@ -401,37 +435,32 @@ export const subscribeToNotesUpdates = (params: { onlyEntryPoints: boolean }) =>
                 updatedNoteId: null,
                 removedNoteId:
                   hasAccess && !payload.isEntryPoint ? payload.noteId : null,
-                onlyEntryPoints: params.onlyEntryPoints,
+                mode: params.mode,
               };
             }
             case "NOTE_CHANGE_TITLE": {
               if (
-                params.onlyEntryPoints === true &&
+                params.mode === "entrypoint" &&
                 payload.isEntryPoint === false
               ) {
                 return {
                   addedNodeId: null,
                   updatedNoteId: null,
                   removedNoteId: null,
-                  onlyEntryPoints: params.onlyEntryPoints,
+                  mode: params.mode,
                 };
               }
               return {
                 addedNodeId: null,
                 updatedNoteId: hasAccess ? payload.noteId : null,
                 removedNoteId: null,
-                onlyEntryPoints: params.onlyEntryPoints,
+                mode: params.mode,
               };
             }
           }
         }),
         // micro optimization for not sending empty payloads where every field is null to the client.
-        AsyncIterator.filter<{
-          removedNoteId: null | string;
-          addedNodeId: null | string;
-          updatedNoteId: null | string;
-          onlyEntryPoints: boolean;
-        }>(
+        AsyncIterator.filter(
           (value): value is typeof value =>
             value.addedNodeId !== null ||
             value.removedNoteId !== null ||
