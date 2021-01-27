@@ -59,6 +59,7 @@ describe("subscribeToNotesUpdates", () => {
     const result = await lib.subscribeToNotesUpdates({
       mode: "all",
       cursor: createNoopCursor(),
+      hasNextPage: false,
     })({
       session: createSession(),
       notesUpdates: createNotesUpdates(),
@@ -77,6 +78,7 @@ describe("subscribeToNotesUpdates", () => {
     const result = await lib.subscribeToNotesUpdates({
       mode: "all",
       cursor: createNoopCursor(),
+      hasNextPage: false,
     })({
       session: createSession("user"),
       notesUpdates: createNotesUpdates(),
@@ -88,6 +90,7 @@ describe("subscribeToNotesUpdates", () => {
     const result = await lib.subscribeToNotesUpdates({
       mode: "all",
       cursor: createNoopCursor(),
+      hasNextPage: false,
     })({
       session: createSession("admin"),
       notesUpdates: createNotesUpdates(),
@@ -100,6 +103,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -125,6 +129,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -150,6 +155,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -168,6 +174,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -189,6 +196,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -207,6 +215,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -232,6 +241,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -250,6 +260,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -275,6 +286,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -293,6 +305,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -314,6 +327,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -331,6 +345,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -348,6 +363,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -365,6 +381,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -382,6 +399,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -399,6 +417,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -416,6 +435,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -433,6 +453,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -452,6 +473,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -476,6 +498,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -500,6 +523,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -517,6 +541,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -534,6 +559,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -558,6 +584,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -582,6 +609,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -606,6 +634,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -632,6 +661,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -656,6 +686,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -673,6 +704,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -697,6 +729,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "all",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -723,6 +756,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -747,6 +781,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -764,6 +799,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -781,6 +817,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("user"),
         notesUpdates: createNotesUpdates({
@@ -798,6 +835,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -816,6 +854,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -840,6 +879,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -857,6 +897,7 @@ describe("subscribeToNotesUpdates", () => {
       const result = await lib.subscribeToNotesUpdates({
         mode: "entrypoint",
         cursor: createNoopCursor(),
+        hasNextPage: false,
       })({
         session: createSession("admin"),
         notesUpdates: createNotesUpdates({
@@ -885,6 +926,7 @@ describe("subscribeToNotesUpdates", () => {
         lastCreatedAt: 10,
         lastId: "a",
       },
+      hasNextPage: true,
     })({
       session: createSession("admin"),
       notesUpdates: createNotesUpdates({
@@ -905,6 +947,7 @@ describe("subscribeToNotesUpdates", () => {
         lastCreatedAt: 10,
         lastId: "a",
       },
+      hasNextPage: false,
     })({
       session: createSession("admin"),
       notesUpdates: createNotesUpdates({
