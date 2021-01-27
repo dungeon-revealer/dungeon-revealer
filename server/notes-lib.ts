@@ -217,8 +217,8 @@ const publishNotesUpdate = (payload: NotesUpdatesPayload) =>
     RTE.ask<NotesUpdatesDependency>(),
     RTE.chainW((deps) =>
       pipe(
-        TE.tryCatch(() => deps.notesUpdates.publish(payload), E.toError),
-        RTE.fromTaskEither
+        E.tryCatch(() => deps.notesUpdates.publish(payload), E.toError),
+        RTE.fromEither
       )
     )
   );
@@ -383,7 +383,7 @@ export type NotesUpdatesPayload =
 
 export interface NotesUpdates {
   subscribe: () => AsyncIterableIterator<NotesUpdatesPayload>;
-  publish: (payload: NotesUpdatesPayload) => Promise<void>;
+  publish: (payload: NotesUpdatesPayload) => void;
 }
 
 interface NotesUpdatesDependency {

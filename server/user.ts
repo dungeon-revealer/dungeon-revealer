@@ -1,5 +1,5 @@
-import { PubSub } from "graphql-subscriptions";
 import { setTimeout } from "timers";
+import { createPubSub } from "./pubsub";
 
 export type UserRecord = {
   id: string;
@@ -28,14 +28,14 @@ export const createUser = ({
   sendUserDisconnectedMessage: ({ name }: { name: string }) => void;
 }) => {
   const users = new Map<string, UserRecord>();
-  const pubSub = new PubSub();
+  const pubSub = createPubSub<UserUpdate>();
 
   const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
 
   const remove = (id: string) => {
     const user = users.get(id) || null;
     users.delete(id);
-    pubSub.publish("USER_UPDATE", { type: "REMOVE", data: { userId: id } });
+    pubSub.publish({ type: "REMOVE", data: { userId: id } });
     return user;
   };
 
@@ -52,7 +52,7 @@ export const createUser = ({
       users.set(id, user);
 
       if (timeout === undefined) {
-        pubSub.publish("USER_UPDATE", { type: "ADD", data: { userId: id } });
+        pubSub.publish({ type: "ADD", data: { userId: id } });
         sendUserConnectedMessage({ name: user.name });
       }
       return user;
@@ -61,7 +61,7 @@ export const createUser = ({
       const user = users.get(id);
       if (!user) return;
       user.name = name;
-      pubSub.publish("USER_UPDATE", { type: "CHANGE", data: { userId: id } });
+      pubSub.publish({ type: "CHANGE", data: { userId: id } });
     },
     userDisconnects: (id: string) => {
       // When a user disconnects we wait a few seconds before removing him from the list of online users.
@@ -77,7 +77,7 @@ export const createUser = ({
     get: (id: string) => users.get(id) || null,
     getUsers: () => Array.from(users.values()),
     subscribe: {
-      userUpdate: () => pubSub.asyncIterator<UserUpdate>("USER_UPDATE"),
+      userUpdate: () => pubSub.subscribe(),
     },
   };
 };
