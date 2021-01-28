@@ -1,4 +1,5 @@
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
+import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import { flow, pipe } from "fp-ts/lib/function";
 import { v4 as uuid } from "uuid";
@@ -7,6 +8,7 @@ import showdown from "showdown";
 import * as db from "./notes-db";
 import * as noteImport from "./note-import";
 import type { SocketSessionRecord } from "./socket-session-store";
+import * as AsyncIterator from "./util/async-iterator";
 
 type ViewerRole = "unauthenticated" | "admin" | "user";
 
@@ -16,7 +18,7 @@ export const NoteModel = db.NoteModel;
 
 export type NoteSearchMatchType = db.NoteSearchMatchType;
 
-type SessionDependency = { session: SocketSessionRecord };
+export type SessionDependency = { session: SocketSessionRecord };
 
 const isAdmin = (viewerRole: ViewerRole) => viewerRole === "admin";
 
@@ -127,6 +129,19 @@ export const createNote = ({
         sanitizedContent: sanitizeNoteContent(content),
         isEntryPoint,
       })
+    ),
+    RTE.chain(getNoteById),
+    RTE.chainW((note) =>
+      pipe(
+        publishNotesUpdate({
+          type: "NOTE_CREATED",
+          noteId: note.id,
+          createdAt: note.createdAt,
+          isEntryPoint: note.isEntryPoint,
+          access: note.type,
+        }),
+        RTE.map(() => note)
+      )
     )
   );
 
@@ -168,14 +183,83 @@ export const updateNoteAccess = ({
       pipe(
         db.getNoteById(id),
         RTE.chainW((note) =>
-          db.updateOrInsertNote({
-            id,
-            title: note.title,
-            content: note.content,
-            access: access,
-            sanitizedContent: sanitizeNoteContent(note.content),
-            isEntryPoint: note.isEntryPoint,
-          })
+          pipe(
+            db.updateOrInsertNote({
+              id,
+              title: note.title,
+              content: note.content,
+              access: access,
+              sanitizedContent: sanitizeNoteContent(note.content),
+              isEntryPoint: note.isEntryPoint,
+            }),
+            RTE.chainW((noteId) =>
+              pipe(
+                note.type !== access
+                  ? publishNotesUpdate({
+                      type: "NOTE_CHANGE_ACCESS",
+                      noteId,
+                      createdAt: note.createdAt,
+                      access,
+                      isEntryPoint: note.isEntryPoint,
+                    })
+                  : RTE.right(undefined),
+                RTE.map(() => noteId)
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+const publishNotesUpdate = (payload: NotesUpdatesPayload) =>
+  pipe(
+    RTE.ask<NotesUpdatesDependency>(),
+    RTE.chainW((deps) =>
+      pipe(
+        E.tryCatch(() => deps.notesUpdates.publish(payload), E.toError),
+        RTE.fromEither
+      )
+    )
+  );
+
+export const updateNoteIsEntryPoint = ({
+  id,
+  isEntryPoint,
+}: {
+  id: string;
+  isEntryPoint: boolean;
+}) =>
+  pipe(
+    checkAdmin(),
+    RTE.chainW(() =>
+      pipe(
+        db.getNoteById(id),
+        RTE.chainW((note) =>
+          pipe(
+            db.updateOrInsertNote({
+              id,
+              title: note.title,
+              content: note.content,
+              access: note.type,
+              sanitizedContent: sanitizeNoteContent(note.content),
+              isEntryPoint,
+            }),
+            RTE.chainW((noteId) =>
+              pipe(
+                isEntryPoint !== note.isEntryPoint
+                  ? publishNotesUpdate({
+                      type: "NOTE_CHANGE_ENTRY_POINT",
+                      noteId,
+                      createdAt: note.createdAt,
+                      access: note.type,
+                      isEntryPoint: isEntryPoint,
+                    })
+                  : RTE.right(undefined),
+                RTE.map(() => noteId)
+              )
+            )
+          )
         )
       )
     )
@@ -186,21 +270,49 @@ export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
     checkAdmin(),
     RTE.chainW(() => db.getNoteById(id)),
     RTE.chainW((note) =>
-      db.updateOrInsertNote({
-        id,
-        title,
-        content: note.content,
-        access: note.type,
-        sanitizedContent: sanitizeNoteContent(note.content),
-        isEntryPoint: note.isEntryPoint,
-      })
+      pipe(
+        db.updateOrInsertNote({
+          id,
+          title,
+          content: note.content,
+          access: note.type,
+          sanitizedContent: sanitizeNoteContent(note.content),
+          isEntryPoint: note.isEntryPoint,
+        }),
+        RTE.chainW((noteId) =>
+          pipe(
+            title !== note.title
+              ? publishNotesUpdate({
+                  type: "NOTE_CHANGE_TITLE",
+                  noteId,
+                  createdAt: note.createdAt,
+                  access: note.type,
+                  isEntryPoint: note.isEntryPoint,
+                })
+              : RTE.right(undefined),
+            RTE.map(() => noteId)
+          )
+        )
+      )
     )
   );
 
 export const deleteNote = (noteId: string) =>
   pipe(
     checkAdmin(),
-    RTE.chainW(() => db.deleteNote(noteId))
+    RTE.chainW(() => db.getNoteById(noteId)),
+    RTE.chainW((note) =>
+      pipe(
+        publishNotesUpdate({
+          type: "NOTE_DELETED",
+          noteId: note.id,
+          createdAt: note.createdAt,
+          isEntryPoint: note.isEntryPoint,
+          access: note.type,
+        }),
+        RTE.chainW(() => db.deleteNote(note.id))
+      )
+    )
   );
 
 export const findPublicNotes = (query: string) =>
@@ -221,3 +333,223 @@ export const importNote = flow(
     })
   )
 );
+
+interface NotesChangedAccessPayload {
+  type: "NOTE_CHANGE_ACCESS";
+  noteId: string;
+  createdAt: number;
+  access: "admin" | "public";
+  isEntryPoint: boolean;
+}
+
+interface NotesChangedIsEntryPointPayload {
+  type: "NOTE_CHANGE_ENTRY_POINT";
+  noteId: string;
+  createdAt: number;
+  isEntryPoint: boolean;
+  access: "admin" | "public";
+}
+
+interface NotesChangedTitlePayload {
+  type: "NOTE_CHANGE_TITLE";
+  noteId: string;
+  createdAt: number;
+  isEntryPoint: boolean;
+  access: "admin" | "public";
+}
+
+interface NotesDeletedNotePayload {
+  type: "NOTE_DELETED";
+  noteId: string;
+  createdAt: number;
+  isEntryPoint: boolean;
+  access: "admin" | "public";
+}
+
+interface NotesCreatedNotePayload {
+  type: "NOTE_CREATED";
+  noteId: string;
+  createdAt: number;
+  isEntryPoint: boolean;
+  access: "admin" | "public";
+}
+
+export type NotesUpdatesPayload =
+  | NotesChangedAccessPayload
+  | NotesChangedIsEntryPointPayload
+  | NotesChangedTitlePayload
+  | NotesDeletedNotePayload
+  | NotesCreatedNotePayload;
+
+export interface NotesUpdates {
+  subscribe: () => AsyncIterableIterator<NotesUpdatesPayload>;
+  publish: (payload: NotesUpdatesPayload) => void;
+}
+
+interface NotesUpdatesDependency {
+  notesUpdates: NotesUpdates;
+}
+
+interface NoteCursor {
+  lastId: string;
+  lastCreatedAt: number;
+}
+
+/**
+ * Whether the cursor a is located after cursor b
+ */
+export const isAfterCursor = (a: NoteCursor, b: NoteCursor) => {
+  if (a.lastCreatedAt === b.lastCreatedAt) {
+    return a.lastId > b.lastId;
+  }
+  if (a.lastCreatedAt > b.lastCreatedAt) {
+    return false;
+  }
+  return true;
+};
+
+export const subscribeToNotesUpdates = (params: {
+  mode: "all" | "entrypoint";
+  cursor: {
+    lastId: string;
+    lastCreatedAt: number;
+  };
+  hasNextPage: boolean;
+}) =>
+  pipe(
+    checkAuthenticated(),
+    RTE.chainW(() => RTE.ask<NotesUpdatesDependency & SessionDependency>()),
+    RTE.map((deps) =>
+      pipe(
+        deps.notesUpdates.subscribe(),
+        // skip all events that are after our last cursor
+        // as those notes are not relevant for the client
+        AsyncIterator.filter(
+          (payload) =>
+            !isAfterCursor(
+              {
+                lastId: payload.noteId,
+                lastCreatedAt: payload.createdAt,
+              },
+              params.cursor
+            ) || !params.hasNextPage
+        ),
+        AsyncIterator.map((payload) => {
+          const hasAccess =
+            (payload.access === "admin" && deps.session.role === "admin") ||
+            payload.access === "public";
+
+          switch (payload.type) {
+            case "NOTE_CHANGE_ACCESS": {
+              if (
+                (params.mode === "entrypoint" &&
+                  payload.isEntryPoint === false) ||
+                deps.session.role === "admin"
+              ) {
+                return {
+                  addedNodeId: null,
+                  updatedNoteId: null,
+                  removedNoteId: null,
+                  mode: params.mode,
+                };
+              }
+              // deps.session.role === "user"
+              return {
+                addedNodeId:
+                  payload.access === "public" ? payload.noteId : null,
+                updatedNoteId: null,
+                removedNoteId:
+                  payload.access === "admin" ? payload.noteId : null,
+                mode: params.mode,
+              };
+            }
+            case "NOTE_CHANGE_ENTRY_POINT": {
+              if (params.mode === "all") {
+                return {
+                  addedNodeId: null,
+                  updatedNoteId: null,
+                  removedNoteId: null,
+                  mode: params.mode,
+                };
+              }
+
+              return {
+                addedNodeId:
+                  hasAccess && payload.isEntryPoint ? payload.noteId : null,
+                updatedNoteId: null,
+                removedNoteId:
+                  hasAccess && !payload.isEntryPoint ? payload.noteId : null,
+                mode: params.mode,
+              };
+            }
+            case "NOTE_CHANGE_TITLE": {
+              if (
+                params.mode === "entrypoint" &&
+                payload.isEntryPoint === false
+              ) {
+                return {
+                  addedNodeId: null,
+                  updatedNoteId: null,
+                  removedNoteId: null,
+                  mode: params.mode,
+                };
+              }
+              return {
+                addedNodeId: null,
+                updatedNoteId: hasAccess ? payload.noteId : null,
+                removedNoteId: null,
+                mode: params.mode,
+              };
+            }
+            case "NOTE_CREATED": {
+              if (
+                params.mode === "entrypoint" &&
+                payload.isEntryPoint === false
+              ) {
+                return {
+                  addedNodeId: null,
+                  updatedNoteId: null,
+                  removedNoteId: null,
+                  mode: params.mode,
+                };
+              }
+
+              return {
+                addedNodeId: hasAccess ? payload.noteId : null,
+                updatedNoteId: null,
+                removedNoteId: null,
+                mode: params.mode,
+              };
+            }
+            case "NOTE_DELETED": {
+              if (
+                params.mode === "entrypoint" &&
+                payload.isEntryPoint === false
+              ) {
+                return {
+                  addedNodeId: null,
+                  updatedNoteId: null,
+                  removedNoteId: null,
+                  mode: params.mode,
+                };
+              }
+
+              return {
+                addedNodeId: null,
+                updatedNoteId: null,
+                removedNoteId: hasAccess ? payload.noteId : null,
+                mode: params.mode,
+              };
+            }
+          }
+        }),
+        // micro optimization for not sending empty payloads where every field is null to the client.
+        AsyncIterator.filter(
+          (value): value is typeof value =>
+            value.addedNodeId !== null ||
+            value.removedNoteId !== null ||
+            value.updatedNoteId !== null
+        )
+      )
+    )
+  );

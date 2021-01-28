@@ -1,7 +1,14 @@
 import * as React from "react";
 import * as ScrollableList from "../components/scrollable-list";
 import graphql from "babel-plugin-relay/macro";
-import { usePagination, ConnectionConfig, useQuery } from "relay-hooks";
+import {
+  usePagination,
+  ConnectionConfig,
+  useQuery,
+  useRelayEnvironment,
+} from "relay-hooks";
+import { requestSubscription } from "react-relay";
+import { ConnectionHandler } from "relay-runtime";
 import {
   Input,
   Box,
@@ -19,6 +26,7 @@ import { tokenInfoSideBar_NotesFragment$key } from "./__generated__/tokenInfoSid
 import { tokenInfoSideBar_NotesQuery } from "./__generated__/tokenInfoSideBar_NotesQuery.graphql";
 import { useNoteWindowActions } from ".";
 import { tokenInfoSideBar_SearchQuery } from "./__generated__/tokenInfoSideBar_SearchQuery.graphql";
+import { tokenInfoSideBar_NotesUpdatesSubscription } from "./__generated__/tokenInfoSideBar_NotesUpdatesSubscription.graphql";
 
 const TokenInfoSideBar_NotesFragment = graphql`
   fragment tokenInfoSideBar_NotesFragment on Query
@@ -26,9 +34,15 @@ const TokenInfoSideBar_NotesFragment = graphql`
     count: { type: "Int", defaultValue: 20 }
     cursor: { type: "String" }
     filter: { type: "NotesFilter" }
+    key: { type: "String!" }
   ) {
     notes(first: $count, after: $cursor, filter: $filter)
-      @connection(key: "tokenInfoSideBar_notes", filters: []) {
+      @connection(
+        key: "tokenInfoSideBar_notes"
+        filters: []
+        dynamicKey_UNSTABLE: $key
+      ) {
+      __id
       edges {
         node {
           id
@@ -36,30 +50,41 @@ const TokenInfoSideBar_NotesFragment = graphql`
           title
         }
       }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
     }
   }
 `;
 
 const TokenInfoSideBar_NotesQuery = graphql`
-  query tokenInfoSideBar_NotesQuery($filter: NotesFilter!) {
-    ...tokenInfoSideBar_NotesFragment @arguments(filter: $filter)
+  query tokenInfoSideBar_NotesQuery($filter: NotesFilter!, $key: String!) {
+    ...tokenInfoSideBar_NotesFragment @arguments(filter: $filter, key: $key)
   }
 `;
 
-const connectionConfig: ConnectionConfig = {
+const connectionConfig = (key: string, filter: string): ConnectionConfig => ({
   getVariables(_, { count, cursor }) {
     return {
       count,
       cursor,
+      key,
+      filter,
     };
   },
   query: graphql`
-    query tokenInfoSideBar_MoreQuery($count: Int!, $cursor: String) {
+    query tokenInfoSideBar_MoreQuery(
+      $filter: NotesFilter!
+      $count: Int!
+      $cursor: String
+      $key: String!
+    ) {
       ...tokenInfoSideBar_NotesFragment
-        @arguments(count: $count, cursor: $cursor)
+        @arguments(filter: $filter, count: $count, cursor: $cursor, key: $key)
     }
   `,
-};
+});
 
 const TokenInfoSideBarRenderer = (props: {
   windowId: string;
@@ -68,7 +93,7 @@ const TokenInfoSideBarRenderer = (props: {
   setShowAll: (showAll: boolean) => void;
   showAll: boolean;
 }): React.ReactElement => {
-  const [data, { isLoading, hasMore, loadMore, ...p }] = usePagination(
+  const [data, { isLoading, hasMore, loadMore }] = usePagination(
     TokenInfoSideBar_NotesFragment,
     props.notesRef
   );
@@ -78,10 +103,87 @@ const TokenInfoSideBarRenderer = (props: {
       return;
     }
 
-    loadMore(connectionConfig, 10, console.error);
+    loadMore(
+      connectionConfig(
+        `window-${props.windowId}`,
+        props.showAll ? "All" : "Entrypoint"
+      ),
+      10,
+      console.error
+    );
   };
   const elementRef = React.useRef<HTMLUListElement>(null);
   const actions = useNoteWindowActions();
+
+  const newEdgeIdCounter = React.useRef(0);
+
+  const environment = useRelayEnvironment();
+  React.useEffect(() => {
+    const subscription = requestSubscription<tokenInfoSideBar_NotesUpdatesSubscription>(
+      environment,
+      {
+        subscription: TokenInfoSideBar_NotesUpdatesSubscription,
+        variables: {
+          filter: props.showAll ? "All" : "Entrypoint",
+          endCursor: data.notes.pageInfo.endCursor,
+          hasNextPage: data.notes.pageInfo.hasNextPage,
+        },
+        updater: (store, payload) => {
+          console.log(JSON.stringify(payload, null, 2));
+          if (payload.notesUpdates.removedNoteId) {
+            const connection = store.get(data.notes.__id);
+            if (connection) {
+              ConnectionHandler.deleteNode(
+                connection,
+                payload.notesUpdates.removedNoteId
+              );
+            }
+          }
+          if (payload.notesUpdates.addedNode) {
+            const connection = store.get(data.notes.__id);
+            if (connection) {
+              const edge = store
+                .getRootField("notesUpdates")
+                ?.getLinkedRecord("addedNode")
+                ?.getLinkedRecord("edge")!;
+              // we need to copy the fields at the other Subscription.notesUpdates.addedNode.edge field
+              // will be mutated when the next subscription result is arriving
+              const record = store.create(
+                // prettier-ignore
+                `${data.notes.__id}-${edge.getValue("cursor")!}-${++newEdgeIdCounter.current}`,
+                "NoteEdge"
+              );
+
+              record.copyFieldsFrom(edge);
+
+              if (payload.notesUpdates.addedNode.previousCursor) {
+                ConnectionHandler.insertEdgeBefore(
+                  connection,
+                  record,
+                  payload.notesUpdates.addedNode.previousCursor
+                );
+              } else if (
+                // in case we don't have a previous cursor and there is no nextPage the edge must be added the last list item.
+                connection
+                  ?.getLinkedRecord("pageInfo")
+                  ?.getValue("hasNextPage") === false
+              ) {
+                ConnectionHandler.insertEdgeAfter(connection, record);
+              }
+            }
+          }
+        },
+      }
+    );
+
+    return () => subscription.dispose();
+  }, [
+    environment,
+    props.showAll,
+    props.windowId,
+    data.notes.__id,
+    data.notes.pageInfo.endCursor,
+  ]);
 
   return (
     <>
@@ -136,11 +238,44 @@ const TokenInfoSideBar_SearchQuery = graphql`
   query tokenInfoSideBar_SearchQuery($query: String!) {
     notesSearch(first: 30, query: $query)
       @connection(key: "tokenInfoSideBar_notesSearch", filters: ["query"]) {
+      __id
       edges {
         node {
           noteId
           documentId
           title
+        }
+      }
+    }
+  }
+`;
+
+const TokenInfoSideBar_NotesUpdatesSubscription = graphql`
+  subscription tokenInfoSideBar_NotesUpdatesSubscription(
+    $filter: NotesFilter!
+    $endCursor: String!
+    $hasNextPage: Boolean!
+  ) {
+    notesUpdates(
+      filter: $filter
+      endCursor: $endCursor
+      hasNextPage: $hasNextPage
+    ) {
+      removedNoteId
+      updatedNote {
+        id
+        title
+        isEntryPoint
+      }
+      addedNode {
+        previousCursor
+        edge {
+          cursor
+          node {
+            id
+            documentId
+            title
+          }
         }
       }
     }
@@ -157,6 +292,7 @@ export const TokenInfoSideBar = (props: {
     TokenInfoSideBar_NotesQuery,
     {
       filter: showAll ? "All" : "Entrypoint",
+      key: `window-${props.windowId}`,
     }
   );
   const notesSearchResult = useQuery<tokenInfoSideBar_SearchQuery>(

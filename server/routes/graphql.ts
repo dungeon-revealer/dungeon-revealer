@@ -11,6 +11,8 @@ import type {
 import { registerSocketIOGraphQLServer } from "@n1ru4l/socket-io-graphql-server";
 import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
 import { createSplashImageState } from "../splash-image-state";
+import { createPubSub } from "../pubsub";
+import { NotesUpdatesPayload } from "../notes-lib";
 
 type Dependencies = {
   roleMiddleware: any;
@@ -41,6 +43,8 @@ export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
 
   const liveQueryStore = new InMemoryLiveQueryStore();
 
+  const notesUpdates = createPubSub<NotesUpdatesPayload>();
+
   const socketIOGraphQLServer = registerSocketIOGraphQLServer({
     socketServer,
     isLazy: true,
@@ -56,6 +60,7 @@ export default ({ socketServer, socketSessionStore, db }: Dependencies) => {
           liveQueryStore,
           splashImageState,
           socket,
+          notesUpdates,
         } as GraphQLContextType,
       },
     }),

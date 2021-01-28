@@ -1,7 +1,18 @@
 import React from "react";
 import styled from "@emotion/styled/macro";
 import graphql from "babel-plugin-relay/macro";
-import { Input, Flex, VStack, Tooltip, Text, Box } from "@chakra-ui/react";
+import {
+  Input,
+  Flex,
+  VStack,
+  Tooltip,
+  Text,
+  Box,
+  FormControl,
+  FormLabel,
+  Switch,
+  Stack,
+} from "@chakra-ui/react";
 import { useNoteWindows, useNoteWindowActions } from ".";
 import { NoteEditorActiveItem } from "../note-editor/note-editor-active-item";
 import { useQuery, useMutation, useFragment } from "relay-hooks";
@@ -24,11 +35,13 @@ import { tokenInfoAside_NoteCreateMutation } from "./__generated__/tokenInfoAsid
 import { tokenInfoAside_NoteDeleteMutation } from "./__generated__/tokenInfoAside_NoteDeleteMutation.graphql";
 import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
 import { useViewerRole } from "../../authenticated-app-shell";
+import { tokenInfoAside_noteUpdateIsEntryPointMutation } from "./__generated__/tokenInfoAside_noteUpdateIsEntryPointMutation.graphql";
 
 const TokenInfoAside_permissionsPopUpFragment = graphql`
   fragment tokenInfoAside_permissionsPopUpFragment on Note {
     id
     access
+    isEntryPoint
   }
 `;
 
@@ -65,14 +78,24 @@ const TokenInfoAside_noteUpdateAccessMutation = graphql`
   }
 `;
 
+const TokenInfoAside_nodeUpdateIsEntryPointMutation = graphql`
+  mutation tokenInfoAside_noteUpdateIsEntryPointMutation(
+    $input: NoteUpdateIsEntryPointInput!
+  ) {
+    noteUpdateIsEntryPoint(input: $input) {
+      note {
+        id
+        isEntryPoint
+      }
+    }
+  }
+`;
+
 const TokenInfoAside_NoteDeleteMutation = graphql`
   mutation tokenInfoAside_NoteDeleteMutation($input: NoteDeleteInput!) {
     noteDelete(input: $input) {
       success
       deletedNoteId
-        @deleteEdge(
-          connections: ["client:root:__tokenInfoSideBar_notes_connection"]
-        )
     }
   }
 `;
@@ -80,11 +103,7 @@ const TokenInfoAside_NoteDeleteMutation = graphql`
 const TokenInfoAside_NoteCreateMutation = graphql`
   mutation tokenInfoAside_NoteCreateMutation($input: NoteCreateInput!) {
     noteCreate(input: $input) {
-      note
-        @prependNode(
-          connections: ["client:root:__tokenInfoSideBar_notes_connection"]
-          edgeTypeName: "NoteEdge"
-        ) {
+      note {
         id
         documentId
         title
@@ -129,14 +148,6 @@ const TitleAutoSaveInput: React.FC<{ id: string; title: string }> = (props) => {
   );
 };
 
-const PermissionLabel = styled.div`
-  font-size: 10px;
-  line-height: 10px;
-  display: block;
-  margin-bottom: 6px;
-  font-weight: bold;
-`;
-
 const PermissionMenuContainer = styled.div`
   background-color: white;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
@@ -155,8 +166,15 @@ const PermissionsMenu: React.FC<{
     TokenInfoAside_permissionsPopUpFragment,
     props.fragmentRef
   );
-  const [mutate] = useMutation<tokenInfoAside_noteUpdateAccessMutation>(
+  const [
+    updateNoteAccess,
+  ] = useMutation<tokenInfoAside_noteUpdateAccessMutation>(
     TokenInfoAside_noteUpdateAccessMutation
+  );
+  const [
+    updateIsEntryPoint,
+  ] = useMutation<tokenInfoAside_noteUpdateIsEntryPointMutation>(
+    TokenInfoAside_nodeUpdateIsEntryPointMutation
   );
   const ref = React.useRef<null | HTMLDivElement>(null);
   useOnClickOutside<HTMLDivElement>(ref, props.close);
@@ -169,27 +187,66 @@ const PermissionsMenu: React.FC<{
         left: props.position.x,
       }}
     >
-      <PermissionLabel style={{ fontSize: 10 }}>Access</PermissionLabel>
-      <HorizontalNavigation.Group>
-        <HorizontalNavigation.Button
-          small
-          isActive={data.access === "admin"}
-          onClick={() =>
-            mutate({ variables: { input: { id: data.id, access: "admin" } } })
-          }
-        >
-          Admin
-        </HorizontalNavigation.Button>
-        <HorizontalNavigation.Button
-          small
-          isActive={data.access === "public"}
-          onClick={() =>
-            mutate({ variables: { input: { id: data.id, access: "public" } } })
-          }
-        >
-          Public
-        </HorizontalNavigation.Button>
-      </HorizontalNavigation.Group>
+      <Stack spacing="2">
+        <FormControl size="xs">
+          <FormLabel fontSize="sm">Access</FormLabel>
+          <HorizontalNavigation.Group>
+            <Tooltip label="Only the DM can access this note.">
+              <HorizontalNavigation.Button
+                small
+                isActive={data.access === "admin"}
+                onClick={() =>
+                  updateNoteAccess({
+                    variables: { input: { id: data.id, access: "admin" } },
+                  })
+                }
+              >
+                Admin
+              </HorizontalNavigation.Button>
+            </Tooltip>
+            <Tooltip label="Everyone can access this note.">
+              <HorizontalNavigation.Button
+                small
+                isActive={data.access === "public"}
+                onClick={() =>
+                  updateNoteAccess({
+                    variables: { input: { id: data.id, access: "public" } },
+                  })
+                }
+              >
+                Public
+              </HorizontalNavigation.Button>
+            </Tooltip>
+          </HorizontalNavigation.Group>
+        </FormControl>
+        <Tooltip label="Whether the note is a entry point.">
+          <FormControl display="flex" alignItems="center" size="xs">
+            <FormLabel fontSize="sm" htmlFor="is-entry-point-toggle" mb="0">
+              Entry Point
+            </FormLabel>
+            <Switch
+              size="sm"
+              id="is-entry-point-toggle"
+              isChecked={data.isEntryPoint}
+              onChange={(ev) => {
+                updateIsEntryPoint({
+                  variables: {
+                    input: { id: data.id, isEntryPoint: ev.target.checked },
+                  },
+                  optimisticResponse: {
+                    noteUpdateIsEntryPoint: {
+                      note: {
+                        id: data.id,
+                        isEntryPoint: ev.target.checked,
+                      },
+                    },
+                  },
+                });
+              }}
+            />
+          </FormControl>
+        </Tooltip>
+      </Stack>
     </PermissionMenuContainer>
   );
 };
@@ -290,8 +347,8 @@ const WindowRenderer: React.FC<{
                 />
               );
             },
-            title: "Edit permissions",
-            icon: <Icon.ShieldIcon size={16} />,
+            title: "Edit access",
+            icon: <Icon.EyeIcon size={16} />,
             isDisabled: props.noteId === null || !data.props,
           },
         ]

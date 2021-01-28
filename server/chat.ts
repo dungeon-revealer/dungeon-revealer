@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid";
-import { PubSub } from "graphql-subscriptions";
 import { roll } from "@airjp73/dice-notation";
+import { createPubSub } from "./pubsub";
 
 type SharedResourceType =
   | { type: "NOTE"; id: string }
@@ -151,7 +151,7 @@ const MAXIMUM_CHAT_SIZE = 500;
 
 export const createChat = () => {
   let state: Array<ApplicationRecordSchema> = [];
-  const pubSub = new PubSub({});
+  const pubSub = createPubSub<NewMessagesPayload>();
 
   const addMessageToStack = (message: ApplicationRecordSchema) => {
     state.push(message);
@@ -159,9 +159,9 @@ export const createChat = () => {
       state.shift();
     }
 
-    pubSub.publish("NEW_MESSAGES", {
+    pubSub.publish({
       messages: [message],
-    } as NewMessagesPayload);
+    });
   };
 
   const addUserMessage = (args: { authorName: string; rawContent: string }) => {
@@ -206,8 +206,7 @@ export const createChat = () => {
     addOperationalMessage,
     getMessages: () => state,
     subscribe: {
-      newMessages: () =>
-        pubSub.asyncIterator<NewMessagesPayload>("NEW_MESSAGES"),
+      newMessages: () => pubSub.subscribe(),
     },
   };
 };

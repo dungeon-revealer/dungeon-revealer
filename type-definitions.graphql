@@ -99,6 +99,7 @@ type Note implements Node {
   viewerCanEdit: Boolean!
   viewerCanShare: Boolean!
   access: String!
+  isEntryPoint: Boolean!
   updatedAt: Int!
 }
 
@@ -210,6 +211,7 @@ type Mutation {
   noteUpdateContent(input: NoteUpdateContentInput!): NoteUpdateResult!
   noteUpdateTitle(input: NoteUpdateTitleInput!): NoteUpdateResult!
   noteUpdateAccess(input: NoteUpdateAccessInput!): NoteUpdateResult!
+  noteUpdateIsEntryPoint(input: NoteUpdateIsEntryPointInput!): NoteUpdateResult!
 }
 
 type LogInResult {
@@ -283,9 +285,19 @@ input NoteUpdateAccessInput {
   access: String!
 }
 
+input NoteUpdateIsEntryPointInput {
+  id: String!
+  isEntryPoint: Boolean!
+}
+
 type Subscription {
   userUpdate: UserUpdateSubscription!
   chatMessagesAdded: ChatMessagesAddedSubscription!
+  notesUpdates(
+    filter: NotesFilter
+    endCursor: String!
+    hasNextPage: Boolean!
+  ): NotesUpdates!
 }
 
 union UserUpdateSubscription =
@@ -309,4 +321,33 @@ type UserChangeUpdate {
 
 type ChatMessagesAddedSubscription {
   messages: [ChatMessage!]!
+}
+
+type NotesUpdates {
+  """
+  A node that was added to the connection.
+  """
+  addedNode: NotesConnectionEdgeInsertionUpdate
+
+  """
+  A note that was updated.
+  """
+  updatedNote: Note
+
+  """
+  A note that was removed.
+  """
+  removedNoteId: ID
+}
+
+type NotesConnectionEdgeInsertionUpdate {
+  """
+  The cursor of the item before which the node should be inserted.
+  """
+  previousCursor: String
+
+  """
+  The edge that should be inserted.
+  """
+  edge: NoteEdge
 }
