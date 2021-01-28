@@ -157,5 +157,8 @@
     "assets": [
       "build/**/*"
     ]
+  },
+  "scarfSettings": {
+    "enabled": false
   }
 }
