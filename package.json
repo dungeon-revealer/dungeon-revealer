@@ -119,7 +119,7 @@
     "parse-color": "1.0.0",
     "patch-package": "6.2.2",
     "pkg": "4.4.9",
-    "polished": "4.0.5",
+    "polished": "4.1.0",
     "prettier": "2.2.1",
     "react": "17.0.1",
     "react-color": "2.19.3",
@@ -157,5 +157,8 @@
     "assets": [
       "build/**/*"
     ]
+  },
+  "scarfSettings": {
+    "enabled": false
   }
 }
