@@ -700,4 +700,25 @@ export const subscriptionFields: SubscriptionField<any, any, any, any>[] = [
         context
       ),
   }),
+  t.subscriptionField("noteShouldRefetch", {
+    type: t.NonNull(t.Boolean),
+    description: "Whether a given note should be refetched.",
+    args: {
+      documentId: t.arg(t.NonNullInput(t.ID)),
+    },
+    resolve: (obj) => obj,
+    subscribe: (_, args, context) =>
+      RT.run(
+        pipe(
+          notes.subscribeToNoteRefetchUpdate({
+            noteId: args.documentId,
+          }),
+          RTE.fold(
+            (err) => () => () => Promise.reject(err),
+            (value) => RT.of(value)
+          )
+        ),
+        context
+      ),
+  }),
 ];

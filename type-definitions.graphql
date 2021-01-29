@@ -298,6 +298,11 @@ type Subscription {
     endCursor: String!
     hasNextPage: Boolean!
   ): NotesUpdates!
+
+  """
+  Whether a given note should be refetched.
+  """
+  noteShouldRefetch(documentId: ID!): Boolean!
 }
 
 union UserUpdateSubscription =

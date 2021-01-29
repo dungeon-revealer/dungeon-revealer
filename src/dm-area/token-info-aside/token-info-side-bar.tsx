@@ -129,7 +129,6 @@ const TokenInfoSideBarRenderer = (props: {
           hasNextPage: data.notes.pageInfo.hasNextPage,
         },
         updater: (store, payload) => {
-          console.log(JSON.stringify(payload, null, 2));
           if (payload.notesUpdates.removedNoteId) {
             const connection = store.get(data.notes.__id);
             if (connection) {
