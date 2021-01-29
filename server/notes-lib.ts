@@ -398,7 +398,10 @@ interface NoteCursor {
 /**
  * Whether the cursor a is located after cursor b
  */
-export const isAfterCursor = (a: NoteCursor, b: NoteCursor) => {
+export const isAfterCursor = (a: NoteCursor, b: null | NoteCursor) => {
+  if (b === null) {
+    return false;
+  }
   if (a.lastCreatedAt === b.lastCreatedAt) {
     return a.lastId > b.lastId;
   }
@@ -410,7 +413,7 @@ export const isAfterCursor = (a: NoteCursor, b: NoteCursor) => {
 
 export const subscribeToNotesUpdates = (params: {
   mode: "all" | "entrypoint";
-  cursor: {
+  cursor: null | {
     lastId: string;
     lastCreatedAt: number;
   };
