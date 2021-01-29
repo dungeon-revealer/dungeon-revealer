@@ -342,7 +342,7 @@ export const queryFields = [
         resolvePaginatedNotes({
           first,
           onlyEntryPoints: args.filter === "entrypoint",
-          cursor: decodeNotesConnectionCursor(args.after),
+          cursor: decodeNotesConnectionCursor(args.after ?? null),
         }),
         context
       );
