@@ -15,7 +15,13 @@ import {
 } from "@chakra-ui/react";
 import { useNoteWindows, useNoteWindowActions } from ".";
 import { NoteEditorActiveItem } from "../note-editor/note-editor-active-item";
-import { useQuery, useMutation, useFragment } from "relay-hooks";
+import {
+  useQuery,
+  useMutation,
+  useFragment,
+  requestSubscription,
+  useRelayEnvironment,
+} from "relay-hooks";
 import type {
   tokenInfoAside_nodeQuery,
   tokenInfoAside_nodeQueryResponse,
@@ -36,6 +42,7 @@ import { tokenInfoAside_NoteDeleteMutation } from "./__generated__/tokenInfoAsid
 import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
 import { useViewerRole } from "../../authenticated-app-shell";
 import { tokenInfoAside_noteUpdateIsEntryPointMutation } from "./__generated__/tokenInfoAside_noteUpdateIsEntryPointMutation.graphql";
+import { tokenInfoAside_NoteShouldRefetchSubscription } from "./__generated__/tokenInfoAside_NoteShouldRefetchSubscription.graphql";
 
 const TokenInfoAside_permissionsPopUpFragment = graphql`
   fragment tokenInfoAside_permissionsPopUpFragment on Note {
@@ -111,6 +118,12 @@ const TokenInfoAside_NoteCreateMutation = graphql`
         access
       }
     }
+  }
+`;
+
+const TokenInfoAside_NoteShouldRefetchSubscription = graphql`
+  subscription tokenInfoAside_NoteShouldRefetchSubscription($documentId: ID!) {
+    noteShouldRefetch(documentId: $documentId)
   }
 `;
 
@@ -265,7 +278,10 @@ const WindowRenderer: React.FC<{
   const data = useQuery<tokenInfoAside_nodeQuery>(
     TokenInfoAside_nodeQuery,
     React.useMemo(() => ({ documentId: props.noteId ?? "" }), [props.noteId]),
-    { skip: isSkipped }
+    React.useMemo(
+      () => ({ skip: isSkipped, fetchPolicy: "store-and-network" }),
+      [isSkipped]
+    )
   );
 
   const [showLibrary, setShowLibrary] = React.useState(
@@ -396,6 +412,30 @@ const WindowRenderer: React.FC<{
       },
     });
   };
+
+  const environment = useRelayEnvironment();
+
+  const refetchDataRef = React.useRef<null | (() => void)>(null);
+  React.useEffect(() => {
+    refetchDataRef.current = () => data.retry();
+  });
+
+  React.useEffect(() => {
+    if (!props.noteId) {
+      return;
+    }
+    const subscription = requestSubscription<tokenInfoAside_NoteShouldRefetchSubscription>(
+      environment,
+      {
+        subscription: TokenInfoAside_NoteShouldRefetchSubscription,
+        variables: { documentId: props.noteId },
+        onNext: () => {
+          refetchDataRef.current?.();
+        },
+      }
+    );
+    return () => subscription.dispose();
+  }, [environment, props.noteId]);
 
   return (
     <WindowContext.Provider value={props.windowId}>
