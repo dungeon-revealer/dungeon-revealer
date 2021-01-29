@@ -3,7 +3,7 @@
 [![Build Status](https://img.shields.io/github/workflow/status/dungeon-revealer/dungeon-revealer/Node.js%20CI)](https://github.com/dungeon-revealer/dungeon-revealer/actions)
 [![Downloads](https://img.shields.io/github/downloads/dungeon-revealer/dungeon-revealer/total.svg?logo=github)](https://github.com/dungeon-revealer/dungeon-revealer/releases)
 [![Release](https://img.shields.io/github/v/release/dungeon-revealer/dungeon-revealer?logo=github&color=orange)](https://github.com/dungeon-revealer/dungeon-revealer/releases/latest)
-[![Docker](https://img.shields.io/static/v1?label=docker&message=latest&color=blue&logo=Docker)](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer)
+[![Docker](https://img.shields.io/static/v1?label=docker&message=v1.12.0&color=blue&logo=Docker)](https://hub.docker.com/layers/dungeonrevealer/dungeon-revealer/v1.12.0)
 [![Docker pulls](https://img.shields.io/docker/pulls/dungeonrevealer/dungeon-revealer)](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer)
 [![Discord](https://img.shields.io/discord/709687178422386708)](https://discord.gg/dS5khqk)
 
@@ -72,7 +72,7 @@ An up to date version of docker is required to make sure the correct image archi
 To create an instance, run the following:
 
 ```
-docker pull dungeonrevealer/dungeon-revealer:latest
+docker pull dungeonrevealer/dungeon-revealer:v1.12.0
 docker run -e DM_PASSWORD=<password> -e PC_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/data -d dungeonrevealer/dungeon-revealer:latest
 ```
 
@@ -86,7 +86,7 @@ In your browser, go to `<YOUR_IPADDRESS>:<PORT>/dm`. If your players are on the 
 
 Heroku is a platform supporting one-click deployments and includes a free usage tier. Sign up for a free account then click the button below. Give your app a unique name, set any required passwords, and click `Deploy App` to start the build process.
 
-[![button](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/dungeon-revealer/dungeon-revealer/tree/v1.11.0)
+[![button](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/dungeon-revealer/dungeon-revealer/tree/v1.12.0)
 
 ### Using the app
 
