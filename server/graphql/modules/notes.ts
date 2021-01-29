@@ -258,42 +258,44 @@ const StringUtilities = {
 
 const parseIntegerSafe = (input: string) => parseInt(input, 10);
 
-// TODO: investigate how we can do this with less noise :)
-const decodeNotesConnectionCursor = flow(
-  Relay.base64Decode,
-  StringUtilities.split1(":"),
-  O.chain(([version, rest]) => {
-    return pipe(
-      NotesConnectionVersion.decode(version),
-      E.fold(
-        () => O.none,
-        () => StringUtilities.split1(":")(rest)
-      ),
-      O.chain(([identifier, rest]) =>
-        pipe(
-          NotesConnectionIdentifier.decode(identifier),
-          E.fold(
-            () => O.none,
-            () => StringUtilities.split1(":")(rest)
-          ),
-          O.chain(([rawCreatedAt, lastId]) => {
-            const lastCreatedAt = parseIntegerSafe(rawCreatedAt);
-            return pipe(
-              NotesConnectionCreatedAt.decode(lastCreatedAt),
-              E.fold(
-                () => O.none,
-                () => O.some({ lastCreatedAt, lastId })
+const decodeNotesConnectionCursor = (cursor: string | null) =>
+  cursor === "" || cursor === null
+    ? null
+    : pipe(
+        Relay.base64Decode(cursor),
+        StringUtilities.split1(":"),
+        O.chain(([version, rest]) => {
+          return pipe(
+            NotesConnectionVersion.decode(version),
+            E.fold(
+              () => O.none,
+              () => StringUtilities.split1(":")(rest)
+            ),
+            O.chain(([identifier, rest]) =>
+              pipe(
+                NotesConnectionIdentifier.decode(identifier),
+                E.fold(
+                  () => O.none,
+                  () => StringUtilities.split1(":")(rest)
+                ),
+                O.chain(([rawCreatedAt, lastId]) => {
+                  const lastCreatedAt = parseIntegerSafe(rawCreatedAt);
+                  return pipe(
+                    NotesConnectionCreatedAt.decode(lastCreatedAt),
+                    E.fold(
+                      () => O.none,
+                      () => O.some({ lastCreatedAt, lastId })
+                    )
+                  );
+                })
               )
-            );
-          })
-        )
-      )
-    );
-  }),
-  O.fold(() => {
-    throw new Error("Invalid cursor provided");
-  }, identity)
-);
+            )
+          );
+        }),
+        O.fold(() => {
+          throw new Error("Invalid cursor provided");
+        }, identity)
+      );
 
 const encodeNotesConnectionCursor = ({
   createdAt,
@@ -336,14 +338,11 @@ export const queryFields = [
     resolve: (_, args, context) => {
       // @TODO: strict first validation max/min & negative
       const first = args.first || 10;
-      const cursor = args.after
-        ? decodeNotesConnectionCursor(args.after)
-        : null;
       return RT.run(
         resolvePaginatedNotes({
           first,
           onlyEntryPoints: args.filter === "entrypoint",
-          cursor,
+          cursor: decodeNotesConnectionCursor(args.after ?? null),
         }),
         context
       );
