@@ -54,7 +54,7 @@
   "dependencies": {
     "@airjp73/dice-notation": "1.1.1",
     "@n1ru4l/graphql-live-query": "0.7.1",
-    "@n1ru4l/in-memory-live-query-store": "0.5.5",
+    "@n1ru4l/in-memory-live-query-store": "0.6.0",
     "@n1ru4l/socket-io-graphql-server": "0.9.2",
     "body-parser": "1.19.0",
     "connect-busboy": "0.0.2",
