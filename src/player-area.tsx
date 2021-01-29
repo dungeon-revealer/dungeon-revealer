@@ -62,7 +62,8 @@ const PlayerMap: React.FC<{
   fetch: typeof fetch;
   pcPassword: string;
   socket: ReturnType<typeof useSocket>;
-}> = ({ fetch, pcPassword, socket }) => {
+  isMapOnly: boolean;
+}> = ({ fetch, pcPassword, socket, isMapOnly }) => {
   const [currentMap, setCurrentMap] = React.useState<null | MapEntity>(null);
   const currentMapRef = React.useRef(currentMap);
 
@@ -420,88 +421,90 @@ const PlayerMap: React.FC<{
         </FlatContextProvider>
       </div>
       {!showSplashScreen ? (
-        <>
-          <ToolbarContainer
-            style={{
-              transform: to(
-                [toolbarPosition.position],
-                ([x, y]) => `translate(${x}px, ${y}px)`
-              ),
-            }}
-          >
-            <Toolbar horizontal>
-              <Toolbar.Logo {...handler()} cursor="grab" />
-              {showItems ? (
-                <React.Fragment>
-                  <Toolbar.Group>
-                    <Toolbar.Item isActive>
-                      <Toolbar.Button
-                        onClick={() => {
-                          controlRef.current?.controls.center();
-                        }}
-                        onTouchStart={(ev) => {
-                          ev.preventDefault();
-                          controlRef.current?.controls.center();
-                        }}
-                      >
-                        <Icons.Compass size={20} />
-                        <Icons.Label>Center Map</Icons.Label>
-                      </Toolbar.Button>
-                    </Toolbar.Item>
-                    <Toolbar.Item isActive>
-                      <Toolbar.LongPressButton
-                        onClick={() => {
-                          controlRef.current?.controls.zoomIn();
-                        }}
-                        onLongPress={() => {
-                          const interval = setInterval(() => {
+        isMapOnly ? null : (
+          <>
+            <ToolbarContainer
+              style={{
+                transform: to(
+                  [toolbarPosition.position],
+                  ([x, y]) => `translate(${x}px, ${y}px)`
+                ),
+              }}
+            >
+              <Toolbar horizontal>
+                <Toolbar.Logo {...handler()} cursor="grab" />
+                {showItems ? (
+                  <React.Fragment>
+                    <Toolbar.Group>
+                      <Toolbar.Item isActive>
+                        <Toolbar.Button
+                          onClick={() => {
+                            controlRef.current?.controls.center();
+                          }}
+                          onTouchStart={(ev) => {
+                            ev.preventDefault();
+                            controlRef.current?.controls.center();
+                          }}
+                        >
+                          <Icons.Compass size={20} />
+                          <Icons.Label>Center Map</Icons.Label>
+                        </Toolbar.Button>
+                      </Toolbar.Item>
+                      <Toolbar.Item isActive>
+                        <Toolbar.LongPressButton
+                          onClick={() => {
                             controlRef.current?.controls.zoomIn();
-                          }, 100);
+                          }}
+                          onLongPress={() => {
+                            const interval = setInterval(() => {
+                              controlRef.current?.controls.zoomIn();
+                            }, 100);
 
-                          return () => clearInterval(interval);
-                        }}
-                      >
-                        <Icons.ZoomIn size={20} />
-                        <Icons.Label>Zoom In</Icons.Label>
-                      </Toolbar.LongPressButton>
-                    </Toolbar.Item>
-                    <Toolbar.Item isActive>
-                      <Toolbar.LongPressButton
-                        onClick={() => {
-                          controlRef.current?.controls.zoomOut();
-                        }}
-                        onLongPress={() => {
-                          const interval = setInterval(() => {
+                            return () => clearInterval(interval);
+                          }}
+                        >
+                          <Icons.ZoomIn size={20} />
+                          <Icons.Label>Zoom In</Icons.Label>
+                        </Toolbar.LongPressButton>
+                      </Toolbar.Item>
+                      <Toolbar.Item isActive>
+                        <Toolbar.LongPressButton
+                          onClick={() => {
                             controlRef.current?.controls.zoomOut();
-                          }, 100);
+                          }}
+                          onLongPress={() => {
+                            const interval = setInterval(() => {
+                              controlRef.current?.controls.zoomOut();
+                            }, 100);
 
-                          return () => clearInterval(interval);
-                        }}
-                      >
-                        <Icons.ZoomOut size={20} />
-                        <Icons.Label>Zoom Out</Icons.Label>
-                      </Toolbar.LongPressButton>
-                    </Toolbar.Item>
-                    <Toolbar.Item isActive>
-                      <Toolbar.LongPressButton
-                        onClick={() => {
-                          noteWindowActions.showNoteInWindow(
-                            null,
-                            "note-editor",
-                            true
-                          );
-                        }}
-                      >
-                        <Icons.BookOpen size={20} />
-                        <Icons.Label>Notes</Icons.Label>
-                      </Toolbar.LongPressButton>
-                    </Toolbar.Item>
-                  </Toolbar.Group>
-                </React.Fragment>
-              ) : null}
-            </Toolbar>
-          </ToolbarContainer>
-        </>
+                            return () => clearInterval(interval);
+                          }}
+                        >
+                          <Icons.ZoomOut size={20} />
+                          <Icons.Label>Zoom Out</Icons.Label>
+                        </Toolbar.LongPressButton>
+                      </Toolbar.Item>
+                      <Toolbar.Item isActive>
+                        <Toolbar.LongPressButton
+                          onClick={() => {
+                            noteWindowActions.showNoteInWindow(
+                              null,
+                              "note-editor",
+                              true
+                            );
+                          }}
+                        >
+                          <Icons.BookOpen size={20} />
+                          <Icons.Label>Notes</Icons.Label>
+                        </Toolbar.LongPressButton>
+                      </Toolbar.Item>
+                    </Toolbar.Group>
+                  </React.Fragment>
+                ) : null}
+              </Toolbar>
+            </ToolbarContainer>
+          </>
+        )
       ) : (
         <AbsoluteFullscreenContainer>
           <SplashScreen text="Ready." />
@@ -545,6 +548,7 @@ const AuthenticatedContent: React.FC<{
         fetch={props.localFetch}
         pcPassword={props.pcPassword}
         socket={socket}
+        isMapOnly={props.isMapOnly}
       />
     </AuthenticatedAppShell>
   );
