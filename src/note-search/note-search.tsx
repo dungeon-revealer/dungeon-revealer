@@ -133,9 +133,9 @@ export const NoteSearch = (props: {
   const _data = useQuery<noteSearch_SearchQuery>(NoteSearch_SearchQuery, {
     query,
   });
-  const isLoading = !_data.props && !_data.error;
+  const isLoading = !_data.data && !_data.error;
 
-  const [, notesSearch] = useCurrent(_data.props?.notesSearch, isLoading, 300);
+  const [, notesSearch] = useCurrent(_data.data?.notesSearch, isLoading, 300);
 
   return (
     <Container

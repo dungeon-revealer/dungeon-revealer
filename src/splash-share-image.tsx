@@ -31,7 +31,7 @@ export const SplashShareImage = (): React.ReactElement | null => {
   const role = useViewerRole();
   const { addToast } = useToasts();
 
-  if (data.props?.sharedSplashImage) {
+  if (data.data?.sharedSplashImage) {
     return (
       <StyledModalBackdrop
         onClick={() => {
@@ -46,7 +46,7 @@ export const SplashShareImage = (): React.ReactElement | null => {
         }}
       >
         <LightBoxImage
-          src={buildApiUrl(data.props.sharedSplashImage.url)}
+          src={buildApiUrl(data.data.sharedSplashImage.url)}
           onClick={(ev) => ev.stopPropagation()}
         />
       </StyledModalBackdrop>

@@ -411,7 +411,7 @@ const AsideSelectNote: React.FC<{
     }
   );
 
-  const data = useQuery<markdownEditor_asideNoteQuery>(
+  const query = useQuery<markdownEditor_asideNoteQuery>(
     MarkdownEditor_AsideNoteQuery,
     {
       documentId: props.noteId,
@@ -421,9 +421,13 @@ const AsideSelectNote: React.FC<{
     }
   );
 
-  const [, dataProps] = useCurrent(data.props, !data.props && !data.error, 300);
+  const [, dataProps] = useCurrent(
+    query.data,
+    !query.data && !query.error,
+    300
+  );
 
-  const isValidNoteIdWithoutResult = props.noteId && !data.props?.asideNote;
+  const isValidNoteIdWithoutResult = props.noteId && !query.data?.asideNote;
 
   const [selectNoteModalNode, showSelectNoteModal] = useShowSelectNoteModal();
 
