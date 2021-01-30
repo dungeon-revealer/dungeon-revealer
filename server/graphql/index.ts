@@ -2,7 +2,7 @@ import { createTypesFactory, buildGraphQLSchema } from "gqtx";
 import type { Socket as IOSocket } from "socket.io";
 import type { createChat } from "../chat";
 import type { createUser } from "../user";
-import type { NotesUpdates, NoteUpdate } from "../notes-lib";
+import type { NotesUpdates } from "../notes-lib";
 
 import type { SocketSessionRecord } from "../socket-session-store";
 import type { Database } from "sqlite";
