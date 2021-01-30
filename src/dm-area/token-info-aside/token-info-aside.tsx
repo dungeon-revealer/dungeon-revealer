@@ -42,7 +42,6 @@ import { tokenInfoAside_NoteDeleteMutation } from "./__generated__/tokenInfoAsid
 import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
 import { useViewerRole } from "../../authenticated-app-shell";
 import { tokenInfoAside_noteUpdateIsEntryPointMutation } from "./__generated__/tokenInfoAside_noteUpdateIsEntryPointMutation.graphql";
-import { tokenInfoAside_NoteShouldRefetchSubscription } from "./__generated__/tokenInfoAside_NoteShouldRefetchSubscription.graphql";
 
 const TokenInfoAside_permissionsPopUpFragment = graphql`
   fragment tokenInfoAside_permissionsPopUpFragment on Note {
