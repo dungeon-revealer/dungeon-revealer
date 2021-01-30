@@ -19,7 +19,6 @@ export type GraphQLContextType = {
   splashImageState: SplashImageState;
   socket: IOSocket;
   notesUpdates: NotesUpdates;
-  noteUpdate: NoteUpdate;
 };
 
 export const t = createTypesFactory<GraphQLContextType>();

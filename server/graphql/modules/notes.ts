@@ -363,6 +363,14 @@ export const queryFields = [
     args: {
       documentId: t.arg(t.NonNullInput(t.ID)),
     },
+    extensions: {
+      liveQuery: {
+        collectResourceIdentifiers: (
+          _: unknown,
+          args: { documentId: string }
+        ) => `Note:${args.documentId}`,
+      },
+    },
     resolve: (_, args, context) =>
       RT.run(resolveNote(args.documentId), context),
   }),
@@ -691,27 +699,6 @@ export const subscriptionFields: SubscriptionField<any, any, any, any>[] = [
             mode: args.filter ?? "entrypoint",
             cursor: decodeNotesConnectionCursor(args.endCursor),
             hasNextPage: args.hasNextPage,
-          }),
-          RTE.fold(
-            (err) => () => () => Promise.reject(err),
-            (value) => RT.of(value)
-          )
-        ),
-        context
-      ),
-  }),
-  t.subscriptionField("noteShouldRefetch", {
-    type: t.NonNull(t.Boolean),
-    description: "Whether a given note should be refetched.",
-    args: {
-      documentId: t.arg(t.NonNullInput(t.ID)),
-    },
-    resolve: (obj) => obj,
-    subscribe: (_, args, context) =>
-      RT.run(
-        pipe(
-          notes.subscribeToNoteRefetchUpdate({
-            noteId: args.documentId,
           }),
           RTE.fold(
             (err) => () => () => Promise.reject(err),

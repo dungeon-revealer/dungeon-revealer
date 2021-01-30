@@ -53,7 +53,7 @@ const TokenInfoAside_permissionsPopUpFragment = graphql`
 `;
 
 const TokenInfoAside_nodeQuery = graphql`
-  query tokenInfoAside_nodeQuery($documentId: ID!) {
+  query tokenInfoAside_nodeQuery($documentId: ID!) @live {
     note(documentId: $documentId) {
       id
       title
@@ -118,12 +118,6 @@ const TokenInfoAside_NoteCreateMutation = graphql`
         access
       }
     }
-  }
-`;
-
-const TokenInfoAside_NoteShouldRefetchSubscription = graphql`
-  subscription tokenInfoAside_NoteShouldRefetchSubscription($documentId: ID!) {
-    noteShouldRefetch(documentId: $documentId)
   }
 `;
 
@@ -412,30 +406,6 @@ const WindowRenderer: React.FC<{
       },
     });
   };
-
-  const environment = useRelayEnvironment();
-
-  const refetchDataRef = React.useRef<null | (() => void)>(null);
-  React.useEffect(() => {
-    refetchDataRef.current = () => data.retry();
-  });
-
-  React.useEffect(() => {
-    if (!props.noteId) {
-      return;
-    }
-    const subscription = requestSubscription<tokenInfoAside_NoteShouldRefetchSubscription>(
-      environment,
-      {
-        subscription: TokenInfoAside_NoteShouldRefetchSubscription,
-        variables: { documentId: props.noteId },
-        onNext: () => {
-          refetchDataRef.current?.();
-        },
-      }
-    );
-    return () => subscription.dispose();
-  }, [environment, props.noteId]);
 
   return (
     <WindowContext.Provider value={props.windowId}>
