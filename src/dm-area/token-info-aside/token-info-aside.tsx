@@ -15,13 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { useNoteWindows, useNoteWindowActions } from ".";
 import { NoteEditorActiveItem } from "../note-editor/note-editor-active-item";
-import {
-  useQuery,
-  useMutation,
-  useFragment,
-  requestSubscription,
-  useRelayEnvironment,
-} from "relay-hooks";
+import { useQuery, useMutation, useFragment } from "relay-hooks";
 import type {
   tokenInfoAside_nodeQuery,
   tokenInfoAside_nodeQueryResponse,
