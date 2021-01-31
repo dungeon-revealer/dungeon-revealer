@@ -15,13 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { useNoteWindows, useNoteWindowActions } from ".";
 import { NoteEditorActiveItem } from "../note-editor/note-editor-active-item";
-import {
-  useQuery,
-  useMutation,
-  useFragment,
-  requestSubscription,
-  useRelayEnvironment,
-} from "relay-hooks";
+import { useQuery, useMutation, useFragment } from "relay-hooks";
 import type {
   tokenInfoAside_nodeQuery,
   tokenInfoAside_nodeQueryResponse,
@@ -42,7 +36,6 @@ import { tokenInfoAside_NoteDeleteMutation } from "./__generated__/tokenInfoAsid
 import { useConfirmationDialog } from "../../hooks/use-confirmation-dialog";
 import { useViewerRole } from "../../authenticated-app-shell";
 import { tokenInfoAside_noteUpdateIsEntryPointMutation } from "./__generated__/tokenInfoAside_noteUpdateIsEntryPointMutation.graphql";
-import { tokenInfoAside_NoteShouldRefetchSubscription } from "./__generated__/tokenInfoAside_NoteShouldRefetchSubscription.graphql";
 
 const TokenInfoAside_permissionsPopUpFragment = graphql`
   fragment tokenInfoAside_permissionsPopUpFragment on Note {
@@ -53,7 +46,7 @@ const TokenInfoAside_permissionsPopUpFragment = graphql`
 `;
 
 const TokenInfoAside_nodeQuery = graphql`
-  query tokenInfoAside_nodeQuery($documentId: ID!) {
+  query tokenInfoAside_nodeQuery($documentId: ID!) @live {
     note(documentId: $documentId) {
       id
       title
@@ -118,12 +111,6 @@ const TokenInfoAside_NoteCreateMutation = graphql`
         access
       }
     }
-  }
-`;
-
-const TokenInfoAside_NoteShouldRefetchSubscription = graphql`
-  subscription tokenInfoAside_NoteShouldRefetchSubscription($documentId: ID!) {
-    noteShouldRefetch(documentId: $documentId)
   }
 `;
 
@@ -288,9 +275,9 @@ const WindowRenderer: React.FC<{
     props.initialShowLibrary
   );
 
-  const isLoading = !data.props && !data.error && !isSkipped;
+  const isLoading = !data.data && !data.error && !isSkipped;
 
-  const [, node] = useCurrent(extractNode(data.props), isLoading, 300);
+  const [, node] = useCurrent(extractNode(data.data), isLoading, 300);
 
   const [isEditMode, setIsEditMode] = React.useState(false);
   const sideBarRef = React.useRef<HTMLDivElement>(null);
@@ -324,7 +311,7 @@ const WindowRenderer: React.FC<{
             ) : (
               <Icon.EditIcon size={16} />
             ),
-            isDisabled: props.noteId === null || !data.props,
+            isDisabled: props.noteId === null || !data.data,
           },
           {
             onClick: () => {
@@ -349,7 +336,7 @@ const WindowRenderer: React.FC<{
             },
             title: "Delete note",
             icon: <Icon.TrashIcon size={16} />,
-            isDisabled: props.noteId === null || !data.props,
+            isDisabled: props.noteId === null || !data.data,
           },
           {
             onClick: (ev: React.MouseEvent) => {
@@ -365,7 +352,7 @@ const WindowRenderer: React.FC<{
             },
             title: "Edit access",
             icon: <Icon.EyeIcon size={16} />,
-            isDisabled: props.noteId === null || !data.props,
+            isDisabled: props.noteId === null || !data.data,
           },
         ]
       : [];
@@ -381,7 +368,7 @@ const WindowRenderer: React.FC<{
               : () => undefined,
           title: "Share",
           icon: <Icon.Share size={16} />,
-          isDisabled: props.noteId === null || !data.props,
+          isDisabled: props.noteId === null || !data.data,
         },
       ]
     : [];
@@ -412,30 +399,6 @@ const WindowRenderer: React.FC<{
       },
     });
   };
-
-  const environment = useRelayEnvironment();
-
-  const refetchDataRef = React.useRef<null | (() => void)>(null);
-  React.useEffect(() => {
-    refetchDataRef.current = () => data.retry();
-  });
-
-  React.useEffect(() => {
-    if (!props.noteId) {
-      return;
-    }
-    const subscription = requestSubscription<tokenInfoAside_NoteShouldRefetchSubscription>(
-      environment,
-      {
-        subscription: TokenInfoAside_NoteShouldRefetchSubscription,
-        variables: { documentId: props.noteId },
-        onNext: () => {
-          refetchDataRef.current?.();
-        },
-      }
-    );
-    return () => subscription.dispose();
-  }, [environment, props.noteId]);
 
   return (
     <WindowContext.Provider value={props.windowId}>

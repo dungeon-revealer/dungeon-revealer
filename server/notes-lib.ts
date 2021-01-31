@@ -9,6 +9,7 @@ import * as db from "./notes-db";
 import * as noteImport from "./note-import";
 import type { SocketSessionRecord } from "./socket-session-store";
 import * as AsyncIterator from "./util/async-iterator";
+import { invalidateResources } from "./live-query-store";
 
 type ViewerRole = "unauthenticated" | "admin" | "user";
 
@@ -203,7 +204,7 @@ export const updateNoteAccess = ({
                         access,
                         isEntryPoint: note.isEntryPoint,
                       }),
-                      RTE.chainW(() => publishNoteUpdate({ noteId: note.id }))
+                      RTE.chainW(() => invalidateResources([`Note:${note.id}`]))
                     )
                   : RTE.right(undefined),
                 RTE.map(() => noteId)
@@ -221,17 +222,6 @@ const publishNotesUpdate = (payload: NotesUpdatesPayload) =>
     RTE.chainW((deps) =>
       pipe(
         E.tryCatch(() => deps.notesUpdates.publish(payload), E.toError),
-        RTE.fromEither
-      )
-    )
-  );
-
-const publishNoteUpdate = (payload: NoteUpdatePayload) =>
-  pipe(
-    RTE.ask<NoteUpdateDependency>(),
-    RTE.chainW((deps) =>
-      pipe(
-        E.tryCatch(() => deps.noteUpdate.publish(payload), E.toError),
         RTE.fromEither
       )
     )
@@ -568,35 +558,5 @@ export const subscribeToNotesUpdates = (params: {
             value.updatedNoteId !== null
         )
       )
-    )
-  );
-
-export type NoteUpdatePayload = {
-  noteId: string;
-};
-
-export interface NoteUpdate {
-  subscribe: () => AsyncIterableIterator<NoteUpdatePayload>;
-  publish: (payload: NoteUpdatePayload) => void;
-}
-
-interface NoteUpdateDependency {
-  noteUpdate: NoteUpdate;
-}
-
-const noopAsyncIterator = async function* () {};
-
-export const subscribeToNoteRefetchUpdate = (params: { noteId: string }) =>
-  pipe(
-    checkAuthenticated(),
-    RTE.chainW(() => RTE.ask<SessionDependency & NoteUpdateDependency>()),
-    RTE.map((deps) =>
-      deps.session.role === "admin"
-        ? noopAsyncIterator()
-        : pipe(
-            deps.noteUpdate.subscribe(),
-            AsyncIterator.filter((payload) => payload.noteId === params.noteId),
-            AsyncIterator.map(() => true)
-          )
     )
   );

@@ -1,11 +1,10 @@
-import React, { useCallback, Props } from "react";
+import * as React from "react";
 import { Modal } from "../modal";
 import * as Button from "../button";
 import styled from "@emotion/styled/macro";
 import { HtmlContainer } from "./components/html-container";
 import graphql from "babel-plugin-relay/macro";
-import { QueryRenderer } from "react-relay";
-import { useRelayEnvironment, useMutation, useQuery } from "relay-hooks";
+import { useMutation, useQuery } from "relay-hooks";
 import { selectNoteModal_NotesQuery } from "./__generated__/selectNoteModal_NotesQuery.graphql";
 import { selectNoteModal_ActiveContentQuery } from "./__generated__/selectNoteModal_ActiveContentQuery.graphql";
 import { NoteEditorSideBar } from "./note-editor/note-editor-side-bar";
@@ -69,11 +68,35 @@ export const useShowSelectNoteModal = () => {
   ] as const;
 };
 
+const ActiveNoteRenderer = (props: {
+  activeNoteId: string;
+  activeNoteDocumentId: string;
+}): React.ReactElement | null => {
+  const query = useQuery<selectNoteModal_ActiveContentQuery>(
+    SelectNoteModal_ActiveContentQuery,
+    { documentId: props.activeNoteDocumentId }
+  );
+
+  if (query.error || !query?.data?.note) {
+    return null;
+  }
+  return (
+    <div
+      style={{
+        paddingLeft: 16,
+        paddingRight: 16,
+        overflowY: "scroll",
+      }}
+    >
+      <HtmlContainer markdown={query.data.note.content} />
+    </div>
+  );
+};
+
 export const SelectNoteModal: React.FC<{
   onSelectNote: (documentId: string) => void;
   onClose: () => void;
 }> = (props) => {
-  const environment = useRelayEnvironment();
   const sideBarData = useQuery<selectNoteModal_NotesQuery>(
     SelectNoteModal_ReferenceQuery,
     {}
@@ -86,7 +109,7 @@ export const SelectNoteModal: React.FC<{
     NoteCreateMutation
   );
 
-  const attachNewNote = useCallback(() => {
+  const attachNewNote = React.useCallback(() => {
     mutate({
       variables: {
         input: {
@@ -101,12 +124,12 @@ export const SelectNoteModal: React.FC<{
     });
   }, [mutate]);
 
-  const attachExistingNote = useCallback(() => {
+  const attachExistingNote = React.useCallback(() => {
     if (!activeNoteId) return;
     props.onSelectNote(activeNoteId.documentId);
   }, [activeNoteId]);
 
-  if (!sideBarData?.props) return null;
+  if (!sideBarData?.data) return null;
 
   return (
     <Modal onPressEscape={props.onClose} onClickOutside={props.onClose}>
@@ -117,32 +140,16 @@ export const SelectNoteModal: React.FC<{
         <Modal.Body style={{ display: "flex", height: "70vh" }} noPadding>
           <Modal.Aside>
             <NoteEditorSideBar
-              notesRef={sideBarData.props}
+              notesRef={sideBarData.data}
               setActiveNoteId={setActiveNoteId}
               activeNoteId={activeNoteId}
             />
           </Modal.Aside>
           <Modal.Content>
             {activeNoteId ? (
-              <QueryRenderer<selectNoteModal_ActiveContentQuery>
-                environment={environment}
-                query={SelectNoteModal_ActiveContentQuery}
-                variables={{ documentId: activeNoteId.documentId }}
-                render={({ error, props }) => {
-                  if (error) return null;
-                  if (!props?.note) return null;
-                  return (
-                    <div
-                      style={{
-                        paddingLeft: 16,
-                        paddingRight: 16,
-                        overflowY: "scroll",
-                      }}
-                    >
-                      <HtmlContainer markdown={props.note.content} />
-                    </div>
-                  );
-                }}
+              <ActiveNoteRenderer
+                activeNoteId={activeNoteId.id}
+                activeNoteDocumentId={activeNoteId.documentId}
               />
             ) : null}
           </Modal.Content>

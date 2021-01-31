@@ -1,7 +1,6 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
-import { QueryRenderer, requestSubscription } from "react-relay";
-import { useRelayEnvironment } from "relay-hooks";
+import { useQuery, useSubscription } from "relay-hooks";
 import { ConnectionHandler } from "relay-runtime";
 import { Stack } from "@chakra-ui/react";
 import { ChatUserList } from "./chat-user-list";
@@ -100,7 +99,6 @@ const ChatWindow = styled.div`
 
 export const useChatSoundsAndUnreadCount = (chatState: "hidden" | "show") => {
   const [hasUnreadMessages, setHasUnreadMessages] = React.useState(false);
-  const environment = useRelayEnvironment();
   const [playDiceRollSound] = useSound(diceRollSound, {
     volume: 0.5,
   });
@@ -123,46 +121,39 @@ export const useChatSoundsAndUnreadCount = (chatState: "hidden" | "show") => {
     soundSettings,
   };
 
-  React.useEffect(() => {
-    const subscription = requestSubscription<chatMessageSoundSubscription>(
-      environment,
-      {
-        subscription: ChatMessageSoundSubscription,
-        variables: {},
-        onNext: (data) => {
-          if (data) {
-            let mode: "dice-roll-message" | "text-message" = "text-message";
+  useSubscription<chatMessageSoundSubscription>({
+    subscription: ChatMessageSoundSubscription,
+    variables: {},
+    onNext: (data) => {
+      if (data) {
+        let mode: "dice-roll-message" | "text-message" = "text-message";
 
-            if (
-              data.chatMessagesAdded.messages.some(
-                (message) => message.containsDiceRoll === true
-              )
-            ) {
-              mode = "dice-roll-message";
-            }
+        if (
+          data.chatMessagesAdded.messages.some(
+            (message) => message.containsDiceRoll === true
+          )
+        ) {
+          mode = "dice-roll-message";
+        }
 
-            if (
-              mode === "text-message" &&
-              refs.current.soundSettings.value === "all"
-            ) {
-              refs.current.playNotificationSound();
-            } else if (
-              mode === "dice-roll-message" &&
-              refs.current.soundSettings.value !== "none"
-            ) {
-              refs.current.playDiceRollSound();
-            }
+        if (
+          mode === "text-message" &&
+          refs.current.soundSettings.value === "all"
+        ) {
+          refs.current.playNotificationSound();
+        } else if (
+          mode === "dice-roll-message" &&
+          refs.current.soundSettings.value !== "none"
+        ) {
+          refs.current.playDiceRollSound();
+        }
 
-            if (refs.current.chatState === "hidden") {
-              setHasUnreadMessages(true);
-            }
-          }
-        },
+        if (refs.current.chatState === "hidden") {
+          setHasUnreadMessages(true);
+        }
       }
-    );
-
-    return () => subscription.dispose();
-  }, [environment]);
+    },
+  });
 
   return [hasUnreadMessages, () => setHasUnreadMessages(false)] as [
     boolean,
@@ -175,156 +166,137 @@ export const Chat: React.FC<{
 }> = React.memo(({ toggleShowDiceRollNotes }) => {
   const [mode, setMode] = React.useState<"chat" | "user" | "settings">("chat");
 
-  const environment = useRelayEnvironment();
-  React.useEffect(() => {
-    const subscription = requestSubscription<chatSubscription>(environment, {
-      subscription: AppSubscription,
-      variables: {},
-      updater: (store) => {
-        const chat = ConnectionHandler.getConnection(
-          store.getRoot(),
-          "chatMessages_chat"
+  useSubscription<chatSubscription>({
+    subscription: AppSubscription,
+    variables: {},
+    updater: (store) => {
+      const chat = ConnectionHandler.getConnection(
+        store.getRoot(),
+        "chatMessages_chat"
+      );
+
+      const records = store
+        .getRootField("chatMessagesAdded")
+        ?.getLinkedRecords("messages");
+      if (!chat || !records) return;
+
+      for (const chatMessage of records) {
+        const edge = ConnectionHandler.createEdge(
+          store,
+          chat,
+          chatMessage,
+          "ChatMessage"
         );
-
-        const records = store
-          .getRootField("chatMessagesAdded")
-          ?.getLinkedRecords("messages");
-        if (!chat || !records) return;
-
-        for (const chatMessage of records) {
-          const edge = ConnectionHandler.createEdge(
-            store,
-            chat,
-            chatMessage,
-            "ChatMessage"
-          );
-          ConnectionHandler.insertEdgeAfter(chat, edge);
-        }
-      },
-    });
-    return () => subscription.dispose();
-  }, [environment]);
-
-  React.useEffect(() => {
-    const subscription = requestSubscription<chatUserUpdateSubscription>(
-      environment,
-      {
-        subscription: UserUpdateSubscription,
-        variables: {},
-        updater: (store) => {
-          const users = ConnectionHandler.getConnection(
-            store.getRoot(),
-            "chatUserList_users"
-          );
-
-          const updateRecord = store.getRootField("userUpdate");
-          const root = store.getRoot();
-
-          if (!users || !updateRecord) return;
-
-          // see https://github.com/relay-tools/relay-compiler-language-typescript/issues/186
-          if (isAbstractGraphQLMemberType(updateRecord, "UserAddUpdate")) {
-            const edge = ConnectionHandler.createEdge(
-              store,
-              users,
-              updateRecord.getLinkedRecord("user"),
-              "User"
-            );
-            ConnectionHandler.insertEdgeAfter(users, edge);
-            root.setValue(updateRecord.getValue("usersCount"), "usersCount");
-          } else if (
-            isAbstractGraphQLMemberType(updateRecord, "UserRemoveUpdate")
-          ) {
-            const userId = updateRecord.getValue("userId");
-            ConnectionHandler.deleteNode(users, userId);
-            root.setValue(updateRecord.getValue("usersCount"), "usersCount");
-          }
-        },
+        ConnectionHandler.insertEdgeAfter(chat, edge);
       }
-    );
-    return () => subscription.dispose();
-  }, [environment]);
+    },
+  });
+
+  useSubscription<chatUserUpdateSubscription>({
+    subscription: UserUpdateSubscription,
+    variables: {},
+    updater: (store) => {
+      const users = ConnectionHandler.getConnection(
+        store.getRoot(),
+        "chatUserList_users"
+      );
+
+      const updateRecord = store.getRootField("userUpdate");
+      const root = store.getRoot();
+
+      if (!users || !updateRecord) return;
+
+      // see https://github.com/relay-tools/relay-compiler-language-typescript/issues/186
+      if (isAbstractGraphQLMemberType(updateRecord, "UserAddUpdate")) {
+        const edge = ConnectionHandler.createEdge(
+          store,
+          users,
+          updateRecord.getLinkedRecord("user"),
+          "User"
+        );
+        ConnectionHandler.insertEdgeAfter(users, edge);
+        root.setValue(updateRecord.getValue("usersCount"), "usersCount");
+      } else if (
+        isAbstractGraphQLMemberType(updateRecord, "UserRemoveUpdate")
+      ) {
+        const userId = updateRecord.getValue("userId");
+        ConnectionHandler.deleteNode(users, userId);
+        root.setValue(updateRecord.getValue("usersCount"), "usersCount");
+      }
+    },
+  });
 
   const retryRef = React.useRef<null | (() => void)>(null);
+  const { error, data, retry } = useQuery<chatQuery>(ChatQuery);
+
+  if (error) {
+    return null;
+  }
+  if (!data) {
+    return null;
+  }
+
+  retryRef.current = retry;
 
   return (
-    <>
-      <QueryRenderer<chatQuery>
-        query={ChatQuery}
-        environment={environment}
-        variables={{}}
-        render={({ error, props, retry }) => {
-          if (error) {
-            return null;
-          }
-          if (!props) {
-            return null;
-          }
-          retryRef.current = retry;
-
-          return (
-            <ChatWindow
-              onContextMenu={(ev) => {
-                ev.stopPropagation();
-              }}
-            >
-              <HorizontalNavigation.Group>
-                <HorizontalNavigation.Button
-                  small
-                  isActive={mode === "chat"}
-                  fullWidth
-                  onClick={() => setMode("chat")}
-                >
-                  <Icon.MessageCircleIcon size={12} />
-                  <span>Chat</span>
-                </HorizontalNavigation.Button>
-                <HorizontalNavigation.Button
-                  small
-                  isActive={mode === "user"}
-                  fullWidth
-                  onClick={() => setMode("user")}
-                >
-                  <Icon.UsersIcon height={12} width={12} />
-                  <span>
-                    Users (<ChatOnlineUserIndicator data={props} />)
-                  </span>
-                </HorizontalNavigation.Button>
-                <HorizontalNavigation.Button
-                  small
-                  isActive={mode === "settings"}
-                  fullWidth
-                  onClick={() => setMode("settings")}
-                >
-                  <Icon.SettingsIcon size={12} />
-                  <span>Settings</span>
-                </HorizontalNavigation.Button>
-              </HorizontalNavigation.Group>
-              <div style={{ height: 8 }} />
-              {mode === "chat" ? (
-                <Stack height="100%">
-                  <ChatMessages chat={props} />
-                  <ChatTextArea />
-                  <Button.Tertiary
-                    small
-                    onClick={toggleShowDiceRollNotes}
-                    style={{ marginTop: 8 }}
-                  >
-                    <Icon.DiceIcon height={16} /> <span> Dice Roll Notes</span>
-                  </Button.Tertiary>
-                </Stack>
-              ) : mode === "user" ? (
-                <div style={{ marginTop: 16 }}>
-                  <ChatUserList data={props} />
-                </div>
-              ) : mode === "settings" ? (
-                <div style={{ marginTop: 16 }}>
-                  <ChatSettings data={props.me} />
-                </div>
-              ) : null}
-            </ChatWindow>
-          );
-        }}
-      />
-    </>
+    <ChatWindow
+      onContextMenu={(ev) => {
+        ev.stopPropagation();
+      }}
+    >
+      <HorizontalNavigation.Group>
+        <HorizontalNavigation.Button
+          small
+          isActive={mode === "chat"}
+          fullWidth
+          onClick={() => setMode("chat")}
+        >
+          <Icon.MessageCircleIcon size={12} />
+          <span>Chat</span>
+        </HorizontalNavigation.Button>
+        <HorizontalNavigation.Button
+          small
+          isActive={mode === "user"}
+          fullWidth
+          onClick={() => setMode("user")}
+        >
+          <Icon.UsersIcon height={12} width={12} />
+          <span>
+            Users (<ChatOnlineUserIndicator data={data} />)
+          </span>
+        </HorizontalNavigation.Button>
+        <HorizontalNavigation.Button
+          small
+          isActive={mode === "settings"}
+          fullWidth
+          onClick={() => setMode("settings")}
+        >
+          <Icon.SettingsIcon size={12} />
+          <span>Settings</span>
+        </HorizontalNavigation.Button>
+      </HorizontalNavigation.Group>
+      <div style={{ height: 8 }} />
+      {mode === "chat" ? (
+        <Stack height="100%">
+          <ChatMessages chat={data} />
+          <ChatTextArea />
+          <Button.Tertiary
+            small
+            onClick={toggleShowDiceRollNotes}
+            style={{ marginTop: 8 }}
+          >
+            <Icon.DiceIcon height={16} /> <span> Dice Roll Notes</span>
+          </Button.Tertiary>
+        </Stack>
+      ) : mode === "user" ? (
+        <div style={{ marginTop: 16 }}>
+          <ChatUserList data={data} />
+        </div>
+      ) : mode === "settings" ? (
+        <div style={{ marginTop: 16 }}>
+          <ChatSettings data={data.me} />
+        </div>
+      ) : null}
+    </ChatWindow>
   );
 });

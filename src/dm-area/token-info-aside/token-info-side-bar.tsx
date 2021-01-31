@@ -1,13 +1,7 @@
 import * as React from "react";
 import * as ScrollableList from "../components/scrollable-list";
 import graphql from "babel-plugin-relay/macro";
-import {
-  usePagination,
-  ConnectionConfig,
-  useQuery,
-  useRelayEnvironment,
-} from "relay-hooks";
-import { requestSubscription } from "react-relay";
+import { usePagination, useQuery, useSubscription } from "relay-hooks";
 import { ConnectionHandler } from "relay-runtime";
 import {
   Input,
@@ -35,7 +29,8 @@ const TokenInfoSideBar_NotesFragment = graphql`
     cursor: { type: "String" }
     filter: { type: "NotesFilter" }
     key: { type: "String!" }
-  ) {
+  )
+  @refetchable(queryName: "tokenInfoSideBar_MoreNotesQuery") {
     notes(first: $count, after: $cursor, filter: $filter)
       @connection(
         key: "tokenInfoSideBar_notes"
@@ -64,28 +59,6 @@ const TokenInfoSideBar_NotesQuery = graphql`
   }
 `;
 
-const connectionConfig = (key: string, filter: string): ConnectionConfig => ({
-  getVariables(_, { count, cursor }) {
-    return {
-      count,
-      cursor,
-      key,
-      filter,
-    };
-  },
-  query: graphql`
-    query tokenInfoSideBar_MoreQuery(
-      $filter: NotesFilter!
-      $count: Int!
-      $cursor: String
-      $key: String!
-    ) {
-      ...tokenInfoSideBar_NotesFragment
-        @arguments(filter: $filter, count: $count, cursor: $cursor, key: $key)
-    }
-  `,
-});
-
 const TokenInfoSideBarRenderer = (props: {
   windowId: string;
   activeNoteId: string | null;
@@ -93,23 +66,28 @@ const TokenInfoSideBarRenderer = (props: {
   setShowAll: (showAll: boolean) => void;
   showAll: boolean;
 }): React.ReactElement => {
-  const [data, { isLoading, hasMore, loadMore }] = usePagination(
+  const { data, isLoading, hasNext, loadNext } = usePagination(
     TokenInfoSideBar_NotesFragment,
     props.notesRef
   );
 
   const _loadMore = () => {
-    if (!hasMore() || isLoading()) {
+    if (!hasNext || isLoading) {
       return;
     }
 
-    loadMore(
-      connectionConfig(
-        `window-${props.windowId}`,
-        props.showAll ? "All" : "Entrypoint"
-      ),
+    loadNext(
       10,
-      console.error
+      {
+        onComplete: (error: Error | null) => {
+          console.log("Complete", error);
+        },
+      }
+      // connectionConfig(
+      //   `window-${props.windowId}`,
+      //   props.showAll ? "All" : "Entrypoint"
+      // ),
+      // console.error
     );
   };
   const elementRef = React.useRef<HTMLUListElement>(null);
@@ -117,72 +95,57 @@ const TokenInfoSideBarRenderer = (props: {
 
   const newEdgeIdCounter = React.useRef(0);
 
-  const environment = useRelayEnvironment();
-  React.useEffect(() => {
-    const subscription = requestSubscription<tokenInfoSideBar_NotesUpdatesSubscription>(
-      environment,
-      {
-        subscription: TokenInfoSideBar_NotesUpdatesSubscription,
-        variables: {
-          filter: props.showAll ? "All" : "Entrypoint",
-          endCursor: data.notes.pageInfo.endCursor,
-          hasNextPage: data.notes.pageInfo.hasNextPage,
-        },
-        updater: (store, payload) => {
-          if (payload.notesUpdates.removedNoteId) {
-            const connection = store.get(data.notes.__id);
-            if (connection) {
-              ConnectionHandler.deleteNode(
-                connection,
-                payload.notesUpdates.removedNoteId
-              );
-            }
-          }
-          if (payload.notesUpdates.addedNode) {
-            const connection = store.get(data.notes.__id);
-            if (connection) {
-              const edge = store
-                .getRootField("notesUpdates")
-                ?.getLinkedRecord("addedNode")
-                ?.getLinkedRecord("edge")!;
-              // we need to copy the fields at the other Subscription.notesUpdates.addedNode.edge field
-              // will be mutated when the next subscription result is arriving
-              const record = store.create(
-                // prettier-ignore
-                `${data.notes.__id}-${edge.getValue("cursor")!}-${++newEdgeIdCounter.current}`,
-                "NoteEdge"
-              );
-
-              record.copyFieldsFrom(edge);
-
-              if (payload.notesUpdates.addedNode.previousCursor) {
-                ConnectionHandler.insertEdgeBefore(
-                  connection,
-                  record,
-                  payload.notesUpdates.addedNode.previousCursor
-                );
-              } else if (
-                // in case we don't have a previous cursor and there is no nextPage the edge must be added the last list item.
-                connection
-                  ?.getLinkedRecord("pageInfo")
-                  ?.getValue("hasNextPage") === false
-              ) {
-                ConnectionHandler.insertEdgeAfter(connection, record);
-              }
-            }
-          }
-        },
+  useSubscription<tokenInfoSideBar_NotesUpdatesSubscription>({
+    subscription: TokenInfoSideBar_NotesUpdatesSubscription,
+    variables: {
+      filter: props.showAll ? "All" : "Entrypoint",
+      endCursor: data.notes.pageInfo.endCursor,
+      hasNextPage: data.notes.pageInfo.hasNextPage,
+    },
+    updater: (store, payload) => {
+      if (payload.notesUpdates.removedNoteId) {
+        const connection = store.get(data.notes.__id);
+        if (connection) {
+          ConnectionHandler.deleteNode(
+            connection,
+            payload.notesUpdates.removedNoteId
+          );
+        }
       }
-    );
+      if (payload.notesUpdates.addedNode) {
+        const connection = store.get(data.notes.__id);
+        if (connection) {
+          const edge = store
+            .getRootField("notesUpdates")
+            ?.getLinkedRecord("addedNode")
+            ?.getLinkedRecord("edge")!;
+          // we need to copy the fields at the other Subscription.notesUpdates.addedNode.edge field
+          // will be mutated when the next subscription result is arriving
+          const record = store.create(
+            // prettier-ignore
+            `${data.notes.__id}-${edge.getValue("cursor")!}-${++newEdgeIdCounter.current}`,
+            "NoteEdge"
+          );
 
-    return () => subscription.dispose();
-  }, [
-    environment,
-    props.showAll,
-    props.windowId,
-    data.notes.__id,
-    data.notes.pageInfo.endCursor,
-  ]);
+          record.copyFieldsFrom(edge);
+
+          if (payload.notesUpdates.addedNode.previousCursor) {
+            ConnectionHandler.insertEdgeBefore(
+              connection,
+              record,
+              payload.notesUpdates.addedNode.previousCursor
+            );
+          } else if (
+            // in case we don't have a previous cursor and there is no nextPage the edge must be added the last list item.
+            connection?.getLinkedRecord("pageInfo")?.getValue("hasNextPage") ===
+            false
+          ) {
+            ConnectionHandler.insertEdgeAfter(connection, record);
+          }
+        }
+      }
+    },
+  });
 
   return (
     <>
@@ -306,13 +269,13 @@ export const TokenInfoSideBar = (props: {
 
   const [, cachedNotesResult] = useCurrent(
     notesResult,
-    !notesResult.error && !notesResult.props,
+    !notesResult.error && !notesResult.data,
     0
   );
 
   const [, cachedData] = useCurrent(
     notesSearchResult,
-    !notesSearchResult.error && !notesSearchResult.props,
+    !notesSearchResult.error && !notesSearchResult.data,
     0
   );
 
@@ -321,7 +284,7 @@ export const TokenInfoSideBar = (props: {
   if (cachedNotesResult?.error) {
     return <div>{String(notesResult.error)}</div>;
   }
-  if (!cachedNotesResult?.props) {
+  if (!cachedNotesResult?.data) {
     return null;
   }
   return (
@@ -346,9 +309,9 @@ export const TokenInfoSideBar = (props: {
           ) : null}
         </InputGroup>
       </Box>
-      {filter !== "" && cachedData?.props ? (
+      {filter !== "" && cachedData?.data ? (
         <ScrollableList.List>
-          {cachedData.props.notesSearch.edges.map((edge) => (
+          {cachedData.data.notesSearch.edges.map((edge) => (
             <ScrollableList.ListItem key={edge.node.documentId}>
               <ScrollableList.ListItemButton
                 isActive={props.activeNoteId === edge.node.documentId}
@@ -370,7 +333,7 @@ export const TokenInfoSideBar = (props: {
         <TokenInfoSideBarRenderer
           windowId={props.windowId}
           activeNoteId={props.activeNoteId}
-          notesRef={cachedNotesResult.props}
+          notesRef={cachedNotesResult.data}
           showAll={showAll}
           setShowAll={setShowAll}
         />

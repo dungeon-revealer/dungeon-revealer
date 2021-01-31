@@ -1,7 +1,5 @@
-import { commitMutation } from "react-relay";
-import { useRelayEnvironment } from "relay-hooks";
-
 import { useCallback } from "react";
+import { useMutation } from "relay-hooks";
 import graphql from "babel-plugin-relay/macro";
 import { messageAddMutation } from "./__generated__/messageAddMutation.graphql";
 
@@ -12,14 +10,15 @@ const MessageAddMutationDocument = graphql`
 `;
 
 export const useMessageAddMutation = () => {
-  const environment = useRelayEnvironment();
+  const [mutation] = useMutation<messageAddMutation>(
+    MessageAddMutationDocument
+  );
   return useCallback(
     (input: { rawContent: string }) => {
-      commitMutation<messageAddMutation>(environment, {
-        mutation: MessageAddMutationDocument,
+      mutation({
         variables: { input },
       });
     },
-    [environment]
+    [mutation]
   );
 };

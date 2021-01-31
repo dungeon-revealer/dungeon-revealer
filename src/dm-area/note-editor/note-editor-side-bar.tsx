@@ -1,6 +1,6 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
-import { usePagination, ConnectionConfig, useQuery } from "relay-hooks";
+import { usePagination, useQuery } from "relay-hooks";
 import type { noteEditorSideBar_notesFragment$key } from "./__generated__/noteEditorSideBar_notesFragment.graphql";
 import * as ScrollableList from "../components/scrollable-list";
 import { Input } from "../../input";
@@ -12,7 +12,8 @@ const NoteEditorSideBar_notesFragment = graphql`
   @argumentDefinitions(
     count: { type: "Int", defaultValue: 20 }
     cursor: { type: "String" }
-  ) {
+  )
+  @refetchable(queryName: "noteEditorSideBar_MoreNotesQuery") {
     notes(first: $count, after: $cursor)
       @connection(key: "noteEditorSideBar_notes", filters: []) {
       edges {
@@ -26,37 +27,26 @@ const NoteEditorSideBar_notesFragment = graphql`
   }
 `;
 
-const connectionConfig: ConnectionConfig = {
-  getVariables(_, { count, cursor }) {
-    return {
-      count,
-      cursor,
-    };
-  },
-  query: graphql`
-    query noteEditorSideBar_MoreQuery($count: Int!, $cursor: String) {
-      ...noteEditorSideBar_notesFragment
-        @arguments(count: $count, cursor: $cursor)
-    }
-  `,
-};
-
 const NotesRenderer: React.FC<{
   notesRef: noteEditorSideBar_notesFragment$key;
   setActiveItem: (id: { id: string; documentId: string }) => void;
   activeItemId: { id: string; documentId: string } | null;
 }> = (props) => {
-  const [data, { isLoading, hasMore, loadMore }] = usePagination(
+  const { data, isLoading, hasNext, loadNext } = usePagination(
     NoteEditorSideBar_notesFragment,
     props.notesRef
   );
 
   const _loadMore = () => {
-    if (!hasMore() || isLoading()) {
+    if (!hasNext || isLoading) {
       return;
     }
 
-    loadMore(connectionConfig, 10, console.error);
+    loadNext(10, {
+      onComplete: (error: Error | null) => {
+        console.log("Complete", error);
+      },
+    });
   };
 
   const elementRef = React.useRef<HTMLUListElement>(null);
@@ -126,7 +116,7 @@ export const NoteEditorSideBar: React.FC<{
     }
   );
 
-  const [, cachedData] = useCurrent(data, !data.error && !data.props, 0);
+  const [, cachedData] = useCurrent(data, !data.error && !data.data, 0);
 
   React.useEffect(() => {
     if (props.sideBarRefetchRef) {
@@ -158,9 +148,9 @@ export const NoteEditorSideBar: React.FC<{
           }}
         />
       </div>
-      {filter !== "" && cachedData?.props ? (
+      {filter !== "" && cachedData?.data ? (
         <ScrollableList.List>
-          {cachedData.props.notesSearch.edges.map((edge) => (
+          {cachedData.data.notesSearch.edges.map((edge) => (
             <ScrollableList.ListItem key={edge.node.documentId}>
               <ScrollableList.ListItemButton
                 isActive={
