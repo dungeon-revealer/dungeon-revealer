@@ -78,7 +78,7 @@
     "uuid": "8.3.2"
   },
   "devDependencies": {
-    "@chakra-ui/react": "1.1.6",
+    "@chakra-ui/react": "1.2.1",
     "@emotion/react": "11.1.4",
     "@emotion/styled": "11.0.0",
     "@n1ru4l/push-pull-async-iterable-iterator": "2.0.1",
