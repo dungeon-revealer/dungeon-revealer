@@ -1,24 +1,25 @@
-A grid helps to align tokens added to the map. Any token added to a map with a grid will default to the grid size. 
+A grid helps to align tokens added to the map and can be used to easily reveal portions of the map. Any token with size `1x` added to a map with a grid will default to the grid size.
 
 ## Creating the grid
 
 Click on the `Add Grid` button at the bottom to open the grid configuration menu.
 
-![grid1](https://user-images.githubusercontent.com/9096667/87483214-cc65b400-c5f8-11ea-95db-4a6df6fedfed.png)
+Confirm adding a grid and adjust the grid size to match one square of your map. You can increase or decrease the grid size using the Column Width and Column Height boxes. Use the X-and-Y coordinates boxes to align the grid with your map, or press ALT and drag the grid on the map using your mouse.
 
-
-Move the blue square so that it contains at least one square of your map. This square selects the area that you will zoom into to make your final selection. You can adjust the size of the blue square if needed. Click next and you will see a zoomed view of your map. 
-
-![grid2](https://user-images.githubusercontent.com/9096667/87483232-d8ea0c80-c5f8-11ea-8288-67747054049b.png)
-
-Select one square of your map and click next. Finally, you can fine tune the dimensions of your grid to fit the map. If you know the pixel width of one square in your original image you can input it to the `side length` box. Click finish when you are done. 
-
-![grid3](https://user-images.githubusercontent.com/9096667/87483234-dab3d000-c5f8-11ea-8766-e872ef5da058.png)
+![Grid_Configure](https://user-images.githubusercontent.com/1528440/106448052-8718af00-6482-11eb-94ef-473d8fc144b5.png)
 
 ## Grid Settings
 
-Click on `Grid Settings` at the bottom of the main page to adjust the visual style of the grid.
+To edit an existing grid, click on `Grid Settings` at the bottom of the main page to adjust the visual style of the grid.
 
-![grid-settings](https://user-images.githubusercontent.com/9096667/87482916-139f7500-c5f8-11ea-8dea-aff020e23d7f.png)
+![Grid_Settings](https://user-images.githubusercontent.com/1528440/106448511-2b025a80-6483-11eb-8339-1bc5e9252990.png)
 
-You can adjust the visibility of the grid for both you and the players. The sliders adjust the color and transparency of the grid.
+You can adjust the visibility of the grid for both you and the players. The `rgba`box can be used adjust the color and transparency of the grid.
+
+The grid can be modified by clicking `Edit Grid`. This will return to the `Grid Configurator`.
+
+## Grid Reveal
+
+You can use the `Area` tool on the left toolbar to reveal or shroud blocks. Click the `Area` tool and set `Snap to grid` to `On`. Using the tool you can reveal or shroud a box in the created grid by selecting an area inside the box with it.
+
+![Grid_Reveal](https://user-images.githubusercontent.com/1528440/106448066-8b44cc80-6482-11eb-90de-5bfc5895a068.png)
