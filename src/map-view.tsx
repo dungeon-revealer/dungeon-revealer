@@ -204,7 +204,6 @@ const TokenRenderer: React.FC<{
         return memo;
       },
       onPointerDown: ({ event }) => {
-        console.log("WHY");
         // Context menu on tablet is opened via a long-press
         const { clientX, clientY } = event;
         const timeout = setTimeout(() => {
