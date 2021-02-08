@@ -27,10 +27,10 @@ import { useNoteWindowActions } from "./dm-area/token-info-aside";
 
 type Vector2D = [number, number];
 
-enum LayerPosition {
+enum LayerRenderOrder {
   map = 0,
-  token = 0.00001,
-  marker = 0.00002,
+  token = 1,
+  marker = 2,
 }
 
 // convert image relative to three.js
@@ -99,7 +99,7 @@ const TokenRenderer: React.FC<{
     position: [
       calculateX(props.x, props.factor, props.dimensions.width),
       calculateY(props.y, props.factor, props.dimensions.height),
-      LayerPosition.token,
+      0,
     ] as [number, number, number],
     circleScale: [1, 1, 1] as [number, number, number],
   }));
@@ -110,7 +110,7 @@ const TokenRenderer: React.FC<{
       position: [
         calculateX(props.x, props.factor, props.dimensions.width),
         calculateY(props.y, props.factor, props.dimensions.height),
-        LayerPosition.token,
+        0,
       ],
       circleScale: [newRadius / initialRadius, newRadius / initialRadius, 1],
     });
@@ -190,7 +190,7 @@ const TokenRenderer: React.FC<{
           memo[1] - movement[1] / props.viewport.factor / mapScale[1];
 
         set({
-          position: [newX, newY, LayerPosition.token],
+          position: [newX, newY, 0],
           immediate: true,
         });
 
@@ -293,7 +293,7 @@ const TokenRenderer: React.FC<{
       >
         {props.textLabel}
       </CanvasText>
-      <mesh {...dragProps()}>
+      <mesh {...dragProps()} renderOrder={LayerRenderOrder.token}>
         {/* This one is for attaching the gesture handlers */}
         <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
       </mesh>
@@ -338,7 +338,7 @@ const MarkedAreaRenderer: React.FC<{
       position={[
         calculateX(props.x, props.factor, props.dimensions.width),
         calculateY(props.y, props.factor, props.dimensions.height),
-        LayerPosition.marker,
+        0,
       ]}
     >
       <ringBufferGeometry
@@ -472,7 +472,7 @@ const MapRenderer: React.FC<{
 }> = (props) => {
   return (
     <>
-      <group>
+      <group renderOrder={LayerRenderOrder.map}>
         <mesh>
           <planeBufferGeometry
             attach="geometry"
@@ -502,7 +502,7 @@ const MapRenderer: React.FC<{
           />
         </mesh>
       </group>
-      <group>
+      <group renderOrder={LayerRenderOrder.token}>
         {props.tokens.map((token) => (
           <TokenRenderer
             id={token.id}
@@ -526,7 +526,7 @@ const MapRenderer: React.FC<{
           />
         ))}
       </group>
-      <group>
+      <group renderOrder={LayerRenderOrder.marker}>
         {props.markedAreas.map((markedArea) => (
           <MarkedAreaRenderer
             key={markedArea.id}
@@ -874,6 +874,33 @@ export const MapView = (props: {
       <Canvas
         camera={{ position: [0, 0, 5] }}
         pixelRatio={window.devicePixelRatio}
+        raycaster={{
+          filter: (intersects, state) => {
+            let sorted: THREE.Intersection[] = [];
+            if (intersects.length > 0) {
+              const closest = intersects[0];
+              const outOfRange: THREE.Intersection[] = [];
+              const inRange: THREE.Intersection[] = [];
+              const ordered = intersects.sort(
+                (i1, i2) => i2.object.renderOrder - i1.object.renderOrder
+              );
+              for (const intersect of ordered) {
+                if (
+                  Math.abs(closest.distance - intersect.distance) <=
+                  (state.raycaster.params.Line?.threshold ?? 1)
+                ) {
+                  // The distance to the closest intersect is in range
+                  inRange.push(intersect);
+                } else {
+                  // The distance to the closest intersect is out of range
+                  outOfRange.push(intersect);
+                }
+              }
+              sorted = inRange.concat(outOfRange);
+            }
+            return sorted;
+          },
+        }}
       >
         <ambientLight intensity={1} />
         <ContextBridge>
