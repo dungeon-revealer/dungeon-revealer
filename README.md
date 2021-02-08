@@ -7,7 +7,12 @@
 [![Docker pulls](https://img.shields.io/docker/pulls/dungeonrevealer/dungeon-revealer)](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer)
 [![Discord](https://img.shields.io/discord/709687178422386708)](https://discord.gg/dS5khqk)
 
-A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.
+Dungeon Revealer is an open source self-hosted app for playing pen and paper such as Dungeon and Dragons or Cyberpunk or other tabletop games together.
+
+The main features include revealing game maps to players, moving around tokens on a map, a dice roll chat and sharing notes and images.
+
+Dungeon Revealer supports both desktop clients and mobile clients, such as tablets or phones. It can be used for in person gaming on a local network or for online gaming via the internet.
+
 Join the [discord server](https://discord.gg/dS5khqk).
 Check out the [wiki](https://github.com/dungeon-revealer/dungeon-revealer/wiki) for a detailed walkthrough!
 
