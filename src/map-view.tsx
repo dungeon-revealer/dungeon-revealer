@@ -30,7 +30,8 @@ type Vector2D = [number, number];
 enum LayerRenderOrder {
   map = 0,
   token = 1,
-  marker = 2,
+  tokenGesture = 2,
+  marker = 3,
 }
 
 // convert image relative to three.js
@@ -293,7 +294,7 @@ const TokenRenderer: React.FC<{
       >
         {props.textLabel}
       </CanvasText>
-      <mesh {...dragProps()} renderOrder={LayerRenderOrder.token}>
+      <mesh {...dragProps()} renderOrder={LayerRenderOrder.tokenGesture}>
         {/* This one is for attaching the gesture handlers */}
         <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
       </mesh>
