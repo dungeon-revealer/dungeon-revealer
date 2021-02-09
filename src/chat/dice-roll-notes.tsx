@@ -17,16 +17,49 @@ const WindowContent = styled.div`
   padding-top: 8px;
 `;
 
-const INITIAL_CONTENT = `You can roll dice by typing in the dice notation in the Chat:
-<ChatMacro message="[1d20 + 5]">
-  **[1d20 + 5]**
+const INITIAL_CONTENT = `## Basic Dice Rolling
+
+You can roll dice by typing in the dice notation in the Chat: **[1d20]**. 
+Alternatively, you can click on the common dice rolls below.
+
+<ChatMacro message="[1d20]">
+  **d20**
+</ChatMacro>
+<ChatMacro message="[1d12]">
+  **d12**
+</ChatMacro>
+<ChatMacro message="[1d10]">
+  **d10**
+</ChatMacro>
+<ChatMacro message="[1d8]">
+  **d8**
+</ChatMacro>
+<ChatMacro message="[1d6]">
+  **d6**
+</ChatMacro>
+<ChatMacro message="[1d4]">
+  **d4**
+</ChatMacro>
+<ChatMacro message="[1d100]">
+  **d100**
 </ChatMacro>
 
-The formula a dice roll must be surrounded by square brackets.
+
+## Formula Rolling
+
+You can roll more complicated dice by typing in the [dice notation](https://en.wikipedia.org/wiki/Dice_notation) in the Chat:
+<ChatMacro message="[3d6 + 5]">
+  **[3d6 + 5]**
+</ChatMacro>
+
+The formula of a dice roll must be surrounded by square brackets.
 
 You can also simply click the dice roll text above. It is a macro that will trigger the dice roll in the chat.
 
-Macros can can contain text and dice rolls. Click the edit button on the top right to for learning how to write your own macros.
+
+## Macro Rolling
+
+Macros can contain text and dice rolls. Click the edit button on the top right to learn how to write your own macros.
 You can simply edit this text and add macros that suit your game. They will be stored so you can access them every time you are using dungeon-revealer!
 
 Here are some more examples:
@@ -99,7 +132,7 @@ const usePersitedDiceNotesValue = () =>
             return parsedValue;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
       return INITIAL_CONTENT;
     },
   });
@@ -128,8 +161,8 @@ export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
             mode === "read" ? (
               <Icon.EditIcon size={16} />
             ) : (
-              <Icon.SaveIcon size={16} />
-            ),
+                <Icon.SaveIcon size={16} />
+              ),
         },
       ]}
       bodyContent={
