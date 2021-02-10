@@ -2,7 +2,7 @@ import { pipe, flow } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 import * as A from "fp-ts/lib/Array";
-import { sequenceT } from "fp-ts/lib/Apply";
+import { sequenceT, sequenceS } from "fp-ts/lib/Apply";
 
 import * as t from "io-ts";
 import camelCase from "lodash/camelCase";
@@ -93,7 +93,10 @@ const sanitizeMetaDataLines = flow(
 );
 
 const getRecord = (name: string) => (records: [string, string][]) =>
-  O.fromNullable(records.find((record) => record[0] === name));
+  pipe(
+    O.fromNullable(records.find((record) => record[0] === name)),
+    O.map(([, value]) => value)
+  );
 
 const getIdRecord = getRecord("id");
 const getTitleRecord = getRecord("title");
@@ -104,46 +107,37 @@ const decodeId = (id: string) =>
     ? E.right(id)
     : E.left(new Error("Invalid characters in id."));
 
+const sequenceTE = sequenceT(E.either);
+const sequenceSE = sequenceS(E.either);
+
 const decodeMetaData = (records: [string, string][]) =>
   pipe(
-    getIdRecord(records),
-    O.fold(
-      () => E.left(new Error("Missing id.")),
-      ([_, rawId]) =>
-        pipe(
-          decodeId(rawId),
-          E.chain((id) =>
-            pipe(
-              getTitleRecord(records),
-              O.fold(
-                () => E.left(new Error("Missing title.")),
-                ([_, title]) =>
-                  pipe(
-                    getIsEntryPointRecord(records),
-                    O.fold(
-                      () => E.left(new Error("Missing isEntryPoint.")),
-                      ([_, isEntryPoint]) =>
-                        pipe(
-                          BooleanFromString.decode(isEntryPoint),
-                          E.map((isEntryPoint) => ({
-                            id,
-                            title,
-                            isEntryPoint,
-                          })),
-                          E.mapLeft(
-                            () =>
-                              new Error(
-                                "Invalid value provided for 'isEntryPoint'."
-                              )
-                          )
-                        )
-                    )
-                  )
-              )
-            )
-          )
+    sequenceSE({
+      id: pipe(
+        getIdRecord(records),
+        O.fold(
+          () => E.left(new Error("Missing id.")),
+          (value) => E.right(value)
+        ),
+        E.chain(decodeId)
+      ),
+      title: pipe(
+        getTitleRecord(records),
+        O.fold(
+          () => E.left(new Error("Missing title.")),
+          (value) => E.right(value)
         )
-    )
+      ),
+      isEntryPoint: pipe(
+        getIsEntryPointRecord(records),
+        O.fold(
+          () => E.left(new Error("Missing isEntryPoint.")),
+          (value) => E.right(value)
+        ),
+        E.chainW(BooleanFromString.decode),
+        E.mapLeft(() => new Error("Failed parsing isEntryPoint."))
+      ),
+    })
   );
 
 const normalizeLineEndings = (content: string) =>
@@ -165,8 +159,6 @@ const extractMetaData = flow(
   sanitizeMetaDataLines,
   decodeMetaData
 );
-
-const sequenceTE = sequenceT(E.either);
 
 export const parseNoteData = flow(normalizeLineEndings, (content) =>
   pipe(
