@@ -2,6 +2,8 @@ import { pipe, flow } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 import * as A from "fp-ts/lib/Array";
+import { sequenceT, sequenceS } from "fp-ts/lib/Apply";
+
 import * as t from "io-ts";
 import camelCase from "lodash/camelCase";
 import * as md from "./markdown-to-plain-text";
@@ -15,7 +17,10 @@ const StringUtilities = {
       return O.none;
     }
 
-    return O.some([input.substring(0, index), input.substring(index + 1)]);
+    return O.some([
+      input.substring(0, index),
+      input.substring(index + delimiter.length),
+    ]);
   },
 };
 
@@ -88,7 +93,10 @@ const sanitizeMetaDataLines = flow(
 );
 
 const getRecord = (name: string) => (records: [string, string][]) =>
-  O.fromNullable(records.find((record) => record[0] === name));
+  pipe(
+    O.fromNullable(records.find((record) => record[0] === name)),
+    O.map(([, value]) => value)
+  );
 
 const getIdRecord = getRecord("id");
 const getTitleRecord = getRecord("title");
@@ -99,57 +107,52 @@ const decodeId = (id: string) =>
     ? E.right(id)
     : E.left(new Error("Invalid characters in id."));
 
+const sequenceTE = sequenceT(E.either);
+const sequenceSE = sequenceS(E.either);
+
 const decodeMetaData = (records: [string, string][]) =>
   pipe(
-    getIdRecord(records),
-    O.fold(
-      () => E.left(new Error("Missing id.")),
-      ([_, rawId]) =>
-        pipe(
-          decodeId(rawId),
-          E.chain((id) =>
-            pipe(
-              getTitleRecord(records),
-              O.fold(
-                () => E.left(new Error("Missing title.")),
-                ([_, title]) =>
-                  pipe(
-                    getIsEntryPointRecord(records),
-                    O.fold(
-                      () => E.left(new Error("Missing isEntryPoint.")),
-                      ([_, isEntryPoint]) =>
-                        pipe(
-                          BooleanFromString.decode(isEntryPoint),
-                          E.map((isEntryPoint) => ({
-                            id,
-                            title,
-                            isEntryPoint,
-                          })),
-                          E.mapLeft(
-                            () =>
-                              new Error(
-                                "Invalid value provided for 'isEntryPoint'."
-                              )
-                          )
-                        )
-                    )
-                  )
-              )
-            )
-          )
+    sequenceSE({
+      id: pipe(
+        getIdRecord(records),
+        O.fold(
+          () => E.left(new Error("Missing id.")),
+          (value) => E.right(value)
+        ),
+        E.chain(decodeId)
+      ),
+      title: pipe(
+        getTitleRecord(records),
+        O.fold(
+          () => E.left(new Error("Missing title.")),
+          (value) => E.right(value)
         )
-    )
+      ),
+      isEntryPoint: pipe(
+        getIsEntryPointRecord(records),
+        O.fold(
+          () => E.left(new Error("Missing isEntryPoint.")),
+          (value) => E.right(value)
+        ),
+        E.chainW(BooleanFromString.decode),
+        E.mapLeft(() => new Error("Failed parsing isEntryPoint."))
+      ),
+    })
   );
 
 const normalizeLineEndings = (content: string) =>
   content.replace(/\r\n/g, `\n`);
 
 const parseBody = (content: string) =>
-  content
-    // remove head
-    .replace(/^(---\n[^]*\n--- *\n)/, "")
-    // remove trailing line breaks
-    .replace(/^\n*/, "");
+  pipe(
+    content.replace("---", ""),
+    StringUtilities.split1("---"),
+    O.map(([, body]) => body.replace(/^\n*/, "")),
+    O.fold(
+      () => E.left(new Error("Could not find body.")),
+      (body) => E.right(body)
+    )
+  );
 
 const extractMetaData = flow(
   parseMetaDataLines,
@@ -159,10 +162,11 @@ const extractMetaData = flow(
 
 export const parseNoteData = flow(normalizeLineEndings, (content) =>
   pipe(
-    parseMetaHead(content),
-    E.chain(extractMetaData),
-    E.map((metadata) => {
-      const body = parseBody(content);
+    sequenceTE(
+      pipe(parseMetaHead(content), E.chain(extractMetaData)),
+      parseBody(content)
+    ),
+    E.map(([metadata, body]) => {
       return NoteImportData.encode({
         ...metadata,
         content: body,
