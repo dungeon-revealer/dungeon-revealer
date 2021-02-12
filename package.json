@@ -81,7 +81,7 @@
     "@chakra-ui/react": "1.2.1",
     "@emotion/react": "11.1.5",
     "@emotion/styled": "11.1.5",
-    "@n1ru4l/push-pull-async-iterable-iterator": "2.0.1",
+    "@n1ru4l/push-pull-async-iterable-iterator": "2.1.2",
     "@n1ru4l/socket-io-graphql-client": "0.9.1",
     "@n1ru4l/use-async-effect": "1.2.4",
     "@types/body-scroll-lock": "2.6.1",
