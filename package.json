@@ -138,7 +138,7 @@
     "react-virtuoso": "1.5.6",
     "referentiel": "0.0.8",
     "relay-compiler": "10.1.3",
-    "relay-compiler-language-typescript": "13.0.4",
+    "relay-compiler-language-typescript": "13.0.6",
     "relay-config": "10.1.3",
     "relay-hooks": "4.1.0",
     "relay-runtime": "10.1.3",
