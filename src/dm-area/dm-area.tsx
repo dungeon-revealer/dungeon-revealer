@@ -22,6 +22,7 @@ import { Socket } from "socket.io-client";
 import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
 import { useDropZone } from "../hooks/use-drop-zone";
 import { useNoteWindowActions } from "./token-info-aside";
+import { MapControlInterface } from "../map-view";
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -476,9 +477,46 @@ const Content = ({
   }, []);
 
   const [droppedFile, setDroppedFile] = React.useState<null | File>(null);
+  const i = React.useRef(1);
+  const [dropZoneEventHandler] = useDropZone((params) => {
+    const [file] = params.files;
 
-  const [dropZoneEventHandler] = useDropZone((file) => {
-    setDroppedFile(file[0]);
+    if (file.type.match(/image\/svg/) || file.type.match(/image\/webp/)) {
+      const context = controlRef.current?.getContext();
+
+      if (context) {
+        const coords = context.helper.coordinates.screenToImage([
+          params.position.x,
+          params.position.y,
+        ]);
+
+        console.log(coords);
+
+        setData(
+          produce((appData: null | MapData) => {
+            if (appData) {
+              const map = appData.maps.find((map) => map.id === loadedMapId)!;
+              map.tokens.push({
+                id: String(i.current++),
+                radius: 100,
+                color: "red",
+                x: coords[0],
+                y: coords[1],
+                isVisibleForPlayers: false,
+                isMovableByPlayers: false,
+                isLocked: false,
+                reference: null,
+                attachment: file,
+                label: "",
+              });
+            }
+          })
+        );
+
+        return;
+      }
+    }
+    setDroppedFile(file);
   });
 
   const [markedAreas, setMarkedAreas] = React.useState<MarkedAreaEntity[]>(
@@ -516,6 +554,7 @@ const Content = ({
   }, [socket]);
 
   const actions = useNoteWindowActions();
+  const controlRef = React.useRef<MapControlInterface | null>(null);
 
   return (
     <FetchContext.Provider value={localFetch}>
@@ -561,6 +600,7 @@ const Content = ({
             }}
           >
             <DmMap
+              controlRef={controlRef}
               password={dmPassword}
               map={loadedMap}
               liveMapId={liveMapId}

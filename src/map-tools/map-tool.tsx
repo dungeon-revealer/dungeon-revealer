@@ -9,6 +9,7 @@ type Vector3D = [number, number, number];
 
 export type SharedMapToolState = {
   mapImage: HTMLImageElement;
+  mapCanvas: HTMLCanvasElement;
   fogCanvas: HTMLCanvasElement;
   fogTexture: THREE.CanvasTexture;
   mapState: {
@@ -46,6 +47,8 @@ export type SharedMapToolState = {
       canvasToImage: (vector: Vector2D) => Vector2D;
       /* convert image coordinate to canvas coordinate */
       imageToCanvas: (vector: Vector2D) => Vector2D;
+      /* convert screen coordinate to image relative coordinate */
+      screenToImage: (vector: Vector2D) => Vector2D;
     };
   };
 };

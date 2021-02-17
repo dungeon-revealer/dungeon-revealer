@@ -1,8 +1,10 @@
 import * as React from "react";
 import * as THREE from "three";
+import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
 import {
   Canvas,
   PointerEvent,
+  useLoader,
   useThree,
   ViewportData,
 } from "react-three-fiber";
@@ -24,14 +26,17 @@ import { MapGridEntity, MapTokenEntity, MarkedAreaEntity } from "./map-typings";
 import { useIsKeyPressed } from "./hooks/use-is-key-pressed";
 import { TokenContextMenuContext } from "./token-context-menu-context";
 import { useNoteWindowActions } from "./dm-area/token-info-aside";
+import { TextureLoader, Vector2 } from "three";
+import { ReactEventHandlers } from "react-use-gesture/dist/types";
 
 type Vector2D = [number, number];
 
 enum LayerRenderOrder {
   map = 0,
-  token = 1,
-  tokenGesture = 2,
-  marker = 3,
+  mapGrid = 1,
+  token = 2,
+  tokenGesture = 3,
+  marker = 4,
 }
 
 // convert image relative to three.js
@@ -81,6 +86,7 @@ const TokenRenderer: React.FC<{
   updateTokenPosition: ({ x, y }: { x: number; y: number }) => void;
   mapScale: SpringValue<[number, number, number]>;
   reference: null | { type: "note"; id: string };
+  attachment: File | undefined;
 }> = (props) => {
   const tokenMenuContext = React.useContext(TokenContextMenuContext);
   const isDungeonMasterView = tokenMenuContext !== null;
@@ -136,6 +142,8 @@ const TokenRenderer: React.FC<{
 
   const onPointerDown = React.useRef<null | (() => void)>(null);
 
+  const hoverCounter = React.useRef(0);
+
   const dragProps = useGesture<{
     onClick: PointerEvent;
     onContextMenu: PointerEvent;
@@ -173,7 +181,7 @@ const TokenRenderer: React.FC<{
             }
           }
 
-          setIsHover(false);
+          setIsHover(() => false);
           return;
         }
 
@@ -218,15 +226,16 @@ const TokenRenderer: React.FC<{
         }
         if (isLocked === false) {
           event.stopPropagation();
-          setIsHover(true);
         }
       },
       onPointerOver: () => {
+        hoverCounter.current++;
+
         if (isMovable === false) {
           return;
         }
         if (isLocked === false) {
-          setIsHover(true);
+          setIsHover(hoverCounter.current !== 0);
         }
       },
       onPointerUp: () => {
@@ -235,16 +244,14 @@ const TokenRenderer: React.FC<{
         if (isMovable === false) {
           return;
         }
-        if (isLocked === false) {
-          // TODO: only on tablet
-          setIsHover(false);
-        }
       },
       onPointerOut: () => {
+        hoverCounter.current--;
+
         if (isMovable === false) {
           return;
         }
-        setIsHover(false);
+        setIsHover(hoverCounter.current !== 0);
       },
       onContextMenu: (args) => {
         args.event.stopPropagation();
@@ -259,32 +266,40 @@ const TokenRenderer: React.FC<{
   );
 
   const color = isHover && isMovable ? lighten(0.1, props.color) : props.color;
-
   return (
     <animated.group
       position={animatedProps.position}
       scale={animatedProps.circleScale}
+      renderOrder={LayerRenderOrder.token}
     >
-      <mesh>
-        <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
-        <meshStandardMaterial
-          attach="material"
-          color={color}
-          transparent={true}
-          opacity={props.isVisibleForPlayers ? 1 : 0.5}
-        />
-      </mesh>
-      <mesh>
-        <ringBufferGeometry
-          attach="geometry"
-          args={[initialRadius * (1 - 0.05), initialRadius, 128]}
-        />
-        <meshStandardMaterial
-          attach="material"
-          color={darken(0.1, color)}
-          opacity={props.isVisibleForPlayers ? 1 : 0.5}
-        />
-      </mesh>
+      {props.attachment ? null : (
+        <>
+          <mesh>
+            <circleBufferGeometry
+              attach="geometry"
+              args={[initialRadius, 128]}
+            />
+            <meshStandardMaterial
+              attach="material"
+              color={color}
+              transparent={true}
+              opacity={props.isVisibleForPlayers ? 1 : 0.5}
+            />
+          </mesh>
+          <mesh>
+            <ringBufferGeometry
+              attach="geometry"
+              args={[initialRadius * (1 - 0.05), initialRadius, 128]}
+            />
+            <meshStandardMaterial
+              attach="material"
+              color={darken(0.1, color)}
+              opacity={props.isVisibleForPlayers ? 1 : 0.5}
+              transparent={true}
+            />
+          </mesh>
+        </>
+      )}
       <CanvasText
         fontSize={0.8 * initialRadius}
         color="black"
@@ -294,11 +309,143 @@ const TokenRenderer: React.FC<{
       >
         {props.textLabel}
       </CanvasText>
-      <mesh {...dragProps()} renderOrder={LayerRenderOrder.tokenGesture}>
-        {/* This one is for attaching the gesture handlers */}
-        <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
-      </mesh>
+
+      {props.attachment ? (
+        <TokenAttachment
+          file={props.attachment}
+          initialRadius={initialRadius}
+          dragProps={dragProps}
+          isHover={isHover}
+          opacity={props.isVisibleForPlayers ? 1 : 0.5}
+        />
+      ) : null}
+      {props.attachment ? null : (
+        <mesh {...dragProps()} renderOrder={LayerRenderOrder.tokenGesture}>
+          {/* This one is for attaching the gesture handlers */}
+          <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
+          <meshStandardMaterial
+            attach="material"
+            color={color}
+            opacity={0}
+            transparent={true}
+          />
+        </mesh>
+      )}
     </animated.group>
+  );
+};
+
+const TokenAttachment = (props: {
+  file: File;
+  initialRadius: number;
+  isHover: boolean;
+  opacity: number;
+  dragProps: () => ReactEventHandlers;
+}) => {
+  const [url] = React.useState(() => URL.createObjectURL(props.file));
+  React.useEffect(
+    () => () => {
+      URL.revokeObjectURL(url);
+    },
+    [url]
+  );
+
+  return (
+    <React.Suspense fallback={null}>
+      {props.file.type.includes("svg") ? (
+        <SVGELement
+          url={url}
+          dragProps={props.dragProps}
+          isHover={props.isHover}
+          opacity={props.opacity}
+          initialRadius={props.initialRadius}
+        />
+      ) : (
+        <TextureElement
+          url={url}
+          dragProps={props.dragProps}
+          initialRadius={props.initialRadius}
+          isHover={props.isHover}
+          opacity={props.opacity}
+        />
+      )}
+    </React.Suspense>
+  );
+};
+
+const TextureElement = (props: {
+  url: string;
+  dragProps: () => ReactEventHandlers;
+  initialRadius: number;
+  isHover: boolean;
+  opacity: number;
+}) => {
+  const texture = useLoader(TextureLoader, props.url);
+
+  return (
+    <mesh renderOrder={LayerRenderOrder.tokenGesture} {...props.dragProps()}>
+      <circleBufferGeometry
+        attach="geometry"
+        args={[props.initialRadius, 128]}
+      />
+      <meshBasicMaterial
+        attach="material"
+        map={texture}
+        transparent={true}
+        opacity={props.isHover ? props.opacity + 0.1 : props.opacity}
+      />
+    </mesh>
+  );
+};
+
+const SVGELement = (props: {
+  url: string;
+  dragProps: () => ReactEventHandlers;
+  isHover: boolean;
+  opacity: number;
+  initialRadius: number;
+}) => {
+  const data = useLoader(SVGLoader, props.url);
+
+  let i = 0;
+  const items: Array<React.ReactElement> = [];
+
+  const width = ((data.xml as any) as SVGSVGElement).viewBox.baseVal.width;
+  const height = ((data.xml as any) as SVGSVGElement).viewBox.baseVal.height;
+
+  for (const path of data.paths) {
+    for (const shape of path.toShapes(true)) {
+      i++;
+      items.push(
+        <mesh
+          key={i}
+          renderOrder={LayerRenderOrder.token}
+          {...props.dragProps()}
+        >
+          <shapeBufferGeometry args={[shape]} />
+          <meshBasicMaterial
+            color={
+              props.isHover
+                ? lighten(0.1, "#" + path.color.getHexString())
+                : path.color
+            }
+            side={THREE.DoubleSide}
+            transparent={true}
+          />
+        </mesh>
+      );
+    }
+  }
+
+  const scale = (props.initialRadius * 2) / width;
+
+  return (
+    <group
+      scale={[scale, -scale, scale]}
+      position={[(-width / 2) * scale, (height / 2) * scale, 0]}
+    >
+      {items}
+    </group>
   );
 };
 
@@ -441,7 +588,7 @@ const GridRenderer = (props: {
   ]);
 
   return (
-    <mesh>
+    <mesh renderOrder={LayerRenderOrder.mapGrid}>
       <planeBufferGeometry
         attach="geometry"
         args={[props.dimensions.width, props.dimensions.height]}
@@ -524,6 +671,7 @@ const MapRenderer: React.FC<{
             }
             mapScale={props.scale}
             reference={token.reference}
+            attachment={token.attachment}
           />
         ))}
       </group>
@@ -550,11 +698,7 @@ export type MapControlInterface = {
     zoomIn: () => void;
     zoomOut: () => void;
   };
-  getContext: () => {
-    mapCanvas: HTMLCanvasElement;
-    fogCanvas: HTMLCanvasElement;
-    fogTexture: THREE.CanvasTexture;
-  };
+  getContext: () => SharedMapToolState;
 };
 
 const MapViewRenderer = (props: {
@@ -654,37 +798,6 @@ const MapViewRenderer = (props: {
     );
   }, [props.mapImage, viewport]);
 
-  React.useEffect(() => {
-    if (props.controlRef) {
-      props.controlRef.current = {
-        controls: {
-          center: () =>
-            set({
-              scale: [1, 1, 1] as [number, number, number],
-              position: [0, 0, 0] as [number, number, number],
-            }),
-          zoomIn: () => {
-            const scale = spring.scale.get();
-            set({
-              scale: [scale[0] * 1.1, scale[1] * 1.1, 1],
-            });
-          },
-          zoomOut: () => {
-            const scale = spring.scale.get();
-            set({
-              scale: [scale[0] / 1.1, scale[1] / 1.1, 1],
-            });
-          },
-        },
-        getContext: () => ({
-          mapCanvas,
-          fogCanvas,
-          fogTexture,
-        }),
-      };
-    }
-  });
-
   const isDragAllowed = React.useRef(true);
 
   const [pointerPosition] = React.useState(
@@ -692,6 +805,8 @@ const MapViewRenderer = (props: {
   );
 
   const isAltPressed = useIsKeyPressed("Alt");
+
+  const { size, raycaster, scene, camera } = useThree();
 
   const toolContext = React.useMemo<SharedMapToolState>(() => {
     const factor = dimensions.width / mapCanvas.width;
@@ -720,9 +835,29 @@ const MapViewRenderer = (props: {
         [x / optimalDimensions.ratio, y / optimalDimensions.ratio] as Vector2D,
       imageToCanvas: ([x, y]: Vector2D) =>
         [x * optimalDimensions.ratio, y * optimalDimensions.ratio] as Vector2D,
+      screenToImage: ([x, y]: Vector2D) => {
+        const vector = new THREE.Vector2(
+          (x / size.width) * 2 - 1,
+          -(y / size.height) * 2 + 1
+        );
+        raycaster.setFromCamera(vector, camera);
+        const [obj] = raycaster.intersectObjects(scene.children, true);
+        if (!obj) {
+          return [0, 0] as Vector2D;
+        }
+        const [scale] = spring.scale.get();
+        const [offsetX, offsetY] = spring.position.get();
+        return coordinates.canvasToImage(
+          coordinates.threeToCanvas([
+            (obj.point.x - offsetX) / scale,
+            (obj.point.y - offsetY) / scale,
+          ])
+        );
+      },
     };
 
     return {
+      mapCanvas,
       fogCanvas,
       fogTexture,
       mapState: spring,
@@ -762,7 +897,42 @@ const MapViewRenderer = (props: {
     optimalDimensions,
     pointerPosition,
     isAltPressed,
+    raycaster,
+    scene,
   ]);
+
+  React.useEffect(() => {
+    if (props.controlRef) {
+      props.controlRef.current = {
+        controls: {
+          center: () =>
+            set({
+              scale: [1, 1, 1] as [number, number, number],
+              position: [0, 0, 0] as [number, number, number],
+            }),
+          zoomIn: () => {
+            const scale = spring.scale.get();
+            set({
+              scale: [scale[0] * 1.1, scale[1] * 1.1, 1],
+            });
+          },
+          zoomOut: () => {
+            const scale = spring.scale.get();
+            set({
+              scale: [scale[0] / 1.1, scale[1] / 1.1, 1],
+            });
+          },
+        },
+        getContext: () => toolContext,
+      };
+    }
+
+    return () => {
+      if (props.controlRef) {
+        props.controlRef.current = null;
+      }
+    };
+  });
 
   const toolRef = React.useRef<{
     contextState: any;

@@ -1,6 +1,9 @@
 import * as React from "react";
 
-type FilesDroppedHandler = (files: Array<File>) => void;
+type FilesDroppedHandler = (params: {
+  files: Array<File>;
+  position: { x: number; y: number };
+}) => void;
 
 type Handlers<THTMLElement extends HTMLElement> = {
   onDragEnter: (ev: React.DragEvent<THTMLElement>) => void;
@@ -50,7 +53,13 @@ export const useDropZone = <THTMLElement extends HTMLElement>(
 
         const files = Array.from(ev.dataTransfer.files);
         if (files.length > 0) {
-          onFilesDropped(files);
+          onFilesDropped({
+            files,
+            position: {
+              x: ev.clientX,
+              y: ev.clientY,
+            },
+          });
         }
       },
     }),

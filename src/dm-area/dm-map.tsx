@@ -629,13 +629,13 @@ export const DmMap = (props: {
   ) => void;
   deleteToken: (id: string) => void;
   updateMap: (params: Partial<MapEntity>) => void;
+  controlRef: React.MutableRefObject<MapControlInterface | null>;
 }): React.ReactElement => {
   const currentMapRef = React.useRef(props.map);
 
   const [mapImage, setMapImage] = React.useState<HTMLImageElement | null>(null);
   const [fogImage, setFogImage] = React.useState<HTMLImageElement | null>(null);
-
-  const controlRef = React.useRef<MapControlInterface | null>(null);
+  const controlRef = props.controlRef;
   /**
    * used for canceling pending requests in case there is a new update incoming.
    * should be either null or an array of tasks returned by loadImage
