@@ -23,6 +23,7 @@ import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
 import { useDropZone } from "../hooks/use-drop-zone";
 import { useNoteWindowActions } from "./token-info-aside";
 import { MapControlInterface } from "../map-view";
+import { generateSHA256FileHash } from "../crypto";
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -490,28 +491,42 @@ const Content = ({
           params.position.y,
         ]);
 
-        console.log(coords);
+        generateSHA256FileHash(file)
+          .then((fileHash) => {
+            // check whether the file is already available locally or on server
+            console.log(fileHash);
 
-        setData(
-          produce((appData: null | MapData) => {
-            if (appData) {
-              const map = appData.maps.find((map) => map.id === loadedMapId)!;
-              map.tokens.push({
-                id: String(i.current++),
-                radius: 100,
-                color: "red",
-                x: coords[0],
-                y: coords[1],
-                isVisibleForPlayers: false,
-                isMovableByPlayers: false,
-                isLocked: false,
-                reference: null,
-                attachment: file,
-                label: "",
-              });
-            }
+            // Yes -> use existing
+            // No -> upload and use uploaded one :)
+
+            setData(
+              produce((appData: null | MapData) => {
+                if (appData) {
+                  const map = appData.maps.find(
+                    (map) => map.id === loadedMapId
+                  )!;
+                  map.tokens.push({
+                    id: String(i.current++),
+                    // TODO: use defaults
+                    radius: 100,
+                    color: "red",
+                    x: coords[0],
+                    y: coords[1],
+                    isVisibleForPlayers: false,
+                    isMovableByPlayers: false,
+                    isLocked: false,
+                    reference: null,
+                    attachment: file,
+                    label: "",
+                  });
+                }
+              })
+            );
           })
-        );
+          .catch((err) => {
+            // TODO: better error message
+            console.error(err);
+          });
 
         return;
       }
