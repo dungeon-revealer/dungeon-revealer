@@ -12,7 +12,7 @@ type Handlers<THTMLElement extends HTMLElement> = {
   onDrop: (ev: React.DragEvent<THTMLElement>) => void;
 };
 
-const isFileDrag = (ev: React.DragEvent) => {
+export const isFileDrag = (ev: React.DragEvent) => {
   if (ev.dataTransfer.types && ev.dataTransfer.types.includes("Files")) {
     return true;
   }

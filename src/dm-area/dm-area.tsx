@@ -3,6 +3,7 @@ import * as React from "react";
 import produce from "immer";
 import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
+import { Box, Center } from "@chakra-ui/react";
 import { SelectMapModal } from "./select-map-modal";
 import { ImportFileModal } from "./import-file-modal";
 import { MediaLibrary } from "./media-library";
@@ -20,7 +21,7 @@ import { usePersistedState } from "../hooks/use-persisted-state";
 import { DmMap } from "./dm-map";
 import { Socket } from "socket.io-client";
 import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
-import { useDropZone } from "../hooks/use-drop-zone";
+import { isFileDrag } from "../hooks/use-drop-zone";
 import { useNoteWindowActions } from "./token-info-aside";
 import { MapControlInterface } from "../map-view";
 import { generateSHA256FileHash } from "../crypto";
@@ -477,62 +478,10 @@ const Content = ({
     setMode({ title: "SHOW_MAP_LIBRARY" });
   }, []);
 
-  const [droppedFile, setDroppedFile] = React.useState<null | File>(null);
+  const [importModalFile, setImportModalFile] = React.useState<null | File>(
+    null
+  );
   const i = React.useRef(1);
-  const [dropZoneEventHandler] = useDropZone((params) => {
-    const [file] = params.files;
-
-    if (file.type.match(/image\/svg/) || file.type.match(/image\/webp/)) {
-      const context = controlRef.current?.getContext();
-
-      if (context) {
-        const coords = context.helper.coordinates.screenToImage([
-          params.position.x,
-          params.position.y,
-        ]);
-
-        generateSHA256FileHash(file)
-          .then((fileHash) => {
-            // check whether the file is already available locally or on server
-            console.log(fileHash);
-
-            // Yes -> use existing
-            // No -> upload and use uploaded one :)
-
-            setData(
-              produce((appData: null | MapData) => {
-                if (appData) {
-                  const map = appData.maps.find(
-                    (map) => map.id === loadedMapId
-                  )!;
-                  map.tokens.push({
-                    id: String(i.current++),
-                    // TODO: use defaults
-                    radius: 100,
-                    color: "red",
-                    x: coords[0],
-                    y: coords[1],
-                    isVisibleForPlayers: false,
-                    isMovableByPlayers: false,
-                    isLocked: false,
-                    reference: null,
-                    attachment: file,
-                    label: "",
-                  });
-                }
-              })
-            );
-          })
-          .catch((err) => {
-            // TODO: better error message
-            console.error(err);
-          });
-
-        return;
-      }
-    }
-    setDroppedFile(file);
-  });
 
   const [markedAreas, setMarkedAreas] = React.useState<MarkedAreaEntity[]>(
     () => []
@@ -571,6 +520,9 @@ const Content = ({
   const actions = useNoteWindowActions();
   const controlRef = React.useRef<MapControlInterface | null>(null);
 
+  const dragRef = React.useRef(0);
+  const [isDraggingFile, setIsDraggingFile] = React.useState(false);
+
   return (
     <FetchContext.Provider value={localFetch}>
       {data && mode.title === "SHOW_MAP_LIBRARY" ? (
@@ -602,11 +554,145 @@ const Content = ({
       {loadedMap ? (
         <div
           style={{ display: "flex", height: "100vh" }}
-          onDragEnter={dropZoneEventHandler.onDragEnter}
-          onDragLeave={dropZoneEventHandler.onDragLeave}
-          onDragOver={dropZoneEventHandler.onDragOver}
-          onDrop={dropZoneEventHandler.onDrop}
+          onDragEnter={(ev) => {
+            if (isFileDrag(ev) === false) {
+              return;
+            }
+            ev.dataTransfer.dropEffect = "copy";
+            dragRef.current++;
+            setIsDraggingFile(dragRef.current !== 0);
+            ev.preventDefault();
+          }}
+          onDragLeave={(ev) => {
+            if (isFileDrag(ev) === false) {
+              return;
+            }
+            dragRef.current--;
+            setIsDraggingFile(dragRef.current !== 0);
+            ev.preventDefault();
+          }}
+          onDragOver={(ev) => {
+            if (isFileDrag(ev) === false) {
+              return;
+            }
+            ev.preventDefault();
+          }}
+          onDrop={(ev) => {
+            ev.preventDefault();
+            if (isFileDrag(ev) === false) {
+              return;
+            }
+            dragRef.current = 0;
+            setIsDraggingFile(dragRef.current !== 0);
+
+            const [file] = Array.from(ev.dataTransfer.files);
+
+            if (
+              file?.type.match(/image\/svg/) ||
+              file?.type.match(/image\/webp/)
+            ) {
+              const context = controlRef.current?.getContext();
+
+              if (context) {
+                const coords = context.helper.coordinates.screenToImage([
+                  ev.clientX,
+                  ev.clientY,
+                ]);
+
+                generateSHA256FileHash(file)
+                  .then((fileHash) => {
+                    // check whether the file is already available locally or on server
+                    console.log(fileHash);
+
+                    // Yes -> use existing
+                    // No -> upload and use uploaded one :)
+
+                    setData(
+                      produce((appData: null | MapData) => {
+                        if (appData) {
+                          const map = appData.maps.find(
+                            (map) => map.id === loadedMapId
+                          )!;
+                          map.tokens.push({
+                            id: String(i.current++),
+                            // TODO: use defaults
+                            radius: 100,
+                            color: "red",
+                            x: coords[0],
+                            y: coords[1],
+                            isVisibleForPlayers: false,
+                            isMovableByPlayers: false,
+                            isLocked: false,
+                            reference: null,
+                            attachment: file,
+                            label: "",
+                          });
+                        }
+                      })
+                    );
+                  })
+                  .catch((err) => {
+                    // TODO: better error message
+                    console.error(err);
+                  });
+
+                return;
+              }
+            }
+          }}
         >
+          {isDraggingFile ? (
+            <Center
+              position="absolute"
+              top="0"
+              width="100%"
+              zIndex={99999999}
+              justifyContent="center"
+            >
+              <DropZone
+                onDragEnter={(ev) => {
+                  if (isFileDrag(ev) === false) {
+                    return;
+                  }
+                  ev.dataTransfer.dropEffect = "copy";
+                  dragRef.current++;
+                  setIsDraggingFile(dragRef.current !== 0);
+                  ev.preventDefault();
+                }}
+                onDragLeave={(ev) => {
+                  if (isFileDrag(ev) === false) {
+                    return;
+                  }
+                  dragRef.current--;
+                  setIsDraggingFile(dragRef.current !== 0);
+                  ev.preventDefault();
+                }}
+                onDragOver={(ev) => {
+                  if (isFileDrag(ev) === false) {
+                    return;
+                  }
+                  ev.preventDefault();
+                }}
+                onDrop={(ev) => {
+                  ev.preventDefault();
+                  if (isFileDrag(ev) === false) {
+                    return;
+                  }
+
+                  dragRef.current = 0;
+                  setIsDraggingFile(dragRef.current !== 0);
+
+                  ev.stopPropagation();
+                  const [file] = Array.from(ev.dataTransfer.files);
+                  if (file) {
+                    setImportModalFile(file);
+                  }
+                }}
+              >
+                Import Map or Media Library Item
+              </DropZone>
+            </Center>
+          ) : null}
           <div
             style={{
               flex: 1,
@@ -646,10 +732,10 @@ const Content = ({
           </div>
         </div>
       ) : null}
-      {droppedFile ? (
+      {importModalFile ? (
         <ImportFileModal
-          file={droppedFile}
-          close={() => setDroppedFile(null)}
+          file={importModalFile}
+          close={() => setImportModalFile(null)}
           createMap={createMap}
         />
       ) : null}
@@ -735,4 +821,29 @@ export const DmArea = () => {
     return <DmAreaRenderer password={dmPassword} />;
   }
   return null;
+};
+
+type DropZoneProps = {
+  children: React.ReactNode;
+} & Pick<
+  React.ComponentProps<typeof Box>,
+  "onDragEnter" | "onDragOver" | "onDragLeave" | "onDrop"
+>;
+
+const DropZone = (props: DropZoneProps): React.ReactElement => {
+  return (
+    <Box
+      padding="2"
+      background="white"
+      borderRadius="10px"
+      outline="2px dashed black"
+      outlineOffset="-10px"
+      onDragEnter={props.onDragEnter}
+      onDragOver={props.onDragOver}
+      onDragLeave={props.onDragLeave}
+      onDrop={props.onDrop}
+    >
+      <Box padding="2">{props.children}</Box>
+    </Box>
+  );
 };
