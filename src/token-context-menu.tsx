@@ -181,6 +181,9 @@ const TokenContextMenu = (props: {
 
   const gridContext = React.useContext(ConfigureGridMapToolContext);
 
+  const updateTokenRadius = (factor: number) =>
+    (gridContext.state.columnWidth / 2) * factor * 0.9;
+
   return (
     <>
       {showSelectTokenMarkerModalNode}
@@ -224,7 +227,7 @@ const TokenContextMenu = (props: {
               small
               onClick={() => {
                 props.updateToken({
-                  radius: (gridContext.state.columnWidth / 2) * 0.25 - 5,
+                  radius: updateTokenRadius(0.25),
                 });
               }}
             >
@@ -234,7 +237,7 @@ const TokenContextMenu = (props: {
               small
               onClick={() => {
                 props.updateToken({
-                  radius: (gridContext.state.columnWidth / 2) * 0.5 - 8,
+                  radius: updateTokenRadius(0.5),
                 });
               }}
             >
@@ -244,7 +247,7 @@ const TokenContextMenu = (props: {
               small
               onClick={() => {
                 props.updateToken({
-                  radius: (gridContext.state.columnWidth / 2) * 1 - 8,
+                  radius: updateTokenRadius(1),
                 });
               }}
             >
@@ -254,7 +257,7 @@ const TokenContextMenu = (props: {
               small
               onClick={() => {
                 props.updateToken({
-                  radius: (gridContext.state.columnWidth / 2) * 2 - 8,
+                  radius: updateTokenRadius(2),
                 });
               }}
             >
@@ -264,7 +267,7 @@ const TokenContextMenu = (props: {
               small
               onClick={() => {
                 props.updateToken({
-                  radius: (gridContext.state.columnWidth / 2) * 3 - 8,
+                  radius: updateTokenRadius(3),
                 });
               }}
             >
