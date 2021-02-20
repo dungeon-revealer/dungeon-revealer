@@ -55,20 +55,31 @@ const calculateRealY = (y: number, factor: number, dimensionsHeight: number) =>
 
 export type Dimensions = { width: number; height: number; ratio: number };
 
-const Plane: React.FC<{
-  position: SpringValue<[number, number, number]>;
-  scale: SpringValue<[number, number, number]>;
-}> = ({ children, position, scale, ...props }) => {
-  return (
-    <animated.group position={position} scale={scale}>
-      <mesh {...props}>
-        <planeBufferGeometry attach="geometry" args={[10000, 10000]} />
-        <meshBasicMaterial attach="material" color="black" />
-      </mesh>
-      {children}
-    </animated.group>
-  );
-};
+const Plane = React.forwardRef(
+  (
+    {
+      children,
+      position,
+      scale,
+      ...props
+    }: {
+      position: SpringValue<[number, number, number]>;
+      scale: SpringValue<[number, number, number]>;
+      children: React.ReactNode;
+    },
+    ref: React.ForwardedRef<THREE.Mesh>
+  ) => {
+    return (
+      <animated.group position={position} scale={scale}>
+        <mesh ref={ref} {...props}>
+          <planeBufferGeometry attach="geometry" args={[10000, 10000]} />
+          <meshBasicMaterial attach="material" color="black" />
+        </mesh>
+        {children}
+      </animated.group>
+    );
+  }
+);
 
 const TokenRenderer: React.FC<{
   id: string;
@@ -808,6 +819,8 @@ const MapViewRenderer = (props: {
 
   const { size, raycaster, scene, camera } = useThree();
 
+  const planeRef = React.useRef<THREE.Mesh | null>(null);
+
   const toolContext = React.useMemo<SharedMapToolState>(() => {
     const factor = dimensions.width / mapCanvas.width;
 
@@ -836,21 +849,24 @@ const MapViewRenderer = (props: {
       imageToCanvas: ([x, y]: Vector2D) =>
         [x * optimalDimensions.ratio, y * optimalDimensions.ratio] as Vector2D,
       screenToImage: ([x, y]: Vector2D) => {
+        if (!planeRef.current) {
+          return [0, 0] as Vector2D;
+        }
         const vector = new THREE.Vector2(
           (x / size.width) * 2 - 1,
           -(y / size.height) * 2 + 1
         );
         raycaster.setFromCamera(vector, camera);
-        const [obj] = raycaster.intersectObjects(scene.children, true);
-        if (!obj) {
+        const [intersection] = raycaster.intersectObject(planeRef.current);
+        if (!intersection) {
           return [0, 0] as Vector2D;
         }
         const [scale] = spring.scale.get();
         const [offsetX, offsetY] = spring.position.get();
         return coordinates.canvasToImage(
           coordinates.threeToCanvas([
-            (obj.point.x - offsetX) / scale,
-            (obj.point.y - offsetY) / scale,
+            (intersection.point.x - offsetX) / scale,
+            (intersection.point.y - offsetY) / scale,
           ])
         );
       },
@@ -971,7 +987,12 @@ const MapViewRenderer = (props: {
   });
 
   return (
-    <Plane position={spring.position} scale={spring.scale} {...bind()}>
+    <Plane
+      position={spring.position}
+      scale={spring.scale}
+      {...bind()}
+      ref={planeRef}
+    >
       <MapRenderer
         mapImage={props.mapImage}
         mapImageTexture={mapTexture}
