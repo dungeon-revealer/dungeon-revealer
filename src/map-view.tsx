@@ -4,18 +4,19 @@ import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
 import {
   Canvas,
   PointerEvent,
+  useFrame,
   useLoader,
   useThree,
   ViewportData,
 } from "react-three-fiber";
-import { animated, useSpring, SpringValue } from "@react-spring/three";
+import { animated, useSpring, SpringValue, to } from "@react-spring/three";
 import { useGesture } from "react-use-gesture";
 import styled from "@emotion/styled/macro";
 import { darken, lighten } from "polished";
 import { getOptimalDimensions } from "./util";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { buildUrl } from "./public-url";
-import { CanvasText } from "./canvas-text";
+import { CanvasText, CanvasTextRef } from "./canvas-text";
 import type {
   MapTool,
   MapToolMapGestureHandlers,
@@ -35,8 +36,10 @@ enum LayerRenderOrder {
   map = 0,
   mapGrid = 1,
   token = 2,
-  tokenGesture = 3,
-  marker = 4,
+  tokenTextBackground = 3,
+  tokenText = 4,
+  tokenGesture = 5,
+  marker = 6,
 }
 
 // convert image relative to three.js
@@ -278,14 +281,52 @@ const TokenRenderer: React.FC<{
 
   const color = isHover && isMovable ? lighten(0.1, props.color) : props.color;
   return (
-    <animated.group
-      position={animatedProps.position}
-      scale={animatedProps.circleScale}
-      renderOrder={LayerRenderOrder.token}
-    >
-      {props.attachment ? null : (
-        <>
-          <mesh>
+    <>
+      <animated.group
+        position={animatedProps.position}
+        scale={animatedProps.circleScale}
+        renderOrder={LayerRenderOrder.token}
+      >
+        {props.attachment ? null : (
+          <>
+            <mesh>
+              <circleBufferGeometry
+                attach="geometry"
+                args={[initialRadius, 128]}
+              />
+              <meshStandardMaterial
+                attach="material"
+                color={color}
+                transparent={true}
+                opacity={props.isVisibleForPlayers ? 1 : 0.5}
+              />
+            </mesh>
+            <mesh>
+              <ringBufferGeometry
+                attach="geometry"
+                args={[initialRadius * (1 - 0.05), initialRadius, 128]}
+              />
+              <meshStandardMaterial
+                attach="material"
+                color={darken(0.1, color)}
+                opacity={props.isVisibleForPlayers ? 1 : 0.5}
+                transparent={true}
+              />
+            </mesh>
+          </>
+        )}
+        {props.attachment ? (
+          <TokenAttachment
+            file={props.attachment}
+            initialRadius={initialRadius}
+            dragProps={dragProps}
+            isHover={isHover}
+            opacity={props.isVisibleForPlayers ? 1 : 0.5}
+          />
+        ) : null}
+        {props.attachment ? null : (
+          <mesh {...dragProps()} renderOrder={LayerRenderOrder.tokenGesture}>
+            {/* This one is for attaching the gesture handlers */}
             <circleBufferGeometry
               attach="geometry"
               args={[initialRadius, 128]}
@@ -293,56 +334,113 @@ const TokenRenderer: React.FC<{
             <meshStandardMaterial
               attach="material"
               color={color}
-              transparent={true}
-              opacity={props.isVisibleForPlayers ? 1 : 0.5}
-            />
-          </mesh>
-          <mesh>
-            <ringBufferGeometry
-              attach="geometry"
-              args={[initialRadius * (1 - 0.05), initialRadius, 128]}
-            />
-            <meshStandardMaterial
-              attach="material"
-              color={darken(0.1, color)}
-              opacity={props.isVisibleForPlayers ? 1 : 0.5}
+              opacity={0}
               transparent={true}
             />
           </mesh>
-        </>
-      )}
+        )}
+      </animated.group>
+      {/* Text should not be scaled and thus must be moved to a seperate group. */}
+      {props.textLabel ? (
+        <animated.group
+          position={to(
+            [animatedProps.circleScale, animatedProps.position],
+            ([scale], [x, y, z]) =>
+              props.attachment
+                ? [x, y - 0.04 - initialRadius * scale, z]
+                : [x, y, z]
+          )}
+          renderOrder={LayerRenderOrder.token}
+        >
+          <TokenLabel
+            text={props.textLabel}
+            position={undefined}
+            backgroundColor={props.attachment ? "#ffffff" : null}
+          />
+        </animated.group>
+      ) : null}
+    </>
+  );
+};
+
+function arrayEquals(a: unknown, b: unknown) {
+  return (
+    Array.isArray(a) &&
+    Array.isArray(b) &&
+    a.every((val, index) => val === b[index])
+  );
+}
+
+const TokenLabel = (props: {
+  text: string;
+  position?: [number, number, number];
+  backgroundColor: null | string;
+}) => {
+  const [blockBounds, setBlockBounds] = React.useState<
+    [number, number, number, number] | null
+  >(null);
+
+  const textRef = React.useRef<CanvasTextRef | null>(null);
+  const lastBlockBounds = React.useRef(blockBounds);
+  React.useEffect(() => {
+    lastBlockBounds.current = blockBounds;
+  });
+
+  useFrame(() => {
+    if (!props.backgroundColor) {
+      return;
+    }
+    if (
+      lastBlockBounds.current === null ||
+      arrayEquals(
+        textRef.current?.textRenderInfo?.blockBounds,
+        lastBlockBounds.current
+      ) === false
+    ) {
+      setBlockBounds(
+        textRef.current?.textRenderInfo?.blockBounds
+          ? [...textRef.current.textRenderInfo.blockBounds]
+          : null
+      );
+    }
+  });
+
+  return (
+    <>
+      {blockBounds && props.backgroundColor ? (
+        <mesh
+          renderOrder={LayerRenderOrder.tokenTextBackground}
+          position={props.position}
+        >
+          <planeBufferGeometry
+            attach="geometry"
+            args={[
+              Math.abs(blockBounds[0]) + Math.abs(blockBounds[2]) + 0.01,
+              Math.abs(blockBounds[1]) + Math.abs(blockBounds[3]),
+              1,
+            ]}
+          />
+          <meshStandardMaterial
+            attach="material"
+            color={props.backgroundColor}
+            transparent={true}
+          />
+        </mesh>
+      ) : null}
+
       <CanvasText
-        fontSize={0.8 * initialRadius}
+        fontSize={0.06}
         color="black"
         font={buildUrl("/fonts/Roboto-Bold.ttf")}
         anchorX="center"
         anchorY="middle"
+        position={props.position}
+        renderOrder={LayerRenderOrder.tokenText}
+        ref={textRef}
       >
-        {props.textLabel}
+        {props.text}
       </CanvasText>
-
-      {props.attachment ? (
-        <TokenAttachment
-          file={props.attachment}
-          initialRadius={initialRadius}
-          dragProps={dragProps}
-          isHover={isHover}
-          opacity={props.isVisibleForPlayers ? 1 : 0.5}
-        />
-      ) : null}
-      {props.attachment ? null : (
-        <mesh {...dragProps()} renderOrder={LayerRenderOrder.tokenGesture}>
-          {/* This one is for attaching the gesture handlers */}
-          <circleBufferGeometry attach="geometry" args={[initialRadius, 128]} />
-          <meshStandardMaterial
-            attach="material"
-            color={color}
-            opacity={0}
-            transparent={true}
-          />
-        </mesh>
-      )}
-    </animated.group>
+    </>
   );
 };
 

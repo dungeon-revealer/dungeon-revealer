@@ -16,9 +16,11 @@ import mergeRefs from "react-merge-refs";
 
 extend({ TextMeshImpl });
 
-// @ts-ignore
-type TextMesh = ReactThreeFiber.Object3DNode<TextMeshImpl, typeof TextMeshImpl>;
-
+type TextMesh = ReactThreeFiber.Object3DNode<
+  // @ts-ignore
+  TextMeshImpl,
+  typeof TextMeshImpl
+>;
 declare global {
   namespace JSX {
     // eslint-disable-next-line @typescript-eslint/interface-name-prefix
@@ -51,11 +53,14 @@ type Props = JSX.IntrinsicElements["mesh"] & {
   whiteSpace?: "normal" | "overflowWrap" | "overflowWrap";
 };
 
-export const CanvasText = forwardRef(
-  (
-    { anchorX = "center", anchorY = "middle", children, ...props }: Props,
-    ref
-  ) => {
+export type CanvasTextRef = {
+  textRenderInfo?: {
+    blockBounds: [number, number, number, number];
+  } | null;
+};
+
+export const CanvasText = forwardRef<CanvasTextRef, Props>(
+  ({ anchorX = "center", anchorY = "middle", children, ...props }, ref) => {
     const textRef = useRef<typeof TextMeshImpl>();
     const [baseMtl, setBaseMtl] = useState();
     const [nodes, text] = useMemo(() => {
