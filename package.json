@@ -66,7 +66,7 @@
     "graphql": "15.5.0",
     "io-ts": "2.2.14",
     "junk": "3.1.0",
-    "lodash": "4.17.20",
+    "lodash": "4.17.21",
     "morgan": "1.10.0",
     "sanitize-html": "2.3.2",
     "serve-favicon": "2.5.0",
