@@ -20,7 +20,7 @@ export type MapTokenEntity = {
     type: "note";
     id: string;
   };
-  attachment: File | undefined;
+  tokenImageId: string | null;
 };
 
 export type MapEntity = {

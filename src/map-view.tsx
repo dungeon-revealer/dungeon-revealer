@@ -1,5 +1,6 @@
 import * as React from "react";
 import * as THREE from "three";
+import graphql from "babel-plugin-relay/macro";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
 import {
   Canvas,
@@ -29,6 +30,8 @@ import { TokenContextMenuContext } from "./token-context-menu-context";
 import { useNoteWindowActions } from "./dm-area/token-info-aside";
 import { TextureLoader, Vector2 } from "three";
 import { ReactEventHandlers } from "react-use-gesture/dist/types";
+import { useQuery } from "relay-hooks";
+import { mapView_TokenImageQuery } from "./__generated__/mapView_TokenImageQuery.graphql";
 
 type Vector2D = [number, number];
 
@@ -84,6 +87,18 @@ const Plane = React.forwardRef(
   }
 );
 
+const MapTokenImageQuery = graphql`
+  query mapView_TokenImageQuery($id: ID!) {
+    tokenImage: node(id: $id) {
+      __typename
+      ... on TokenImage {
+        id
+        url
+      }
+    }
+  }
+`;
+
 const TokenRenderer: React.FC<{
   id: string;
   x: number;
@@ -100,7 +115,7 @@ const TokenRenderer: React.FC<{
   updateTokenPosition: ({ x, y }: { x: number; y: number }) => void;
   mapScale: SpringValue<[number, number, number]>;
   reference: null | { type: "note"; id: string };
-  attachment: File | undefined;
+  tokenImageId: string | null;
 }> = (props) => {
   const tokenMenuContext = React.useContext(TokenContextMenuContext);
   const isDungeonMasterView = tokenMenuContext !== null;
@@ -279,6 +294,16 @@ const TokenRenderer: React.FC<{
     }
   );
 
+  const query = useQuery<mapView_TokenImageQuery>(
+    MapTokenImageQuery,
+    props.tokenImageId
+      ? {
+          id: props.tokenImageId,
+        }
+      : undefined,
+    { skip: props.tokenImageId === null }
+  );
+
   const color = isHover && isMovable ? lighten(0.1, props.color) : props.color;
   return (
     <>
@@ -287,7 +312,7 @@ const TokenRenderer: React.FC<{
         scale={animatedProps.circleScale}
         renderOrder={LayerRenderOrder.token}
       >
-        {props.attachment ? null : (
+        {query.data?.tokenImage ? null : (
           <>
             <mesh>
               <circleBufferGeometry
@@ -315,16 +340,17 @@ const TokenRenderer: React.FC<{
             </mesh>
           </>
         )}
-        {props.attachment ? (
+        {query.data?.tokenImage &&
+        query.data?.tokenImage.__typename === "TokenImage" ? (
           <TokenAttachment
-            file={props.attachment}
+            url={query.data.tokenImage.url}
             initialRadius={initialRadius}
             dragProps={dragProps}
             isHover={isHover}
             opacity={props.isVisibleForPlayers ? 1 : 0.5}
           />
         ) : null}
-        {props.attachment ? null : (
+        {query.data?.tokenImage ? null : (
           <mesh {...dragProps()} renderOrder={LayerRenderOrder.tokenGesture}>
             {/* This one is for attaching the gesture handlers */}
             <circleBufferGeometry
@@ -346,7 +372,7 @@ const TokenRenderer: React.FC<{
           position={to(
             [animatedProps.circleScale, animatedProps.position],
             ([scale], [x, y, z]) =>
-              props.attachment
+              query.data?.tokenImage
                 ? [x, y - 0.04 - initialRadius * scale, z]
                 : [x, y, z]
           )}
@@ -355,7 +381,7 @@ const TokenRenderer: React.FC<{
           <TokenLabel
             text={props.textLabel}
             position={undefined}
-            backgroundColor={props.attachment ? "#ffffff" : null}
+            backgroundColor={query.data?.tokenImage ? "#ffffff" : null}
           />
         </animated.group>
       ) : null}
@@ -445,23 +471,15 @@ const TokenLabel = (props: {
 };
 
 const TokenAttachment = (props: {
-  file: File;
+  url: string;
   initialRadius: number;
   isHover: boolean;
   opacity: number;
   dragProps: () => ReactEventHandlers;
 }) => {
-  const [url] = React.useState(() => URL.createObjectURL(props.file));
-  React.useEffect(
-    () => () => {
-      URL.revokeObjectURL(url);
-    },
-    [url]
-  );
-
   return (
     <React.Suspense fallback={null}>
-      {props.file.type.includes("svg") ? (
+      {/* {props.file.type.includes("svg") ? (
         <SVGELement
           url={url}
           dragProps={props.dragProps}
@@ -469,15 +487,14 @@ const TokenAttachment = (props: {
           opacity={props.opacity}
           initialRadius={props.initialRadius}
         />
-      ) : (
-        <TextureElement
-          url={url}
-          dragProps={props.dragProps}
-          initialRadius={props.initialRadius}
-          isHover={props.isHover}
-          opacity={props.opacity}
-        />
-      )}
+      ) : */}
+      <TextureElement
+        url={props.url}
+        dragProps={props.dragProps}
+        initialRadius={props.initialRadius}
+        isHover={props.isHover}
+        opacity={props.opacity}
+      />
     </React.Suspense>
   );
 };
@@ -780,7 +797,7 @@ const MapRenderer: React.FC<{
             }
             mapScale={props.scale}
             reference={token.reference}
-            attachment={token.attachment}
+            tokenImageId={token.tokenImageId}
           />
         ))}
       </group>

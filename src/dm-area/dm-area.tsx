@@ -4,6 +4,9 @@ import produce from "immer";
 import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import { Box, Center } from "@chakra-ui/react";
+import graphql from "babel-plugin-relay/macro";
+import { commitMutation } from "relay-runtime";
+import { useRelayEnvironment } from "relay-hooks";
 import { SelectMapModal } from "./select-map-modal";
 import { ImportFileModal } from "./import-file-modal";
 import { MediaLibrary } from "./media-library";
@@ -25,6 +28,50 @@ import { isFileDrag } from "../hooks/use-drop-zone";
 import { useNoteWindowActions } from "./token-info-aside";
 import { MapControlInterface } from "../map-view";
 import { generateSHA256FileHash } from "../crypto";
+import {
+  dmArea_RequestTokenImageUploadMutation,
+  dmArea_RequestTokenImageUploadMutationResponse,
+} from "./__generated__/dmArea_RequestTokenImageUploadMutation.graphql";
+import {
+  dmArea_TokenImageCreateMutation,
+  dmArea_TokenImageCreateMutationResponse,
+} from "./__generated__/dmArea_TokenImageCreateMutation.graphql";
+
+const RequestTokenImageUploadMutation = graphql`
+  mutation dmArea_RequestTokenImageUploadMutation(
+    $input: RequestTokenImageUploadInput!
+  ) {
+    requestTokenImageUpload(input: $input) {
+      __typename
+      ... on RequestTokenImageUploadDuplicate {
+        tokenImage {
+          id
+          url
+        }
+      }
+      ... on RequestTokenImageUploadUrl {
+        uploadUrl
+      }
+    }
+  }
+`;
+
+const TokenImageCreateMutation = graphql`
+  mutation dmArea_TokenImageCreateMutation($input: TokenImageCreateInput!) {
+    tokenImageCreate(input: $input) {
+      __typename
+      ... on TokenImageCreateSuccess {
+        createdTokenImage {
+          id
+          url
+        }
+      }
+      ... on TokenImageCreateError {
+        reason
+      }
+    }
+  }
+`;
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -306,7 +353,18 @@ const Content = ({
   );
 
   const addToken = React.useCallback(
-    (token: { x: number; y: number; color: string; radius: number }) => {
+    (token: {
+      x: number;
+      y: number;
+      color: string;
+      radius?: number;
+      isVisibleForPlayers?: boolean;
+      isMovableByPlayers?: boolean;
+      isLocked?: boolean;
+      reference?: null;
+      tokenImageId?: string | null;
+      label?: string;
+    }) => {
       localFetch(`/map/${loadedMapId}/token`, {
         method: "POST",
         headers: {
@@ -523,6 +581,8 @@ const Content = ({
   const dragRef = React.useRef(0);
   const [isDraggingFile, setIsDraggingFile] = React.useState(false);
 
+  const environment = useRelayEnvironment();
+
   return (
     <FetchContext.Provider value={localFetch}>
       {data && mode.title === "SHOW_MAP_LIBRARY" ? (
@@ -587,58 +647,110 @@ const Content = ({
 
             const [file] = Array.from(ev.dataTransfer.files);
 
-            if (
-              file?.type.match(/image\/svg/) ||
-              file?.type.match(/image\/webp/)
-            ) {
-              const context = controlRef.current?.getContext();
-
-              if (context) {
-                const coords = context.helper.coordinates.screenToImage([
-                  ev.clientX,
-                  ev.clientY,
-                ]);
-
-                generateSHA256FileHash(file)
-                  .then((fileHash) => {
-                    // check whether the file is already available locally or on server
-                    console.log(fileHash);
-
-                    // Yes -> use existing
-                    // No -> upload and use uploaded one :)
-
-                    setData(
-                      produce((appData: null | MapData) => {
-                        if (appData) {
-                          const map = appData.maps.find(
-                            (map) => map.id === loadedMapId
-                          )!;
-                          map.tokens.push({
-                            id: String(i.current++),
-                            // TODO: use defaults
-                            radius: 100,
-                            color: "red",
-                            x: coords[0],
-                            y: coords[1],
-                            isVisibleForPlayers: false,
-                            isMovableByPlayers: false,
-                            isLocked: false,
-                            reference: null,
-                            attachment: file,
-                            label: "",
-                          });
-                        }
-                      })
-                    );
-                  })
-                  .catch((err) => {
-                    // TODO: better error message
-                    console.error(err);
-                  });
-
-                return;
-              }
+            if (!file?.type.match(/image/)) {
+              return;
             }
+            const context = controlRef.current?.getContext();
+
+            if (!context) {
+              return;
+            }
+            const coords = context.helper.coordinates.screenToImage([
+              ev.clientX,
+              ev.clientY,
+            ]);
+
+            generateSHA256FileHash(file)
+              .then(async (fileHash) => {
+                // check whether the file is already available locally or on server
+
+                let tokenImageId: string;
+
+                const {
+                  requestTokenImageUpload,
+                } = await new Promise<dmArea_RequestTokenImageUploadMutationResponse>(
+                  (resolve) =>
+                    commitMutation<dmArea_RequestTokenImageUploadMutation>(
+                      environment,
+                      {
+                        mutation: RequestTokenImageUploadMutation,
+                        variables: {
+                          input: {
+                            sha256: fileHash,
+                            extension: file.name,
+                          },
+                        },
+                        onCompleted: resolve,
+                      }
+                    )
+                );
+
+                if (
+                  requestTokenImageUpload.__typename ===
+                  "RequestTokenImageUploadUrl"
+                ) {
+                  const res = await fetch(requestTokenImageUpload.uploadUrl, {
+                    method: "PUT",
+                    body: file,
+                  });
+                  if (res.status !== 200) {
+                    const body = await res.text();
+                    throw new Error(
+                      "Received invalid response code: " +
+                        res.status +
+                        "\n\n" +
+                        body
+                    );
+                  }
+                  const {
+                    tokenImageCreate,
+                  } = await new Promise<dmArea_TokenImageCreateMutationResponse>(
+                    (resolve) =>
+                      commitMutation<dmArea_TokenImageCreateMutation>(
+                        environment,
+                        {
+                          mutation: TokenImageCreateMutation,
+                          variables: {
+                            input: {
+                              sha256: fileHash,
+                            },
+                          },
+                          onCompleted: resolve,
+                        }
+                      )
+                  );
+
+                  if (
+                    tokenImageCreate.__typename !== "TokenImageCreateSuccess"
+                  ) {
+                    throw new Error("Unexpected response.");
+                  }
+                  tokenImageId = tokenImageCreate.createdTokenImage.id;
+                } else if (
+                  requestTokenImageUpload.__typename !==
+                  "RequestTokenImageUploadDuplicate"
+                ) {
+                  throw new Error("Unexpected case.");
+                } else {
+                  tokenImageId = requestTokenImageUpload.tokenImage.id;
+                }
+
+                addToken({
+                  color: "red",
+                  x: coords[0],
+                  y: coords[1],
+                  isVisibleForPlayers: false,
+                  isMovableByPlayers: false,
+                  isLocked: false,
+                  reference: null,
+                  tokenImageId,
+                  label: "",
+                });
+              })
+              .catch((err) => {
+                // TODO: better error message
+                console.error(err);
+              });
           }}
         >
           {isDraggingFile ? (

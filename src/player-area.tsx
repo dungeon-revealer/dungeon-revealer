@@ -1,9 +1,10 @@
 import * as React from "react";
 import produce from "immer";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
+import { ReactRelayContext } from "relay-hooks";
+import styled from "@emotion/styled/macro";
 import { loadImage } from "./util";
 import { Toolbar } from "./toolbar";
-import styled from "@emotion/styled/macro";
 import * as Icons from "./feather-icons";
 import { SplashScreen } from "./splash-screen";
 import { AuthenticationScreen } from "./authentication-screen";
@@ -414,7 +415,11 @@ const PlayerMap: React.FC<{
                   ? currentMap.grid
                   : null
               }
-              sharedContexts={[MarkAreaToolContext, NoteWindowActionsContext]}
+              sharedContexts={[
+                MarkAreaToolContext,
+                NoteWindowActionsContext,
+                ReactRelayContext,
+              ]}
               fogOpacity={1}
             />
           ) : null}

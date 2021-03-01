@@ -6,6 +6,25 @@ import { CirclePicker } from "react-color";
 import * as io from "io-ts";
 import { pipe, identity } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
+import {
+  Box,
+  FormControl,
+  FormLabel,
+  Heading,
+  Switch,
+  VStack,
+  HStack,
+  Text,
+  InputGroup,
+  Stack,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Input,
+} from "@chakra-ui/react";
+import { ReactRelayContext } from "relay-hooks";
 import * as Icons from "../feather-icons";
 import { Toolbar } from "../toolbar";
 import type { MapTool } from "../map-tools/map-tool";
@@ -58,27 +77,7 @@ import {
   TokenMarkerMapTool,
 } from "../map-tools/token-marker-map-tool";
 import { NoteWindowActionsContext } from "./token-info-aside";
-import { Input as OldInput, InputGroup as OldInputGroup } from "../input";
-import { parseNumberSafe } from "../parse-number-safe";
 import { ColorPickerInput } from "../color-picker-input";
-import {
-  Box,
-  FormControl,
-  FormLabel,
-  Heading,
-  Switch,
-  VStack,
-  HStack,
-  Text,
-  InputGroup,
-  Stack,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  Input,
-} from "@chakra-ui/react";
 
 type ToolMapRecord = {
   name: string;
@@ -899,6 +898,7 @@ export const DmMap = (props: {
             AreaSelectContext,
             TokenMarkerContext,
             NoteWindowActionsContext,
+            ReactRelayContext,
           ]}
           fogOpacity={0.5}
         />
