@@ -97,7 +97,7 @@
     "@types/react-dom": "17.0.1",
     "@types/react-relay": "7.0.17",
     "@types/react-toast-notifications": "2.4.0",
-    "@types/relay-runtime": "10.1.8",
+    "@types/relay-runtime": "10.1.9",
     "@types/sanitize-html": "1.27.1",
     "@types/showdown": "1.9.3",
     "@types/sqlite3": "3.1.7",
