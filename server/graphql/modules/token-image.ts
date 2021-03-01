@@ -139,10 +139,10 @@ const GraphQLTokenImageCreateResultUnionType = t.unionType<lib.CreateTokenImageR
       GraphQLTokenImageCreateErrorType,
     ],
     resolveType: (obj) => {
-      if (obj.type === "Failure") {
+      if (obj.type === "Success") {
         return GraphQLTokenImageCreateSuccessType;
       }
-      if (obj.type === "Success") {
+      if (obj.type === "Failure") {
         return GraphQLTokenImageCreateErrorType;
       }
       throw new Error("Unexpected runtime type.");
