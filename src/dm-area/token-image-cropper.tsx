@@ -1,6 +1,18 @@
 import * as React from "react";
 import type { Area } from "react-easy-crop/types";
-import { Box, Button, Flex, Stack, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  FormControl,
+  Slider,
+  SliderFilledTrack,
+  SliderThumb,
+  SliderTrack,
+  Stack,
+  Text,
+  FormLabel,
+} from "@chakra-ui/react";
 import { loadImage } from "../util";
 
 export const TokenImageCropper = (props: {
@@ -43,12 +55,39 @@ export const TokenImageCropper = (props: {
         zIndex={9000}
         justifyContent={"center"}
       >
-        <Box background="white" padding={4} borderRadius={3} maxWidth={500}>
+        <Stack
+          background="white"
+          padding={5}
+          borderRadius={3}
+          maxWidth={600}
+          spacing={4}
+        >
           <Text>
             Please select a rectangular part from the image that will be used as
             the token image.
           </Text>
-          <Stack spacing={4} direction="row" align="center">
+          <FormControl id="slider">
+            <FormLabel>Zoom</FormLabel>
+            <Slider
+              aria-label="slider-zoom"
+              min={1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(zoom) => setZoom(zoom)}
+            >
+              <SliderTrack>
+                <SliderFilledTrack />
+              </SliderTrack>
+              <SliderThumb />
+            </Slider>
+          </FormControl>
+          <Stack
+            spacing={4}
+            direction="row"
+            align="center"
+            alignSelf="flex-end"
+          >
             <Button onClick={props.onClose} variant="ghost">
               Abort
             </Button>
@@ -66,7 +105,7 @@ export const TokenImageCropper = (props: {
               Confirm
             </Button>
           </Stack>
-        </Box>
+        </Stack>
       </Flex>
     </>
   );
