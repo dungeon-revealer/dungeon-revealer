@@ -36,6 +36,8 @@ import {
   dmArea_TokenImageCreateMutation,
   dmArea_TokenImageCreateMutationResponse,
 } from "./__generated__/dmArea_TokenImageCreateMutation.graphql";
+import { loadImage } from "../util";
+import { TokenImageCropper } from "./token-image-cropper";
 
 const RequestTokenImageUploadMutation = graphql`
   mutation dmArea_RequestTokenImageUploadMutation(
@@ -583,6 +585,20 @@ const Content = ({
 
   const environment = useRelayEnvironment();
 
+  const objectUrlCleanupRef = React.useRef<null | (() => void)>(null);
+  React.useEffect(
+    () => () => {
+      objectUrlCleanupRef.current?.();
+    },
+    []
+  );
+
+  const [cropTokenImageState, setCropTokenImageState] = React.useState<{
+    imageUrl: string;
+    onConfirm: (file: File) => unknown;
+    onClose: () => void;
+  } | null>(null);
+
   return (
     <FetchContext.Provider value={localFetch}>
       {data && mode.title === "SHOW_MAP_LIBRARY" ? (
@@ -660,24 +676,60 @@ const Content = ({
               ev.clientY,
             ]);
 
-            generateSHA256FileHash(file)
-              .then(async (fileHash) => {
-                // check whether the file is already available locally or on server
+            const objectUrl = window.URL.createObjectURL(file);
+            objectUrlCleanupRef.current = () =>
+              window.URL.revokeObjectURL(objectUrl);
 
-                let tokenImageId: string;
+            const addFile = async (fileHash: string, file: File) => {
+              let tokenImageId: string;
 
+              const {
+                requestTokenImageUpload,
+              } = await new Promise<dmArea_RequestTokenImageUploadMutationResponse>(
+                (resolve) =>
+                  commitMutation<dmArea_RequestTokenImageUploadMutation>(
+                    environment,
+                    {
+                      mutation: RequestTokenImageUploadMutation,
+                      variables: {
+                        input: {
+                          sha256: fileHash,
+                          extension: file.name,
+                        },
+                      },
+                      onCompleted: resolve,
+                    }
+                  )
+              );
+
+              if (
+                requestTokenImageUpload.__typename ===
+                "RequestTokenImageUploadUrl"
+              ) {
+                const res = await fetch(requestTokenImageUpload.uploadUrl, {
+                  method: "PUT",
+                  body: file,
+                });
+                if (res.status !== 200) {
+                  const body = await res.text();
+                  throw new Error(
+                    "Received invalid response code: " +
+                      res.status +
+                      "\n\n" +
+                      body
+                  );
+                }
                 const {
-                  requestTokenImageUpload,
-                } = await new Promise<dmArea_RequestTokenImageUploadMutationResponse>(
+                  tokenImageCreate,
+                } = await new Promise<dmArea_TokenImageCreateMutationResponse>(
                   (resolve) =>
-                    commitMutation<dmArea_RequestTokenImageUploadMutation>(
+                    commitMutation<dmArea_TokenImageCreateMutation>(
                       environment,
                       {
-                        mutation: RequestTokenImageUploadMutation,
+                        mutation: TokenImageCreateMutation,
                         variables: {
                           input: {
                             sha256: fileHash,
-                            extension: file.name,
                           },
                         },
                         onCompleted: resolve,
@@ -685,67 +737,58 @@ const Content = ({
                     )
                 );
 
-                if (
-                  requestTokenImageUpload.__typename ===
-                  "RequestTokenImageUploadUrl"
-                ) {
-                  const res = await fetch(requestTokenImageUpload.uploadUrl, {
-                    method: "PUT",
-                    body: file,
-                  });
-                  if (res.status !== 200) {
-                    const body = await res.text();
-                    throw new Error(
-                      "Received invalid response code: " +
-                        res.status +
-                        "\n\n" +
-                        body
-                    );
-                  }
-                  const {
-                    tokenImageCreate,
-                  } = await new Promise<dmArea_TokenImageCreateMutationResponse>(
-                    (resolve) =>
-                      commitMutation<dmArea_TokenImageCreateMutation>(
-                        environment,
-                        {
-                          mutation: TokenImageCreateMutation,
-                          variables: {
-                            input: {
-                              sha256: fileHash,
-                            },
-                          },
-                          onCompleted: resolve,
-                        }
-                      )
-                  );
-
-                  if (
-                    tokenImageCreate.__typename !== "TokenImageCreateSuccess"
-                  ) {
-                    throw new Error("Unexpected response.");
-                  }
-                  tokenImageId = tokenImageCreate.createdTokenImage.id;
-                } else if (
-                  requestTokenImageUpload.__typename !==
-                  "RequestTokenImageUploadDuplicate"
-                ) {
-                  throw new Error("Unexpected case.");
-                } else {
-                  tokenImageId = requestTokenImageUpload.tokenImage.id;
+                if (tokenImageCreate.__typename !== "TokenImageCreateSuccess") {
+                  throw new Error("Unexpected response.");
                 }
+                tokenImageId = tokenImageCreate.createdTokenImage.id;
+              } else if (
+                requestTokenImageUpload.__typename !==
+                "RequestTokenImageUploadDuplicate"
+              ) {
+                throw new Error("Unexpected case.");
+              } else {
+                tokenImageId = requestTokenImageUpload.tokenImage.id;
+              }
 
-                addToken({
-                  color: "red",
-                  x: coords[0],
-                  y: coords[1],
-                  isVisibleForPlayers: false,
-                  isMovableByPlayers: false,
-                  isLocked: false,
-                  reference: null,
-                  tokenImageId,
-                  label: "",
-                });
+              addToken({
+                color: "red",
+                x: coords[0],
+                y: coords[1],
+                isVisibleForPlayers: false,
+                isMovableByPlayers: false,
+                isLocked: false,
+                reference: null,
+                tokenImageId,
+                label: "",
+              });
+            };
+
+            const isSquareImage = (image: HTMLImageElement) =>
+              image.naturalHeight === image.naturalWidth;
+
+            Promise.all([
+              generateSHA256FileHash(file),
+              loadImage(objectUrl).promise,
+            ])
+              .then(async ([fileHash, image]) => {
+                if (isSquareImage(image)) {
+                  addFile(fileHash, file);
+                } else {
+                  setCropTokenImageState({
+                    imageUrl: objectUrl,
+
+                    onConfirm: async (file) => {
+                      const hash = await generateSHA256FileHash(file);
+                      addFile(hash, file);
+                      setCropTokenImageState(null);
+                      objectUrlCleanupRef.current?.();
+                    },
+                    onClose: () => {
+                      setCropTokenImageState(null);
+                      objectUrlCleanupRef.current?.();
+                    },
+                  });
+                }
               })
               .catch((err) => {
                 // TODO: better error message
@@ -753,6 +796,15 @@ const Content = ({
               });
           }}
         >
+          {cropTokenImageState === null ? null : (
+            <React.Suspense fallback={null}>
+              <TokenImageCropper
+                imageUrl={cropTokenImageState.imageUrl}
+                onConfirm={cropTokenImageState.onConfirm}
+                onClose={cropTokenImageState.onClose}
+              />
+            </React.Suspense>
+          )}
           {isDraggingFile ? (
             <Center
               position="absolute"
