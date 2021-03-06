@@ -17,7 +17,18 @@ import { loadImage } from "../util";
 
 export const TokenImageCropper = (props: {
   imageUrl: string;
-  onConfirm: (file: File) => unknown;
+  sourceImageHash: string;
+  onConfirm: (
+    params:
+      | {
+          type: "File";
+          file: File;
+        }
+      | {
+          type: "TokenImage";
+          tokenImageId: string;
+        }
+  ) => unknown;
   onClose: () => void;
 }): React.ReactElement => {
   const [crop, setCrop] = React.useState({ x: 0, y: 0 });
@@ -99,7 +110,7 @@ export const TokenImageCropper = (props: {
                   return;
                 }
                 const file = await cropImage(props.imageUrl, croppedAreaPixels);
-                props.onConfirm(file);
+                props.onConfirm({ type: "File", file });
               }}
             >
               Confirm

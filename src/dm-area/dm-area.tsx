@@ -595,7 +595,18 @@ const Content = ({
 
   const [cropTokenImageState, setCropTokenImageState] = React.useState<{
     imageUrl: string;
-    onConfirm: (file: File) => unknown;
+    sourceImageHash: string;
+    onConfirm: (
+      params:
+        | {
+            type: "File";
+            file: File;
+          }
+        | {
+            type: "TokenImage";
+            tokenImageId: string;
+          }
+    ) => unknown;
     onClose: () => void;
   } | null>(null);
 
@@ -680,7 +691,11 @@ const Content = ({
             objectUrlCleanupRef.current = () =>
               window.URL.revokeObjectURL(objectUrl);
 
-            const addFile = async (fileHash: string, file: File) => {
+            const addFile = async (
+              fileHash: string,
+              file: File,
+              sourceFileHash: string | null
+            ) => {
               let tokenImageId: string;
 
               const {
@@ -694,13 +709,15 @@ const Content = ({
                       variables: {
                         input: {
                           sha256: fileHash,
-                          extension: file.name,
+                          extension: "webp",
                         },
                       },
                       onCompleted: resolve,
                     }
                   )
               );
+
+              console.log(requestTokenImageUpload);
 
               if (
                 requestTokenImageUpload.__typename ===
@@ -730,6 +747,7 @@ const Content = ({
                         variables: {
                           input: {
                             sha256: fileHash,
+                            sourceSha256: sourceFileHash,
                           },
                         },
                         onCompleted: resolve,
@@ -749,7 +767,10 @@ const Content = ({
               } else {
                 tokenImageId = requestTokenImageUpload.tokenImage.id;
               }
+              addTokenWIthImageId(tokenImageId);
+            };
 
+            const addTokenWIthImageId = (tokenImageId: string) =>
               addToken({
                 color: "red",
                 x: coords[0],
@@ -761,34 +782,28 @@ const Content = ({
                 tokenImageId,
                 label: "",
               });
-            };
 
-            const isSquareImage = (image: HTMLImageElement) =>
-              image.naturalHeight === image.naturalWidth;
-
-            Promise.all([
-              generateSHA256FileHash(file),
-              loadImage(objectUrl).promise,
-            ])
-              .then(async ([fileHash, image]) => {
-                if (isSquareImage(image)) {
-                  addFile(fileHash, file);
-                } else {
-                  setCropTokenImageState({
-                    imageUrl: objectUrl,
-
-                    onConfirm: async (file) => {
-                      const hash = await generateSHA256FileHash(file);
-                      addFile(hash, file);
-                      setCropTokenImageState(null);
-                      objectUrlCleanupRef.current?.();
-                    },
-                    onClose: () => {
-                      setCropTokenImageState(null);
-                      objectUrlCleanupRef.current?.();
-                    },
-                  });
-                }
+            generateSHA256FileHash(file)
+              .then(async (sourceImageHash) => {
+                setCropTokenImageState({
+                  imageUrl: objectUrl,
+                  sourceImageHash,
+                  onConfirm: async (params) => {
+                    if (params.type === "File") {
+                      const hash = await generateSHA256FileHash(params.file);
+                      addFile(hash, params.file, sourceImageHash);
+                    }
+                    if (params.type === "TokenImage") {
+                      addTokenWIthImageId(params.tokenImageId);
+                    }
+                    setCropTokenImageState(null);
+                    objectUrlCleanupRef.current?.();
+                  },
+                  onClose: () => {
+                    setCropTokenImageState(null);
+                    objectUrlCleanupRef.current?.();
+                  },
+                });
               })
               .catch((err) => {
                 // TODO: better error message
@@ -800,6 +815,7 @@ const Content = ({
             <React.Suspense fallback={null}>
               <TokenImageCropper
                 imageUrl={cropTokenImageState.imageUrl}
+                sourceImageHash={cropTokenImageState.sourceImageHash}
                 onConfirm={cropTokenImageState.onConfirm}
                 onClose={cropTokenImageState.onClose}
               />

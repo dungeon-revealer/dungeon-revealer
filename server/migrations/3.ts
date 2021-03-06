@@ -6,7 +6,8 @@ export const migrate = async (deps: { db: sqlite.Database }) => {
     PRAGMA "user_version" = 4;
     CREATE TABLE "tokenImages" (
       "id" INTEGER NOT NULL PRIMARY KEY,
-      "sha256" TEXT NOT NULL,
+      "sha256" BLOB NOT NULL,
+      "sourceSha256" BLOB,
       "extension" TEXT NOT NULL,
       "createdAt" INT NOT NULL
     );

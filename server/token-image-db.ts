@@ -2,6 +2,7 @@ import * as t from "io-ts";
 import { PathReporter } from "io-ts/PathReporter";
 import * as E from "fp-ts/Either";
 import * as RT from "fp-ts/ReaderTask";
+import { Buffer } from "buffer";
 import { flow, pipe } from "fp-ts/function";
 import type { Database } from "sqlite";
 
@@ -9,10 +10,20 @@ const getTimestamp = () => new Date().getTime();
 
 const TokenId = t.number;
 
+const buffer = new t.Type(
+  "Buffer",
+  Buffer.isBuffer,
+  (value, context) =>
+    Buffer.isBuffer(value)
+      ? t.success(value)
+      : t.failure(value, context, "Expected Buffer."),
+  (value) => value
+);
+
 export const TokenImageModel = t.type(
   {
     id: t.number,
-    sha256: t.string,
+    sha256: buffer,
     extension: t.string,
     createdAt: t.number,
   },
@@ -66,7 +77,7 @@ export const getTokenImageBySHA256 = (sha256: string) =>
             "sha256" = $sha256
           `,
         {
-          $sha256: sha256,
+          $sha256: Buffer.from(sha256, "hex"),
         }
       )
     ),
@@ -97,6 +108,7 @@ export const getTokenById = (id: number) =>
 
 export const createTokenImage = (params: {
   sha256: string;
+  sourceSha256: string | null;
   fileExtension: string;
 }) =>
   pipe(
@@ -106,18 +118,24 @@ export const createTokenImage = (params: {
         /* SQL */ `
           INSERT INTO "tokenImages" (
             "sha256",
+            "sourceSha256",
             "extension",
             "createdAt"
           )
           VALUES
           (
             $sha256,
+            $sourceSha256,
             $extension,
             $createdAt
           )
         `,
         {
-          $sha256: params.sha256,
+          $sha256: Buffer.from(params.sha256, "hex"),
+          $sourceSha256:
+            params.sourceSha256 === null
+              ? null
+              : Buffer.from(params.sourceSha256, "hex"),
           $extension: params.fileExtension,
           $createdAt: getTimestamp(),
         }

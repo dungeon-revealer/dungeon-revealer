@@ -31,7 +31,8 @@ const GraphQLTokenImageType = t.objectType<lib.TokenImageType>({
     t.field("url", {
       type: t.NonNull(t.String),
       resolve: (record, _, context) =>
-        `${context.publicUrl}/files/token-image/${record.sha256}.${record.extension}`,
+        // prettier-ignore
+        `${context.publicUrl}/files/token-image/${record.sha256.toString('hex')}.${record.extension}`,
     }),
   ],
   interfaces: [Relay.GraphQLNodeInterface],
@@ -87,7 +88,8 @@ const GraphQLRequestTokenImageUploadInputType = t.inputObjectType({
   fields: () => ({
     sha256: {
       type: t.NonNullInput(t.String),
-      description: "The sha256 of the file that is going to be uploaded.",
+      description:
+        "The SHA256 of the file that is going to be uploaded in hexadecimal form.",
     },
     extension: {
       type: t.NonNullInput(t.String),
@@ -103,7 +105,13 @@ const GraphQLTokenImageCreateInput = t.inputObjectType({
   fields: () => ({
     sha256: {
       type: t.NonNullInput(t.String),
-      description: "The sha256 of the file that is going to be uploaded.",
+      description:
+        "The SHA256 of the file that is going to be uploaded in hexadecimal form.",
+    },
+    sourceSha256: {
+      type: t.String,
+      description:
+        "The SHA256 of the file the image got cut out from in hexadecimal form.",
     },
   }),
 });
@@ -165,7 +173,13 @@ export const mutationFields = [
       input: t.arg(t.NonNullInput(GraphQLTokenImageCreateInput)),
     },
     resolve: (_, args, context) =>
-      RT.run(lib.createTokenImage(args.input), context),
+      RT.run(
+        lib.createTokenImage({
+          sha256: args.input.sha256,
+          sourceSha256: args.input.sourceSha256 ?? null,
+        }),
+        context
+      ),
   }),
 ];
 

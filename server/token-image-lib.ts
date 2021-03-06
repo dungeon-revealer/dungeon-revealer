@@ -123,37 +123,6 @@ export const createTokenImageUploadRequestUrl = (params: {
 const buildTokenImagePath = (fileStoragePath: string) =>
   join(fileStoragePath, "token-image");
 
-export const storeTokenImageUpload = (params: {
-  sha256: string;
-  fileExtension: string;
-  readStream: fs.ReadStream;
-}) =>
-  pipe(
-    RT.ask<TokenImageUploadRegisterDependency>(),
-    RT.chain((deps) => () => async () => {
-      if (deps.tokenImageUploadRegister.has(params.sha256) === false) {
-        return Promise.reject(
-          new Error("The upload of this file has not been requested.")
-        );
-      }
-      const directory = buildTokenImagePath(deps.fileStoragePath);
-      const file = join(directory, `${params.sha256}.${params.fileExtension}`);
-
-      await fs.mkdirp(directory);
-      await new Promise<void>((resolve, reject) => {
-        const writeStream = fs.createWriteStream(file);
-        params.readStream.pipe(writeStream);
-        params.readStream.once("error", (error) => {
-          writeStream.close();
-          reject(error);
-        });
-        writeStream.once("end", () => {
-          resolve();
-        });
-      });
-    })
-  );
-
 export type CreateTokenImageSuccess = {
   type: "Success";
   tokenImageId: number;
@@ -167,7 +136,10 @@ export type CreateTokenImageResult =
   | CreateTokenImageSuccess
   | CreateTokenImageFailure;
 
-export const createTokenImage = (params: { sha256: string }) =>
+export const createTokenImage = (params: {
+  sha256: string;
+  sourceSha256: string | null;
+}) =>
   pipe(
     checkAdmin(),
     RT.chainW(() => RT.ask<TokenImageUploadRegisterDependency>()),
@@ -190,7 +162,11 @@ export const createTokenImage = (params: { sha256: string }) =>
         RT.chainW((exists) =>
           exists
             ? pipe(
-                db.createTokenImage(record),
+                db.createTokenImage({
+                  sha256: params.sha256,
+                  sourceSha256: params.sourceSha256,
+                  fileExtension: record.fileExtension,
+                }),
                 RT.map((tokenImageId) =>
                   RT.of({
                     type: "Success",

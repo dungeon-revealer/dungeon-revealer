@@ -316,7 +316,7 @@ type RequestTokenImageUploadUrl {
 
 input RequestTokenImageUploadInput {
   """
-  The sha256 of the file that is going to be uploaded.
+  The SHA256 of the file that is going to be uploaded in hexadecimal form.
   """
   sha256: String!
 
@@ -338,9 +338,14 @@ type TokenImageCreateError {
 
 input TokenImageCreateInput {
   """
-  The sha256 of the file that is going to be uploaded.
+  The SHA256 of the file that is going to be uploaded in hexadecimal form.
   """
   sha256: String!
+
+  """
+  The SHA256 of the file the image got cut out from in hexadecimal form.
+  """
+  sourceSha256: String
 }
 
 type Subscription {
