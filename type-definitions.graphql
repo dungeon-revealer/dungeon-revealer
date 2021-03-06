@@ -122,6 +122,11 @@ type Query {
   notes(first: Int, after: String, filter: NotesFilter): NoteConnection!
   notesSearch(first: Int, after: String, query: String): NoteSearchConnection!
   note(documentId: ID!): Note
+  tokenImages(
+    first: Int
+    after: String
+    sourceImageSha256: String
+  ): TokenImageConnection
   node(id: ID!): Node
 }
 
@@ -197,6 +202,21 @@ type NoteSearchResultType {
   documentId: ID!
   title: String!
   preview: String!
+}
+
+type TokenImageConnection {
+  edges: [TokenImageEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TokenImageEdge {
+  cursor: String!
+  node: TokenImage!
+}
+
+type TokenImage implements Node {
+  id: ID!
+  url: String!
 }
 
 type Mutation {
@@ -303,11 +323,6 @@ type RequestTokenImageUploadDuplicate {
   The TokenImage that already exists for the given hash.
   """
   tokenImage: TokenImage!
-}
-
-type TokenImage implements Node {
-  id: ID!
-  url: String!
 }
 
 type RequestTokenImageUploadUrl {

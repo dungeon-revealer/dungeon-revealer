@@ -1,6 +1,6 @@
 import * as fs from "fs-extra";
 import { join } from "path";
-import { flow, pipe } from "fp-ts/function";
+import { pipe } from "fp-ts/function";
 import * as RT from "fp-ts/ReaderTask";
 import * as db from "./token-image-db";
 import type { SocketSessionRecord } from "./socket-session-store";
@@ -181,4 +181,12 @@ export const createTokenImage = (params: {
         )
       );
     })
+  );
+
+export const getPaginatedTokenImages = (
+  args: db.GetPaginatedTokenImagesParameter
+) =>
+  pipe(
+    checkAdmin(),
+    RT.chainW(() => db.getPaginatedTokenImages(args))
   );

@@ -21,6 +21,7 @@ import { tokenInfoSideBar_NotesQuery } from "./__generated__/tokenInfoSideBar_No
 import { useNoteWindowActions } from ".";
 import { tokenInfoSideBar_SearchQuery } from "./__generated__/tokenInfoSideBar_SearchQuery.graphql";
 import { tokenInfoSideBar_NotesUpdatesSubscription } from "./__generated__/tokenInfoSideBar_NotesUpdatesSubscription.graphql";
+import { useStaticRef } from "../../hooks/use-static-ref";
 
 const TokenInfoSideBar_NotesFragment = graphql`
   fragment tokenInfoSideBar_NotesFragment on Query
@@ -95,57 +96,60 @@ const TokenInfoSideBarRenderer = (props: {
 
   const newEdgeIdCounter = React.useRef(0);
 
-  useSubscription<tokenInfoSideBar_NotesUpdatesSubscription>({
-    subscription: TokenInfoSideBar_NotesUpdatesSubscription,
-    variables: {
-      filter: props.showAll ? "All" : "Entrypoint",
-      endCursor: data.notes.pageInfo.endCursor,
-      hasNextPage: data.notes.pageInfo.hasNextPage,
-    },
-    updater: (store, payload) => {
-      if (payload.notesUpdates.removedNoteId) {
-        const connection = store.get(data.notes.__id);
-        if (connection) {
-          ConnectionHandler.deleteNode(
-            connection,
-            payload.notesUpdates.removedNoteId
-          );
-        }
-      }
-      if (payload.notesUpdates.addedNode) {
-        const connection = store.get(data.notes.__id);
-        if (connection) {
-          const edge = store
-            .getRootField("notesUpdates")
-            ?.getLinkedRecord("addedNode")
-            ?.getLinkedRecord("edge")!;
-          // we need to copy the fields at the other Subscription.notesUpdates.addedNode.edge field
-          // will be mutated when the next subscription result is arriving
-          const record = store.create(
-            // prettier-ignore
-            `${data.notes.__id}-${edge.getValue("cursor")!}-${++newEdgeIdCounter.current}`,
-            "NoteEdge"
-          );
-
-          record.copyFieldsFrom(edge);
-
-          if (payload.notesUpdates.addedNode.previousCursor) {
-            ConnectionHandler.insertEdgeBefore(
+  useSubscription<tokenInfoSideBar_NotesUpdatesSubscription>(
+    useStaticRef(() => ({
+      subscription: TokenInfoSideBar_NotesUpdatesSubscription,
+      variables: {
+        filter: props.showAll ? "All" : "Entrypoint",
+        endCursor: data.notes.pageInfo.endCursor,
+        hasNextPage: data.notes.pageInfo.hasNextPage,
+      },
+      updater: (store, payload) => {
+        if (payload.notesUpdates.removedNoteId) {
+          const connection = store.get(data.notes.__id);
+          if (connection) {
+            ConnectionHandler.deleteNode(
               connection,
-              record,
-              payload.notesUpdates.addedNode.previousCursor
+              payload.notesUpdates.removedNoteId
             );
-          } else if (
-            // in case we don't have a previous cursor and there is no nextPage the edge must be added the last list item.
-            connection?.getLinkedRecord("pageInfo")?.getValue("hasNextPage") ===
-            false
-          ) {
-            ConnectionHandler.insertEdgeAfter(connection, record);
           }
         }
-      }
-    },
-  });
+        if (payload.notesUpdates.addedNode) {
+          const connection = store.get(data.notes.__id);
+          if (connection) {
+            const edge = store
+              .getRootField("notesUpdates")
+              ?.getLinkedRecord("addedNode")
+              ?.getLinkedRecord("edge")!;
+            // we need to copy the fields at the other Subscription.notesUpdates.addedNode.edge field
+            // will be mutated when the next subscription result is arriving
+            const record = store.create(
+              // prettier-ignore
+              `${data.notes.__id}-${edge.getValue("cursor")!}-${++newEdgeIdCounter.current}`,
+              "NoteEdge"
+            );
+
+            record.copyFieldsFrom(edge);
+
+            if (payload.notesUpdates.addedNode.previousCursor) {
+              ConnectionHandler.insertEdgeBefore(
+                connection,
+                record,
+                payload.notesUpdates.addedNode.previousCursor
+              );
+            } else if (
+              // in case we don't have a previous cursor and there is no nextPage the edge must be added the last list item.
+              connection
+                ?.getLinkedRecord("pageInfo")
+                ?.getValue("hasNextPage") === false
+            ) {
+              ConnectionHandler.insertEdgeAfter(connection, record);
+            }
+          }
+        }
+      },
+    }))
+  );
 
   return (
     <>

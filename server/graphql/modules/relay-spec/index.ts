@@ -1,5 +1,6 @@
 import { flow } from "fp-ts/lib/function";
 import * as t from "io-ts";
+import * as RT from "fp-ts/ReaderTask";
 import last from "lodash/last";
 import first from "lodash/first";
 
@@ -25,6 +26,17 @@ export const decodeId = flow(
   (content: string) => content.split(":"),
   IDParts.decode
 );
+
+export const decodeFirst = (maximumCount = 50, defaultCount = maximumCount) => (
+  first: number | null | undefined
+): RT.ReaderTask<any, number> =>
+  first == null
+    ? RT.of(defaultCount)
+    : first < 0
+    ? () => () => Promise.reject(new Error("Invalid first argument."))
+    : first > maximumCount
+    ? () => () => Promise.reject(new Error("Invalid first argument."))
+    : RT.of(first);
 
 export const buildConnectionObject = <T>(params: {
   listData: T[];

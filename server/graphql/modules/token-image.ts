@@ -1,9 +1,14 @@
 import { flow, pipe } from "fp-ts/function";
 import * as E from "fp-ts/Either";
 import * as RT from "fp-ts/ReaderTask";
-import * as Relay from "./relay-spec";
-import { t } from "..";
+import { sequenceT } from "fp-ts/Apply";
+import * as io from "io-ts";
 import * as lib from "../../token-image-lib";
+import { IntegerFromString } from "../../io-types/integer-from-string";
+import { applyDecoder } from "../../apply-decoder";
+import { TokenImageType } from "../../token-image-db";
+import { t } from "..";
+import * as Relay from "./relay-spec";
 
 export const TOKEN_IMAGE_URI = "TokenImage" as const;
 
@@ -98,7 +103,119 @@ const GraphQLRequestTokenImageUploadInputType = t.inputObjectType({
   }),
 });
 
-export const queryFields = [];
+const TokenImageConnectionVersion = io.literal("1");
+const TokenImageConnectionIdentifier = io.literal("TokenImages");
+const TokenImageConnectionCreatedAt = IntegerFromString;
+const TokenImageConnectionTokenImageId = IntegerFromString;
+
+const TokenImageConnectionCursorModel = io.tuple([
+  TokenImageConnectionVersion,
+  TokenImageConnectionIdentifier,
+  TokenImageConnectionCreatedAt,
+  TokenImageConnectionTokenImageId,
+]);
+
+const buildTokenImagesCursor = (record: TokenImageType) =>
+  pipe(
+    ["1", "TokenImages", record.createdAt, record.id].join(":"),
+    Relay.base64Encode
+  );
+
+const decodeTokenImagesCursor = (
+  cursor: string | null | undefined
+): RT.ReaderTask<any, null | { lastCreatedAt: number; lastId: number }> =>
+  cursor === "" || cursor == null
+    ? RT.of(null)
+    : pipe(
+        Relay.base64Decode(cursor),
+        (value) => value.split(":"),
+        applyDecoder(TokenImageConnectionCursorModel),
+        RT.map(([_, __, lastCreatedAt, lastId]) => ({ lastCreatedAt, lastId }))
+      );
+
+type TokenImageEdgeType = {
+  cursor: string;
+  node: lib.TokenImageType;
+};
+
+const GraphQLTokenImageEdgeObjectType = t.objectType<TokenImageEdgeType>({
+  name: "TokenImageEdge",
+  fields: () => [
+    t.field("cursor", {
+      type: t.NonNull(t.String),
+      resolve: (source) => source.cursor,
+    }),
+    t.field("node", {
+      type: t.NonNull(GraphQLTokenImageType),
+      resolve: (source) => source.node,
+    }),
+  ],
+});
+
+type TokenImageConnectionType = {
+  edges: TokenImageEdgeType[];
+  pageInfo: {
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    startCursor: string;
+    endCursor: string;
+  };
+};
+
+const GraphQLTokenImageConnectionObjectType = t.objectType<TokenImageConnectionType>(
+  {
+    name: "TokenImageConnection",
+    fields: () => [
+      t.field("edges", {
+        type: t.NonNull(t.List(t.NonNull(GraphQLTokenImageEdgeObjectType))),
+        resolve: (source) => source.edges,
+      }),
+      t.field("pageInfo", {
+        type: t.NonNull(Relay.GraphQLPageInfoType),
+        resolve: (source) => source.pageInfo,
+      }),
+    ],
+  }
+);
+
+const sequenceReaderTask = sequenceT(RT.readerTask);
+
+export const queryFields = [
+  t.field("tokenImages", {
+    type: GraphQLTokenImageConnectionObjectType,
+    args: {
+      first: t.arg(t.Int),
+      after: t.arg(t.String),
+      sourceImageSha256: t.arg(t.String),
+    },
+    resolve: (_, args, context) =>
+      RT.run(
+        pipe(
+          sequenceReaderTask(
+            decodeTokenImagesCursor(args.after),
+            Relay.decodeFirst(50)(args.first)
+          ),
+          RT.chainW(([cursor, first]) =>
+            pipe(
+              lib.getPaginatedTokenImages({
+                first: first + 1,
+                cursor,
+                sourceSha256: args.sourceImageSha256 ?? null,
+              }),
+              RT.map((records) =>
+                Relay.buildConnectionObject({
+                  listData: records,
+                  amount: first,
+                  encodeCursor: buildTokenImagesCursor,
+                })
+              )
+            )
+          )
+        ),
+        context
+      ),
+  }),
+];
 
 const GraphQLTokenImageCreateInput = t.inputObjectType({
   name: "TokenImageCreateInput",

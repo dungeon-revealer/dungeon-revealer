@@ -1,10 +1,10 @@
 import * as t from "io-ts";
-import { PathReporter } from "io-ts/PathReporter";
-import * as E from "fp-ts/Either";
 import * as RT from "fp-ts/ReaderTask";
 import { Buffer } from "buffer";
-import { flow, pipe } from "fp-ts/function";
+import { pipe } from "fp-ts/function";
 import type { Database } from "sqlite";
+import * as sql from "./sql";
+import { applyDecoder } from "./apply-decoder";
 
 const getTimestamp = () => new Date().getTime();
 
@@ -30,6 +30,8 @@ export const TokenImageModel = t.type(
   "TokenImageModel"
 );
 
+export const TokenImageListModel = t.array(TokenImageModel, "TokenImageList");
+
 const MaybeTokenImageModal = t.union(
   [TokenImageModel, t.null, t.undefined],
   "MaybeTokenImageModal"
@@ -40,25 +42,6 @@ export type TokenImageType = t.TypeOf<typeof TokenImageModel>;
 export type Dependencies = {
   db: Database;
 };
-
-const applyDecoder = <D, T extends t.Type<any, any, any>>(
-  type: T
-): ((input: unknown) => RT.ReaderTask<D, t.TypeOf<T>>) =>
-  flow(
-    type.decode,
-    E.mapLeft((errors: t.Errors) => {
-      const lines = PathReporter.report(E.left(errors));
-      return new Error(
-        "Invalid schema. \n" + lines.map((line) => `- ${line}`).join("\n")
-      );
-    }),
-    (either) => {
-      if (E.isLeft(either)) {
-        return RT.fromTask(() => Promise.reject(either.left));
-      }
-      return RT.fromTask(() => Promise.resolve(either.right));
-    }
-  );
 
 export const getTokenImageBySHA256 = (sha256: string) =>
   pipe(
@@ -143,4 +126,52 @@ export const createTokenImage = (params: {
     ),
     RT.map((result) => result.lastID),
     RT.chain(applyDecoder(TokenId))
+  );
+
+export type GetPaginatedTokenImagesParameter = {
+  first: number;
+  sourceSha256: string | null;
+  cursor: {
+    lastCreatedAt: number;
+    lastId: number;
+  } | null;
+};
+
+export const getPaginatedTokenImages = (
+  params: GetPaginatedTokenImagesParameter
+) =>
+  pipe(
+    RT.ask<Dependencies>(),
+    RT.chainW((deps) => () => () =>
+      deps.db.all(
+        /* SQL */ `
+          SELECT
+            "id",
+            "sha256",
+            "extension",
+            "createdAt"
+          FROM
+            "tokenImages"
+          ${sql.whereAnd(
+            params.sourceSha256 ? `"sourceSha256" = $sourceSha256` : null,
+            params.cursor
+              ? `("createdAt" < $lastCreatedAt OR ("createdAt" = $lastCreatedAt AND "id" < $lastId))`
+              : null
+          )}
+          ORDER BY
+            "createdAt" DESC,
+            "id" DESC
+          LIMIT $first
+        `,
+        {
+          $first: params.first,
+          $sourceSha256: params.sourceSha256
+            ? Buffer.from(params.sourceSha256, "hex")
+            : undefined,
+          $lastCreatedAt: params.cursor?.lastCreatedAt,
+          $lastId: params.cursor?.lastId,
+        }
+      )
+    ),
+    RT.chain(applyDecoder(TokenImageListModel))
   );

@@ -1,16 +1,18 @@
-import { t } from "..";
+import { flow } from "fp-ts/function";
+import * as RTE from "fp-ts/ReaderTaskEither";
+import * as RT from "fp-ts/ReaderTask";
+import * as E from "fp-ts/Either";
+import { sequenceT } from "fp-ts/Apply";
+import { pipe } from "fp-ts/pipeable";
 import * as io from "io-ts";
-import * as Relay from "./relay-spec";
-import { flow, identity } from "fp-ts/lib/function";
-import * as RTE from "fp-ts/lib/ReaderTaskEither";
-import * as RT from "fp-ts/lib/ReaderTask";
-import * as E from "fp-ts/lib/Either";
-import * as notes from "../../notes-lib";
-import { pipe } from "fp-ts/lib/pipeable";
-import * as util from "../../markdown-to-plain-text";
-import * as O from "fp-ts/lib/Option";
 import first from "lodash/first";
+import * as Relay from "./relay-spec";
 import type { SubscriptionField } from "gqtx/dist/types";
+import { t } from "..";
+import * as notes from "../../notes-lib";
+import * as util from "../../markdown-to-plain-text";
+import { IntegerFromString } from "../../io-types/integer-from-string";
+import { applyDecoder } from "../../apply-decoder";
 
 export const NOTE_URI = "Note" as const;
 
@@ -232,8 +234,8 @@ const resolveNotesSearch = (query: string) =>
   );
 
 const NotesConnectionVersion = io.literal("1");
-const NotesConnectionIdentifier = io.literal("NOTES_CONNECTION");
-const NotesConnectionCreatedAt = io.number;
+const NotesConnectionIdentifier = io.literal("NotesConnection");
+const NotesConnectionCreatedAt = IntegerFromString;
 const NotesConnectionNoteId = io.string;
 
 const NotesConnectionCursorModel = io.tuple([
@@ -243,58 +245,16 @@ const NotesConnectionCursorModel = io.tuple([
   NotesConnectionNoteId,
 ]);
 
-const StringUtilities = {
-  split1: (delimiter: string) => (
-    input: string
-  ): O.Option<[string, string]> => {
-    const index = input.indexOf(delimiter);
-    if (index === -1) {
-      return O.none;
-    }
-
-    return O.some([input.substring(0, index), input.substring(index + 1)]);
-  },
-};
-
-const parseIntegerSafe = (input: string) => parseInt(input, 10);
-
-const decodeNotesConnectionCursor = (cursor: string | null) =>
-  cursor === "" || cursor === null
-    ? null
+const decodeNotesConnectionCursor = (
+  cursor: string | null | undefined
+): RT.ReaderTask<any, null | { lastCreatedAt: number; lastId: string }> =>
+  cursor === "" || cursor == null
+    ? RT.of(null)
     : pipe(
         Relay.base64Decode(cursor),
-        StringUtilities.split1(":"),
-        O.chain(([version, rest]) => {
-          return pipe(
-            NotesConnectionVersion.decode(version),
-            E.fold(
-              () => O.none,
-              () => StringUtilities.split1(":")(rest)
-            ),
-            O.chain(([identifier, rest]) =>
-              pipe(
-                NotesConnectionIdentifier.decode(identifier),
-                E.fold(
-                  () => O.none,
-                  () => StringUtilities.split1(":")(rest)
-                ),
-                O.chain(([rawCreatedAt, lastId]) => {
-                  const lastCreatedAt = parseIntegerSafe(rawCreatedAt);
-                  return pipe(
-                    NotesConnectionCreatedAt.decode(lastCreatedAt),
-                    E.fold(
-                      () => O.none,
-                      () => O.some({ lastCreatedAt, lastId })
-                    )
-                  );
-                })
-              )
-            )
-          );
-        }),
-        O.fold(() => {
-          throw new Error("Invalid cursor provided");
-        }, identity)
+        (value) => value.split(":"),
+        applyDecoder(NotesConnectionCursorModel),
+        RT.map(([_, __, lastCreatedAt, lastId]) => ({ lastCreatedAt, lastId }))
       );
 
 const encodeNotesConnectionCursor = ({
@@ -305,7 +265,7 @@ const encodeNotesConnectionCursor = ({
   id: string;
 }) =>
   pipe(
-    NotesConnectionCursorModel.encode(["1", "NOTES_CONNECTION", createdAt, id]),
+    NotesConnectionCursorModel.encode(["1", "NotesConnection", createdAt, id]),
     (content) => content.join(":"),
     Relay.base64Encode
   );
@@ -327,6 +287,8 @@ const GraphQLNotesFilterEnum = t.enumType<"entrypoint" | "all">({
   ],
 });
 
+const sequenceRT = sequenceT(RT.readerTask);
+
 export const queryFields = [
   t.field("notes", {
     type: t.NonNull(GraphQLNoteConnectionType),
@@ -336,14 +298,20 @@ export const queryFields = [
       filter: t.arg(GraphQLNotesFilterEnum),
     },
     resolve: (_, args, context) => {
-      // @TODO: strict first validation max/min & negative
-      const first = args.first || 10;
       return RT.run(
-        resolvePaginatedNotes({
-          first,
-          onlyEntryPoints: args.filter === "entrypoint",
-          cursor: decodeNotesConnectionCursor(args.after ?? null),
-        }),
+        pipe(
+          sequenceRT(
+            decodeNotesConnectionCursor(args.after),
+            Relay.decodeFirst(50, 10)(args.first)
+          ),
+          RT.chainW(([cursor, first]) =>
+            resolvePaginatedNotes({
+              first,
+              onlyEntryPoints: args.filter === "entrypoint",
+              cursor,
+            })
+          )
+        ),
         context
       );
     },
@@ -695,11 +663,15 @@ export const subscriptionFields: SubscriptionField<any, any, any, any>[] = [
     subscribe: (_, args, context) =>
       RT.run(
         pipe(
-          notes.subscribeToNotesUpdates({
-            mode: args.filter ?? "entrypoint",
-            cursor: decodeNotesConnectionCursor(args.endCursor),
-            hasNextPage: args.hasNextPage,
-          }),
+          decodeNotesConnectionCursor(args.endCursor),
+          RTE.rightReaderTask,
+          RTE.chainW((cursor) =>
+            notes.subscribeToNotesUpdates({
+              mode: args.filter ?? "entrypoint",
+              cursor,
+              hasNextPage: args.hasNextPage,
+            })
+          ),
           RTE.fold(
             (err) => () => () => Promise.reject(err),
             (value) => RT.of(value)
