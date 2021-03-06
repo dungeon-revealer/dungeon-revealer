@@ -90,11 +90,12 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
     setDiceRollNotesState((state) => (state === "show" ? "hidden" : "show"));
   }, []);
 
-  const [hasUnreadMessages, resetUnreadMessages] = useChatSoundsAndUnreadCount(
-    chatState
-  );
-
   const [isLoggedIn, logIn] = useLogInMutation();
+
+  const [hasUnreadMessages, resetUnreadMessages] = useChatSoundsAndUnreadCount(
+    chatState,
+    isLoggedIn
+  );
 
   React.useEffect(() => {
     logIn();

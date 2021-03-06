@@ -1,5 +1,3 @@
-import { isAsyncIterable } from "@n1ru4l/push-pull-async-iterable-iterator";
-
 /**
  * map the events published by a AsyncIterableIterator
  */
@@ -33,19 +31,4 @@ export function filter(filter: (value: unknown) => boolean) {
       }
     }
   };
-}
-
-type MaybePromise<T> = T | Promise<T>;
-
-export async function* from<T>(
-  input: MaybePromise<AsyncIterableIterator<T> | T>
-): AsyncIterableIterator<T> {
-  const value = await input;
-  if (isAsyncIterable(value)) {
-    for await (const part of value) {
-      yield part;
-    }
-  } else {
-    yield value;
-  }
 }

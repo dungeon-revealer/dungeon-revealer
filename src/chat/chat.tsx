@@ -23,6 +23,7 @@ import { ChatOnlineUserIndicator } from "./chat-online-user-indicator";
 import { isAbstractGraphQLMemberType } from "../relay-utilities";
 import { chatMessageSoundSubscription } from "./__generated__/chatMessageSoundSubscription.graphql";
 import { useSoundSettings } from "../sound-settings";
+import { useStaticRef } from "../hooks/use-static-ref";
 
 const AppSubscription = graphql`
   subscription chatSubscription {
@@ -97,7 +98,10 @@ const ChatWindow = styled.div`
   flex-direction: column;
 `;
 
-export const useChatSoundsAndUnreadCount = (chatState: "hidden" | "show") => {
+export const useChatSoundsAndUnreadCount = (
+  chatState: "hidden" | "show",
+  isLoggedIn: boolean
+) => {
   const [hasUnreadMessages, setHasUnreadMessages] = React.useState(false);
   const [playDiceRollSound] = useSound(diceRollSound, {
     volume: 0.5,
@@ -114,46 +118,51 @@ export const useChatSoundsAndUnreadCount = (chatState: "hidden" | "show") => {
     soundSettings,
   });
 
-  refs.current = {
-    playDiceRollSound,
-    playNotificationSound,
-    chatState,
-    soundSettings,
-  };
-
-  useSubscription<chatMessageSoundSubscription>({
-    subscription: ChatMessageSoundSubscription,
-    variables: {},
-    onNext: (data) => {
-      if (data) {
-        let mode: "dice-roll-message" | "text-message" = "text-message";
-
-        if (
-          data.chatMessagesAdded.messages.some(
-            (message) => message.containsDiceRoll === true
-          )
-        ) {
-          mode = "dice-roll-message";
-        }
-
-        if (
-          mode === "text-message" &&
-          refs.current.soundSettings.value === "all"
-        ) {
-          refs.current.playNotificationSound();
-        } else if (
-          mode === "dice-roll-message" &&
-          refs.current.soundSettings.value !== "none"
-        ) {
-          refs.current.playDiceRollSound();
-        }
-
-        if (refs.current.chatState === "hidden") {
-          setHasUnreadMessages(true);
-        }
-      }
-    },
+  React.useEffect(() => {
+    refs.current = {
+      playDiceRollSound,
+      playNotificationSound,
+      chatState,
+      soundSettings,
+    };
   });
+
+  useSubscription<chatMessageSoundSubscription>(
+    useStaticRef(() => ({
+      subscription: ChatMessageSoundSubscription,
+      variables: {},
+      onNext: (data) => {
+        if (data) {
+          let mode: "dice-roll-message" | "text-message" = "text-message";
+
+          if (
+            data.chatMessagesAdded.messages.some(
+              (message) => message.containsDiceRoll === true
+            )
+          ) {
+            mode = "dice-roll-message";
+          }
+
+          if (
+            mode === "text-message" &&
+            refs.current.soundSettings.value === "all"
+          ) {
+            refs.current.playNotificationSound();
+          } else if (
+            mode === "dice-roll-message" &&
+            refs.current.soundSettings.value !== "none"
+          ) {
+            refs.current.playDiceRollSound();
+          }
+
+          if (refs.current.chatState === "hidden") {
+            setHasUnreadMessages(true);
+          }
+        }
+      },
+    })),
+    { skip: isLoggedIn === false }
+  );
 
   return [hasUnreadMessages, () => setHasUnreadMessages(false)] as [
     boolean,
@@ -166,65 +175,69 @@ export const Chat: React.FC<{
 }> = React.memo(({ toggleShowDiceRollNotes }) => {
   const [mode, setMode] = React.useState<"chat" | "user" | "settings">("chat");
 
-  useSubscription<chatSubscription>({
-    subscription: AppSubscription,
-    variables: {},
-    updater: (store) => {
-      const chat = ConnectionHandler.getConnection(
-        store.getRoot(),
-        "chatMessages_chat"
-      );
-
-      const records = store
-        .getRootField("chatMessagesAdded")
-        ?.getLinkedRecords("messages");
-      if (!chat || !records) return;
-
-      for (const chatMessage of records) {
-        const edge = ConnectionHandler.createEdge(
-          store,
-          chat,
-          chatMessage,
-          "ChatMessage"
+  useSubscription<chatSubscription>(
+    useStaticRef(() => ({
+      subscription: AppSubscription,
+      variables: {},
+      updater: (store) => {
+        const chat = ConnectionHandler.getConnection(
+          store.getRoot(),
+          "chatMessages_chat"
         );
-        ConnectionHandler.insertEdgeAfter(chat, edge);
-      }
-    },
-  });
 
-  useSubscription<chatUserUpdateSubscription>({
-    subscription: UserUpdateSubscription,
-    variables: {},
-    updater: (store) => {
-      const users = ConnectionHandler.getConnection(
-        store.getRoot(),
-        "chatUserList_users"
-      );
+        const records = store
+          .getRootField("chatMessagesAdded")
+          ?.getLinkedRecords("messages");
+        if (!chat || !records) return;
 
-      const updateRecord = store.getRootField("userUpdate");
-      const root = store.getRoot();
+        for (const chatMessage of records) {
+          const edge = ConnectionHandler.createEdge(
+            store,
+            chat,
+            chatMessage,
+            "ChatMessage"
+          );
+          ConnectionHandler.insertEdgeAfter(chat, edge);
+        }
+      },
+    }))
+  );
 
-      if (!users || !updateRecord) return;
-
-      // see https://github.com/relay-tools/relay-compiler-language-typescript/issues/186
-      if (isAbstractGraphQLMemberType(updateRecord, "UserAddUpdate")) {
-        const edge = ConnectionHandler.createEdge(
-          store,
-          users,
-          updateRecord.getLinkedRecord("user"),
-          "User"
+  useSubscription<chatUserUpdateSubscription>(
+    useStaticRef(() => ({
+      subscription: UserUpdateSubscription,
+      variables: {},
+      updater: (store) => {
+        const users = ConnectionHandler.getConnection(
+          store.getRoot(),
+          "chatUserList_users"
         );
-        ConnectionHandler.insertEdgeAfter(users, edge);
-        root.setValue(updateRecord.getValue("usersCount"), "usersCount");
-      } else if (
-        isAbstractGraphQLMemberType(updateRecord, "UserRemoveUpdate")
-      ) {
-        const userId = updateRecord.getValue("userId");
-        ConnectionHandler.deleteNode(users, userId);
-        root.setValue(updateRecord.getValue("usersCount"), "usersCount");
-      }
-    },
-  });
+
+        const updateRecord = store.getRootField("userUpdate");
+        const root = store.getRoot();
+
+        if (!users || !updateRecord) return;
+
+        // see https://github.com/relay-tools/relay-compiler-language-typescript/issues/186
+        if (isAbstractGraphQLMemberType(updateRecord, "UserAddUpdate")) {
+          const edge = ConnectionHandler.createEdge(
+            store,
+            users,
+            updateRecord.getLinkedRecord("user"),
+            "User"
+          );
+          ConnectionHandler.insertEdgeAfter(users, edge);
+          root.setValue(updateRecord.getValue("usersCount"), "usersCount");
+        } else if (
+          isAbstractGraphQLMemberType(updateRecord, "UserRemoveUpdate")
+        ) {
+          const userId = updateRecord.getValue("userId");
+          ConnectionHandler.deleteNode(users, userId);
+          root.setValue(updateRecord.getValue("usersCount"), "usersCount");
+        }
+      },
+    }))
+  );
 
   const retryRef = React.useRef<null | (() => void)>(null);
   const { error, data, retry } = useQuery<chatQuery>(ChatQuery);

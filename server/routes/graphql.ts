@@ -11,6 +11,7 @@ import type {
   SocketSessionStore,
   SocketSessionRecord,
 } from "../socket-session-store";
+import { ExecutionResult, subscribe as originalSubscribe } from "graphql";
 import { registerSocketIOGraphQLServer } from "@n1ru4l/socket-io-graphql-server";
 import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
 import { createSplashImageState } from "../splash-image-state";
@@ -18,6 +19,9 @@ import { createPubSub } from "../pubsub";
 import { NotesUpdatesPayload } from "../notes-lib";
 import { createTokenImageUploadRegister } from "../token-image-lib";
 import * as AsyncIteratorUtil from "../util/async-iterator";
+import { isAsyncIterable } from "@n1ru4l/push-pull-async-iterable-iterator";
+
+type MaybePromise<T> = Promise<T> | T;
 
 type Dependencies = {
   roleMiddleware: any;
@@ -59,22 +63,39 @@ export default ({
   const notesUpdates = createPubSub<NotesUpdatesPayload>();
   const tokenImageUploadRegister = createTokenImageUploadRegister();
 
+  const graphQLErrorLogger = (result: ExecutionResult): ExecutionResult => {
+    if (result.errors) {
+      for (const error of result.errors) {
+        console.error(error.originalError);
+      }
+    }
+
+    return result;
+  };
+
+  const applyExecuteMiddleware = <T>(apply: (target: T) => MaybePromise<T>) => (
+    input: MaybePromise<AsyncIterableIterator<T> | T>
+  ): MaybePromise<AsyncIterableIterator<T> | T> => {
+    const handler = (
+      result: AsyncIterableIterator<T> | T
+    ): AsyncIterableIterator<T> | MaybePromise<T> => {
+      if (isAsyncIterable(result)) {
+        return AsyncIteratorUtil.map(apply)(result);
+      } else {
+        return apply(result);
+      }
+    };
+    return input instanceof Promise ? input.then(handler) : handler(input);
+  };
+
   const execute = flow(
     liveQueryStore.execute,
-    AsyncIteratorUtil.from,
-    AsyncIteratorUtil.map((value) => {
-      if (value.errors) {
-        for (const error of value.errors) {
-          console.error(error.originalError);
-        }
-      }
+    applyExecuteMiddleware(graphQLErrorLogger)
+  );
 
-      // We have to add isFinal otherwise the result is not sent :(
-      // @ts-ignore
-      value.isFinal = true;
-
-      return value;
-    })
+  const subscribe = flow(
+    originalSubscribe,
+    applyExecuteMiddleware(graphQLErrorLogger)
   );
 
   const socketIOGraphQLServer = registerSocketIOGraphQLServer({
@@ -82,6 +103,8 @@ export default ({
     isLazy: true,
     getParameter: ({ socket }) => ({
       execute,
+      // @ts-ignore
+      subscribe,
       graphQLExecutionParameter: {
         schema,
         contextValue: {
