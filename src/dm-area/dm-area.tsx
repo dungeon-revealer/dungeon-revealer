@@ -601,6 +601,7 @@ const Content = ({
         | {
             type: "File";
             file: File;
+            title: string;
           }
         | {
             type: "TokenImage";
@@ -694,6 +695,7 @@ const Content = ({
             const addFile = async (
               fileHash: string,
               file: File,
+              title: string,
               sourceFileHash: string | null
             ) => {
               let tokenImageId: string;
@@ -716,8 +718,6 @@ const Content = ({
                     }
                   )
               );
-
-              console.log(requestTokenImageUpload);
 
               if (
                 requestTokenImageUpload.__typename ===
@@ -746,6 +746,7 @@ const Content = ({
                         mutation: TokenImageCreateMutation,
                         variables: {
                           input: {
+                            title,
                             sha256: fileHash,
                             sourceSha256: sourceFileHash,
                           },
@@ -791,7 +792,7 @@ const Content = ({
                   onConfirm: async (params) => {
                     if (params.type === "File") {
                       const hash = await generateSHA256FileHash(params.file);
-                      addFile(hash, params.file, sourceImageHash);
+                      addFile(hash, params.file, params.title, sourceImageHash);
                     }
                     if (params.type === "TokenImage") {
                       addTokenWIthImageId(params.tokenImageId);

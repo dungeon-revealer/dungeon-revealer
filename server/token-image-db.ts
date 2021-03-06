@@ -23,6 +23,7 @@ const buffer = new t.Type(
 export const TokenImageModel = t.type(
   {
     id: t.number,
+    title: t.string,
     sha256: buffer,
     extension: t.string,
     createdAt: t.number,
@@ -51,6 +52,7 @@ export const getTokenImageBySHA256 = (sha256: string) =>
         /* SQL */ `
           SELECT
             "id",
+            "title",
             "sha256",
             "extension",
             "createdAt"
@@ -75,6 +77,7 @@ export const getTokenById = (id: number) =>
         /* SQL */ `
           SELECT
             "id",
+            "title",
             "sha256",
             "extension",
             "createdAt"
@@ -90,6 +93,7 @@ export const getTokenById = (id: number) =>
   );
 
 export const createTokenImage = (params: {
+  title: string;
   sha256: string;
   sourceSha256: string | null;
   fileExtension: string;
@@ -100,6 +104,7 @@ export const createTokenImage = (params: {
       deps.db.run(
         /* SQL */ `
           INSERT INTO "tokenImages" (
+            "title",
             "sha256",
             "sourceSha256",
             "extension",
@@ -107,6 +112,7 @@ export const createTokenImage = (params: {
           )
           VALUES
           (
+            $title,
             $sha256,
             $sourceSha256,
             $extension,
@@ -114,6 +120,7 @@ export const createTokenImage = (params: {
           )
         `,
         {
+          $title: params.title,
           $sha256: Buffer.from(params.sha256, "hex"),
           $sourceSha256:
             params.sourceSha256 === null
@@ -147,6 +154,7 @@ export const getPaginatedTokenImages = (
         /* SQL */ `
           SELECT
             "id",
+            "title",
             "sha256",
             "extension",
             "createdAt"

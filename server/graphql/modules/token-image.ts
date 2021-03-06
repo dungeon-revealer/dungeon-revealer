@@ -33,6 +33,10 @@ const GraphQLTokenImageType = t.objectType<lib.TokenImageType>({
       type: t.NonNull(t.ID),
       resolve: (record) => encodeImageId(String(record.id)),
     }),
+    t.field("title", {
+      type: t.NonNull(t.String),
+      resolve: (record) => record.title,
+    }),
     t.field("url", {
       type: t.NonNull(t.String),
       resolve: (record, _, context) =>
@@ -220,6 +224,10 @@ export const queryFields = [
 const GraphQLTokenImageCreateInput = t.inputObjectType({
   name: "TokenImageCreateInput",
   fields: () => ({
+    title: {
+      type: t.NonNullInput(t.String),
+      description: "The title of the token image.",
+    },
     sha256: {
       type: t.NonNullInput(t.String),
       description:
@@ -292,6 +300,7 @@ export const mutationFields = [
     resolve: (_, args, context) =>
       RT.run(
         lib.createTokenImage({
+          title: args.input.title,
           sha256: args.input.sha256,
           sourceSha256: args.input.sourceSha256 ?? null,
         }),

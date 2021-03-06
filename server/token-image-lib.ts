@@ -137,6 +137,7 @@ export type CreateTokenImageResult =
   | CreateTokenImageFailure;
 
 export const createTokenImage = (params: {
+  title: string;
   sha256: string;
   sourceSha256: string | null;
 }) =>
@@ -163,6 +164,7 @@ export const createTokenImage = (params: {
           exists
             ? pipe(
                 db.createTokenImage({
+                  title: params.title,
                   sha256: params.sha256,
                   sourceSha256: params.sourceSha256,
                   fileExtension: record.fileExtension,

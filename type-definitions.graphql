@@ -216,6 +216,7 @@ type TokenImageEdge {
 
 type TokenImage implements Node {
   id: ID!
+  title: String!
   url: String!
 }
 
@@ -352,6 +353,11 @@ type TokenImageCreateError {
 }
 
 input TokenImageCreateInput {
+  """
+  The title of the token image.
+  """
+  title: String!
+
   """
   The SHA256 of the file that is going to be uploaded in hexadecimal form.
   """

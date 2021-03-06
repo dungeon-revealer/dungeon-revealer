@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useQuery } from "relay-hooks";
 import type { Area } from "react-easy-crop/types";
 import {
   Box,
@@ -12,8 +13,27 @@ import {
   Stack,
   Text,
   FormLabel,
+  Input,
+  Image,
 } from "@chakra-ui/react";
+import graphql from "babel-plugin-relay/macro";
 import { loadImage } from "../util";
+import { tokenImageCropper_TokenLibraryImagesQuery } from "./__generated__/tokenImageCropper_TokenLibraryImagesQuery.graphql";
+import { useStaticRef } from "../hooks/use-static-ref";
+
+const TokenLibraryImagesQuery = graphql`
+  query tokenImageCropper_TokenLibraryImagesQuery($sourceImageSha256: String!) {
+    tokenImages(first: 20, sourceImageSha256: $sourceImageSha256) {
+      edges {
+        node {
+          id
+          title
+          url
+        }
+      }
+    }
+  }
+`;
 
 export const TokenImageCropper = (props: {
   imageUrl: string;
@@ -23,6 +43,7 @@ export const TokenImageCropper = (props: {
       | {
           type: "File";
           file: File;
+          title: string;
         }
       | {
           type: "TokenImage";
@@ -36,6 +57,14 @@ export const TokenImageCropper = (props: {
   const [croppedAreaPixels, setCroppedAreaPixels] = React.useState<Area | null>(
     null
   );
+  const [title, setTitle] = React.useState("New Token Image");
+  const data = useQuery<tokenImageCropper_TokenLibraryImagesQuery>(
+    TokenLibraryImagesQuery,
+    useStaticRef(() => ({
+      sourceImageSha256: props.sourceImageHash,
+    }))
+  );
+
   return (
     <>
       <Box
@@ -93,6 +122,10 @@ export const TokenImageCropper = (props: {
               <SliderThumb />
             </Slider>
           </FormControl>
+          <FormControl id="token-title">
+            <FormLabel>Title</FormLabel>
+            <Input value={title} onChange={(ev) => setTitle(ev.target.value)} />
+          </FormControl>
           <Stack
             spacing={4}
             direction="row"
@@ -110,7 +143,7 @@ export const TokenImageCropper = (props: {
                   return;
                 }
                 const file = await cropImage(props.imageUrl, croppedAreaPixels);
-                props.onConfirm({ type: "File", file });
+                props.onConfirm({ type: "File", file, title });
               }}
             >
               Confirm
@@ -118,6 +151,39 @@ export const TokenImageCropper = (props: {
           </Stack>
         </Stack>
       </Flex>
+      {data.data?.tokenImages ? (
+        <Flex
+          position="absolute"
+          bottom={0}
+          top={0}
+          right={0}
+          maxWidth={300}
+          zIndex={9000}
+          direction="column"
+        >
+          {data.data.tokenImages.edges.map((edge) => (
+            <Stack padding={3}>
+              <Box>
+                <Image src={edge.node.url} key={edge.node.id} />
+                <Box width="100%" backgroundColor="white" padding={2}>
+                  {edge.node.title}
+                </Box>
+              </Box>
+
+              <Button
+                onClick={() => {
+                  props.onConfirm({
+                    type: "TokenImage",
+                    tokenImageId: edge.node.id,
+                  });
+                }}
+              >
+                Use existing image.
+              </Button>
+            </Stack>
+          ))}
+        </Flex>
+      ) : null}
     </>
   );
 };
