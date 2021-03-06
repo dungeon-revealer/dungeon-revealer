@@ -2,6 +2,7 @@ import { Router, static as expressStatic } from "express";
 import path from "path";
 import fs from "fs-extra";
 import type { Server as IOServer, Socket as IOSocket } from "socket.io";
+import { flow } from "fp-ts/function";
 import { schema, GraphQLContextType } from "../graphql";
 import { createChat } from "../chat";
 import { createUser } from "../user";
@@ -16,6 +17,7 @@ import { createSplashImageState } from "../splash-image-state";
 import { createPubSub } from "../pubsub";
 import { NotesUpdatesPayload } from "../notes-lib";
 import { createTokenImageUploadRegister } from "../token-image-lib";
+import * as AsyncIteratorUtil from "../util/async-iterator";
 
 type Dependencies = {
   roleMiddleware: any;
@@ -57,11 +59,29 @@ export default ({
   const notesUpdates = createPubSub<NotesUpdatesPayload>();
   const tokenImageUploadRegister = createTokenImageUploadRegister();
 
+  const execute = flow(
+    liveQueryStore.execute,
+    AsyncIteratorUtil.from,
+    AsyncIteratorUtil.map((value) => {
+      if (value.errors) {
+        for (const error of value.errors) {
+          console.error(error.originalError);
+        }
+      }
+
+      // We have to add isFinal otherwise the result is not sent :(
+      // @ts-ignore
+      value.isFinal = true;
+
+      return value;
+    })
+  );
+
   const socketIOGraphQLServer = registerSocketIOGraphQLServer({
     socketServer,
     isLazy: true,
     getParameter: ({ socket }) => ({
-      execute: liveQueryStore.execute,
+      execute,
       graphQLExecutionParameter: {
         schema,
         contextValue: {
