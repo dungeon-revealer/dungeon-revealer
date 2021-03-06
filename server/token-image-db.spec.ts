@@ -9,11 +9,13 @@ test("can create and query a token record", async () => {
   const db = await prepareDB();
   const deps = { db };
   const tokenId = await lib.createTokenImage({
+    title: "a",
     sha256: "69",
     sourceSha256: "187",
     fileExtension: "jpeg",
   })(deps)();
   const token2Id = await lib.createTokenImage({
+    title: "b",
     sha256: "31",
     sourceSha256: "666",
     fileExtension: "jpeg",
@@ -22,6 +24,7 @@ test("can create and query a token record", async () => {
   let record = await lib.getTokenById(1)(deps)();
   expect(record).toMatchObject({
     id: 1,
+    title: "a",
     sha256: expect.any(Buffer),
     extension: "jpeg",
     createdAt: expect.any(Number),
@@ -29,6 +32,7 @@ test("can create and query a token record", async () => {
   record = (await lib.getTokenImageBySHA256("69")({ db })())!;
   expect(record).toMatchObject({
     id: 1,
+    title: "b",
     sha256: expect.any(Buffer),
     extension: "jpeg",
     createdAt: expect.any(Number),

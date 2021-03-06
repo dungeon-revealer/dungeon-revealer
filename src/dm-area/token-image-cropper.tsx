@@ -15,6 +15,9 @@ import {
   FormLabel,
   Input,
   Image,
+  Grid,
+  GridItem,
+  Heading,
 } from "@chakra-ui/react";
 import graphql from "babel-plugin-relay/macro";
 import { loadImage } from "../util";
@@ -151,37 +154,70 @@ export const TokenImageCropper = (props: {
           </Stack>
         </Stack>
       </Flex>
-      {data.data?.tokenImages ? (
+      {data.data?.tokenImages?.edges.length ? (
         <Flex
           position="absolute"
-          bottom={0}
           top={0}
-          right={0}
-          maxWidth={300}
+          bottom={0}
+          right={3}
           zIndex={9000}
-          direction="column"
+          alignItems={"center"}
         >
-          {data.data.tokenImages.edges.map((edge) => (
-            <Stack padding={3}>
-              <Box>
-                <Image src={edge.node.url} key={edge.node.id} />
-                <Box width="100%" backgroundColor="white" padding={2}>
-                  {edge.node.title}
-                </Box>
-              </Box>
-
-              <Button
-                onClick={() => {
-                  props.onConfirm({
-                    type: "TokenImage",
-                    tokenImageId: edge.node.id,
-                  });
-                }}
-              >
-                Use existing image.
-              </Button>
+          <Stack
+            spacing={2}
+            padding={3}
+            borderRadius={3}
+            background="white"
+            maxHeight={500}
+          >
+            <Heading size="xs">Token Images from this Source</Heading>
+            <Stack>
+              {data.data.tokenImages.edges.map((edge) => (
+                <Grid
+                  templateRows="repeat(3, 1fr)"
+                  templateColumns="repeat(5, 1fr)"
+                  gap={2}
+                  height={75}
+                >
+                  <GridItem colSpan={2} rowSpan={3}>
+                    <Image
+                      src={edge.node.url}
+                      key={edge.node.id}
+                      height={75}
+                      width={75}
+                    />
+                  </GridItem>
+                  <GridItem colSpan={3} rowSpan={1}>
+                    <Text
+                      paddingTop={3}
+                      width="100%"
+                      backgroundColor="white"
+                      fontSize="xs"
+                      maxWidth={100}
+                      whiteSpace="nowrap"
+                      textOverflow="ellipsis"
+                      overflow="hidden"
+                    >
+                      {edge.node.title}
+                    </Text>
+                  </GridItem>
+                  <GridItem colSpan={3} rowSpan={2}>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        props.onConfirm({
+                          type: "TokenImage",
+                          tokenImageId: edge.node.id,
+                        });
+                      }}
+                    >
+                      Use this image.
+                    </Button>
+                  </GridItem>
+                </Grid>
+              ))}
             </Stack>
-          ))}
+          </Stack>
         </Flex>
       ) : null}
     </>
