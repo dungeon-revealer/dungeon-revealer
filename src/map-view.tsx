@@ -32,7 +32,7 @@ import { TextureLoader } from "three";
 import { ReactEventHandlers } from "react-use-gesture/dist/types";
 import { useQuery } from "relay-hooks";
 import { mapView_TokenImageQuery } from "./__generated__/mapView_TokenImageQuery.graphql";
-import { useControls, useCreateStore } from "leva";
+import { buttonGroup, useControls, useCreateStore } from "leva";
 import { StoreType } from "leva/dist/declarations/src/types";
 
 type Vector2D = [number, number];
@@ -124,6 +124,7 @@ const TokenRenderer: React.FC<{
   isVisibleForPlayers: boolean;
   reference: null | { type: "note"; id: string };
   tokenImageId: string | null;
+  columnWidth: number | null;
 }> = (props) => {
   const sharedMapState = React.useContext(SharedMapState);
 
@@ -138,7 +139,7 @@ const TokenRenderer: React.FC<{
   );
 
   const store = useCreateStore();
-
+  const updateRadiusRef = React.useRef<null | ((radius: number) => void)>(null);
   const [values, setValues] = useControls(
     () => ({
       position: {
@@ -152,6 +153,13 @@ const TokenRenderer: React.FC<{
         step: 1,
         min: 1,
       },
+      "": buttonGroup({
+        "0.25x": () => updateRadiusRef.current?.(0.25),
+        "0.5x": () => updateRadiusRef.current?.(0.5),
+        "1x": () => updateRadiusRef.current?.(1),
+        "2x": () => updateRadiusRef.current?.(2),
+        "3x": () => updateRadiusRef.current?.(3),
+      }),
       isLocked: {
         label: "Position locked",
         value: props.isLocked,
@@ -175,6 +183,11 @@ const TokenRenderer: React.FC<{
     }),
     { store }
   );
+
+  React.useEffect(() => {
+    updateRadiusRef.current = (value) =>
+      setValues({ radius: ((props.columnWidth ?? 50) / 2) * value * 0.9 });
+  });
 
   React.useEffect(() => {
     // TODO: remove this once leva has a subscribe API :D
@@ -893,6 +906,7 @@ const MapRenderer: React.FC<{
             radius={token.radius}
             reference={token.reference}
             tokenImageId={token.tokenImageId}
+            columnWidth={props.grid?.columnWidth ?? null}
           />
         ))}
       </group>

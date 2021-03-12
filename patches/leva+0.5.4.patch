@@ -1,8 +1,8 @@
 diff --git a/node_modules/leva/dist/leva.esm.js b/node_modules/leva/dist/leva.esm.js
-index f034255..f21b6c5 100644
+index 55688eb..b656422 100644
 --- a/node_modules/leva/dist/leva.esm.js
 +++ b/node_modules/leva/dist/leva.esm.js
-@@ -1381,6 +1381,8 @@ const Store = function Store() {
+@@ -1382,6 +1382,8 @@ const Store = function Store() {
      });
    };
  
