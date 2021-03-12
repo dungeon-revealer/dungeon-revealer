@@ -32,7 +32,7 @@ test("can create and query a token record", async () => {
   record = (await lib.getTokenImageBySHA256("69")({ db })())!;
   expect(record).toMatchObject({
     id: 1,
-    title: "b",
+    title: "a",
     sha256: expect.any(Buffer),
     extension: "jpeg",
     createdAt: expect.any(Number),
