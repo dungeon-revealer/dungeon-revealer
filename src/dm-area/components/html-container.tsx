@@ -171,6 +171,11 @@ const HtmlContainerStyled = styled.div`
     max-width: 100%;
   }
 
+  a {
+    color: blue;
+    text-decoration: underline;
+  }
+
   p {
     margin-top: 0;
     margin-bottom: 4px;
