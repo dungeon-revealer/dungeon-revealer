@@ -1,0 +1,13 @@
+diff --git a/node_modules/leva/dist/leva.esm.js b/node_modules/leva/dist/leva.esm.js
+index f034255..f21b6c5 100644
+--- a/node_modules/leva/dist/leva.esm.js
++++ b/node_modules/leva/dist/leva.esm.js
+@@ -1381,6 +1381,8 @@ const Store = function Store() {
+     });
+   };
+ 
++  this.store = store
++
+   this.get = path => {
+     try {
+       return this.getData()[path].value;

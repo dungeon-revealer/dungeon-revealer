@@ -28,10 +28,12 @@ import { MapGridEntity, MapTokenEntity, MarkedAreaEntity } from "./map-typings";
 import { useIsKeyPressed } from "./hooks/use-is-key-pressed";
 import { TokenContextMenuContext } from "./token-context-menu-context";
 import { useNoteWindowActions } from "./dm-area/token-info-aside";
-import { TextureLoader, Vector2 } from "three";
+import { TextureLoader } from "three";
 import { ReactEventHandlers } from "react-use-gesture/dist/types";
 import { useQuery } from "relay-hooks";
 import { mapView_TokenImageQuery } from "./__generated__/mapView_TokenImageQuery.graphql";
+import { useControls, useCreateStore } from "leva";
+import { StoreType } from "leva/dist/declarations/src/types";
 
 type Vector2D = [number, number];
 
@@ -99,6 +101,17 @@ const MapTokenImageQuery = graphql`
   }
 `;
 
+export const SetSelectedTokenStoreContext = React.createContext<
+  (value: StoreType | null) => void
+>(() => undefined);
+
+export const UpdateTokenContext = React.createContext<
+  (id: string, props: Omit<Partial<MapTokenEntity>, "id">) => void
+>(() => undefined);
+const SharedMapState = React.createContext<SharedMapToolState>(
+  undefined as any
+);
+
 const TokenRenderer: React.FC<{
   id: string;
   x: number;
@@ -106,51 +119,144 @@ const TokenRenderer: React.FC<{
   color: string;
   radius: number;
   textLabel: string;
-  viewport: ViewportData;
-  dimensions: Dimensions;
-  factor: number;
   isLocked: boolean;
   isMovableByPlayers: boolean;
   isVisibleForPlayers: boolean;
-  updateTokenPosition: ({ x, y }: { x: number; y: number }) => void;
-  mapScale: SpringValue<[number, number, number]>;
   reference: null | { type: "note"; id: string };
   tokenImageId: string | null;
 }> = (props) => {
+  const sharedMapState = React.useContext(SharedMapState);
+
+  const query = useQuery<mapView_TokenImageQuery>(
+    MapTokenImageQuery,
+    props.tokenImageId
+      ? {
+          id: props.tokenImageId,
+        }
+      : undefined,
+    { skip: props.tokenImageId === null }
+  );
+
+  const store = useCreateStore();
+
+  const [values, setValues] = useControls(
+    () => ({
+      position: {
+        label: "Position",
+        value: [props.x, props.y],
+        step: 1,
+      },
+      radius: {
+        label: "Size",
+        value: props.radius,
+        step: 1,
+        min: 1,
+      },
+      isLocked: {
+        label: "Position locked",
+        value: props.isLocked,
+      },
+      text: {
+        label: "Title",
+        value: props.textLabel,
+      },
+      color: {
+        label: "Color",
+        value: props.color,
+      },
+      isVisibleForPlayers: {
+        label: "Visible to players",
+        value: props.isVisibleForPlayers,
+      },
+      isMovableByPlayers: {
+        label: "Movable by players",
+        value: props.isMovableByPlayers,
+      },
+    }),
+    { store }
+  );
+
+  React.useEffect(() => {
+    // TODO: remove this once leva has a subscribe API :D
+    // @ts-ignore
+    return store.store.subscribe((value) => {
+      updateToken(props.id, {
+        color: value.data.color.value,
+        isLocked: value.data.isLocked.value,
+        label: value.data.text.value,
+        x: value.data.position.value[0],
+        y: value.data.position.value[1],
+        isMovableByPlayers: value.data.isMovableByPlayers.value,
+        isVisibleForPlayers: value.data.isVisibleForPlayers.value,
+        radius: value.data.radius.value,
+      });
+    });
+  }, [props.id]);
+
+  React.useEffect(() => {
+    setValues({
+      position: [props.x, props.y],
+      text: props.textLabel,
+    });
+  }, [setValues, props.x, props.y, props.textLabel]);
+
+  const setStore = React.useContext(SetSelectedTokenStoreContext);
+  const updateToken = React.useContext(UpdateTokenContext);
+
   const tokenMenuContext = React.useContext(TokenContextMenuContext);
   const isDungeonMasterView = tokenMenuContext !== null;
 
-  const initialRadius = useStaticRef(
-    () => Math.max(1, props.radius) * props.factor
+  const initialRadius = useStaticRef(() =>
+    sharedMapState.helper.size.fromImageToThree(Math.max(1, props.radius))
   );
 
   const isMovable =
-    (isDungeonMasterView === true || props.isMovableByPlayers === true) &&
-    props.isLocked === false;
-  const isLocked = props.isLocked;
+    (isDungeonMasterView === true || values.isMovableByPlayers === true) &&
+    values.isLocked === false;
+  const isLocked = values.isLocked;
 
   const [isHover, setIsHover] = React.useState(false);
 
   const [animatedProps, set] = useSpring(() => ({
     position: [
-      calculateX(props.x, props.factor, props.dimensions.width),
-      calculateY(props.y, props.factor, props.dimensions.height),
+      ...sharedMapState.helper.imageCoordinatesToThreePoint([props.x, props.y]),
       0,
     ] as [number, number, number],
     circleScale: [1, 1, 1] as [number, number, number],
   }));
 
   React.useEffect(() => {
-    const newRadius = props.factor * props.radius;
     set({
       position: [
-        calculateX(props.x, props.factor, props.dimensions.width),
-        calculateY(props.y, props.factor, props.dimensions.height),
+        ...sharedMapState.helper.imageCoordinatesToThreePoint([
+          values.position[0],
+          values.position[1],
+        ]),
         0,
-      ],
+      ] as [number, number, number],
+    });
+  }, [values.position, set]);
+
+  React.useEffect(() => {
+    const newRadius = sharedMapState.helper.size.fromImageToThree(props.radius);
+    set({
       circleScale: [newRadius / initialRadius, newRadius / initialRadius, 1],
     });
-  }, [props.x, props.y, props.radius, props.factor, set, props.dimensions]);
+  }, [set, values.radius]);
+
+  React.useEffect(() => {
+    const newRadius = sharedMapState.helper.size.fromImageToThree(props.radius);
+    set({
+      position: [
+        ...sharedMapState.helper.imageCoordinatesToThreePoint([
+          props.x,
+          props.y,
+        ]),
+        0,
+      ] as [number, number, number],
+      circleScale: [newRadius / initialRadius, newRadius / initialRadius, 1],
+    });
+  }, [set, props.x, props.y, props.radius]);
 
   React.useEffect(() => {
     if (isLocked === false) {
@@ -201,6 +307,7 @@ const TokenRenderer: React.FC<{
                   props.reference.id
                 );
               }
+              setStore(store);
             }
             // right mouse
             if (event.button === 2) {
@@ -221,11 +328,11 @@ const TokenRenderer: React.FC<{
         onPointerDown.current?.();
         event.stopPropagation();
 
-        const mapScale = props.mapScale.get();
+        const mapScale = sharedMapState.mapState.scale.get();
         const newX =
-          memo[0] + movement[0] / props.viewport.factor / mapScale[0];
+          memo[0] + movement[0] / sharedMapState.viewport.factor / mapScale[0];
         const newY =
-          memo[1] - movement[1] / props.viewport.factor / mapScale[1];
+          memo[1] - movement[1] / sharedMapState.viewport.factor / mapScale[1];
 
         set({
           position: [newX, newY, 0],
@@ -233,9 +340,12 @@ const TokenRenderer: React.FC<{
         });
 
         if (last) {
-          props.updateTokenPosition({
-            x: calculateRealX(newX, props.factor, props.dimensions.width),
-            y: calculateRealY(newY, props.factor, props.dimensions.height),
+          const [x, y] = sharedMapState.helper.coordinates.canvasToImage(
+            sharedMapState.helper.coordinates.threeToCanvas([newX, newY])
+          );
+          updateToken(props.id, {
+            x,
+            y,
           });
         }
 
@@ -294,17 +404,10 @@ const TokenRenderer: React.FC<{
     }
   );
 
-  const query = useQuery<mapView_TokenImageQuery>(
-    MapTokenImageQuery,
-    props.tokenImageId
-      ? {
-          id: props.tokenImageId,
-        }
-      : undefined,
-    { skip: props.tokenImageId === null }
-  );
+  const color =
+    isHover && isMovable ? lighten(0.1, values.color) : values.color;
+  const textLabel = values.text;
 
-  const color = isHover && isMovable ? lighten(0.1, props.color) : props.color;
   return (
     <>
       <animated.group
@@ -323,7 +426,7 @@ const TokenRenderer: React.FC<{
                 attach="material"
                 color={color}
                 transparent={true}
-                opacity={props.isVisibleForPlayers ? 1 : 0.5}
+                opacity={values.isVisibleForPlayers ? 1 : 0.5}
               />
             </mesh>
             <mesh>
@@ -334,7 +437,7 @@ const TokenRenderer: React.FC<{
               <meshStandardMaterial
                 attach="material"
                 color={darken(0.1, color)}
-                opacity={props.isVisibleForPlayers ? 1 : 0.5}
+                opacity={values.isVisibleForPlayers ? 1 : 0.5}
                 transparent={true}
               />
             </mesh>
@@ -347,7 +450,7 @@ const TokenRenderer: React.FC<{
             initialRadius={initialRadius}
             dragProps={dragProps}
             isHover={isHover}
-            opacity={props.isVisibleForPlayers ? 1 : 0.5}
+            opacity={values.isVisibleForPlayers ? 1 : 0.5}
           />
         ) : null}
         {query.data?.tokenImage ? null : (
@@ -367,7 +470,7 @@ const TokenRenderer: React.FC<{
         )}
       </animated.group>
       {/* Text should not be scaled and thus must be moved to a seperate group. */}
-      {props.textLabel ? (
+      {textLabel ? (
         <animated.group
           position={to(
             [animatedProps.circleScale, animatedProps.position],
@@ -379,7 +482,7 @@ const TokenRenderer: React.FC<{
           renderOrder={LayerRenderOrder.token}
         >
           <TokenLabel
-            text={props.textLabel}
+            text={textLabel}
             position={undefined}
             backgroundColor={query.data?.tokenImage ? "#ffffff" : null}
           />
@@ -738,7 +841,6 @@ const MapRenderer: React.FC<{
   removeMarkedArea: (id: string) => void;
   grid: MapGridEntity | null;
   scale: SpringValue<[number, number, number]>;
-  updateTokenPosition: (id: string, position: { x: number; y: number }) => void;
   factor: number;
   dimensions: Dimensions;
   fogOpacity: number;
@@ -788,14 +890,7 @@ const MapRenderer: React.FC<{
             isLocked={token.isLocked}
             isMovableByPlayers={token.isMovableByPlayers}
             isVisibleForPlayers={token.isVisibleForPlayers}
-            factor={props.factor}
             radius={token.radius}
-            dimensions={props.dimensions}
-            viewport={props.viewport}
-            updateTokenPosition={(position) =>
-              props.updateTokenPosition(token.id, position)
-            }
-            mapScale={props.scale}
             reference={token.reference}
             tokenImageId={token.tokenImageId}
           />
@@ -832,7 +927,6 @@ const MapViewRenderer = (props: {
   fogImage: HTMLImageElement | null;
   tokens: MapTokenEntity[];
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
-  updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
   grid: MapGridEntity | null;
@@ -1011,6 +1105,13 @@ const MapViewRenderer = (props: {
             ]) as Vector2D
           );
         },
+        imageCoordinatesToThreePoint: ([x, y]: Vector2D) => {
+          return coordinates.canvasToThree(coordinates.imageToCanvas([x, y]));
+        },
+        size: {
+          fromImageToThree: (value: number) =>
+            value * optimalDimensions.ratio * factor,
+        },
         vector,
         coordinates,
       },
@@ -1071,6 +1172,8 @@ const MapViewRenderer = (props: {
     handlers?: MapToolMapGestureHandlers;
   } | null>(null);
 
+  const setStore = React.useContext(SetSelectedTokenStoreContext);
+
   const bind = useGesture<{
     onPointerUp: PointerEvent;
     onPointerDown: PointerEvent;
@@ -1078,7 +1181,10 @@ const MapViewRenderer = (props: {
     onClick: PointerEvent;
     onKeyDown: KeyboardEvent;
   }>({
-    onPointerDown: (args) => toolRef.current?.handlers?.onPointerDown?.(args),
+    onPointerDown: (args) => {
+      setStore(null);
+      toolRef.current?.handlers?.onPointerDown?.(args);
+    },
     onPointerUp: (args) => toolRef.current?.handlers?.onPointerUp?.(args),
     onPointerMove: (args) => {
       const position = toolContext.mapState.position.get();
@@ -1102,56 +1208,50 @@ const MapViewRenderer = (props: {
   });
 
   return (
-    <Plane
-      position={spring.position}
-      scale={spring.scale}
-      {...bind()}
-      ref={planeRef}
-    >
-      <MapRenderer
-        mapImage={props.mapImage}
-        mapImageTexture={mapTexture}
-        fogTexture={fogTexture}
-        viewport={viewport}
-        // TODO: Tokens and MarkedAreas are scaled to the image
-        // the actual canvas size can differ, so we have to
-        // calculate the coordinates relative to the canvas
-        tokens={props.tokens.map((token) => ({
-          ...token,
-          x: token.x * optimalDimensions.ratio,
-          y: token.y * optimalDimensions.ratio,
-          radius: token.radius * optimalDimensions.ratio,
-        }))}
-        markerRadius={20}
-        markedAreas={props.markedAreas.map((area) => ({
-          ...area,
-          x: area.x * optimalDimensions.ratio,
-          y: area.y * optimalDimensions.ratio,
-        }))}
-        removeMarkedArea={props.removeMarkedArea}
-        grid={props.grid}
-        updateTokenPosition={(id, coords) =>
-          props.updateTokenPosition(id, {
-            x: coords.x / optimalDimensions.ratio,
-            y: coords.y / optimalDimensions.ratio,
-          })
-        }
+    <SharedMapState.Provider value={toolContext}>
+      <Plane
+        position={spring.position}
         scale={spring.scale}
-        dimensions={dimensions}
-        factor={
-          dimensions.width / props.mapImage.width / optimalDimensions.ratio
-        }
-        fogOpacity={props.fogOpacity}
-      />
-      {props.activeTool ? (
-        <MapToolRenderer
-          key={props.activeTool.id}
-          tool={props.activeTool}
-          toolRef={toolRef}
-          handlerContext={toolContext}
+        {...bind()}
+        ref={planeRef}
+      >
+        <MapRenderer
+          mapImage={props.mapImage}
+          mapImageTexture={mapTexture}
+          fogTexture={fogTexture}
+          viewport={viewport}
+          // TODO: Tokens and MarkedAreas are scaled to the image
+          // the actual canvas size can differ, so we have to
+          // calculate the coordinates relative to the canvas
+          tokens={props.tokens.map((token) => ({
+            ...token,
+            radius: token.radius * optimalDimensions.ratio,
+          }))}
+          markerRadius={20}
+          markedAreas={props.markedAreas.map((area) => ({
+            ...area,
+            x: area.x * optimalDimensions.ratio,
+            y: area.y * optimalDimensions.ratio,
+          }))}
+          removeMarkedArea={props.removeMarkedArea}
+          grid={props.grid}
+          scale={spring.scale}
+          dimensions={dimensions}
+          factor={
+            dimensions.width / props.mapImage.width / optimalDimensions.ratio
+          }
+          fogOpacity={props.fogOpacity}
         />
-      ) : null}
-    </Plane>
+        {props.activeTool ? (
+          <MapToolRenderer
+            key={props.activeTool.id}
+            tool={props.activeTool}
+            toolRef={toolRef}
+            handlerContext={toolContext}
+          />
+        ) : null}
+      </Plane>
+    </SharedMapState.Provider>
   );
 };
 
@@ -1165,7 +1265,6 @@ export const MapView = (props: {
   fogImage: HTMLImageElement | null;
   tokens: MapTokenEntity[];
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
-  updateTokenPosition: (id: string, props: { x: number; y: number }) => void;
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
   grid: MapGridEntity | null;
@@ -1218,7 +1317,6 @@ export const MapView = (props: {
             fogImage={props.fogImage}
             tokens={props.tokens}
             controlRef={props.controlRef}
-            updateTokenPosition={props.updateTokenPosition}
             markedAreas={props.markedAreas}
             removeMarkedArea={props.removeMarkedArea}
             grid={props.grid}

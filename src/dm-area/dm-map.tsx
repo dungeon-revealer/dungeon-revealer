@@ -43,7 +43,12 @@ import {
   ConfigureGridMapToolContext,
   ConfigureMapToolState,
 } from "../map-tools/configure-grid-map-tool";
-import { MapView, MapControlInterface } from "../map-view";
+import {
+  MapView,
+  MapControlInterface,
+  SetSelectedTokenStoreContext,
+  UpdateTokenContext,
+} from "../map-view";
 import { buildApiUrl } from "../public-url";
 import { ConditionalWrap, loadImage } from "../util";
 import { BrushShape, FogMode } from "../canvas-draw-utilities";
@@ -78,6 +83,11 @@ import {
 } from "../map-tools/token-marker-map-tool";
 import { NoteWindowActionsContext } from "./token-info-aside";
 import { ColorPickerInput } from "../color-picker-input";
+import { StoreType } from "leva/dist/declarations/src/types";
+import { LevaPanel } from "leva";
+import { ChatPositionContext } from "../authenticated-app-shell";
+import { animated, to } from "@react-spring/web";
+import { darken } from "polished";
 
 type ToolMapRecord = {
   name: string;
@@ -818,6 +828,10 @@ export const DmMap = (props: {
     [props.map.grid]
   );
 
+  const [store, setStore] = React.useState<StoreType | null>();
+
+  const chatPosition = React.useContext(ChatPositionContext);
+  console.log(chatPosition);
   return (
     <FlatContextProvider
       value={[
@@ -869,6 +883,18 @@ export const DmMap = (props: {
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof TokenMarkerContextProvider>
         >,
+        [
+          SetSelectedTokenStoreContext.Provider,
+          { value: setStore },
+        ] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof SetSelectedTokenStoreContext["Provider"]>
+        >,
+        [
+          UpdateTokenContext.Provider,
+          { value: props.updateToken },
+        ] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof UpdateTokenContext["Provider"]>
+        >,
       ]}
     >
       {mapImage ? (
@@ -878,9 +904,6 @@ export const DmMap = (props: {
           fogImage={fogImage}
           controlRef={controlRef}
           tokens={props.map.tokens}
-          updateTokenPosition={(id, position) => {
-            props.updateToken(id, position);
-          }}
           markedAreas={props.markedAreas}
           removeMarkedArea={props.removeMarkedArea}
           grid={
@@ -899,10 +922,13 @@ export const DmMap = (props: {
             TokenMarkerContext,
             NoteWindowActionsContext,
             ReactRelayContext,
+            SetSelectedTokenStoreContext,
+            UpdateTokenContext,
           ]}
           fogOpacity={0.5}
         />
       ) : null}
+
       {toolOverride !== ConfigureGridMapTool ? (
         <>
           <LeftToolbarContainer>
@@ -1114,6 +1140,38 @@ export const DmMap = (props: {
         />
       )}
       {confirmDialogNode}
+      <animated.div
+        style={{
+          position: "absolute",
+          bottom: 100,
+          right:
+            chatPosition !== null
+              ? to(chatPosition.x, (value) => -value + 10 + chatPosition.width)
+              : 10,
+          // @ts-ignore
+          zIndex: 1,
+          width: 300,
+        }}
+        onKeyDown={(ev) => ev.stopPropagation()}
+      >
+        <LevaPanel
+          store={store}
+          fill={true}
+          theme={{
+            colors: {
+              leva__elevation1: darken(0.05, "white"),
+              leva__elevation2: "white",
+              leva__elevation3: darken(0.03, "white"),
+              leva__accent1: darken(0.2, "white"),
+              leva__accent2: darken(0.1, "white"),
+              leva__accent3: darken(0.2, "white"),
+              leva__highlight1: darken(0.3, "white"),
+              leva__highlight2: "black",
+              leva__highlight3: "black",
+            },
+          }}
+        />
+      </animated.div>
     </FlatContextProvider>
   );
 };

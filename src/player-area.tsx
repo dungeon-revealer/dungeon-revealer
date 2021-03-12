@@ -12,9 +12,8 @@ import { buildApiUrl } from "./public-url";
 import { AuthenticatedAppShell } from "./authenticated-app-shell";
 import { useSocket } from "./socket";
 import { useStaticRef } from "./hooks/use-static-ref";
-import debounce from "lodash/debounce";
 import { animated, useSpring, to } from "react-spring";
-import { MapView, MapControlInterface } from "./map-view";
+import { MapView, MapControlInterface, UpdateTokenContext } from "./map-view";
 import { useGesture } from "react-use-gesture";
 import { ToastProvider } from "react-toast-notifications";
 import { v4 as uuid } from "uuid";
@@ -271,26 +270,23 @@ const PlayerMap: React.FC<{
       window.document.removeEventListener("visibilitychange", listener, false);
   }, []);
 
-  const persistTokenChanges = useStaticRef(() =>
-    debounce(
-      (
-        loadedMapId: string,
-        id: string,
-        updates: any,
-        localFetch: typeof fetch
-      ) => {
-        localFetch(`/map/${loadedMapId}/token/${id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...updates,
-          }),
-        });
-      },
-      100
-    )
+  const persistTokenChanges = useStaticRef(
+    () => (
+      loadedMapId: string,
+      id: string,
+      updates: any,
+      localFetch: typeof fetch
+    ) => {
+      localFetch(`/map/${loadedMapId}/token/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...updates,
+        }),
+      });
+    }
   );
 
   const updateToken = React.useCallback(
@@ -390,6 +386,14 @@ const PlayerMap: React.FC<{
             ] as ComponentWithPropsTuple<
               React.ComponentProps<typeof MarkAreaToolContext.Provider>
             >,
+            [
+              UpdateTokenContext.Provider,
+              {
+                value: (id, { x, y }) => updateToken({ id, x, y }),
+              },
+            ] as ComponentWithPropsTuple<
+              React.ComponentProps<typeof UpdateTokenContext.Provider>
+            >,
           ]}
         >
           {currentMap && mapImage ? (
@@ -401,9 +405,6 @@ const PlayerMap: React.FC<{
               tokens={currentMap.tokens.filter(
                 (token) => token.isVisibleForPlayers === true
               )}
-              updateTokenPosition={(id, position) =>
-                updateToken({ id, ...position })
-              }
               markedAreas={markedAreas}
               removeMarkedArea={(id) => {
                 setMarkedAreas((markedAreas) =>
@@ -419,6 +420,7 @@ const PlayerMap: React.FC<{
                 MarkAreaToolContext,
                 NoteWindowActionsContext,
                 ReactRelayContext,
+                UpdateTokenContext,
               ]}
               fogOpacity={1}
             />

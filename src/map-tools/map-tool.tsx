@@ -28,6 +28,10 @@ export type SharedMapToolState = {
   pointerPosition: SpringValue<Vector3D>;
   helper: {
     threePointToImageCoordinates: (vector: Vector2D) => Vector2D;
+    imageCoordinatesToThreePoint: (vector: Vector2D) => Vector2D;
+    size: {
+      fromImageToThree: (value: number) => number;
+    };
     vector: {
       /* convert three.js vector to canvas vector */
       threeToCanvas: (vector: Vector2D) => Vector2D;

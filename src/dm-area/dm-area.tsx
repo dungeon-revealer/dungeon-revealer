@@ -36,7 +36,6 @@ import {
   dmArea_TokenImageCreateMutation,
   dmArea_TokenImageCreateMutationResponse,
 } from "./__generated__/dmArea_TokenImageCreateMutation.graphql";
-import { loadImage } from "../util";
 import { TokenImageCropper } from "./token-image-cropper";
 
 const RequestTokenImageUploadMutation = graphql`
