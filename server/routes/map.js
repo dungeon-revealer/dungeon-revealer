@@ -416,6 +416,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         title: req.body.title,
         description: req.body.description,
         reference: req.body.reference,
+        tokenImageId: req.body.tokenImageId,
       };
     }
 

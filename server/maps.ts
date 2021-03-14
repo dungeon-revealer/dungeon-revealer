@@ -376,6 +376,7 @@ class Maps {
       title,
       description,
       reference,
+      tokenImageId,
     }: {
       type?: string;
       x?: number;
@@ -395,6 +396,7 @@ class Maps {
             type: string;
             id: string;
           };
+      tokenImageId?: null | string;
     }
   ) {
     return await this._processTask(`map:${mapId}`, async () => {
@@ -452,6 +454,9 @@ class Maps {
             id: reference.id,
           };
         }
+      }
+      if (tokenImageId !== undefined) {
+        token.tokenImageId = tokenImageId;
       }
 
       const updatedMap = await this._updateMapSettings(map, {

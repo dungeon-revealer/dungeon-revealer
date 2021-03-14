@@ -26,7 +26,6 @@ import type {
 import { useContextBridge } from "./hooks/use-context-bridge";
 import { MapGridEntity, MapTokenEntity, MarkedAreaEntity } from "./map-typings";
 import { useIsKeyPressed } from "./hooks/use-is-key-pressed";
-import { TokenContextMenuContext } from "./token-context-menu-context";
 import { useNoteWindowActions } from "./dm-area/token-info-aside";
 import { TextureLoader } from "three";
 import { ReactEventHandlers } from "react-use-gesture/dist/types";
@@ -34,6 +33,8 @@ import { useQuery } from "relay-hooks";
 import { mapView_TokenImageQuery } from "./__generated__/mapView_TokenImageQuery.graphql";
 import { buttonGroup, useControls, useCreateStore } from "leva";
 import { StoreType } from "leva/dist/declarations/src/types";
+import { levaPluginNoteReference } from "./leva-plugin/leva-plugin-note-reference";
+import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
 
 type Vector2D = [number, number];
 
@@ -111,6 +112,7 @@ export const UpdateTokenContext = React.createContext<
 const SharedMapState = React.createContext<SharedMapToolState>(
   undefined as any
 );
+export const IsDungeonMasterContext = React.createContext(false);
 
 const TokenRenderer: React.FC<{
   id: string;
@@ -180,6 +182,12 @@ const TokenRenderer: React.FC<{
         label: "Movable by players",
         value: props.isMovableByPlayers,
       },
+      reference: levaPluginNoteReference({
+        value: props.reference?.id,
+      }),
+      tokenImageId: levaPluginTokenImage({
+        value: props.tokenImageId,
+      }),
     }),
     { store }
   );
@@ -202,9 +210,13 @@ const TokenRenderer: React.FC<{
         isMovableByPlayers: value.data.isMovableByPlayers.value,
         isVisibleForPlayers: value.data.isVisibleForPlayers.value,
         radius: value.data.radius.value,
+        reference: value.data.reference.value
+          ? { type: "note", id: value.data.reference.value }
+          : null,
+        tokenImageId: value.data.tokenImageId.value ?? null,
       });
     });
-  }, [props.id]);
+  }, []);
 
   React.useEffect(() => {
     setValues({
@@ -216,15 +228,14 @@ const TokenRenderer: React.FC<{
   const setStore = React.useContext(SetSelectedTokenStoreContext);
   const updateToken = React.useContext(UpdateTokenContext);
 
-  const tokenMenuContext = React.useContext(TokenContextMenuContext);
-  const isDungeonMasterView = tokenMenuContext !== null;
-
   const initialRadius = useStaticRef(() =>
     sharedMapState.helper.size.fromImageToThree(Math.max(1, props.radius))
   );
 
+  const isDungeonMaster = React.useContext(IsDungeonMasterContext);
+
   const isMovable =
-    (isDungeonMasterView === true || values.isMovableByPlayers === true) &&
+    (isDungeonMaster === true || values.isMovableByPlayers === true) &&
     values.isLocked === false;
   const isLocked = values.isLocked;
 
@@ -279,15 +290,6 @@ const TokenRenderer: React.FC<{
 
   const noteWindowActions = useNoteWindowActions();
 
-  const openContextMenu = (x: number, y: number) =>
-    tokenMenuContext?.setState({
-      type: "selected",
-      tokenId: props.id,
-      position: new SpringValue({
-        from: [x, y] as [number, number],
-      }),
-    });
-
   const onPointerDown = React.useRef<null | (() => void)>(null);
 
   const hoverCounter = React.useRef(0);
@@ -321,12 +323,6 @@ const TokenRenderer: React.FC<{
                 );
               }
               setStore(store);
-            }
-            // right mouse
-            if (event.button === 2) {
-              setTimeout(() => {
-                openContextMenu(event.clientX, event.clientY);
-              });
             }
           }
 
@@ -365,11 +361,9 @@ const TokenRenderer: React.FC<{
         return memo;
       },
       onPointerDown: ({ event }) => {
-        // Context menu on tablet is opened via a long-press
-        const { clientX, clientY } = event;
         const timeout = setTimeout(() => {
           onPointerDown.current = null;
-          openContextMenu(clientX, clientY);
+          setStore(store);
         }, 1000);
         onPointerDown.current = () => clearTimeout(timeout);
 

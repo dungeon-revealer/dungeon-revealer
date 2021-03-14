@@ -48,6 +48,7 @@ import {
   MapControlInterface,
   SetSelectedTokenStoreContext,
   UpdateTokenContext,
+  IsDungeonMasterContext,
 } from "../map-view";
 import { buildApiUrl } from "../public-url";
 import { ConditionalWrap, loadImage } from "../util";
@@ -70,8 +71,6 @@ import {
   FlatContextProvider,
   ComponentWithPropsTuple,
 } from "../flat-context-provider";
-import { TokenContextMenuContext } from "../token-context-menu-context";
-import { TokenContextRenderer } from "../token-context-menu";
 import {
   PersistedStateModel,
   usePersistedState,
@@ -831,7 +830,7 @@ export const DmMap = (props: {
   const [store, setStore] = React.useState<StoreType | null>();
 
   const chatPosition = React.useContext(ChatPositionContext);
-  console.log(chatPosition);
+
   return (
     <FlatContextProvider
       value={[
@@ -863,17 +862,6 @@ export const DmMap = (props: {
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof ConfigureGridMapToolContext.Provider>
         >,
-        [
-          TokenContextRenderer,
-          {
-            updateToken: props.updateToken,
-            deleteToken: props.deleteToken,
-            children: null,
-            tokens: props.map.tokens,
-          },
-        ] as ComponentWithPropsTuple<
-          React.ComponentProps<typeof TokenContextRenderer>
-        >,
         [AreaSelectContextProvider, {}],
         [
           TokenMarkerContextProvider,
@@ -894,6 +882,12 @@ export const DmMap = (props: {
           { value: props.updateToken },
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof UpdateTokenContext["Provider"]>
+        >,
+        [
+          IsDungeonMasterContext.Provider,
+          { value: true },
+        ] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof IsDungeonMasterContext["Provider"]>
         >,
       ]}
     >
@@ -917,13 +911,13 @@ export const DmMap = (props: {
             MarkAreaToolContext,
             BrushToolContext,
             ConfigureGridMapToolContext,
-            TokenContextMenuContext,
             AreaSelectContext,
             TokenMarkerContext,
             NoteWindowActionsContext,
             ReactRelayContext,
             SetSelectedTokenStoreContext,
             UpdateTokenContext,
+            IsDungeonMasterContext,
           ]}
           fogOpacity={0.5}
         />
