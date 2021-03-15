@@ -376,7 +376,7 @@ const TokenMarkerSettings = (): React.ReactElement => {
 
   return (
     <Stack
-      onKeyPress={(ev) => {
+      onKeyDown={(ev) => {
         ev.stopPropagation();
       }}
     >

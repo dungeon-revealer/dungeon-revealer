@@ -540,7 +540,6 @@ const Content = ({
   const [importModalFile, setImportModalFile] = React.useState<null | File>(
     null
   );
-  const i = React.useRef(1);
 
   const [markedAreas, setMarkedAreas] = React.useState<MarkedAreaEntity[]>(
     () => []
