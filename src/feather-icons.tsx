@@ -3,6 +3,7 @@
 //
 import React from "react";
 import styled from "@emotion/styled/macro";
+import { createIcon } from "@chakra-ui/icon";
 
 export const Label = styled.div`
   font-size: 8px;
@@ -974,3 +975,28 @@ export const FilePlus = ({
     <path d="M14 2v6h6M12 18v-6M9 15h6" />
   </svg>
 );
+
+export const ChakraIcon = {
+  Filter: createIcon({
+    displayName: "Filter",
+    viewBox: "0 0 24 24",
+    path: <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" />,
+    defaultProps: {
+      fill: "none",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+  }),
+  X: createIcon({
+    displayName: "X",
+    viewBox: "0 0 24 24",
+    defaultProps: {
+      fill: "none",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    path: <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" />,
+  }),
+};

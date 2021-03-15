@@ -1163,7 +1163,12 @@ export const DmMap = (props: {
               leva__highlight2: "black",
               leva__highlight3: "black",
             },
+            fonts: {
+              leva__mono: "inherit",
+              leva__sans: "inherit",
+            },
           }}
+          hideCopyButton
         />
       </animated.div>
     </FlatContextProvider>
