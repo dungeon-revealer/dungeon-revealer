@@ -104,7 +104,7 @@ const TokenImageReference = () => {
 const TokenImagesFragment = graphql`
   fragment levaPluginTokenImage_TokenImagesFragment on Query
   @argumentDefinitions(
-    count: { type: "Int", defaultValue: 20 }
+    count: { type: "Int", defaultValue: 12 }
     cursor: { type: "String" }
   )
   @refetchable(queryName: "levaPluginTokenImage_MoreTokenImagesQuery") {
@@ -117,6 +117,9 @@ const TokenImagesFragment = graphql`
           title
           url
         }
+      }
+      pageInfo {
+        hasNextPage
       }
     }
   }
@@ -133,38 +136,51 @@ const TokenImageList = (props: {
   onSelect: (tokenImageId: string) => void;
   onSelectFile: (file: File, connection: string) => void;
 }) => {
-  const { data } = usePagination(TokenImagesFragment, props.data);
+  const pagination = usePagination(TokenImagesFragment, props.data);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
   const [filter, setFilter] = React.useState("");
-
+  const elementRef = React.useRef<HTMLDivElement>(null);
   return (
     <>
       <PopoverHeader>Select Token Image</PopoverHeader>
       <PopoverCloseButton />
-      <PopoverBody>
-        <Box height="200px" overflowY="scroll">
-          <SimpleGrid columns={4} spacing={2}>
-            {data.tokenImages?.edges.map((edge) => (
-              <Center key={edge.node.id}>
-                <VStack
-                  as="button"
-                  spacing={0}
-                  onClick={() => props.onSelect(edge.node.id)}
-                >
-                  <Image
-                    borderRadius="full"
-                    boxSize="50px"
-                    src={edge.node.url}
-                    alt={edge.node.title}
-                  />
-                  <Text fontSize="xs" noOfLines={1}>
-                    {edge.node.title}
-                  </Text>
-                </VStack>
-              </Center>
-            ))}
-          </SimpleGrid>
-        </Box>
+      <PopoverBody
+        height="200px"
+        overflowY="scroll"
+        ref={elementRef}
+        onScroll={() => {
+          if (elementRef.current) {
+            const htmlElement = elementRef.current;
+            if (
+              htmlElement.offsetHeight + htmlElement.scrollTop >=
+              0.95 * htmlElement.scrollHeight
+            ) {
+              pagination.loadNext(16);
+            }
+          }
+        }}
+      >
+        <SimpleGrid columns={4} spacing={2}>
+          {pagination.data.tokenImages?.edges.map((edge) => (
+            <Center key={edge.node.id}>
+              <VStack
+                as="button"
+                spacing={0}
+                onClick={() => props.onSelect(edge.node.id)}
+              >
+                <Image
+                  borderRadius="full"
+                  boxSize="50px"
+                  src={edge.node.url}
+                  alt={edge.node.title}
+                />
+                <Text fontSize="xs" noOfLines={1}>
+                  {edge.node.title}
+                </Text>
+              </VStack>
+            </Center>
+          ))}
+        </SimpleGrid>
       </PopoverBody>
       <PopoverFooter>
         <HStack alignItems="center" justifyContent="flex-end" spacing={1}>
@@ -204,7 +220,10 @@ const TokenImageList = (props: {
               if (!ev.target.files) {
                 return;
               }
-              props.onSelectFile(ev.target.files[0]!, data.tokenImages?.__id!);
+              props.onSelectFile(
+                ev.target.files[0]!,
+                pagination.data.tokenImages?.__id!
+              );
             }}
           />
           <Button
@@ -226,7 +245,8 @@ const TokenImagePopoverContent = (props: {
   onSelectFile: (file: File, connection: string) => void;
 }) => {
   const query = useQuery<levaPluginTokenImage_TokenImagesQuery>(
-    TokenImagesQuery
+    TokenImagesQuery,
+    React.useMemo(() => ({ count: 12 }), [])
   );
 
   // TODO: implement filter
