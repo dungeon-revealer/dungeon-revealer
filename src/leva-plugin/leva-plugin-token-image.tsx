@@ -233,15 +233,16 @@ const TokenImageList = (props: {
               );
             }}
           />
-          <Button
-            size="xs"
-            onClick={() => {
-              props.setTitleFilter("");
-              inputRef.current?.click();
-            }}
-          >
-            Upload new Image
-          </Button>
+          {props.titleFilter === "" ? (
+            <Button
+              size="xs"
+              onClick={() => {
+                inputRef.current?.click();
+              }}
+            >
+              Upload new Image
+            </Button>
+          ) : null}
         </HStack>
       </PopoverFooter>
     </>
