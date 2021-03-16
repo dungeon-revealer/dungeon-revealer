@@ -28,6 +28,7 @@ import { usePagination, useQuery } from "relay-hooks";
 import { levaPluginTokenImage_TokenImagesFragment$key } from "./__generated__/levaPluginTokenImage_TokenImagesFragment.graphql";
 import { levaPluginTokenImage_TokenImagesQuery } from "./__generated__/levaPluginTokenImage_TokenImagesQuery.graphql";
 import { useTokenImageUpload } from "../dm-area/token-image-upload";
+import { useCurrent } from "../hooks/use-current";
 
 const normalize = (opts: { value: string | null }) => opts;
 const sanitize = (value: string): string => value;
@@ -106,10 +107,11 @@ const TokenImagesFragment = graphql`
   @argumentDefinitions(
     count: { type: "Int", defaultValue: 12 }
     cursor: { type: "String" }
+    titleFilter: { type: "String" }
   )
   @refetchable(queryName: "levaPluginTokenImage_MoreTokenImagesQuery") {
-    tokenImages(first: $count, after: $cursor)
-      @connection(key: "levaPluginTokenImage_tokenImages", filters: []) {
+    tokenImages(first: $count, after: $cursor, titleFilter: $titleFilter)
+      @connection(key: "levaPluginTokenImage_tokenImages") {
       __id
       edges {
         node {
@@ -126,8 +128,12 @@ const TokenImagesFragment = graphql`
 `;
 
 const TokenImagesQuery = graphql`
-  query levaPluginTokenImage_TokenImagesQuery($count: Int) {
-    ...levaPluginTokenImage_TokenImagesFragment @arguments(count: $count)
+  query levaPluginTokenImage_TokenImagesQuery(
+    $count: Int
+    $titleFilter: String
+  ) {
+    ...levaPluginTokenImage_TokenImagesFragment
+      @arguments(count: $count, titleFilter: $titleFilter)
   }
 `;
 
@@ -135,10 +141,11 @@ const TokenImageList = (props: {
   data: levaPluginTokenImage_TokenImagesFragment$key;
   onSelect: (tokenImageId: string) => void;
   onSelectFile: (file: File, connection: string) => void;
+  titleFilter: string;
+  setTitleFilter: (title: string) => void;
 }) => {
   const pagination = usePagination(TokenImagesFragment, props.data);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
-  const [filter, setFilter] = React.useState("");
   const elementRef = React.useRef<HTMLDivElement>(null);
   return (
     <>
@@ -193,16 +200,16 @@ const TokenImageList = (props: {
               <Input
                 variant="flushed"
                 placeholder="Filter"
-                value={filter}
+                value={props.titleFilter}
                 onChange={(ev) => {
-                  setFilter(ev.target.value);
+                  props.setTitleFilter(ev.target.value);
                 }}
               />
               <InputRightElement width="1rem">
-                {filter !== "" ? (
+                {props.titleFilter !== "" ? (
                   <Button
                     size="xs"
-                    onClick={() => setFilter("")}
+                    onClick={() => props.setTitleFilter("")}
                     variant="unstyled"
                   >
                     <ChakraIcon.X color="black" />
@@ -229,6 +236,7 @@ const TokenImageList = (props: {
           <Button
             size="xs"
             onClick={() => {
+              props.setTitleFilter("");
               inputRef.current?.click();
             }}
           >
@@ -244,19 +252,28 @@ const TokenImagePopoverContent = (props: {
   onSelect: (tokenImageId: string) => void;
   onSelectFile: (file: File, connection: string) => void;
 }) => {
+  const [titleFilter, setTitleFilter] = React.useState("");
+
   const query = useQuery<levaPluginTokenImage_TokenImagesQuery>(
     TokenImagesQuery,
-    React.useMemo(() => ({ count: 12 }), [])
+    React.useMemo(
+      () => ({
+        count: 12,
+        titleFilter: titleFilter === "" ? null : titleFilter,
+      }),
+      [titleFilter]
+    )
   );
 
-  // TODO: implement filter
-  // TODO: fetch more!
+  const [, latestData] = useCurrent(query.data, !query.error && !query.data, 0);
 
-  return query.data ? (
+  return latestData ? (
     <TokenImageList
-      data={query.data}
+      data={latestData}
       onSelect={props.onSelect}
       onSelectFile={props.onSelectFile}
+      titleFilter={titleFilter}
+      setTitleFilter={setTitleFilter}
     />
   ) : null;
 };

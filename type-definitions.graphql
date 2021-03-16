@@ -126,6 +126,7 @@ type Query {
     first: Int
     after: String
     sourceImageSha256: String
+    titleFilter: String
   ): TokenImageConnection
   node(id: ID!): Node
 }

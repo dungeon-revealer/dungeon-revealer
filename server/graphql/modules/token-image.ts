@@ -191,6 +191,7 @@ export const queryFields = [
       first: t.arg(t.Int),
       after: t.arg(t.String),
       sourceImageSha256: t.arg(t.String),
+      titleFilter: t.arg(t.String),
     },
     resolve: (_, args, context) =>
       RT.run(
@@ -205,6 +206,7 @@ export const queryFields = [
                 first: first + 1,
                 cursor,
                 sourceSha256: args.sourceImageSha256 ?? null,
+                titleFilter: args.titleFilter ?? null,
               }),
               RT.map((records) =>
                 Relay.buildConnectionObject({

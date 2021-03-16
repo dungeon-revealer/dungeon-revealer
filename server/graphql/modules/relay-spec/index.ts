@@ -46,7 +46,7 @@ export const buildConnectionObject = <T>(params: {
   let hasNextPage = false;
   let listData = params.listData;
   if (listData.length > params.amount) {
-    listData = listData.slice(0, listData.length);
+    listData = listData.slice(0, params.amount);
     hasNextPage = true;
   }
 

@@ -138,6 +138,7 @@ export const createTokenImage = (params: {
 export type GetPaginatedTokenImagesParameter = {
   first: number;
   sourceSha256: string | null;
+  titleFilter: string | null;
   cursor: {
     lastCreatedAt: number;
     lastId: number;
@@ -162,6 +163,7 @@ export const getPaginatedTokenImages = (
             "tokenImages"
           ${sql.whereAnd(
             params.sourceSha256 ? `"sourceSha256" = $sourceSha256` : null,
+            params.titleFilter ? `"title" LIKE $titleFilter` : null,
             params.cursor
               ? `("createdAt" < $lastCreatedAt OR ("createdAt" = $lastCreatedAt AND "id" < $lastId))`
               : null
@@ -175,6 +177,9 @@ export const getPaginatedTokenImages = (
           $first: params.first,
           $sourceSha256: params.sourceSha256
             ? Buffer.from(params.sourceSha256, "hex")
+            : undefined,
+          $titleFilter: params.titleFilter
+            ? `%${params.titleFilter}%`
             : undefined,
           $lastCreatedAt: params.cursor?.lastCreatedAt,
           $lastId: params.cursor?.lastId,
