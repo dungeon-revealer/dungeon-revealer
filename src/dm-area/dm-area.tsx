@@ -5,7 +5,6 @@ import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import { Box, Center } from "@chakra-ui/react";
 import graphql from "babel-plugin-relay/macro";
-import { commitMutation } from "relay-runtime";
 import { useRelayEnvironment } from "relay-hooks";
 import { SelectMapModal } from "./select-map-modal";
 import { ImportFileModal } from "./import-file-modal";
@@ -27,16 +26,7 @@ import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
 import { isFileDrag } from "../hooks/use-drop-zone";
 import { useNoteWindowActions } from "./token-info-aside";
 import { MapControlInterface } from "../map-view";
-import { generateSHA256FileHash } from "../crypto";
-import {
-  dmArea_RequestTokenImageUploadMutation,
-  dmArea_RequestTokenImageUploadMutationResponse,
-} from "./__generated__/dmArea_RequestTokenImageUploadMutation.graphql";
-import {
-  dmArea_TokenImageCreateMutation,
-  dmArea_TokenImageCreateMutationResponse,
-} from "./__generated__/dmArea_TokenImageCreateMutation.graphql";
-import { TokenImageCropper } from "./token-image-cropper";
+import { useTokenImageUpload } from "./token-image-upload";
 
 const RequestTokenImageUploadMutation = graphql`
   mutation dmArea_RequestTokenImageUploadMutation(
@@ -579,24 +569,7 @@ const Content = ({
     },
     []
   );
-
-  const [cropTokenImageState, setCropTokenImageState] = React.useState<{
-    imageUrl: string;
-    sourceImageHash: string;
-    onConfirm: (
-      params:
-        | {
-            type: "File";
-            file: File;
-            title: string;
-          }
-        | {
-            type: "TokenImage";
-            tokenImageId: string;
-          }
-    ) => unknown;
-    onClose: () => void;
-  } | null>(null);
+  const [cropperNode, selectFile] = useTokenImageUpload();
 
   return (
     <FetchContext.Provider value={localFetch}>
@@ -675,90 +648,7 @@ const Content = ({
               ev.clientY,
             ]);
 
-            const objectUrl = window.URL.createObjectURL(file);
-            objectUrlCleanupRef.current = () =>
-              window.URL.revokeObjectURL(objectUrl);
-
-            const addFile = async (
-              fileHash: string,
-              file: File,
-              title: string,
-              sourceFileHash: string | null
-            ) => {
-              let tokenImageId: string;
-
-              const {
-                requestTokenImageUpload,
-              } = await new Promise<dmArea_RequestTokenImageUploadMutationResponse>(
-                (resolve) =>
-                  commitMutation<dmArea_RequestTokenImageUploadMutation>(
-                    environment,
-                    {
-                      mutation: RequestTokenImageUploadMutation,
-                      variables: {
-                        input: {
-                          sha256: fileHash,
-                          extension: "webp",
-                        },
-                      },
-                      onCompleted: resolve,
-                    }
-                  )
-              );
-
-              if (
-                requestTokenImageUpload.__typename ===
-                "RequestTokenImageUploadUrl"
-              ) {
-                const res = await fetch(requestTokenImageUpload.uploadUrl, {
-                  method: "PUT",
-                  body: file,
-                });
-                if (res.status !== 200) {
-                  const body = await res.text();
-                  throw new Error(
-                    "Received invalid response code: " +
-                      res.status +
-                      "\n\n" +
-                      body
-                  );
-                }
-                const {
-                  tokenImageCreate,
-                } = await new Promise<dmArea_TokenImageCreateMutationResponse>(
-                  (resolve) =>
-                    commitMutation<dmArea_TokenImageCreateMutation>(
-                      environment,
-                      {
-                        mutation: TokenImageCreateMutation,
-                        variables: {
-                          input: {
-                            title,
-                            sha256: fileHash,
-                            sourceSha256: sourceFileHash,
-                          },
-                        },
-                        onCompleted: resolve,
-                      }
-                    )
-                );
-
-                if (tokenImageCreate.__typename !== "TokenImageCreateSuccess") {
-                  throw new Error("Unexpected response.");
-                }
-                tokenImageId = tokenImageCreate.createdTokenImage.id;
-              } else if (
-                requestTokenImageUpload.__typename !==
-                "RequestTokenImageUploadDuplicate"
-              ) {
-                throw new Error("Unexpected case.");
-              } else {
-                tokenImageId = requestTokenImageUpload.tokenImage.id;
-              }
-              addTokenWIthImageId(tokenImageId);
-            };
-
-            const addTokenWIthImageId = (tokenImageId: string) =>
+            const addTokenWithImageId = (tokenImageId: string) =>
               addToken({
                 color: "red",
                 x: coords[0],
@@ -771,44 +661,12 @@ const Content = ({
                 label: "",
               });
 
-            generateSHA256FileHash(file)
-              .then(async (sourceImageHash) => {
-                setCropTokenImageState({
-                  imageUrl: objectUrl,
-                  sourceImageHash,
-                  onConfirm: async (params) => {
-                    if (params.type === "File") {
-                      const hash = await generateSHA256FileHash(params.file);
-                      addFile(hash, params.file, params.title, sourceImageHash);
-                    }
-                    if (params.type === "TokenImage") {
-                      addTokenWIthImageId(params.tokenImageId);
-                    }
-                    setCropTokenImageState(null);
-                    objectUrlCleanupRef.current?.();
-                  },
-                  onClose: () => {
-                    setCropTokenImageState(null);
-                    objectUrlCleanupRef.current?.();
-                  },
-                });
-              })
-              .catch((err) => {
-                // TODO: better error message
-                console.error(err);
-              });
+            selectFile(file, [], ({ tokenImageId }) => {
+              addTokenWithImageId(tokenImageId);
+            });
           }}
         >
-          {cropTokenImageState === null ? null : (
-            <React.Suspense fallback={null}>
-              <TokenImageCropper
-                imageUrl={cropTokenImageState.imageUrl}
-                sourceImageHash={cropTokenImageState.sourceImageHash}
-                onConfirm={cropTokenImageState.onConfirm}
-                onClose={cropTokenImageState.onClose}
-              />
-            </React.Suspense>
-          )}
+          {cropperNode}
           {isDraggingFile ? (
             <Center
               position="absolute"

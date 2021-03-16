@@ -27,22 +27,29 @@ import { ChakraIcon } from "../feather-icons";
 import { usePagination, useQuery } from "relay-hooks";
 import { levaPluginTokenImage_TokenImagesFragment$key } from "./__generated__/levaPluginTokenImage_TokenImagesFragment.graphql";
 import { levaPluginTokenImage_TokenImagesQuery } from "./__generated__/levaPluginTokenImage_TokenImagesQuery.graphql";
+import { useTokenImageUpload } from "../dm-area/token-image-upload";
 
 const normalize = (opts: { value: string | null }) => opts;
 const sanitize = (value: string): string => value;
 
 const TokenImageReference = () => {
   const { displayValue, setValue } = useInputContext<any>();
+  const [node, selectFile] = useTokenImageUpload();
 
   return (
     <>
+      <Portal>{node}</Portal>
       <Row input>
         <Label>Image</Label>
         <HStack alignItems="center" spacing={1}>
           {displayValue ? (
             <>
               <Box>
-                <Popover isLazy placement="top-start">
+                <Popover
+                  isLazy
+                  placement="top-start"
+                  closeOnBlur={node === null}
+                >
                   <PopoverTrigger>
                     <Button size="xs">Change</Button>
                   </PopoverTrigger>
@@ -50,6 +57,9 @@ const TokenImageReference = () => {
                     <PopoverContent width="400px">
                       <TokenImagePopoverContent
                         onSelect={(value) => setValue(value)}
+                        onSelectFile={(file, connection) =>
+                          selectFile(file, [connection])
+                        }
                       />
                     </PopoverContent>
                   </Portal>
@@ -68,7 +78,7 @@ const TokenImageReference = () => {
             </>
           ) : (
             <Box>
-              <Popover isLazy placement="top-start">
+              <Popover isLazy placement="top-start" closeOnBlur={node === null}>
                 <PopoverTrigger>
                   <Button size="xs">Add</Button>
                 </PopoverTrigger>
@@ -76,6 +86,9 @@ const TokenImageReference = () => {
                   <PopoverContent width="400px">
                     <TokenImagePopoverContent
                       onSelect={(value) => setValue(value)}
+                      onSelectFile={(file, connection) =>
+                        selectFile(file, [connection])
+                      }
                     />
                   </PopoverContent>
                 </Portal>
@@ -97,6 +110,7 @@ const TokenImagesFragment = graphql`
   @refetchable(queryName: "levaPluginTokenImage_MoreTokenImagesQuery") {
     tokenImages(first: $count, after: $cursor)
       @connection(key: "levaPluginTokenImage_tokenImages", filters: []) {
+      __id
       edges {
         node {
           id
@@ -117,53 +131,40 @@ const TokenImagesQuery = graphql`
 const TokenImageList = (props: {
   data: levaPluginTokenImage_TokenImagesFragment$key;
   onSelect: (tokenImageId: string) => void;
+  onSelectFile: (file: File, connection: string) => void;
 }) => {
   const { data } = usePagination(TokenImagesFragment, props.data);
-  // TODO: fetch more!
-  return (
-    <Box height="200px" overflowY="scroll">
-      <SimpleGrid columns={4} spacing={2}>
-        {data.tokenImages?.edges.map((edge) => (
-          <Center key={edge.node.id}>
-            <VStack
-              as="button"
-              spacing={0}
-              onClick={() => props.onSelect(edge.node.id)}
-            >
-              <Image
-                borderRadius="full"
-                boxSize="50px"
-                src={edge.node.url}
-                alt={edge.node.title}
-              />
-              <Text fontSize="xs" noOfLines={1}>
-                {edge.node.title}
-              </Text>
-            </VStack>
-          </Center>
-        ))}
-      </SimpleGrid>
-    </Box>
-  );
-};
-
-const TokenImagePopoverContent = (props: {
-  onSelect: (tokenImageId: string) => void;
-}) => {
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
   const [filter, setFilter] = React.useState("");
 
-  const data = useQuery<levaPluginTokenImage_TokenImagesQuery>(
-    TokenImagesQuery
-  );
-  // TODO: implement filter
   return (
     <>
       <PopoverHeader>Select Token Image</PopoverHeader>
       <PopoverCloseButton />
       <PopoverBody>
-        {data.data ? (
-          <TokenImageList data={data.data} onSelect={props.onSelect} />
-        ) : null}
+        <Box height="200px" overflowY="scroll">
+          <SimpleGrid columns={4} spacing={2}>
+            {data.tokenImages?.edges.map((edge) => (
+              <Center key={edge.node.id}>
+                <VStack
+                  as="button"
+                  spacing={0}
+                  onClick={() => props.onSelect(edge.node.id)}
+                >
+                  <Image
+                    borderRadius="full"
+                    boxSize="50px"
+                    src={edge.node.url}
+                    alt={edge.node.title}
+                  />
+                  <Text fontSize="xs" noOfLines={1}>
+                    {edge.node.title}
+                  </Text>
+                </VStack>
+              </Center>
+            ))}
+          </SimpleGrid>
+        </Box>
       </PopoverBody>
       <PopoverFooter>
         <HStack alignItems="center" justifyContent="flex-end" spacing={1}>
@@ -194,10 +195,50 @@ const TokenImagePopoverContent = (props: {
               </InputRightElement>
             </InputGroup>
           </Box>
+          <input
+            style={{ display: "none" }}
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            onChange={(ev) => {
+              if (!ev.target.files) {
+                return;
+              }
+              props.onSelectFile(ev.target.files[0]!, data.tokenImages?.__id!);
+            }}
+          />
+          <Button
+            size="xs"
+            onClick={() => {
+              inputRef.current?.click();
+            }}
+          >
+            Upload new Image
+          </Button>
         </HStack>
       </PopoverFooter>
     </>
   );
+};
+
+const TokenImagePopoverContent = (props: {
+  onSelect: (tokenImageId: string) => void;
+  onSelectFile: (file: File, connection: string) => void;
+}) => {
+  const query = useQuery<levaPluginTokenImage_TokenImagesQuery>(
+    TokenImagesQuery
+  );
+
+  // TODO: implement filter
+  // TODO: fetch more!
+
+  return query.data ? (
+    <TokenImageList
+      data={query.data}
+      onSelect={props.onSelect}
+      onSelectFile={props.onSelectFile}
+    />
+  ) : null;
 };
 
 export const levaPluginTokenImage = createPlugin({
