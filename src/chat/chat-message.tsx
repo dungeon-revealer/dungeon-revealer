@@ -35,11 +35,13 @@ const sanitizeHtml = (html: string) =>
       "strong",
       "pre",
       "code",
+      "img",
       ...Object.keys(chatMessageComponents),
     ],
     allowedAttributes: {
       span: ["style"],
       div: ["style"],
+      img: ["src"],
     },
     transformTags: {
       // since our p element could also contain div elements and that makes react/the browser go brrrt

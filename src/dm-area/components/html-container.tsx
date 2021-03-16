@@ -73,6 +73,7 @@ const allowedTags = [
   "ol",
   "li",
   "hr",
+  "img",
   ...Object.keys(components),
 ];
 
@@ -119,6 +120,7 @@ const sanitizeHtml = (html: string) =>
       div: ["style"],
       span: ["style"],
       a: ["target", "rel", "href", "id"],
+      img: ["src", "title"],
     },
     allowedSchemes: ["http", "https"],
     allowedSchemesAppliedToAttributes: ["href"],
