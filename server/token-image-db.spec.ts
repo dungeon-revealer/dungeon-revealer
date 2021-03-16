@@ -42,6 +42,7 @@ test("can create and query a token record", async () => {
     first: 1,
     cursor: null,
     sourceSha256: null,
+    titleFilter: null,
   })(deps)();
   expect(records).toHaveLength(1);
   expect(records[0].id).toEqual(2);
@@ -52,6 +53,7 @@ test("can create and query a token record", async () => {
       lastCreatedAt: records[0].createdAt,
     },
     sourceSha256: null,
+    titleFilter: null,
   })(deps)();
   expect(records).toHaveLength(1);
   expect(records[0].id).toEqual(1);
@@ -59,6 +61,7 @@ test("can create and query a token record", async () => {
     first: 10,
     cursor: null,
     sourceSha256: "187",
+    titleFilter: null,
   })(deps)();
   expect(records).toHaveLength(1);
   expect(records[0].id).toEqual(1);
