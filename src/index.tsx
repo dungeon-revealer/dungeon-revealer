@@ -1,4 +1,5 @@
 import * as React from "react";
+import ReactDOM from "react-dom";
 import { Global } from "@emotion/react";
 import { render } from "react-dom";
 import { ChakraProvider } from "@chakra-ui/react";
@@ -27,6 +28,12 @@ const main = async () => {
     case "/dm": {
       const { DmArea } = await import("./dm-area/dm-area");
       component = <DmArea />;
+      break;
+    }
+    case "/graphiql": {
+      const password = urlSearchParameter.get("password");
+      const { GraphiQL } = await import("./dev/GraphiQL");
+      component = <GraphiQL password={password || ""} />;
       break;
     }
     default: {
