@@ -354,18 +354,7 @@ const Content = ({
   );
 
   const addToken = React.useCallback(
-    (token: {
-      x: number;
-      y: number;
-      color: string;
-      radius?: number;
-      isVisibleForPlayers?: boolean;
-      isMovableByPlayers?: boolean;
-      isLocked?: boolean;
-      reference?: null;
-      tokenImageId?: string | null;
-      label?: string;
-    }) => {
+    (token: Omit<Partial<MapTokenEntity>, "id">) => {
       localFetch(`/map/${loadedMapId}/token`, {
         method: "POST",
         headers: {

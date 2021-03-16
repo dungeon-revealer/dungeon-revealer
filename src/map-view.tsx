@@ -78,8 +78,41 @@ const Plane = React.forwardRef(
     },
     ref: React.ForwardedRef<THREE.Mesh>
   ) => {
+    const showContextMenu = React.useContext(ContextMenuContext);
+    const sharedMapState = React.useContext(SharedMapState);
+
     return (
-      <animated.group position={position} scale={scale}>
+      <animated.group
+        position={position}
+        scale={scale}
+        onContextMenu={(event) => {
+          event.stopPropagation();
+          event.nativeEvent.stopPropagation();
+          event.nativeEvent.preventDefault();
+
+          const [
+            imageX,
+            imageY,
+          ] = sharedMapState.helper.threePointToImageCoordinates([
+            event.point.x,
+            event.point.y,
+          ]);
+          const state: ContextMenuState = {
+            clientPosition: {
+              x: event.clientX,
+              y: event.clientY,
+            },
+            imagePosition: {
+              x: imageX,
+              y: imageY,
+            },
+            target: null,
+          };
+          setTimeout(() => {
+            showContextMenu(state);
+          });
+        }}
+      >
         <mesh ref={ref} {...props}>
           <planeBufferGeometry attach="geometry" args={[10000, 10000]} />
           <meshBasicMaterial attach="material" color="black" />
@@ -113,6 +146,25 @@ const SharedMapState = React.createContext<SharedMapToolState>(
   undefined as any
 );
 export const IsDungeonMasterContext = React.createContext(false);
+
+export type ContextMenuState = {
+  clientPosition: {
+    x: number;
+    y: number;
+  };
+  imagePosition: {
+    x: number;
+    y: number;
+  };
+  target: null | {
+    type: "token";
+    id: string;
+  };
+} | null;
+
+export const ContextMenuContext = React.createContext(
+  (_props: ContextMenuState) => undefined as void
+);
 
 const TokenRenderer: React.FC<{
   id: string;
@@ -294,6 +346,8 @@ const TokenRenderer: React.FC<{
 
   const hoverCounter = React.useRef(0);
 
+  const showContextMenu = React.useContext(ContextMenuContext);
+
   const dragProps = useGesture<{
     onClick: PointerEvent;
     onContextMenu: PointerEvent;
@@ -308,6 +362,8 @@ const TokenRenderer: React.FC<{
         memo = animatedProps.position.get(),
         tap,
       }) => {
+        setStore(store);
+
         // onClick replacement
         // events are handeled different in react-three-fiber
         // @dbismut advised me that checking for tap in onDrag
@@ -322,7 +378,36 @@ const TokenRenderer: React.FC<{
                   props.reference.id
                 );
               }
-              setStore(store);
+            }
+
+            if (event.button === 2) {
+              const [
+                imageX,
+                imageY,
+              ] = sharedMapState.helper.threePointToImageCoordinates([
+                // TODO: figure out why the point is not in the typings.
+                // @ts-ignore
+                event.point.x,
+                // @ts-ignore
+                event.point.y,
+              ]);
+              const state: ContextMenuState = {
+                clientPosition: {
+                  x: event.clientX,
+                  y: event.clientY,
+                },
+                imagePosition: {
+                  x: imageX,
+                  y: imageY,
+                },
+                target: {
+                  type: "token",
+                  id: props.id,
+                },
+              };
+              setTimeout(() => {
+                showContextMenu(state);
+              });
             }
           }
 

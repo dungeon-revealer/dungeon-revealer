@@ -23,6 +23,9 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   Input,
+  Menu,
+  MenuList,
+  MenuItem,
 } from "@chakra-ui/react";
 import { ReactRelayContext } from "relay-hooks";
 import * as Icons from "../feather-icons";
@@ -49,6 +52,8 @@ import {
   SetSelectedTokenStoreContext,
   UpdateTokenContext,
   IsDungeonMasterContext,
+  ContextMenuContext,
+  ContextMenuState,
 } from "../map-view";
 import { buildApiUrl } from "../public-url";
 import { ConditionalWrap, loadImage } from "../util";
@@ -456,7 +461,6 @@ const TokenMarkerSettings = (): React.ReactElement => {
           <ColorPickerInput
             size="sm"
             color={tokenMarkerContext.state.tokenColor}
-            disableAlpha={true}
             onChange={(color) => {
               tokenMarkerContext.setState((state) => ({
                 ...state,
@@ -624,13 +628,7 @@ export const DmMap = (props: {
   markArea: (point: [number, number]) => void;
   markedAreas: Array<MarkedAreaEntity>;
   removeMarkedArea: (id: string) => void;
-  addToken: (token: {
-    x: number;
-    y: number;
-    color: string;
-    radius: number;
-    label: string;
-  }) => void;
+  addToken: (token: Omit<Partial<MapTokenEntity>, "id">) => void;
   updateToken: (
     id: string,
     changes: Omit<Partial<MapTokenEntity>, "id">
@@ -830,6 +828,13 @@ export const DmMap = (props: {
   const [store, setStore] = React.useState<StoreType | null>();
 
   const chatPosition = React.useContext(ChatPositionContext);
+  const [
+    contextMenuState,
+    setContextMenuState,
+  ] = React.useState<ContextMenuState>(null);
+  const [copiedToken, setCopiedToken] = React.useState<MapTokenEntity | null>(
+    null
+  );
 
   return (
     <FlatContextProvider
@@ -889,6 +894,12 @@ export const DmMap = (props: {
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof IsDungeonMasterContext["Provider"]>
         >,
+        [
+          ContextMenuContext.Provider,
+          { value: setContextMenuState },
+        ] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof ContextMenuContext["Provider"]>
+        >,
       ]}
     >
       {mapImage ? (
@@ -918,6 +929,7 @@ export const DmMap = (props: {
             SetSelectedTokenStoreContext,
             UpdateTokenContext,
             IsDungeonMasterContext,
+            ContextMenuContext,
           ]}
           fogOpacity={0.5}
         />
@@ -1171,6 +1183,57 @@ export const DmMap = (props: {
           hideCopyButton
         />
       </animated.div>
+      {contextMenuState ? (
+        <Box
+          position="absolute"
+          left={contextMenuState.clientPosition.x}
+          top={contextMenuState.clientPosition.y}
+        >
+          <Menu defaultIsOpen={true} onClose={() => setContextMenuState(null)}>
+            <MenuList>
+              {contextMenuState.target?.type === "token" ? (
+                <>
+                  <MenuItem
+                    onClick={() => {
+                      const tokenId = contextMenuState.target?.id!;
+                      const token = props.map.tokens.find(
+                        (token) => token.id === tokenId
+                      );
+                      setCopiedToken(token ?? null);
+                    }}
+                  >
+                    Copy Token
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() =>
+                      props.deleteToken(contextMenuState.target?.id!)
+                    }
+                  >
+                    Delete
+                  </MenuItem>
+                </>
+              ) : (
+                <>
+                  <MenuItem
+                    isDisabled={copiedToken === null}
+                    onClick={() => {
+                      if (copiedToken) {
+                        props.addToken({
+                          ...copiedToken,
+                          x: contextMenuState.imagePosition.x,
+                          y: contextMenuState.imagePosition.y,
+                        });
+                      }
+                    }}
+                  >
+                    Paste Token
+                  </MenuItem>
+                </>
+              )}
+            </MenuList>
+          </Menu>
+        </Box>
+      ) : null}
     </FlatContextProvider>
   );
 };
