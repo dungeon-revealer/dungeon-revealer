@@ -6,6 +6,28 @@ import { CirclePicker } from "react-color";
 import * as io from "io-ts";
 import { pipe, identity } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
+import {
+  Box,
+  FormControl,
+  FormLabel,
+  Heading,
+  Switch,
+  VStack,
+  HStack,
+  Text,
+  InputGroup,
+  Stack,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Input,
+  Menu,
+  MenuList,
+  MenuItem,
+} from "@chakra-ui/react";
+import { ReactRelayContext } from "relay-hooks";
 import * as Icons from "../feather-icons";
 import { Toolbar } from "../toolbar";
 import type { MapTool } from "../map-tools/map-tool";
@@ -24,7 +46,15 @@ import {
   ConfigureGridMapToolContext,
   ConfigureMapToolState,
 } from "../map-tools/configure-grid-map-tool";
-import { MapView, MapControlInterface } from "../map-view";
+import {
+  MapView,
+  MapControlInterface,
+  SetSelectedTokenStoreContext,
+  UpdateTokenContext,
+  IsDungeonMasterContext,
+  ContextMenuContext,
+  ContextMenuState,
+} from "../map-view";
 import { buildApiUrl } from "../public-url";
 import { ConditionalWrap, loadImage } from "../util";
 import { BrushShape, FogMode } from "../canvas-draw-utilities";
@@ -46,8 +76,6 @@ import {
   FlatContextProvider,
   ComponentWithPropsTuple,
 } from "../flat-context-provider";
-import { TokenContextMenuContext } from "../token-context-menu-context";
-import { TokenContextRenderer } from "../token-context-menu";
 import {
   PersistedStateModel,
   usePersistedState,
@@ -58,27 +86,12 @@ import {
   TokenMarkerMapTool,
 } from "../map-tools/token-marker-map-tool";
 import { NoteWindowActionsContext } from "./token-info-aside";
-import { Input as OldInput, InputGroup as OldInputGroup } from "../input";
-import { parseNumberSafe } from "../parse-number-safe";
 import { ColorPickerInput } from "../color-picker-input";
-import {
-  Box,
-  FormControl,
-  FormLabel,
-  Heading,
-  Switch,
-  VStack,
-  HStack,
-  Text,
-  InputGroup,
-  Stack,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  Input,
-} from "@chakra-ui/react";
+import { StoreType } from "leva/dist/declarations/src/types";
+import { LevaPanel } from "leva";
+import { ChatPositionContext } from "../authenticated-app-shell";
+import { animated, to } from "@react-spring/web";
+import { darken } from "polished";
 
 type ToolMapRecord = {
   name: string;
@@ -368,7 +381,7 @@ const TokenMarkerSettings = (): React.ReactElement => {
 
   return (
     <Stack
-      onKeyPress={(ev) => {
+      onKeyDown={(ev) => {
         ev.stopPropagation();
       }}
     >
@@ -448,7 +461,6 @@ const TokenMarkerSettings = (): React.ReactElement => {
           <ColorPickerInput
             size="sm"
             color={tokenMarkerContext.state.tokenColor}
-            disableAlpha={true}
             onChange={(color) => {
               tokenMarkerContext.setState((state) => ({
                 ...state,
@@ -616,26 +628,20 @@ export const DmMap = (props: {
   markArea: (point: [number, number]) => void;
   markedAreas: Array<MarkedAreaEntity>;
   removeMarkedArea: (id: string) => void;
-  addToken: (token: {
-    x: number;
-    y: number;
-    color: string;
-    radius: number;
-    label: string;
-  }) => void;
+  addToken: (token: Omit<Partial<MapTokenEntity>, "id">) => void;
   updateToken: (
     id: string,
     changes: Omit<Partial<MapTokenEntity>, "id">
   ) => void;
   deleteToken: (id: string) => void;
   updateMap: (params: Partial<MapEntity>) => void;
+  controlRef: React.MutableRefObject<MapControlInterface | null>;
 }): React.ReactElement => {
   const currentMapRef = React.useRef(props.map);
 
   const [mapImage, setMapImage] = React.useState<HTMLImageElement | null>(null);
   const [fogImage, setFogImage] = React.useState<HTMLImageElement | null>(null);
-
-  const controlRef = React.useRef<MapControlInterface | null>(null);
+  const controlRef = props.controlRef;
   /**
    * used for canceling pending requests in case there is a new update incoming.
    * should be either null or an array of tasks returned by loadImage
@@ -819,6 +825,17 @@ export const DmMap = (props: {
     [props.map.grid]
   );
 
+  const [store, setStore] = React.useState<StoreType | null>();
+
+  const chatPosition = React.useContext(ChatPositionContext);
+  const [
+    contextMenuState,
+    setContextMenuState,
+  ] = React.useState<ContextMenuState>(null);
+  const [copiedToken, setCopiedToken] = React.useState<MapTokenEntity | null>(
+    null
+  );
+
   return (
     <FlatContextProvider
       value={[
@@ -850,17 +867,6 @@ export const DmMap = (props: {
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof ConfigureGridMapToolContext.Provider>
         >,
-        [
-          TokenContextRenderer,
-          {
-            updateToken: props.updateToken,
-            deleteToken: props.deleteToken,
-            children: null,
-            tokens: props.map.tokens,
-          },
-        ] as ComponentWithPropsTuple<
-          React.ComponentProps<typeof TokenContextRenderer>
-        >,
         [AreaSelectContextProvider, {}],
         [
           TokenMarkerContextProvider,
@@ -869,6 +875,30 @@ export const DmMap = (props: {
           },
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof TokenMarkerContextProvider>
+        >,
+        [
+          SetSelectedTokenStoreContext.Provider,
+          { value: setStore },
+        ] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof SetSelectedTokenStoreContext["Provider"]>
+        >,
+        [
+          UpdateTokenContext.Provider,
+          { value: props.updateToken },
+        ] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof UpdateTokenContext["Provider"]>
+        >,
+        [
+          IsDungeonMasterContext.Provider,
+          { value: true },
+        ] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof IsDungeonMasterContext["Provider"]>
+        >,
+        [
+          ContextMenuContext.Provider,
+          { value: setContextMenuState },
+        ] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof ContextMenuContext["Provider"]>
         >,
       ]}
     >
@@ -879,9 +909,6 @@ export const DmMap = (props: {
           fogImage={fogImage}
           controlRef={controlRef}
           tokens={props.map.tokens}
-          updateTokenPosition={(id, position) => {
-            props.updateToken(id, position);
-          }}
           markedAreas={props.markedAreas}
           removeMarkedArea={props.removeMarkedArea}
           grid={
@@ -895,14 +922,19 @@ export const DmMap = (props: {
             MarkAreaToolContext,
             BrushToolContext,
             ConfigureGridMapToolContext,
-            TokenContextMenuContext,
             AreaSelectContext,
             TokenMarkerContext,
             NoteWindowActionsContext,
+            ReactRelayContext,
+            SetSelectedTokenStoreContext,
+            UpdateTokenContext,
+            IsDungeonMasterContext,
+            ContextMenuContext,
           ]}
           fogOpacity={0.5}
         />
       ) : null}
+
       {toolOverride !== ConfigureGridMapTool ? (
         <>
           <LeftToolbarContainer>
@@ -1114,6 +1146,94 @@ export const DmMap = (props: {
         />
       )}
       {confirmDialogNode}
+      <animated.div
+        style={{
+          position: "absolute",
+          bottom: 100,
+          right:
+            chatPosition !== null
+              ? to(chatPosition.x, (value) => -value + 10 + chatPosition.width)
+              : 10,
+          // @ts-ignore
+          zIndex: 1,
+          width: 300,
+        }}
+        onKeyDown={(ev) => ev.stopPropagation()}
+      >
+        <LevaPanel
+          store={store}
+          fill={true}
+          theme={{
+            colors: {
+              leva__elevation1: darken(0.05, "white"),
+              leva__elevation2: "white",
+              leva__elevation3: darken(0.03, "white"),
+              leva__accent1: darken(0.2, "white"),
+              leva__accent2: darken(0.1, "white"),
+              leva__accent3: darken(0.2, "white"),
+              leva__highlight1: darken(0.3, "white"),
+              leva__highlight2: "black",
+              leva__highlight3: "black",
+            },
+            fonts: {
+              leva__mono: "inherit",
+              leva__sans: "inherit",
+            },
+          }}
+          hideCopyButton
+        />
+      </animated.div>
+      {contextMenuState ? (
+        <Box
+          position="absolute"
+          left={contextMenuState.clientPosition.x}
+          top={contextMenuState.clientPosition.y}
+        >
+          <Menu defaultIsOpen={true} onClose={() => setContextMenuState(null)}>
+            <MenuList>
+              {contextMenuState.target?.type === "token" ? (
+                <>
+                  <MenuItem
+                    onClick={() => {
+                      const tokenId = contextMenuState.target?.id!;
+                      const token = props.map.tokens.find(
+                        (token) => token.id === tokenId
+                      );
+                      setCopiedToken(token ?? null);
+                    }}
+                  >
+                    Copy Token
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() =>
+                      props.deleteToken(contextMenuState.target?.id!)
+                    }
+                  >
+                    Delete
+                  </MenuItem>
+                </>
+              ) : (
+                <>
+                  <MenuItem
+                    isDisabled={copiedToken === null}
+                    onClick={() => {
+                      if (copiedToken) {
+                        props.addToken({
+                          ...copiedToken,
+                          x: contextMenuState.imagePosition.x,
+                          y: contextMenuState.imagePosition.y,
+                        });
+                      }
+                    }}
+                  >
+                    Paste Token
+                  </MenuItem>
+                </>
+              )}
+            </MenuList>
+          </Menu>
+        </Box>
+      ) : null}
     </FlatContextProvider>
   );
 };

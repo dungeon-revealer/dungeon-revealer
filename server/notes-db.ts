@@ -7,6 +7,7 @@ import * as t from "io-ts";
 import type { Database } from "sqlite";
 import { camelCaseKeys } from "./util/camelcase-keys";
 import { BooleanFromNumber } from "./io-types/boolean-from-number";
+import * as sql from "./sql";
 
 export const NoteAccessTypeModel = t.union([
   t.literal("admin"),
@@ -77,11 +78,6 @@ export const getNoteById = (
     TE.chainW(flow(decodeNote, TE.fromEither))
   );
 
-const whereSqlAnd = (...args: Array<String | null>) => {
-  const conditions = args.filter((value) => value !== null).join(" AND ");
-  return conditions.length ? "WHERE " + conditions : "";
-};
-
 export const getPaginatedNotes = (params: {
   /* amount of items to fetch */
   first: number;
@@ -113,7 +109,7 @@ export const getPaginatedNotes = (params: {
               "created_at",
               "updated_at"
             FROM "notes"
-            ${whereSqlAnd(
+            ${sql.whereAnd(
               params.cursor
                 ? `("created_at" < $last_created_at OR ("created_at" = $last_created_at AND "id" < $last_id))`
                 : null,

@@ -3,6 +3,9 @@ import * as React from "react";
 import produce from "immer";
 import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
+import { Box, Center } from "@chakra-ui/react";
+import graphql from "babel-plugin-relay/macro";
+import { useRelayEnvironment } from "relay-hooks";
 import { SelectMapModal } from "./select-map-modal";
 import { ImportFileModal } from "./import-file-modal";
 import { MediaLibrary } from "./media-library";
@@ -20,8 +23,46 @@ import { usePersistedState } from "../hooks/use-persisted-state";
 import { DmMap } from "./dm-map";
 import { Socket } from "socket.io-client";
 import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
-import { useDropZone } from "../hooks/use-drop-zone";
+import { isFileDrag } from "../hooks/use-drop-zone";
 import { useNoteWindowActions } from "./token-info-aside";
+import { MapControlInterface } from "../map-view";
+import { useTokenImageUpload } from "./token-image-upload";
+
+const RequestTokenImageUploadMutation = graphql`
+  mutation dmArea_RequestTokenImageUploadMutation(
+    $input: RequestTokenImageUploadInput!
+  ) {
+    requestTokenImageUpload(input: $input) {
+      __typename
+      ... on RequestTokenImageUploadDuplicate {
+        tokenImage {
+          id
+          url
+        }
+      }
+      ... on RequestTokenImageUploadUrl {
+        uploadUrl
+      }
+    }
+  }
+`;
+
+const TokenImageCreateMutation = graphql`
+  mutation dmArea_TokenImageCreateMutation($input: TokenImageCreateInput!) {
+    tokenImageCreate(input: $input) {
+      __typename
+      ... on TokenImageCreateSuccess {
+        createdTokenImage {
+          id
+          url
+        }
+      }
+      ... on TokenImageCreateError {
+        reason
+      }
+    }
+  }
+`;
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -303,7 +344,7 @@ const Content = ({
   );
 
   const addToken = React.useCallback(
-    (token: { x: number; y: number; color: string; radius: number }) => {
+    (token: Omit<Partial<MapTokenEntity>, "id">) => {
       localFetch(`/map/${loadedMapId}/token`, {
         method: "POST",
         headers: {
@@ -475,11 +516,9 @@ const Content = ({
     setMode({ title: "SHOW_MAP_LIBRARY" });
   }, []);
 
-  const [droppedFile, setDroppedFile] = React.useState<null | File>(null);
-
-  const [dropZoneEventHandler] = useDropZone((file) => {
-    setDroppedFile(file[0]);
-  });
+  const [importModalFile, setImportModalFile] = React.useState<null | File>(
+    null
+  );
 
   const [markedAreas, setMarkedAreas] = React.useState<MarkedAreaEntity[]>(
     () => []
@@ -516,6 +555,21 @@ const Content = ({
   }, [socket]);
 
   const actions = useNoteWindowActions();
+  const controlRef = React.useRef<MapControlInterface | null>(null);
+
+  const dragRef = React.useRef(0);
+  const [isDraggingFile, setIsDraggingFile] = React.useState(false);
+
+  const environment = useRelayEnvironment();
+
+  const objectUrlCleanupRef = React.useRef<null | (() => void)>(null);
+  React.useEffect(
+    () => () => {
+      objectUrlCleanupRef.current?.();
+    },
+    []
+  );
+  const [cropperNode, selectFile] = useTokenImageUpload();
 
   return (
     <FetchContext.Provider value={localFetch}>
@@ -548,11 +602,123 @@ const Content = ({
       {loadedMap ? (
         <div
           style={{ display: "flex", height: "100vh" }}
-          onDragEnter={dropZoneEventHandler.onDragEnter}
-          onDragLeave={dropZoneEventHandler.onDragLeave}
-          onDragOver={dropZoneEventHandler.onDragOver}
-          onDrop={dropZoneEventHandler.onDrop}
+          onDragEnter={(ev) => {
+            if (isFileDrag(ev) === false) {
+              return;
+            }
+            ev.dataTransfer.dropEffect = "copy";
+            dragRef.current++;
+            setIsDraggingFile(dragRef.current !== 0);
+            ev.preventDefault();
+          }}
+          onDragLeave={(ev) => {
+            if (isFileDrag(ev) === false) {
+              return;
+            }
+            dragRef.current--;
+            setIsDraggingFile(dragRef.current !== 0);
+            ev.preventDefault();
+          }}
+          onDragOver={(ev) => {
+            if (isFileDrag(ev) === false) {
+              return;
+            }
+            ev.preventDefault();
+          }}
+          onDrop={(ev) => {
+            ev.preventDefault();
+            if (isFileDrag(ev) === false) {
+              return;
+            }
+            dragRef.current = 0;
+            setIsDraggingFile(dragRef.current !== 0);
+
+            const [file] = Array.from(ev.dataTransfer.files);
+
+            if (!file?.type.match(/image/)) {
+              return;
+            }
+            const context = controlRef.current?.getContext();
+
+            if (!context) {
+              return;
+            }
+            const coords = context.helper.coordinates.screenToImage([
+              ev.clientX,
+              ev.clientY,
+            ]);
+
+            const addTokenWithImageId = (tokenImageId: string) =>
+              addToken({
+                color: "red",
+                x: coords[0],
+                y: coords[1],
+                isVisibleForPlayers: false,
+                isMovableByPlayers: false,
+                isLocked: false,
+                reference: null,
+                tokenImageId,
+                label: "",
+              });
+
+            selectFile(file, [], ({ tokenImageId }) => {
+              addTokenWithImageId(tokenImageId);
+            });
+          }}
         >
+          {cropperNode}
+          {isDraggingFile ? (
+            <Center
+              position="absolute"
+              top="0"
+              width="100%"
+              zIndex={99999999}
+              justifyContent="center"
+            >
+              <DropZone
+                onDragEnter={(ev) => {
+                  if (isFileDrag(ev) === false) {
+                    return;
+                  }
+                  ev.dataTransfer.dropEffect = "copy";
+                  dragRef.current++;
+                  setIsDraggingFile(dragRef.current !== 0);
+                  ev.preventDefault();
+                }}
+                onDragLeave={(ev) => {
+                  if (isFileDrag(ev) === false) {
+                    return;
+                  }
+                  dragRef.current--;
+                  setIsDraggingFile(dragRef.current !== 0);
+                  ev.preventDefault();
+                }}
+                onDragOver={(ev) => {
+                  if (isFileDrag(ev) === false) {
+                    return;
+                  }
+                  ev.preventDefault();
+                }}
+                onDrop={(ev) => {
+                  ev.preventDefault();
+                  if (isFileDrag(ev) === false) {
+                    return;
+                  }
+
+                  dragRef.current = 0;
+                  setIsDraggingFile(dragRef.current !== 0);
+
+                  ev.stopPropagation();
+                  const [file] = Array.from(ev.dataTransfer.files);
+                  if (file) {
+                    setImportModalFile(file);
+                  }
+                }}
+              >
+                Import Map or Media Library Item
+              </DropZone>
+            </Center>
+          ) : null}
           <div
             style={{
               flex: 1,
@@ -561,6 +727,7 @@ const Content = ({
             }}
           >
             <DmMap
+              controlRef={controlRef}
               password={dmPassword}
               map={loadedMap}
               liveMapId={liveMapId}
@@ -591,10 +758,10 @@ const Content = ({
           </div>
         </div>
       ) : null}
-      {droppedFile ? (
+      {importModalFile ? (
         <ImportFileModal
-          file={droppedFile}
-          close={() => setDroppedFile(null)}
+          file={importModalFile}
+          close={() => setImportModalFile(null)}
           createMap={createMap}
         />
       ) : null}
@@ -680,4 +847,29 @@ export const DmArea = () => {
     return <DmAreaRenderer password={dmPassword} />;
   }
   return null;
+};
+
+type DropZoneProps = {
+  children: React.ReactNode;
+} & Pick<
+  React.ComponentProps<typeof Box>,
+  "onDragEnter" | "onDragOver" | "onDragLeave" | "onDrop"
+>;
+
+const DropZone = (props: DropZoneProps): React.ReactElement => {
+  return (
+    <Box
+      padding="2"
+      background="white"
+      borderRadius="10px"
+      outline="2px dashed black"
+      outlineOffset="-10px"
+      onDragEnter={props.onDragEnter}
+      onDragOver={props.onDragOver}
+      onDragLeave={props.onDragLeave}
+      onDrop={props.onDrop}
+    >
+      <Box padding="2">{props.children}</Box>
+    </Box>
+  );
 };

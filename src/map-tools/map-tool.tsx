@@ -9,6 +9,7 @@ type Vector3D = [number, number, number];
 
 export type SharedMapToolState = {
   mapImage: HTMLImageElement;
+  mapCanvas: HTMLCanvasElement;
   fogCanvas: HTMLCanvasElement;
   fogTexture: THREE.CanvasTexture;
   mapState: {
@@ -27,6 +28,10 @@ export type SharedMapToolState = {
   pointerPosition: SpringValue<Vector3D>;
   helper: {
     threePointToImageCoordinates: (vector: Vector2D) => Vector2D;
+    imageCoordinatesToThreePoint: (vector: Vector2D) => Vector2D;
+    size: {
+      fromImageToThree: (value: number) => number;
+    };
     vector: {
       /* convert three.js vector to canvas vector */
       threeToCanvas: (vector: Vector2D) => Vector2D;
@@ -46,6 +51,8 @@ export type SharedMapToolState = {
       canvasToImage: (vector: Vector2D) => Vector2D;
       /* convert image coordinate to canvas coordinate */
       imageToCanvas: (vector: Vector2D) => Vector2D;
+      /* convert screen coordinate to image relative coordinate */
+      screenToImage: (vector: Vector2D) => Vector2D;
     };
   };
 };

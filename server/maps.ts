@@ -24,6 +24,9 @@ const prepareToken = (token: { [key: string]: unknown }) => {
   if (token.reference === undefined) {
     token.reference = null;
   }
+  if ("tokenImageId" in token === false) {
+    token.tokenImageId = null;
+  }
 
   return token;
 };
@@ -311,14 +314,25 @@ class Maps {
     {
       x = 0,
       y = 0,
-      radius = 50,
+      radius = null as null | number,
       color = "red",
       label = "A",
       isVisibleForPlayers = false,
+      isMovableByPlayers = false,
+      isLocked = false,
       type = "entity",
+      tokenImageId = null as string | null,
     }
   ) {
     return await this._processTask(`map:${mapId}`, async () => {
+      const map = this.get(mapId);
+      if (!map) {
+        throw new Error(`Map with id "${mapId}" not found.`);
+      }
+
+      if (radius === null) {
+        radius = (map.grid?.columnWidth ?? 50) / 2;
+      }
       const token = prepareToken({
         id: uuid(),
         x,
@@ -327,13 +341,11 @@ class Maps {
         color,
         label,
         isVisibleForPlayers,
+        isMovableByPlayers,
+        isLocked,
         type,
+        tokenImageId,
       });
-
-      const map = this.get(mapId);
-      if (!map) {
-        throw new Error(`Map with id "${mapId}" not found.`);
-      }
 
       const tokens = map.tokens || [];
 
@@ -364,6 +376,7 @@ class Maps {
       title,
       description,
       reference,
+      tokenImageId,
     }: {
       type?: string;
       x?: number;
@@ -383,6 +396,7 @@ class Maps {
             type: string;
             id: string;
           };
+      tokenImageId?: null | string;
     }
   ) {
     return await this._processTask(`map:${mapId}`, async () => {
@@ -440,6 +454,9 @@ class Maps {
             id: reference.id,
           };
         }
+      }
+      if (tokenImageId !== undefined) {
+        token.tokenImageId = tokenImageId;
       }
 
       const updatedMap = await this._updateMapSettings(map, {

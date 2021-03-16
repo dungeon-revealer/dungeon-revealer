@@ -6,7 +6,6 @@ import { getUrlPrefix } from "./public-url";
 import { globalStyles } from "./global-styles";
 import { Modal } from "./modal";
 import { registerSoundPlayback } from "./register-sound-playback";
-import "react-colorful/dist/index.css";
 
 const element = document.querySelector("#root");
 

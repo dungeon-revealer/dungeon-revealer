@@ -25,7 +25,10 @@ const { createSocketSessionStore } = require("./socket-session-store");
 const bootstrapServer = async (env) => {
   fs.mkdirpSync(env.DATA_DIRECTORY);
 
-  const db = await database.initialize({ dataPath: env.DATA_DIRECTORY });
+  const db = await database.initialize({
+    dataPath: env.DATA_DIRECTORY,
+    databasePath: path.join(env.DATA_DIRECTORY, `db.sqlite`),
+  });
 
   const app = express();
   const apiRouter = express.Router();
@@ -192,13 +195,15 @@ const bootstrapServer = async (env) => {
     socketSessionStore,
     roleMiddleware,
     db,
+    fileStoragePath: path.join(env.DATA_DIRECTORY, "files"),
+    publicUrl: env.PUBLIC_URL,
   });
   const notesImportRouter = createNotesRouter({ db, roleMiddleware });
 
   apiRouter.use(mapsRouter);
   // apiRouter.use(notesRouter);
   apiRouter.use(fileRouter);
-  apiRouter.use(graphqlRouter);
+  app.use(graphqlRouter);
   apiRouter.use(notesImportRouter);
 
   app.use("/api", apiRouter);

@@ -122,6 +122,12 @@ type Query {
   notes(first: Int, after: String, filter: NotesFilter): NoteConnection!
   notesSearch(first: Int, after: String, query: String): NoteSearchConnection!
   note(documentId: ID!): Note
+  tokenImages(
+    first: Int
+    after: String
+    sourceImageSha256: String
+    titleFilter: String
+  ): TokenImageConnection
   node(id: ID!): Node
 }
 
@@ -199,6 +205,22 @@ type NoteSearchResultType {
   preview: String!
 }
 
+type TokenImageConnection {
+  edges: [TokenImageEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TokenImageEdge {
+  cursor: String!
+  node: TokenImage!
+}
+
+type TokenImage implements Node {
+  id: ID!
+  title: String!
+  url: String!
+}
+
 type Mutation {
   logIn(input: LogInInput): LogInResult!
   changeName(input: ChangeNameInput!): ChangeNameResult!
@@ -212,6 +234,10 @@ type Mutation {
   noteUpdateTitle(input: NoteUpdateTitleInput!): NoteUpdateResult!
   noteUpdateAccess(input: NoteUpdateAccessInput!): NoteUpdateResult!
   noteUpdateIsEntryPoint(input: NoteUpdateIsEntryPointInput!): NoteUpdateResult!
+  requestTokenImageUpload(
+    input: RequestTokenImageUploadInput!
+  ): RequestImageTokenUploadResult!
+  tokenImageCreate(input: TokenImageCreateInput!): TokenImageCreateResult!
 }
 
 type LogInResult {
@@ -288,6 +314,60 @@ input NoteUpdateAccessInput {
 input NoteUpdateIsEntryPointInput {
   id: String!
   isEntryPoint: Boolean!
+}
+
+union RequestImageTokenUploadResult =
+    RequestTokenImageUploadDuplicate
+  | RequestTokenImageUploadUrl
+
+type RequestTokenImageUploadDuplicate {
+  """
+  The TokenImage that already exists for the given hash.
+  """
+  tokenImage: TokenImage!
+}
+
+type RequestTokenImageUploadUrl {
+  uploadUrl: String!
+}
+
+input RequestTokenImageUploadInput {
+  """
+  The SHA256 of the file that is going to be uploaded in hexadecimal form.
+  """
+  sha256: String!
+
+  """
+  The extension of the file thats is going to be uploaded.
+  """
+  extension: String!
+}
+
+union TokenImageCreateResult = TokenImageCreateSuccess | TokenImageCreateError
+
+type TokenImageCreateSuccess {
+  createdTokenImage: TokenImage!
+}
+
+type TokenImageCreateError {
+  reason: String!
+}
+
+input TokenImageCreateInput {
+  """
+  The title of the token image.
+  """
+  title: String!
+
+  """
+  The SHA256 of the file that is going to be uploaded in hexadecimal form.
+  """
+  sha256: String!
+
+  """
+  The SHA256 of the file the image got cut out from in hexadecimal form.
+  """
+  sourceSha256: String
 }
 
 type Subscription {

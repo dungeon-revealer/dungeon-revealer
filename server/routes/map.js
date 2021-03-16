@@ -319,6 +319,10 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         color: req.body.color,
         label: req.body.label,
         radius: req.body.radius,
+        tokenImageId: req.body.tokenImageId,
+        isVisibleForPlayers: req.body.isVisibleForPlayers,
+        isMovableByPlayers: req.body.isMovableByPlayers,
+        isLocked: req.body.isLocked,
       })
       .then(({ token }) => {
         res.json({
@@ -412,6 +416,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         title: req.body.title,
         description: req.body.description,
         reference: req.body.reference,
+        tokenImageId: req.body.tokenImageId,
       };
     }
 

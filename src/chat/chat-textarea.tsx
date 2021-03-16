@@ -89,6 +89,7 @@ export const ChatTextArea: React.FC<{}> = () => {
           setValue((value) => chatHistory[offset.current] || value);
         }
       }
+      ev.stopPropagation();
     },
     [value]
   );
