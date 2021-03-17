@@ -1,9 +1,9 @@
-import { flow } from "fp-ts/function";
-import * as RTE from "fp-ts/ReaderTaskEither";
-import * as RT from "fp-ts/ReaderTask";
-import * as E from "fp-ts/Either";
-import { sequenceT } from "fp-ts/Apply";
-import { pipe } from "fp-ts/pipeable";
+import { flow } from "fp-ts/lib/function";
+import * as RTE from "fp-ts/lib/ReaderTaskEither";
+import * as RT from "fp-ts/lib/ReaderTask";
+import * as E from "fp-ts/lib/Either";
+import { sequenceT } from "fp-ts/lib/Apply";
+import { pipe } from "fp-ts/lib/pipeable";
 import * as io from "io-ts";
 import first from "lodash/first";
 import * as Relay from "./relay-spec";

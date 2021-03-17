@@ -1,7 +1,7 @@
-import { flow, pipe } from "fp-ts/function";
-import * as E from "fp-ts/Either";
-import * as RT from "fp-ts/ReaderTask";
-import { sequenceT } from "fp-ts/Apply";
+import { flow, pipe } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
+import * as RT from "fp-ts/lib/ReaderTask";
+import { sequenceT } from "fp-ts/lib/Apply";
 import * as io from "io-ts";
 import * as lib from "../../token-image-lib";
 import { IntegerFromString } from "../../io-types/integer-from-string";

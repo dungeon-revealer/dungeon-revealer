@@ -1,6 +1,6 @@
 import { flow } from "fp-ts/lib/function";
 import * as t from "io-ts";
-import * as RT from "fp-ts/ReaderTask";
+import * as RT from "fp-ts/lib/ReaderTask";
 import last from "lodash/last";
 import first from "lodash/first";
 

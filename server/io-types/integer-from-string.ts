@@ -1,6 +1,6 @@
 import * as t from "io-ts";
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
 
 const parseIntegerSafe = (input: string): number | null => {
   const number = parseInt(input, 10);

@@ -1,6 +1,6 @@
 import * as t from "io-ts";
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
 
 /**
  * Convert a number (0, 1) to a boolean and vice versa.

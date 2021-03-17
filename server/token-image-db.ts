@@ -1,7 +1,7 @@
 import * as t from "io-ts";
-import * as RT from "fp-ts/ReaderTask";
+import * as RT from "fp-ts/lib/ReaderTask";
 import { Buffer } from "buffer";
-import { pipe } from "fp-ts/function";
+import { pipe } from "fp-ts/lib/function";
 import type { Database } from "sqlite";
 import * as sql from "./sql";
 import { applyDecoder } from "./apply-decoder";

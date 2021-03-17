@@ -1,8 +1,8 @@
 import * as t from "io-ts";
-import { PathReporter } from "io-ts/PathReporter";
-import * as E from "fp-ts/Either";
-import * as RT from "fp-ts/ReaderTask";
-import { flow } from "fp-ts/function";
+import { PathReporter } from "io-ts/lib/PathReporter";
+import * as E from "fp-ts/lib/Either";
+import * as RT from "fp-ts/lib/ReaderTask";
+import { flow } from "fp-ts/lib/function";
 
 export const applyDecoder = <D, T extends t.Type<any, any, any>>(
   type: T

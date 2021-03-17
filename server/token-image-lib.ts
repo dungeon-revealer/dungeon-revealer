@@ -1,7 +1,7 @@
 import * as fs from "fs-extra";
 import { join } from "path";
-import { pipe } from "fp-ts/function";
-import * as RT from "fp-ts/ReaderTask";
+import { pipe } from "fp-ts/lib/function";
+import * as RT from "fp-ts/lib/ReaderTask";
 import * as db from "./token-image-db";
 import type { SocketSessionRecord } from "./socket-session-store";
 

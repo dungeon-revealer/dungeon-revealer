@@ -2,7 +2,7 @@ import { Router, static as expressStatic } from "express";
 import path from "path";
 import fs from "fs-extra";
 import type { Server as IOServer, Socket as IOSocket } from "socket.io";
-import { flow } from "fp-ts/function";
+import { flow } from "fp-ts/lib/function";
 import { schema, GraphQLContextType } from "../graphql";
 import { createChat } from "../chat";
 import { createUser } from "../user";
