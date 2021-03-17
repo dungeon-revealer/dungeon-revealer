@@ -183,7 +183,20 @@ jobs:
             -t ${{ secrets.DOCKER_REPO }}:dev \
             -t ${{ secrets.DOCKER_REPO }}:$COMMIT \
             -t ${{ secrets.DOCKER_REPO }}:$COMMIT_SHORT .
+            
+      - name: Create commit comment
+        uses: peter-evans/commit-comment@v1
+        if: startsWith(github.ref, 'refs/heads/') # Just the branches
+        with:
+          body: |
+            🐋  **Image pushed to DockerHub**
+            
+            **Pull:**  
+            `docker pull ${{ secrets.DOCKER_REPO }}:${{ github.sha }}`
 
+            **Run:**
+            `docker run -p 3000:3000 ${{ secrets.DOCKER_REPO }}:${{ github.sha }}`
+            
       - name: Run Buildx Release
         if: startsWith(github.ref, 'refs/tags/') # Just the tags
         run: |
