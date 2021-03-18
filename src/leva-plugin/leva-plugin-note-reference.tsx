@@ -4,9 +4,6 @@ import { Box, Button, HStack } from "@chakra-ui/react";
 import { useNoteWindowActions } from "../dm-area/token-info-aside";
 import { useShowSelectNoteModal } from "../dm-area/select-note-modal";
 
-const normalize = (opts: { value: string | undefined }) => opts;
-const sanitize = (value: string): string => value;
-
 const NoteReference = () => {
   const { displayValue, setValue } = useInputContext<any>();
 
@@ -57,6 +54,9 @@ const NoteReference = () => {
     </>
   );
 };
+
+const normalize = (opts: { value: string | null }) => opts;
+const sanitize = (value: string | null): string | null => value;
 
 export const levaPluginNoteReference = createPlugin({
   normalize,

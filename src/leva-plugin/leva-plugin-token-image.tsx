@@ -30,9 +30,6 @@ import { levaPluginTokenImage_TokenImagesQuery } from "./__generated__/levaPlugi
 import { useTokenImageUpload } from "../dm-area/token-image-upload";
 import { useCurrent } from "../hooks/use-current";
 
-const normalize = (opts: { value: string | null }) => opts;
-const sanitize = (value: string): string => value;
-
 const TokenImageReference = () => {
   const { displayValue, setValue } = useInputContext<any>();
   const [node, selectFile] = useTokenImageUpload();
@@ -278,6 +275,9 @@ const TokenImagePopoverContent = (props: {
     />
   ) : null;
 };
+
+const normalize = (opts: { value: string | null }) => opts;
+const sanitize = (value: string | null): string | null => value;
 
 export const levaPluginTokenImage = createPlugin({
   normalize,

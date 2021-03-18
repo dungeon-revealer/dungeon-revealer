@@ -294,7 +294,7 @@ const TokenRenderer: React.FC<{
         value: props.isMovableByPlayers,
       },
       reference: levaPluginNoteReference({
-        value: props.reference?.id,
+        value: props.reference?.id ?? null,
       }),
       tokenImageId: levaPluginTokenImage({
         value: props.tokenImageId,
@@ -365,10 +365,12 @@ const TokenRenderer: React.FC<{
         },
       },
       reference: levaPluginNoteReference({
-        value: props.reference?.id,
+        value: props.reference?.id ?? null,
         // @ts-ignore
         onChange: (referenceId: null | string) => {
-          if (latestTokenProps.current.reference?.id === referenceId) {
+          if (
+            (latestTokenProps.current.reference?.id ?? null) === referenceId
+          ) {
             return;
           }
           updateToken(props.id, {
@@ -395,13 +397,11 @@ const TokenRenderer: React.FC<{
 
   React.useEffect(() => {
     updateRadiusRef.current = (value) =>
-      // @ts-ignore
       setValues({ radius: ((props.columnWidth ?? 50) / 2) * value * 0.9 });
   });
 
   React.useEffect(() => {
     setValues({
-      // @ts-ignore
       position: [props.x, props.y],
       radius: props.radius,
       text: props.textLabel,
@@ -409,8 +409,10 @@ const TokenRenderer: React.FC<{
       color: props.color,
       isMovableByPlayers: props.isMovableByPlayers,
       isVisibleForPlayers: props.isVisibleForPlayers,
-      reference: props.reference?.id,
-      tokenImageId: props.tokenImageId ?? null,
+      // @ts-ignore
+      reference: props.reference?.id ?? null,
+      // @ts-ignore
+      tokenImageId: props.tokenImageId,
     });
   }, [setValues, props]);
 
@@ -603,7 +605,7 @@ const TokenRenderer: React.FC<{
         scale={animatedProps.circleScale}
         renderOrder={LayerRenderOrder.token}
       >
-        {cachedQueryResult?.data?.tokenImage ? null : (
+        {props.tokenImageId && cachedQueryResult?.data?.tokenImage ? null : (
           <>
             <mesh>
               <circleBufferGeometry
@@ -631,7 +633,8 @@ const TokenRenderer: React.FC<{
             </mesh>
           </>
         )}
-        {cachedQueryResult?.data?.tokenImage &&
+        {props.tokenImageId &&
+        cachedQueryResult?.data?.tokenImage &&
         cachedQueryResult.data.tokenImage.__typename === "TokenImage" ? (
           <TokenAttachment
             url={cachedQueryResult.data.tokenImage.url}
@@ -641,7 +644,7 @@ const TokenRenderer: React.FC<{
             opacity={values.isVisibleForPlayers ? 1 : 0.5}
           />
         ) : null}
-        {cachedQueryResult?.data?.tokenImage ? null : (
+        {props.tokenImageId && cachedQueryResult?.data?.tokenImage ? null : (
           <mesh {...dragProps()} renderOrder={LayerRenderOrder.tokenGesture}>
             {/* This one is for attaching the gesture handlers */}
             <circleBufferGeometry
