@@ -380,9 +380,11 @@ const TokenRenderer: React.FC<{
         value: props.tokenImageId,
         // @ts-ignore
         onChange: (tokenImageId: null | string) => {
+          tokenImageId = tokenImageId ?? null;
           if (latestTokenProps.current.tokenImageId === tokenImageId) {
             return;
           }
+
           updateToken(props.id, {
             tokenImageId,
           });
