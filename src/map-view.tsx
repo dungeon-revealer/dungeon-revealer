@@ -380,7 +380,6 @@ const TokenRenderer: React.FC<{
         value: props.tokenImageId,
         // @ts-ignore
         onChange: (tokenImageId: null | string) => {
-          tokenImageId = tokenImageId ?? null;
           if (latestTokenProps.current.tokenImageId === tokenImageId) {
             return;
           }
@@ -411,7 +410,7 @@ const TokenRenderer: React.FC<{
       isMovableByPlayers: props.isMovableByPlayers,
       isVisibleForPlayers: props.isVisibleForPlayers,
       reference: props.reference?.id,
-      tokenImageId: props.tokenImageId ?? undefined,
+      tokenImageId: props.tokenImageId ?? null,
     });
   }, [setValues, props]);
 
