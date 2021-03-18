@@ -189,12 +189,10 @@ jobs:
         if: startsWith(github.ref, 'refs/heads/') # Just the branches
         with:
           body: |
-            🐋  **Image pushed to DockerHub**
-            
-            **Pull:**  
-            `docker pull ${{ secrets.DOCKER_REPO }}:${{ github.sha }}`
+            **This image has been published to DockerHub.** 🐋   
 
-            **Run:**
+            You can easily try this build out locally with Docker.
+
             `docker run -p 3000:3000 ${{ secrets.DOCKER_REPO }}:${{ github.sha }}`
             
       - name: Run Buildx Release
