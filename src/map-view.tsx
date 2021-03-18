@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as THREE from "three";
 import graphql from "babel-plugin-relay/macro";
-import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
+// import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
 import {
   Canvas,
   PointerEvent,
@@ -220,11 +220,11 @@ const TokenRenderer: React.FC<{
       },
       text: {
         label: "Title",
-        value: props.textLabel,
+        value: props.textLabel ?? "",
       },
       color: {
         label: "Color",
-        value: props.color,
+        value: props.color ?? "rgb(255, 255, 255)",
       },
       isVisibleForPlayers: {
         label: "Visible to players",
@@ -365,9 +365,9 @@ const TokenRenderer: React.FC<{
         setStore(store);
 
         // onClick replacement
-        // events are handeled different in react-three-fiber
+        // events are handled different in react-three-fiber
         // @dbismut advised me that checking for tap in onDrag
-        // is the best solution when having both drag and click behaviour.
+        // is the best solution when having both drag and click behavior.
         if (tap) {
           if (onPointerDown.current) {
             onPointerDown.current();
@@ -561,7 +561,7 @@ const TokenRenderer: React.FC<{
           </mesh>
         )}
       </animated.group>
-      {/* Text should not be scaled and thus must be moved to a seperate group. */}
+      {/* Text should not be scaled and thus must be moved to a separate group. */}
       {textLabel ? (
         <animated.group
           position={to(
@@ -719,56 +719,56 @@ const TextureElement = (props: {
   );
 };
 
-const SVGELement = (props: {
-  url: string;
-  dragProps: () => ReactEventHandlers;
-  isHover: boolean;
-  opacity: number;
-  initialRadius: number;
-}) => {
-  const data = useLoader(SVGLoader, props.url);
+// const SVGELement = (props: {
+//   url: string;
+//   dragProps: () => ReactEventHandlers;
+//   isHover: boolean;
+//   opacity: number;
+//   initialRadius: number;
+// }) => {
+//   const data = useLoader(SVGLoader, props.url);
 
-  let i = 0;
-  const items: Array<React.ReactElement> = [];
+//   let i = 0;
+//   const items: Array<React.ReactElement> = [];
 
-  const width = ((data.xml as any) as SVGSVGElement).viewBox.baseVal.width;
-  const height = ((data.xml as any) as SVGSVGElement).viewBox.baseVal.height;
+//   const width = ((data.xml as any) as SVGSVGElement).viewBox.baseVal.width;
+//   const height = ((data.xml as any) as SVGSVGElement).viewBox.baseVal.height;
 
-  for (const path of data.paths) {
-    for (const shape of path.toShapes(true)) {
-      i++;
-      items.push(
-        <mesh
-          key={i}
-          renderOrder={LayerRenderOrder.token}
-          {...props.dragProps()}
-        >
-          <shapeBufferGeometry args={[shape]} />
-          <meshBasicMaterial
-            color={
-              props.isHover
-                ? lighten(0.1, "#" + path.color.getHexString())
-                : path.color
-            }
-            side={THREE.DoubleSide}
-            transparent={true}
-          />
-        </mesh>
-      );
-    }
-  }
+//   for (const path of data.paths) {
+//     for (const shape of path.toShapes(true)) {
+//       i++;
+//       items.push(
+//         <mesh
+//           key={i}
+//           renderOrder={LayerRenderOrder.token}
+//           {...props.dragProps()}
+//         >
+//           <shapeBufferGeometry args={[shape]} />
+//           <meshBasicMaterial
+//             color={
+//               props.isHover
+//                 ? lighten(0.1, "#" + path.color.getHexString())
+//                 : path.color
+//             }
+//             side={THREE.DoubleSide}
+//             transparent={true}
+//           />
+//         </mesh>
+//       );
+//     }
+//   }
 
-  const scale = (props.initialRadius * 2) / width;
+//   const scale = (props.initialRadius * 2) / width;
 
-  return (
-    <group
-      scale={[scale, -scale, scale]}
-      position={[(-width / 2) * scale, (height / 2) * scale, 0]}
-    >
-      {items}
-    </group>
-  );
-};
+//   return (
+//     <group
+//       scale={[scale, -scale, scale]}
+//       position={[(-width / 2) * scale, (height / 2) * scale, 0]}
+//     >
+//       {items}
+//     </group>
+//   );
+// };
 
 const MarkedAreaRenderer: React.FC<{
   x: number;
