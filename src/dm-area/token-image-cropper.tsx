@@ -70,156 +70,163 @@ export const TokenImageCropper = (props: {
 
   return (
     <>
-      <Box
+      <Grid
         position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        bottom={0}
-        zIndex={9000}
+        h="100vh"
+        width="100%"
+        templateRows="repeat(4, 1fr)"
+        templateColumns="repeat(5, 1fr)"
+        gap={4}
+        zIndex={1}
+        padding={4}
       >
-        <Cropper
-          image={props.imageUrl}
-          crop={crop}
-          zoom={zoom}
-          onCropChange={setCrop}
-          onCropComplete={(_, croppedAreaPixels) => {
-            setCroppedAreaPixels(croppedAreaPixels);
-          }}
-          onZoomChange={setZoom}
-          aspect={1}
-        />
-      </Box>
-      <Flex
-        position="absolute"
-        bottom={3}
-        left={0}
-        right={0}
-        zIndex={9000}
-        justifyContent={"center"}
-      >
-        <Stack
-          background="white"
-          padding={5}
-          borderRadius={3}
-          maxWidth={600}
-          spacing={4}
-        >
-          <Text>
-            Please select a rectangular part from the image that will be used as
-            the token image.
-          </Text>
-          <FormControl id="slider">
-            <FormLabel>Zoom</FormLabel>
-            <Slider
-              aria-label="slider-zoom"
-              min={1}
-              max={3}
-              step={0.1}
-              value={zoom}
-              onChange={(zoom) => setZoom(zoom)}
+        <GridItem colSpan={4} rowSpan={3}>
+          <Cropper
+            image={props.imageUrl}
+            crop={crop}
+            zoom={zoom}
+            onCropChange={setCrop}
+            onCropComplete={(_, croppedAreaPixels) => {
+              setCroppedAreaPixels(croppedAreaPixels);
+            }}
+            onZoomChange={setZoom}
+            aspect={1}
+          />
+        </GridItem>
+        <GridItem rowSpan={5} colSpan={1} display="flex" alignItems="center">
+          {data.data?.tokenImages?.edges.length ? (
+            <Stack
+              spacing={2}
+              padding={3}
+              borderRadius={3}
+              background="white"
+              maxHeight={500}
+              zIndex={10}
             >
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </FormControl>
-          <FormControl id="token-title">
-            <FormLabel>Title</FormLabel>
-            <Input value={title} onChange={(ev) => setTitle(ev.target.value)} />
-          </FormControl>
+              <Heading size="xs">Token Images from this Source</Heading>
+              <Stack>
+                {data.data.tokenImages.edges.map((edge) => (
+                  <Grid
+                    templateRows="repeat(3, 1fr)"
+                    templateColumns="repeat(5, 1fr)"
+                    gap={2}
+                    height={75}
+                  >
+                    <GridItem colSpan={2} rowSpan={3}>
+                      <Image
+                        src={edge.node.url}
+                        key={edge.node.id}
+                        height={75}
+                        width={75}
+                      />
+                    </GridItem>
+                    <GridItem colSpan={3} rowSpan={1}>
+                      <Text
+                        paddingTop={3}
+                        width="100%"
+                        backgroundColor="white"
+                        fontSize="xs"
+                        maxWidth={100}
+                        whiteSpace="nowrap"
+                        textOverflow="ellipsis"
+                        overflow="hidden"
+                      >
+                        {edge.node.title}
+                      </Text>
+                    </GridItem>
+                    <GridItem colSpan={3} rowSpan={2}>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          props.onConfirm({
+                            type: "TokenImage",
+                            tokenImageId: edge.node.id,
+                          });
+                        }}
+                      >
+                        Use this image.
+                      </Button>
+                    </GridItem>
+                  </Grid>
+                ))}
+              </Stack>
+            </Stack>
+          ) : null}
+        </GridItem>
+        <GridItem
+          colSpan={4}
+          rowSpan={2}
+          display="flex"
+          justifyContent="center"
+        >
           <Stack
+            background="white"
+            padding={5}
+            borderRadius={3}
+            maxWidth={600}
             spacing={4}
-            direction="row"
-            align="center"
+            zIndex={100}
+            height="fit-content"
             alignSelf="flex-end"
           >
-            <Button onClick={props.onClose} variant="ghost">
-              Abort
-            </Button>
-            <Button
-              colorScheme="teal"
-              isDisabled={croppedAreaPixels === null}
-              onClick={async () => {
-                if (!croppedAreaPixels) {
-                  return;
-                }
-                const file = await cropImage(props.imageUrl, croppedAreaPixels);
-                props.onConfirm({ type: "File", file, title });
-              }}
+            <Text fontSize="small">
+              Please select a rectangular part from the image that will be used
+              as the token image.
+            </Text>
+            <FormControl id="slider">
+              <FormLabel fontSize="small">Zoom</FormLabel>
+              <Slider
+                aria-label="slider-zoom"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(zoom) => setZoom(zoom)}
+                size="sm"
+              >
+                <SliderTrack>
+                  <SliderFilledTrack />
+                </SliderTrack>
+                <SliderThumb />
+              </Slider>
+            </FormControl>
+            <FormControl id="token-title">
+              <FormLabel fontSize="small">Title</FormLabel>
+              <Input
+                value={title}
+                onChange={(ev) => setTitle(ev.target.value)}
+                size="sm"
+              />
+            </FormControl>
+            <Stack
+              spacing={4}
+              direction="row"
+              align="center"
+              alignSelf="flex-end"
             >
-              Confirm
-            </Button>
-          </Stack>
-        </Stack>
-      </Flex>
-      {data.data?.tokenImages?.edges.length ? (
-        <Flex
-          position="absolute"
-          top={0}
-          bottom={0}
-          right={3}
-          zIndex={9000}
-          alignItems={"center"}
-        >
-          <Stack
-            spacing={2}
-            padding={3}
-            borderRadius={3}
-            background="white"
-            maxHeight={500}
-          >
-            <Heading size="xs">Token Images from this Source</Heading>
-            <Stack>
-              {data.data.tokenImages.edges.map((edge) => (
-                <Grid
-                  templateRows="repeat(3, 1fr)"
-                  templateColumns="repeat(5, 1fr)"
-                  gap={2}
-                  height={75}
-                >
-                  <GridItem colSpan={2} rowSpan={3}>
-                    <Image
-                      src={edge.node.url}
-                      key={edge.node.id}
-                      height={75}
-                      width={75}
-                    />
-                  </GridItem>
-                  <GridItem colSpan={3} rowSpan={1}>
-                    <Text
-                      paddingTop={3}
-                      width="100%"
-                      backgroundColor="white"
-                      fontSize="xs"
-                      maxWidth={100}
-                      whiteSpace="nowrap"
-                      textOverflow="ellipsis"
-                      overflow="hidden"
-                    >
-                      {edge.node.title}
-                    </Text>
-                  </GridItem>
-                  <GridItem colSpan={3} rowSpan={2}>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        props.onConfirm({
-                          type: "TokenImage",
-                          tokenImageId: edge.node.id,
-                        });
-                      }}
-                    >
-                      Use this image.
-                    </Button>
-                  </GridItem>
-                </Grid>
-              ))}
+              <Button onClick={props.onClose} variant="ghost">
+                Abort
+              </Button>
+              <Button
+                colorScheme="teal"
+                isDisabled={croppedAreaPixels === null}
+                onClick={async () => {
+                  if (!croppedAreaPixels) {
+                    return;
+                  }
+                  const file = await cropImage(
+                    props.imageUrl,
+                    croppedAreaPixels
+                  );
+                  props.onConfirm({ type: "File", file, title });
+                }}
+              >
+                Confirm
+              </Button>
             </Stack>
           </Stack>
-        </Flex>
-      ) : null}
+        </GridItem>
+      </Grid>
     </>
   );
 };
