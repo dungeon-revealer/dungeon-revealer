@@ -35,6 +35,7 @@ import { buttonGroup, useControls, useCreateStore } from "leva";
 import { StoreType } from "leva/dist/declarations/src/types";
 import { levaPluginNoteReference } from "./leva-plugin/leva-plugin-note-reference";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
+import { useCurrent } from "./hooks/use-current";
 
 type Vector2D = [number, number];
 
@@ -191,6 +192,24 @@ const TokenRenderer: React.FC<{
       : undefined,
     { skip: props.tokenImageId === null }
   );
+  const [, cachedQueryResult] = useCurrent(
+    query,
+    !query.error && !query.data,
+    0
+  );
+
+  const latestTokenProps = React.useRef(props);
+  React.useEffect(() => {
+    latestTokenProps.current = props;
+  });
+
+  const updateToken = React.useContext(UpdateTokenContext);
+
+  const [isDragging, setIsDragging] = React.useState(false);
+  const isDraggingRef = React.useRef(isDragging);
+  React.useEffect(() => {
+    isDraggingRef.current = isDragging;
+  });
 
   const store = useCreateStore();
   const updateRadiusRef = React.useRef<null | ((radius: number) => void)>(null);
@@ -200,12 +219,52 @@ const TokenRenderer: React.FC<{
         label: "Position",
         value: [props.x, props.y],
         step: 1,
+        onChange: (value: [number, number]) => {
+          set({
+            position: [
+              ...sharedMapState.helper.imageCoordinatesToThreePoint(value),
+              0,
+            ],
+            immediate: isDraggingRef.current,
+          });
+
+          if (
+            latestTokenProps.current.x === value[0] &&
+            latestTokenProps.current.y === value[1]
+          ) {
+            return;
+          }
+
+          updateToken(props.id, {
+            x: value[0],
+            y: value[1],
+          });
+        },
       },
       radius: {
         label: "Size",
         value: props.radius,
         step: 1,
         min: 1,
+        onChange: (value: number) => {
+          const newRadius = sharedMapState.helper.size.fromImageToThree(value);
+
+          set({
+            circleScale: [
+              newRadius / initialRadius,
+              newRadius / initialRadius,
+              1,
+            ],
+          });
+
+          if (latestTokenProps.current.radius === value) {
+            return;
+          }
+
+          updateToken(props.id, {
+            radius: value,
+          });
+        },
       },
       "": buttonGroup({
         "0.25x": () => updateRadiusRef.current?.(0.25),
@@ -220,7 +279,7 @@ const TokenRenderer: React.FC<{
       },
       text: {
         label: "Title",
-        value: props.textLabel ?? "",
+        value: typeof props.textLabel === "string" ? props.textLabel : "",
       },
       color: {
         label: "Color",
@@ -244,48 +303,123 @@ const TokenRenderer: React.FC<{
     { store }
   );
 
+  useControls(
+    {
+      text: {
+        value: props.textLabel,
+        onChange: (label: string) => {
+          if (latestTokenProps.current.textLabel === label) {
+            return;
+          }
+          updateToken(props.id, {
+            label,
+          });
+        },
+      },
+      isLocked: {
+        value: props.isLocked,
+        onChange: (isLocked: boolean) => {
+          if (latestTokenProps.current.isLocked === isLocked) {
+            return;
+          }
+          updateToken(props.id, {
+            isLocked,
+          });
+        },
+      },
+      color: {
+        value: "rgb(255, 255, 255)",
+        onChange: (color: string) => {
+          if (latestTokenProps.current.color === color) {
+            return;
+          }
+          updateToken(props.id, {
+            color,
+          });
+        },
+      },
+      isVisibleForPlayers: {
+        value: props.isVisibleForPlayers,
+        onChange: (isVisibleForPlayers: boolean) => {
+          if (
+            latestTokenProps.current.isVisibleForPlayers === isVisibleForPlayers
+          ) {
+            return;
+          }
+          updateToken(props.id, {
+            isVisibleForPlayers,
+          });
+        },
+      },
+      isMovableByPlayers: {
+        value: props.isMovableByPlayers,
+        onChange: (isMovableByPlayers: boolean) => {
+          if (
+            latestTokenProps.current.isMovableByPlayers === isMovableByPlayers
+          ) {
+            return;
+          }
+          updateToken(props.id, {
+            isMovableByPlayers,
+          });
+        },
+      },
+      reference: levaPluginNoteReference({
+        value: props.reference?.id,
+        // @ts-ignore
+        onChange: (referenceId: null | string) => {
+          if (latestTokenProps.current.reference?.id === referenceId) {
+            return;
+          }
+          updateToken(props.id, {
+            reference: referenceId ? { type: "note", id: referenceId } : null,
+          });
+        },
+      }),
+      tokenImageId: levaPluginTokenImage({
+        value: props.tokenImageId,
+        // @ts-ignore
+        onChange: (tokenImageId: null | string) => {
+          if (latestTokenProps.current.tokenImageId === tokenImageId) {
+            return;
+          }
+          updateToken(props.id, {
+            tokenImageId,
+          });
+        },
+      }),
+    },
+    { store }
+  );
+
   React.useEffect(() => {
     updateRadiusRef.current = (value) =>
+      // @ts-ignore
       setValues({ radius: ((props.columnWidth ?? 50) / 2) * value * 0.9 });
   });
 
   React.useEffect(() => {
-    // TODO: remove this once leva has a subscribe API :D
-    // @ts-ignore
-    return store.store.subscribe((value) => {
-      updateToken(props.id, {
-        color: value.data.color.value,
-        isLocked: value.data.isLocked.value,
-        label: value.data.text.value,
-        x: value.data.position.value[0],
-        y: value.data.position.value[1],
-        isMovableByPlayers: value.data.isMovableByPlayers.value,
-        isVisibleForPlayers: value.data.isVisibleForPlayers.value,
-        radius: value.data.radius.value,
-        reference: value.data.reference.value
-          ? { type: "note", id: value.data.reference.value }
-          : null,
-        tokenImageId: value.data.tokenImageId.value ?? null,
-      });
-    });
-  }, []);
-
-  React.useEffect(() => {
     setValues({
+      // @ts-ignore
       position: [props.x, props.y],
+      radius: props.radius,
       text: props.textLabel,
+      isLocked: props.isLocked,
+      color: props.color,
+      isMovableByPlayers: props.isMovableByPlayers,
+      isVisibleForPlayers: props.isVisibleForPlayers,
+      reference: props.reference?.id,
+      tokenImageId: props.tokenImageId ?? undefined,
     });
-  }, [setValues, props.x, props.y, props.textLabel]);
+  }, [setValues, props]);
 
   const setStore = React.useContext(SetSelectedTokenStoreContext);
-  const updateToken = React.useContext(UpdateTokenContext);
 
   const initialRadius = useStaticRef(() =>
     sharedMapState.helper.size.fromImageToThree(Math.max(1, props.radius))
   );
 
   const isDungeonMaster = React.useContext(IsDungeonMasterContext);
-
   const isMovable =
     (isDungeonMaster === true || values.isMovableByPlayers === true) &&
     values.isLocked === false;
@@ -300,39 +434,6 @@ const TokenRenderer: React.FC<{
     ] as [number, number, number],
     circleScale: [1, 1, 1] as [number, number, number],
   }));
-
-  React.useEffect(() => {
-    set({
-      position: [
-        ...sharedMapState.helper.imageCoordinatesToThreePoint([
-          values.position[0],
-          values.position[1],
-        ]),
-        0,
-      ] as [number, number, number],
-    });
-  }, [values.position, set]);
-
-  React.useEffect(() => {
-    const newRadius = sharedMapState.helper.size.fromImageToThree(props.radius);
-    set({
-      circleScale: [newRadius / initialRadius, newRadius / initialRadius, 1],
-    });
-  }, [set, values.radius]);
-
-  React.useEffect(() => {
-    const newRadius = sharedMapState.helper.size.fromImageToThree(props.radius);
-    set({
-      position: [
-        ...sharedMapState.helper.imageCoordinatesToThreePoint([
-          props.x,
-          props.y,
-        ]),
-        0,
-      ] as [number, number, number],
-      circleScale: [newRadius / initialRadius, newRadius / initialRadius, 1],
-    });
-  }, [set, props.x, props.y, props.radius]);
 
   React.useEffect(() => {
     if (isLocked === false) {
@@ -358,11 +459,12 @@ const TokenRenderer: React.FC<{
       onDrag: ({
         event,
         movement,
-        last,
         memo = animatedProps.position.get(),
+        last,
         tap,
       }) => {
         setStore(store);
+        setIsDragging(!last);
 
         // onClick replacement
         // events are handled different in react-three-fiber
@@ -428,20 +530,14 @@ const TokenRenderer: React.FC<{
         const newY =
           memo[1] - movement[1] / sharedMapState.viewport.factor / mapScale[1];
 
-        set({
-          position: [newX, newY, 0],
-          immediate: true,
-        });
+        const [x, y] = sharedMapState.helper.coordinates.canvasToImage(
+          sharedMapState.helper.coordinates.threeToCanvas([newX, newY])
+        );
 
-        if (last) {
-          const [x, y] = sharedMapState.helper.coordinates.canvasToImage(
-            sharedMapState.helper.coordinates.threeToCanvas([newX, newY])
-          );
-          updateToken(props.id, {
-            x,
-            y,
-          });
-        }
+        setValues({
+          // @ts-ignore
+          position: [x, y],
+        });
 
         return memo;
       },
@@ -461,7 +557,6 @@ const TokenRenderer: React.FC<{
       },
       onPointerOver: () => {
         hoverCounter.current++;
-
         if (isMovable === false) {
           return;
         }
@@ -507,7 +602,7 @@ const TokenRenderer: React.FC<{
         scale={animatedProps.circleScale}
         renderOrder={LayerRenderOrder.token}
       >
-        {query.data?.tokenImage ? null : (
+        {cachedQueryResult?.data?.tokenImage ? null : (
           <>
             <mesh>
               <circleBufferGeometry
@@ -535,17 +630,17 @@ const TokenRenderer: React.FC<{
             </mesh>
           </>
         )}
-        {query.data?.tokenImage &&
-        query.data?.tokenImage.__typename === "TokenImage" ? (
+        {cachedQueryResult?.data?.tokenImage &&
+        cachedQueryResult.data.tokenImage.__typename === "TokenImage" ? (
           <TokenAttachment
-            url={query.data.tokenImage.url}
+            url={cachedQueryResult.data.tokenImage.url}
             initialRadius={initialRadius}
             dragProps={dragProps}
             isHover={isHover}
             opacity={values.isVisibleForPlayers ? 1 : 0.5}
           />
         ) : null}
-        {query.data?.tokenImage ? null : (
+        {cachedQueryResult?.data?.tokenImage ? null : (
           <mesh {...dragProps()} renderOrder={LayerRenderOrder.tokenGesture}>
             {/* This one is for attaching the gesture handlers */}
             <circleBufferGeometry

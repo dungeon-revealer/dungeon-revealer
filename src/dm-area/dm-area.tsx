@@ -5,7 +5,6 @@ import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import { Box, Center } from "@chakra-ui/react";
 import graphql from "babel-plugin-relay/macro";
-import { useRelayEnvironment } from "relay-hooks";
 import { SelectMapModal } from "./select-map-modal";
 import { ImportFileModal } from "./import-file-modal";
 import { MediaLibrary } from "./media-library";
@@ -27,42 +26,6 @@ import { isFileDrag } from "../hooks/use-drop-zone";
 import { useNoteWindowActions } from "./token-info-aside";
 import { MapControlInterface } from "../map-view";
 import { useTokenImageUpload } from "./token-image-upload";
-
-const RequestTokenImageUploadMutation = graphql`
-  mutation dmArea_RequestTokenImageUploadMutation(
-    $input: RequestTokenImageUploadInput!
-  ) {
-    requestTokenImageUpload(input: $input) {
-      __typename
-      ... on RequestTokenImageUploadDuplicate {
-        tokenImage {
-          id
-          url
-        }
-      }
-      ... on RequestTokenImageUploadUrl {
-        uploadUrl
-      }
-    }
-  }
-`;
-
-const TokenImageCreateMutation = graphql`
-  mutation dmArea_TokenImageCreateMutation($input: TokenImageCreateInput!) {
-    tokenImageCreate(input: $input) {
-      __typename
-      ... on TokenImageCreateSuccess {
-        createdTokenImage {
-          id
-          url
-        }
-      }
-      ... on TokenImageCreateError {
-        reason
-      }
-    }
-  }
-`;
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -386,20 +349,6 @@ const Content = ({
 
   const updateToken = React.useCallback(
     (id: string, updates: TokenPartial) => {
-      setData(
-        produce((data: null | MapData) => {
-          if (data) {
-            const map = data.maps.find((map) => map.id === loadedMapId);
-            if (map) {
-              map.tokens = map.tokens.map((token) => {
-                if (token.id !== id) return token;
-                return { ...token, ...updates };
-              });
-            }
-          }
-        })
-      );
-
       persistTokenChanges(loadedMapId, id, updates, localFetch);
     },
     [loadedMapId, persistTokenChanges, localFetch]
@@ -559,8 +508,6 @@ const Content = ({
 
   const dragRef = React.useRef(0);
   const [isDraggingFile, setIsDraggingFile] = React.useState(false);
-
-  const environment = useRelayEnvironment();
 
   const objectUrlCleanupRef = React.useRef<null | (() => void)>(null);
   React.useEffect(

@@ -1,6 +1,7 @@
 import * as React from "react";
 import produce from "immer";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
+import debounce from "lodash/debounce";
 import { ReactRelayContext } from "relay-hooks";
 import styled from "@emotion/styled/macro";
 import { loadImage } from "./util";
@@ -270,38 +271,30 @@ const PlayerMap: React.FC<{
       window.document.removeEventListener("visibilitychange", listener, false);
   }, []);
 
-  const persistTokenChanges = useStaticRef(
-    () => (
-      loadedMapId: string,
-      id: string,
-      updates: any,
-      localFetch: typeof fetch
-    ) => {
-      localFetch(`/map/${loadedMapId}/token/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...updates,
-        }),
-      });
-    }
+  const persistTokenChanges = useStaticRef(() =>
+    debounce(
+      (
+        loadedMapId: string,
+        id: string,
+        updates: any,
+        localFetch: typeof fetch
+      ) => {
+        localFetch(`/map/${loadedMapId}/token/${id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...updates,
+          }),
+        });
+      },
+      100
+    )
   );
 
   const updateToken = React.useCallback(
     ({ id, ...updates }) => {
-      setCurrentMap(
-        produce((map: MapEntity | null) => {
-          if (map) {
-            map.tokens = map.tokens.map((token) => {
-              if (token.id !== id) return token;
-              return { ...token, ...updates };
-            });
-          }
-        })
-      );
-
       if (currentMap) {
         persistTokenChanges(currentMap.id, id, updates, fetch);
       }
