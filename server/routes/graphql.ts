@@ -135,8 +135,13 @@ export default ({
       if (tokenImageUploadRegister.has(id)) {
         const targetPath = path.join(fileStoragePath, filePath);
         fs.mkdirpSync(path.dirname(targetPath));
-        req.pipe(fs.createWriteStream(path.join(fileStoragePath, filePath)));
-        res.send("Done.");
+        const writeStream = fs.createWriteStream(
+          path.join(fileStoragePath, filePath)
+        );
+        req.pipe(writeStream);
+        writeStream.on("close", () => {
+          res.send("Done.");
+        });
         return;
       }
     }
