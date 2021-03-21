@@ -68,7 +68,7 @@
     "junk": "3.1.0",
     "lodash": "4.17.21",
     "morgan": "1.10.0",
-    "sanitize-html": "2.3.2",
+    "sanitize-html": "2.3.3",
     "serve-favicon": "2.5.0",
     "showdown": "1.9.1",
     "socket.io": "3.1.2",
