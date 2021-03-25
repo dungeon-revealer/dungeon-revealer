@@ -604,7 +604,7 @@ const activeDmMapToolIdModel: PersistedStateModel<
         if (value !== null) {
           console.log(
             "Error occured while trying to decode value.\n" +
-              JSON.stringify(err, null, 2)
+            JSON.stringify(err, null, 2)
           );
         }
         return DragPanZoomMapTool.id;
@@ -913,8 +913,8 @@ export const DmMap = (props: {
           removeMarkedArea={props.removeMarkedArea}
           grid={
             props.map.grid &&
-            props.map.showGrid &&
-            activeTool !== ConfigureGridMapTool
+              props.map.showGrid &&
+              activeTool !== ConfigureGridMapTool
               ? props.map.grid
               : null
           }
@@ -1061,7 +1061,8 @@ export const DmMap = (props: {
                 </Toolbar.Item>
               </Toolbar.Group>
             </Toolbar>
-            <div style={{ marginLeft: 24 }} />
+            {/* <div style={{ marginLeft: 24 }} /> */}
+            <MarginLeftDiv />
             <Toolbar horizontal>
               <Toolbar.Group>
                 <Toolbar.Item>
@@ -1246,6 +1247,10 @@ const LeftToolbarContainer = styled.div`
   top: 0;
   left: 12px;
   pointer-events: none;
+  @media (max-width: 580px) {
+    top: 1em;
+    align-items: start;
+   }
 `;
 
 const BottomToolbarContainer = styled.div`
@@ -1255,7 +1260,15 @@ const BottomToolbarContainer = styled.div`
   position: absolute;
   bottom: 12px;
   pointer-events: none;
+  flex-wrap: wrap;
 `;
+
+const MarginLeftDiv = styled.div`
+ margin-left: 24px;
+ @media (max-width: 580px) {
+  margin-left: 0px;
+ }
+`
 
 const MenuItemRenderer = (props: {
   record: ToolMapRecord;
