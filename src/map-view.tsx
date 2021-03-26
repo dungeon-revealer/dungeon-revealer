@@ -199,9 +199,6 @@ const TokenRenderer: React.FC<{
   );
 
   const latestTokenProps = React.useRef(props);
-  React.useEffect(() => {
-    latestTokenProps.current = props;
-  });
 
   const updateToken = React.useContext(UpdateTokenContext);
 
@@ -210,7 +207,6 @@ const TokenRenderer: React.FC<{
   React.useEffect(() => {
     isDraggingRef.current = isDragging;
   });
-
   const store = useCreateStore();
   const updateRadiusRef = React.useRef<null | ((radius: number) => void)>(null);
   const [values, setValues] = useControls(
@@ -409,12 +405,26 @@ const TokenRenderer: React.FC<{
       color: props.color,
       isMovableByPlayers: props.isMovableByPlayers,
       isVisibleForPlayers: props.isVisibleForPlayers,
-      // @ts-ignore
       reference: props.reference?.id ?? null,
-      // @ts-ignore
       tokenImageId: props.tokenImageId,
     });
-  }, [setValues, props]);
+  }, [
+    setValues,
+    props.x,
+    props.y,
+    props.radius,
+    props.textLabel,
+    props.isLocked,
+    props.color,
+    props.isMovableByPlayers,
+    props.isVisibleForPlayers,
+    props.reference?.id,
+    props.tokenImageId,
+  ]);
+
+  React.useEffect(() => {
+    latestTokenProps.current = props;
+  });
 
   const setStore = React.useContext(SetSelectedTokenStoreContext);
 
@@ -568,6 +578,7 @@ const TokenRenderer: React.FC<{
         }
       },
       onPointerUp: () => {
+        setIsDragging(false);
         onPointerDown.current?.();
 
         if (isMovable === false) {
@@ -575,6 +586,7 @@ const TokenRenderer: React.FC<{
         }
       },
       onPointerOut: () => {
+        setIsDragging(false);
         hoverCounter.current--;
 
         if (isMovable === false) {
@@ -1374,7 +1386,7 @@ const MapViewRenderer = (props: {
     onKeyDown: KeyboardEvent;
   }>({
     onPointerDown: (args) => {
-      setStore(null);
+      setTimeout(() => setStore(null));
       toolRef.current?.handlers?.onPointerDown?.(args);
     },
     onPointerUp: (args) => toolRef.current?.handlers?.onPointerUp?.(args),
