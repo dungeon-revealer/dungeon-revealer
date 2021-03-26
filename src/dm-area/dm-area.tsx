@@ -3,6 +3,7 @@ import * as React from "react";
 import produce from "immer";
 import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
+import styled from "@emotion/styled/macro";
 import { Box, Center } from "@chakra-ui/react";
 import graphql from "babel-plugin-relay/macro";
 import { SelectMapModal } from "./select-map-modal";
@@ -38,7 +39,7 @@ const useLoadedMapId = () =>
             return parsedValue;
           }
           // eslint-disable-next-line no-empty
-        } catch (e) {}
+        } catch (e) { }
       }
 
       return null;
@@ -57,25 +58,25 @@ const useDmPassword = () =>
           }
         }
         // eslint-disable-next-line no-empty
-      } catch (e) {}
+      } catch (e) { }
       return "";
     },
   });
 
 type Mode =
   | {
-      title: "LOADING";
-      data: null;
-    }
+    title: "LOADING";
+    data: null;
+  }
   | {
-      title: "SHOW_MAP_LIBRARY";
-    }
+    title: "SHOW_MAP_LIBRARY";
+  }
   | {
-      title: "EDIT_MAP";
-    }
+    title: "EDIT_MAP";
+  }
   | {
-      title: "MEDIA_LIBRARY";
-    };
+    title: "MEDIA_LIBRARY";
+  };
 
 const createInitialMode = (): Mode => ({
   title: "LOADING",
@@ -89,23 +90,23 @@ type MapData = {
 
 type SocketTokenEvent =
   | {
-      type: "add";
-      data: {
-        token: MapTokenEntity;
-      };
-    }
-  | {
-      type: "update";
-      data: {
-        token: MapTokenEntity;
-      };
-    }
-  | {
-      type: "remove";
-      data: {
-        tokenId: string;
-      };
+    type: "add";
+    data: {
+      token: MapTokenEntity;
     };
+  }
+  | {
+    type: "update";
+    data: {
+      token: MapTokenEntity;
+    };
+  }
+  | {
+    type: "remove";
+    data: {
+      tokenId: string;
+    };
+  };
 
 type TokenPartial = Omit<Partial<MapTokenEntity>, "id">;
 
@@ -249,9 +250,9 @@ const Content = ({
       setData((data) =>
         data
           ? {
-              ...data,
-              maps: [...data.maps, response.data.map],
-            }
+            ...data,
+            maps: [...data.maps, response.data.map],
+          }
           : data
       );
     },
@@ -297,9 +298,9 @@ const Content = ({
       setData((data) =>
         data
           ? {
-              ...data,
-              maps: data.maps.filter((map) => map.id !== mapId),
-            }
+            ...data,
+            maps: data.maps.filter((map) => map.id !== mapId),
+          }
           : null
       );
     },
@@ -518,6 +519,15 @@ const Content = ({
   );
   const [cropperNode, selectFile] = useTokenImageUpload();
 
+  const LoadedMapDiv = styled.div`
+  display: flex;
+  min-height: 100vh;
+  /* Mobile Chrome 100vh issue with address bar */
+  @media screen and (max-width: 580px) and (-webkit-min-device-pixel-ratio:0) { 
+    min-height: calc(100vh - 56px);
+  }
+`
+
   return (
     <FetchContext.Provider value={localFetch}>
       {data && mode.title === "SHOW_MAP_LIBRARY" ? (
@@ -547,8 +557,8 @@ const Content = ({
         />
       ) : null}
       {loadedMap ? (
-        <div
-          style={{ display: "flex", height: "100vh" }}
+        <LoadedMapDiv
+          style={{ display: "flex", height: "calc(100vh - 56px)" }}
           onDragEnter={(ev) => {
             if (isFileDrag(ev) === false) {
               return;
@@ -703,7 +713,7 @@ const Content = ({
               }}
             />
           </div>
-        </div>
+        </LoadedMapDiv>
       ) : null}
       {importModalFile ? (
         <ImportFileModal

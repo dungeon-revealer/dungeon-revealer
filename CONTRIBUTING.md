@@ -18,8 +18,9 @@ Run the backend:
 
 Compile executables:
 
-- `npm run compilex64` for x64 machines (most computers).
-- `npm run compilearm` for armv7 machines (Raspberry Pi and other single board computers).
+- `npm run compile:x64` for x64 machines (most computers).
+- `npm run compile:armv7` for armv7 machines (Raspberry Pi and other single board computers).
+- `npm run compile:arm64` for armv64 machines
 
 The executables are located in the bin folder.
 
