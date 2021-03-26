@@ -1,8 +1,14 @@
 import * as React from "react";
-import { createPlugin, useInputContext, Row, Label } from "leva/plugin";
+import {
+  createPlugin,
+  useInputContext,
+  Components as LevaComponents,
+} from "leva/plugin";
 import { Box, Button, HStack } from "@chakra-ui/react";
 import { useNoteWindowActions } from "../dm-area/token-info-aside";
 import { useShowSelectNoteModal } from "../dm-area/select-note-modal";
+
+const { Row, Label } = LevaComponents;
 
 const NoteReference = () => {
   const { displayValue, setValue } = useInputContext<any>();
