@@ -1,5 +1,9 @@
 import * as React from "react";
 
+export type LoadImageTask = {
+  promise: Promise<HTMLImageElement>;
+  cancel: () => void;
+};
 /**
  * Utility for preloading an image as a promise
  */

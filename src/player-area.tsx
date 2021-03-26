@@ -4,7 +4,7 @@ import useAsyncEffect from "@n1ru4l/use-async-effect";
 import debounce from "lodash/debounce";
 import { ReactRelayContext } from "relay-hooks";
 import styled from "@emotion/styled/macro";
-import { loadImage } from "./util";
+import { loadImage, LoadImageTask } from "./util";
 import { Toolbar } from "./toolbar";
 import * as Icons from "./feather-icons";
 import { SplashScreen } from "./splash-screen";
@@ -79,7 +79,8 @@ const PlayerMap: React.FC<{
    * used for canceling pending requests in case there is a new update incoming.
    * should be either null or an array of tasks returned by loadImage
    */
-  const pendingFogImageLoad = React.useRef<(() => void) | null>(null);
+  const pendingMapImageLoad = React.useRef<LoadImageTask | null>(null);
+  const pendingFogImageLoad = React.useRef<LoadImageTask | null>(null);
   const [markedAreas, setMarkedAreas] = React.useState<MarkedArea[]>(() => []);
 
   const [refetchTrigger, setRefetchTrigger] = React.useState(0);
@@ -88,12 +89,13 @@ const PlayerMap: React.FC<{
     if (!data) {
       return;
     }
+
     if (window.document.visibilityState === "hidden") {
       return;
     }
 
     if (pendingFogImageLoad.current) {
-      pendingFogImageLoad.current?.();
+      pendingFogImageLoad.current?.cancel();
       pendingFogImageLoad.current = null;
     }
 
@@ -101,67 +103,76 @@ const PlayerMap: React.FC<{
      * Hide map (show splashscreen)
      */
     if (!data.map) {
+      pendingMapImageLoad.current?.cancel();
       currentMapRef.current = null;
       setCurrentMap(null);
       setFogImage(null);
       setMapImage(null);
       return;
     }
+
     /**
      * Fog has updated
      */
-    if (currentMapRef.current && currentMapRef.current.id === data.map.id) {
-      const imageUrl = buildApiUrl(
+    if (
+      currentMapRef.current &&
+      currentMapRef.current.id === data.map.id &&
+      pendingMapImageLoad.current
+    ) {
+      const fogImageUrl = buildApiUrl(
         // prettier-ignore
         `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
       );
 
-      const task = loadImage(imageUrl);
-      pendingFogImageLoad.current = () => task.cancel();
+      const task = loadImage(fogImageUrl);
+      pendingFogImageLoad.current = task;
+    } else {
+      // Load new map
+      pendingMapImageLoad.current?.cancel();
+      currentMapRef.current = data.map;
 
-      task.promise
-        .then((fogImage) => {
-          setFogImage(fogImage);
-        })
-        .catch(() => {
-          console.log("Cancel loading image.");
-        });
-      return;
+      const mapImageUrl = buildApiUrl(
+        // prettier-ignore
+        `/map/${data.map.id}/map?authorization=${encodeURIComponent(pcPassword)}`
+      );
+
+      const fogImageUrl = buildApiUrl(
+        // prettier-ignore
+        `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
+      );
+
+      const loadMapImageTask = loadImage(mapImageUrl);
+      const loadFogImageTask = loadImage(fogImageUrl);
+
+      pendingMapImageLoad.current = loadMapImageTask;
+      pendingFogImageLoad.current = loadFogImageTask;
+
+      setCurrentMap(data.map);
+      setMapImage(null);
+      setFogImage(null);
     }
 
-    /**
-     * Load new map
-     */
-    currentMapRef.current = data.map;
-
-    const mapImageUrl = buildApiUrl(
-      // prettier-ignore
-      `/map/${data.map.id}/map?authorization=${encodeURIComponent(pcPassword)}`
-    );
-
-    const fogImageUrl = buildApiUrl(
-      // prettier-ignore
-      `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
-    );
-
-    const loadMapImageTask = loadImage(mapImageUrl);
-    const loadFogImageTask = loadImage(fogImageUrl);
-
-    pendingFogImageLoad.current = () => {
-      loadMapImageTask.cancel();
-      loadFogImageTask.cancel();
-    };
-
-    Promise.all([loadMapImageTask.promise, loadFogImageTask.promise])
+    Promise.all([
+      pendingMapImageLoad.current.promise,
+      pendingFogImageLoad.current.promise,
+    ])
       .then(([mapImage, fogImage]) => {
         setMapImage(mapImage);
         setFogImage(fogImage);
-        setCurrentMap(data.map);
       })
       .catch(() => {
         console.log("Cancel loading image.");
       });
   }, []);
+
+  React.useEffect(
+    () => () => {
+      // cleanup in case the component unmounts
+      pendingMapImageLoad.current?.cancel();
+      pendingFogImageLoad.current?.cancel();
+    },
+    []
+  );
 
   useAsyncEffect(
     function* (_, cast) {
@@ -176,7 +187,7 @@ const PlayerMap: React.FC<{
 
       return () => {
         if (pendingFogImageLoad.current) {
-          pendingFogImageLoad.current?.();
+          pendingFogImageLoad.current.cancel();
           pendingFogImageLoad.current = null;
         }
       };
