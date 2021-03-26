@@ -234,12 +234,14 @@ const PlayerMap: React.FC<{
       if (type === "add") {
         setCurrentMap(
           produce((map) => {
-            map.tokens.push(data.token);
+            if (map) {
+              map.tokens.push(data.token);
+            }
           })
         );
       } else if (type === "update") {
         setCurrentMap(
-          produce((map: MapEntity | null) => {
+          produce((map) => {
             if (map) {
               map.tokens = map.tokens.map((token) => {
                 if (token.id !== data.token.id) return token;
@@ -253,7 +255,7 @@ const PlayerMap: React.FC<{
         );
       } else if (type === "remove") {
         setCurrentMap(
-          produce((map: MapEntity | null) => {
+          produce((map) => {
             if (map) {
               map.tokens = map.tokens = map.tokens.filter(
                 (token) => token.id !== data.tokenId
