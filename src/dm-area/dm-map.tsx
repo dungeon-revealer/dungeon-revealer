@@ -1,7 +1,7 @@
 import * as React from "react";
 import { v4 as uuid } from "uuid";
 import styled from "@emotion/styled/macro";
-import { useToasts } from "react-toast-notifications";
+import { useToast } from "@chakra-ui/react";
 import { CirclePicker } from "react-color";
 import * as io from "io-ts";
 import { pipe, identity } from "fp-ts/lib/function";
@@ -716,7 +716,7 @@ export const DmMap = (props: {
     props.map.id !== null && props.map.id === props.liveMapId;
   const isOtherMapLive = props.liveMapId !== null;
 
-  const { addToast } = useToasts();
+  const showToast = useToast();
   const asyncClipBoardApi = useAsyncClipboardApi();
 
   const copyMapToClipboard = () => {
@@ -742,9 +742,12 @@ export const DmMap = (props: {
             }),
           ])
           .then(() => {
-            addToast(`Copied map image to clipboard.`, {
-              appearance: "success",
-              autoDismiss: true,
+            showToast({
+              title: `Copied map image to clipboard.`,
+              status: "success",
+              duration: 3000,
+              isClosable: true,
+              position: "top",
             });
           })
           .catch(console.error);

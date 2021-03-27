@@ -16,7 +16,6 @@ import { useStaticRef } from "./hooks/use-static-ref";
 import { animated, useSpring, to } from "react-spring";
 import { MapView, MapControlInterface, UpdateTokenContext } from "./map-view";
 import { useGesture } from "react-use-gesture";
-import { ToastProvider } from "react-toast-notifications";
 import { v4 as uuid } from "uuid";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
 import { usePersistedState } from "./hooks/use-persisted-state";
@@ -630,13 +629,11 @@ export const PlayerArea: React.FC<{
 
   if (mode === "READY") {
     return (
-      <ToastProvider placement="bottom-right">
-        <AuthenticatedContent
-          localFetch={localFetch}
-          pcPassword={usedPassword}
-          isMapOnly={props.isMapOnly}
-        />
-      </ToastProvider>
+      <AuthenticatedContent
+        localFetch={localFetch}
+        pcPassword={usedPassword}
+        isMapOnly={props.isMapOnly}
+      />
     );
   }
 

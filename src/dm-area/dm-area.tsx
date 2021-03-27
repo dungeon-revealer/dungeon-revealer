@@ -14,7 +14,6 @@ import { useStaticRef } from "../hooks/use-static-ref";
 import { AuthenticationScreen } from "../authentication-screen";
 import { SplashScreen } from "../splash-screen";
 import { FetchContext } from "./fetch-context";
-import { ToastProvider } from "react-toast-notifications";
 import { ISendRequestTask, sendRequest } from "../http-request";
 import { AuthenticatedAppShell } from "../authenticated-app-shell";
 import { AccessTokenProvider } from "../hooks/use-access-token";
@@ -725,16 +724,14 @@ const DmAreaRenderer = ({
 
   return (
     <AccessTokenProvider value={password}>
-      <ToastProvider placement="bottom-right">
-        <AuthenticatedAppShell
-          socket={socket}
-          password={password}
-          isMapOnly={false}
-          role="DM"
-        >
-          <Content socket={socket} password={password} />
-        </AuthenticatedAppShell>
-      </ToastProvider>
+      <AuthenticatedAppShell
+        socket={socket}
+        password={password}
+        isMapOnly={false}
+        role="DM"
+      >
+        <Content socket={socket} password={password} />
+      </AuthenticatedAppShell>
     </AccessTokenProvider>
   );
 };
