@@ -1,5 +1,9 @@
 import * as React from "react";
-import { createPlugin, useInputContext, Row, Label } from "leva/plugin";
+import {
+  createPlugin,
+  useInputContext,
+  Components as LevaComponents,
+} from "leva/plugin";
 import {
   Button,
   HStack,
@@ -29,6 +33,8 @@ import { levaPluginTokenImage_TokenImagesFragment$key } from "./__generated__/le
 import { levaPluginTokenImage_TokenImagesQuery } from "./__generated__/levaPluginTokenImage_TokenImagesQuery.graphql";
 import { useTokenImageUpload } from "../dm-area/token-image-upload";
 import { useCurrent } from "../hooks/use-current";
+
+const { Row, Label } = LevaComponents;
 
 const TokenImageReference = () => {
   const { displayValue, setValue } = useInputContext<any>();
