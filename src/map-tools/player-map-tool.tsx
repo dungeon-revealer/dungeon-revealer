@@ -2,6 +2,7 @@ import * as React from "react";
 import { MapTool } from "./map-tool";
 import { MarkAreaToolContext } from "./mark-area-map-tool";
 import { usePinchWheelZoom } from "./drag-pan-zoom-map-tool";
+import { useGesture } from "react-use-gesture";
 
 export const PlayerMapTool: MapTool = {
   id: "player-map-tool",
@@ -21,6 +22,7 @@ export const PlayerMapTool: MapTool = {
           point.x,
           point.y,
         ]);
+        timeoutRef.current?.();
         const timeout = setTimeout(() => {
           markAreaContext.onMarkArea([x, y]);
         }, 300);
@@ -45,6 +47,19 @@ export const PlayerMapTool: MapTool = {
         return memo;
       },
     });
+    useGesture(
+      {
+        onPinch: () => {
+          timeoutRef.current?.();
+        },
+      },
+      {
+        domTarget: window.document,
+        eventOptions: {
+          passive: false,
+        },
+      }
+    );
     return null;
   },
 };

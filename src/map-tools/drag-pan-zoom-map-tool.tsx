@@ -63,9 +63,8 @@ export const usePinchWheelZoom = (mapToolState: SharedMapToolState) => {
         event.preventDefault();
         const [scale] = mapToolState.mapState.scale.get();
         const origin = [event.clientX, event.clientY] as [number, number];
-
-        const wheel = event.deltaY < 0 ? 1 : -1;
-        const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
+        const wheel = event.deltaY < 0 ? 1 : event.deltaY > 0 ? -1 : 0;
+        const pinchScale = Math.max(0.1, Math.exp(wheel * 0.3) * scale);
         const pinchDelta = pinchScale - scale;
 
         updateZoom({ pinchDelta, pinchScale, origin });
@@ -86,9 +85,8 @@ export const usePinchWheelZoom = (mapToolState: SharedMapToolState) => {
         }
 
         let xMovement = Array.isArray(movement) ? movement[0] : 0;
-
-        const wheel = xMovement > 0 ? 1 : -1;
-        const pinchScale = Math.max(0.1, Math.exp(wheel * 0.5) * scale);
+        const wheel = xMovement > 0 ? 1 : xMovement < 0 ? -1 : 0;
+        const pinchScale = Math.max(0.1, Math.exp(wheel * 0.3) * scale);
         const pinchDelta = pinchScale - scale;
 
         updateZoom({ pinchDelta, pinchScale, origin });
