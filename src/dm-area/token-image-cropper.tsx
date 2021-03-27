@@ -2,9 +2,7 @@ import * as React from "react";
 import { useQuery } from "relay-hooks";
 import type { Area } from "react-easy-crop/types";
 import {
-  Box,
   Button,
-  Flex,
   FormControl,
   Slider,
   SliderFilledTrack,
@@ -23,6 +21,7 @@ import graphql from "babel-plugin-relay/macro";
 import { loadImage } from "../util";
 import { tokenImageCropper_TokenLibraryImagesQuery } from "./__generated__/tokenImageCropper_TokenLibraryImagesQuery.graphql";
 import { useStaticRef } from "../hooks/use-static-ref";
+import { useWindowDimensions } from "../hooks/use-window-dimensions";
 
 const TokenLibraryImagesQuery = graphql`
   query tokenImageCropper_TokenLibraryImagesQuery($sourceImageSha256: String!) {
@@ -68,6 +67,64 @@ export const TokenImageCropper = (props: {
     }))
   );
 
+  const windowDimensions = useWindowDimensions();
+  const [imageDimensions, setImageDimensions] = React.useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+
+  const cropSize = React.useMemo(() => {
+    if (!imageDimensions) {
+      return null;
+    }
+
+    let height = windowDimensions.height / 2;
+    let minZoomHeight = height / imageDimensions.height;
+
+    if (height > imageDimensions.height) {
+      height = imageDimensions.height;
+      minZoomHeight = 1;
+    }
+
+    let width = windowDimensions.width / 2;
+    let minZoomWidth = width / imageDimensions.width;
+
+    if (width > imageDimensions.width) {
+      width = imageDimensions.width;
+      minZoomWidth = 1;
+    }
+
+    let minZoom = 0;
+    if (height > width) {
+      minZoom = minZoomWidth;
+      height = width;
+    } else {
+      minZoom = minZoomHeight;
+      width = height;
+    }
+
+    let maxZoom = (imageDimensions.width * 4) / width;
+
+    return { height, width, minZoom, maxZoom };
+  }, [windowDimensions, imageDimensions]);
+
+  React.useEffect(() => {
+    const task = loadImage(props.imageUrl);
+
+    task.promise
+      .then((image) => {
+        setImageDimensions({
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+        });
+      })
+      .catch(() => {
+        console.log("Canceled loading the image.");
+      });
+
+    return () => task.cancel();
+  }, [props.sourceImageHash]);
+
   return (
     <>
       <Grid
@@ -84,6 +141,8 @@ export const TokenImageCropper = (props: {
           <Cropper
             image={props.imageUrl}
             crop={crop}
+            minZoom={cropSize?.minZoom ?? 1}
+            maxZoom={cropSize?.maxZoom ?? 1}
             zoom={zoom}
             onCropChange={setCrop}
             onCropComplete={(_, croppedAreaPixels) => {
@@ -91,6 +150,7 @@ export const TokenImageCropper = (props: {
             }}
             onZoomChange={setZoom}
             aspect={1}
+            cropSize={cropSize ?? undefined}
           />
         </GridItem>
         <GridItem rowSpan={5} colSpan={1} display="flex" alignItems="center">
@@ -177,8 +237,8 @@ export const TokenImageCropper = (props: {
               <FormLabel fontSize="small">Zoom</FormLabel>
               <Slider
                 aria-label="slider-zoom"
-                min={1}
-                max={3}
+                min={cropSize?.minZoom}
+                max={cropSize?.maxZoom}
                 step={0.1}
                 value={zoom}
                 onChange={(zoom) => setZoom(zoom)}
