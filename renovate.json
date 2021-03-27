@@ -36,6 +36,13 @@
         "^@types/relay-runtime",
         "^relay-compiler-language-typescript"
       ]
+    },
+    {
+      "groupName": "three and react-three-fiber",
+      "packagePatterns: [
+        "three",
+        "react-three-fiber"
+      ]
     }
   ],
   "postUpdateOptions": ["npmDedupe"]
