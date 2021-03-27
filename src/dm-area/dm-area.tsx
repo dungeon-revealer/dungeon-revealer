@@ -110,6 +110,14 @@ type SocketTokenEvent =
 
 type TokenPartial = Omit<Partial<MapTokenEntity>, "id">;
 
+const LoadedMapDiv = styled.div`
+display: flex;
+height: 100vh;
+/* Mobile Chrome 100vh issue with address bar */
+@media screen and (max-width: 580px) and (-webkit-min-device-pixel-ratio:0) { 
+  height: calc(100vh - 56px);
+}
+`
 const Content = ({
   socket,
   password: dmPassword,
@@ -519,15 +527,6 @@ const Content = ({
   );
   const [cropperNode, selectFile] = useTokenImageUpload();
 
-  const LoadedMapDiv = styled.div`
-  display: flex;
-  min-height: 100vh;
-  /* Mobile Chrome 100vh issue with address bar */
-  @media screen and (max-width: 580px) and (-webkit-min-device-pixel-ratio:0) { 
-    min-height: calc(100vh - 56px);
-  }
-`
-
   return (
     <FetchContext.Provider value={localFetch}>
       {data && mode.title === "SHOW_MAP_LIBRARY" ? (
@@ -558,7 +557,6 @@ const Content = ({
       ) : null}
       {loadedMap ? (
         <LoadedMapDiv
-          style={{ display: "flex", height: "calc(100vh - 56px)" }}
           onDragEnter={(ev) => {
             if (isFileDrag(ev) === false) {
               return;
