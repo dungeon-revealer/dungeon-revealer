@@ -1,16 +1,13 @@
 import "./offscreen-canvas-polyfill";
 import * as React from "react";
 import produce from "immer";
-import debounce from "lodash/debounce";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import { Box, Center } from "@chakra-ui/react";
-import graphql from "babel-plugin-relay/macro";
 import { SelectMapModal } from "./select-map-modal";
 import { ImportFileModal } from "./import-file-modal";
 import { MediaLibrary } from "./media-library";
 import { useSocket } from "../socket";
 import { buildApiUrl } from "../public-url";
-import { useStaticRef } from "../hooks/use-static-ref";
 import { AuthenticationScreen } from "../authentication-screen";
 import { SplashScreen } from "../splash-screen";
 import { FetchContext } from "./fetch-context";
@@ -332,25 +329,17 @@ const Content = ({
     [loadedMapId, localFetch]
   );
 
-  const persistTokenChanges = useStaticRef(() =>
-    debounce((loadedMapId, id, updates, localFetch) => {
+  const updateToken = React.useCallback(
+    (id: string, updates: TokenPartial) => {
       localFetch(`/map/${loadedMapId}/token/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...updates,
-        }),
+        body: JSON.stringify({ ...updates, socketId: socket.id }),
       });
-    }, 100)
-  );
-
-  const updateToken = React.useCallback(
-    (id: string, updates: TokenPartial) => {
-      persistTokenChanges(loadedMapId, id, updates, localFetch);
     },
-    [loadedMapId, persistTokenChanges, localFetch]
+    [loadedMapId, localFetch, socket.id]
   );
 
   const dmPasswordRef = React.useRef(dmPassword);
