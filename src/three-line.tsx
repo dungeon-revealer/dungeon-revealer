@@ -1,12 +1,12 @@
 import * as THREE from "three";
 import * as React from "react";
 import { ReactThreeFiber } from "react-three-fiber";
-import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
 import {
+  LineGeometry,
   LineMaterial,
   LineMaterialParameters,
-} from "three/examples/jsm/lines/LineMaterial";
-import { Line2 } from "three/examples/jsm/lines/Line2";
+  Line2,
+} from "three-stdlib";
 
 type Props = {
   points: [number, number, number][];

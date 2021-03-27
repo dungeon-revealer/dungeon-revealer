@@ -36,6 +36,7 @@ import { StoreType } from "leva/dist/declarations/src/types";
 import { levaPluginNoteReference } from "./leva-plugin/leva-plugin-note-reference";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
 import { useCurrent } from "./hooks/use-current";
+import throttle from "lodash/throttle";
 
 type Vector2D = [number, number];
 
@@ -167,7 +168,9 @@ export const ContextMenuContext = React.createContext(
   (_props: ContextMenuState) => undefined as void
 );
 
-const TokenRenderer: React.FC<{
+type TokenPartialChanges = Omit<Partial<MapTokenEntity>, "id">;
+
+const TokenRenderer = (props: {
   id: string;
   x: number;
   y: number;
@@ -180,7 +183,7 @@ const TokenRenderer: React.FC<{
   reference: null | { type: "note"; id: string };
   tokenImageId: string | null;
   columnWidth: number | null;
-}> = (props) => {
+}) => {
   const sharedMapState = React.useContext(SharedMapState);
 
   const query = useQuery<mapView_TokenImageQuery>(
@@ -198,15 +201,36 @@ const TokenRenderer: React.FC<{
     0
   );
 
-  const latestTokenProps = React.useRef(props);
+  const latestTokenProps = React.useRef({ ...props });
 
   const updateToken = React.useContext(UpdateTokenContext);
+
+  const pendingChangesRef = React.useRef<TokenPartialChanges>({});
+
+  const enqueueSave = useStaticRef(() =>
+    throttle(
+      () => {
+        updateToken(props.id, pendingChangesRef.current);
+        pendingChangesRef.current = {};
+      },
+      200,
+      {
+        leading: false,
+        trailing: true,
+      }
+    )
+  );
 
   const [isDragging, setIsDragging] = React.useState(false);
   const isDraggingRef = React.useRef(isDragging);
   React.useEffect(() => {
     isDraggingRef.current = isDragging;
   });
+
+  React.useEffect(() => {
+    latestTokenProps.current = { ...props };
+  });
+
   const store = useCreateStore();
   const updateRadiusRef = React.useRef<null | ((radius: number) => void)>(null);
   const [values, setValues] = useControls(
@@ -230,11 +254,11 @@ const TokenRenderer: React.FC<{
           ) {
             return;
           }
-
-          updateToken(props.id, {
-            x: value[0],
-            y: value[1],
-          });
+          latestTokenProps.current.x = value[0];
+          latestTokenProps.current.y = value[1];
+          pendingChangesRef.current.x = value[0];
+          pendingChangesRef.current.y = value[1];
+          enqueueSave();
         },
       },
       radius: {
@@ -244,7 +268,6 @@ const TokenRenderer: React.FC<{
         min: 1,
         onChange: (value: number) => {
           const newRadius = sharedMapState.helper.size.fromImageToThree(value);
-
           set({
             circleScale: [
               newRadius / initialRadius,
@@ -257,9 +280,9 @@ const TokenRenderer: React.FC<{
             return;
           }
 
-          updateToken(props.id, {
-            radius: value,
-          });
+          latestTokenProps.current.radius = value;
+          pendingChangesRef.current.radius = value;
+          enqueueSave();
         },
       },
       radiusOptions: buttonGroup({
@@ -293,7 +316,7 @@ const TokenRenderer: React.FC<{
         value: props.reference?.id ?? null,
       }),
       tokenImageId: levaPluginTokenImage({
-        value: props.tokenImageId,
+        value: props.tokenImageId ?? null,
       }),
     }),
     { store }
@@ -363,7 +386,10 @@ const TokenRenderer: React.FC<{
       reference: levaPluginNoteReference({
         value: props.reference?.id ?? null,
         // @ts-ignore
-        onChange: (referenceId: null | string) => {
+        onChange: (referenceId: null | undefined | string) => {
+          if (referenceId === undefined) {
+            return;
+          }
           if (
             (latestTokenProps.current.reference?.id ?? null) === referenceId
           ) {
@@ -377,11 +403,13 @@ const TokenRenderer: React.FC<{
       tokenImageId: levaPluginTokenImage({
         value: props.tokenImageId,
         // @ts-ignore
-        onChange: (tokenImageId: null | string) => {
+        onChange: (tokenImageId: null | undefined | string) => {
+          if (tokenImageId === undefined) {
+            return;
+          }
           if (latestTokenProps.current.tokenImageId === tokenImageId) {
             return;
           }
-
           updateToken(props.id, {
             tokenImageId,
           });
@@ -406,7 +434,7 @@ const TokenRenderer: React.FC<{
       isMovableByPlayers: props.isMovableByPlayers,
       isVisibleForPlayers: props.isVisibleForPlayers,
       reference: props.reference?.id ?? null,
-      tokenImageId: props.tokenImageId,
+      tokenImageId: props.tokenImageId ?? null,
     });
   }, [
     setValues,
@@ -421,10 +449,6 @@ const TokenRenderer: React.FC<{
     props.reference?.id,
     props.tokenImageId,
   ]);
-
-  React.useEffect(() => {
-    latestTokenProps.current = props;
-  });
 
   const setStore = React.useContext(SetSelectedTokenStoreContext);
 
@@ -548,9 +572,15 @@ const TokenRenderer: React.FC<{
         );
 
         setValues({
-          // @ts-ignore
           position: [x, y],
         });
+
+        if (last) {
+          updateToken(props.id, {
+            x,
+            y,
+          });
+        }
 
         return memo;
       },
