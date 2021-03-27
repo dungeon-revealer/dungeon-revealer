@@ -39,7 +39,7 @@
     },
     {
       "groupName": "three and react-three-fiber",
-      "packagePatterns: [
+      "packagePatterns": [
         "three",
         "react-three-fiber"
       ]
