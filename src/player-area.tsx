@@ -12,7 +12,6 @@ import { AuthenticationScreen } from "./authentication-screen";
 import { buildApiUrl } from "./public-url";
 import { AuthenticatedAppShell } from "./authenticated-app-shell";
 import { useSocket } from "./socket";
-import { useStaticRef } from "./hooks/use-static-ref";
 import { animated, useSpring, to } from "react-spring";
 import { MapView, MapControlInterface, UpdateTokenContext } from "./map-view";
 import { useGesture } from "react-use-gesture";
@@ -283,35 +282,22 @@ const PlayerMap: React.FC<{
       window.document.removeEventListener("visibilitychange", listener, false);
   }, []);
 
-  const persistTokenChanges = useStaticRef(() =>
-    debounce(
-      (
-        loadedMapId: string,
-        id: string,
-        updates: any,
-        localFetch: typeof fetch
-      ) => {
-        localFetch(`/map/${loadedMapId}/token/${id}`, {
+  const updateToken = React.useCallback(
+    ({ id, ...updates }) => {
+      if (currentMap) {
+        fetch(`/map/${currentMap.id}/token/${id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             ...updates,
+            socketId: socket.id,
           }),
         });
-      },
-      100
-    )
-  );
-
-  const updateToken = React.useCallback(
-    ({ id, ...updates }) => {
-      if (currentMap) {
-        persistTokenChanges(currentMap.id, id, updates, fetch);
       }
     },
-    [currentMap, persistTokenChanges, fetch]
+    [currentMap, fetch]
   );
 
   const [toolbarPosition, setToolbarPosition] = useSpring(() => ({

@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-showdown/dist/MarkdownView.d.ts b/node_modules/react-showdown/dist/MarkdownView.d.ts
-index b916c5f..a910e13 100644
+index 2f6d0a6..1901935 100644
 --- a/node_modules/react-showdown/dist/MarkdownView.d.ts
 +++ b/node_modules/react-showdown/dist/MarkdownView.d.ts
 @@ -9,5 +9,6 @@ export interface MarkdownViewProps {
@@ -10,10 +10,10 @@ index b916c5f..a910e13 100644
  }
  export default function MarkdownView(props: MarkdownViewProps): ReactElement;
 diff --git a/node_modules/react-showdown/dist/react-showdown.cjs.development.js b/node_modules/react-showdown/dist/react-showdown.cjs.development.js
-index cfe1a2e..20f4af3 100644
+index 0e2ad0c..83b7f1a 100644
 --- a/node_modules/react-showdown/dist/react-showdown.cjs.development.js
 +++ b/node_modules/react-showdown/dist/react-showdown.cjs.development.js
-@@ -89,7 +89,8 @@ function MarkdownView(props) {
+@@ -94,7 +94,8 @@ function MarkdownView(props) {
        extensions = props.extensions,
        components = props.components,
        sanitizeHtml = props.sanitizeHtml,
@@ -23,7 +23,7 @@ index cfe1a2e..20f4af3 100644
  
    var mapElement = React.useMemo(function () {
      return function mapElement(node, index) {
-@@ -130,7 +131,7 @@ function MarkdownView(props) {
+@@ -135,7 +136,7 @@ function MarkdownView(props) {
          var children = skipAnyChildrenFor.includes(node.name) ? null : skipWhitespaceElementsFor.includes(node.name) ? node.children.filter(filterWhitespaceElements).map(mapElement) : node.children.map(mapElement);
          return React.createElement(elementType, _props, children);
        } else if (node.type === 'text' && node instanceof domhandler.DataNode) {
@@ -33,10 +33,10 @@ index cfe1a2e..20f4af3 100644
          return null; // noop
        } else if (node.type === 'style' && node instanceof domhandler.Element) {
 diff --git a/node_modules/react-showdown/dist/react-showdown.esm.js b/node_modules/react-showdown/dist/react-showdown.esm.js
-index 3bc6916..a82eaa9 100644
+index bd50467..bee7730 100644
 --- a/node_modules/react-showdown/dist/react-showdown.esm.js
 +++ b/node_modules/react-showdown/dist/react-showdown.esm.js
-@@ -82,7 +82,8 @@ function MarkdownView(props) {
+@@ -87,7 +87,8 @@ function MarkdownView(props) {
        extensions = props.extensions,
        components = props.components,
        sanitizeHtml = props.sanitizeHtml,
@@ -46,7 +46,7 @@ index 3bc6916..a82eaa9 100644
  
    var mapElement = useMemo(function () {
      return function mapElement(node, index) {
-@@ -123,7 +124,7 @@ function MarkdownView(props) {
+@@ -128,7 +129,7 @@ function MarkdownView(props) {
          var children = skipAnyChildrenFor.includes(node.name) ? null : skipWhitespaceElementsFor.includes(node.name) ? node.children.filter(filterWhitespaceElements).map(mapElement) : node.children.map(mapElement);
          return createElement(elementType, _props, children);
        } else if (node.type === 'text' && node instanceof DataNode) {
