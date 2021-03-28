@@ -282,11 +282,9 @@ const TokenImagePopoverContent = (props: {
   ) : null;
 };
 
-const normalize = (opts: { value: string | null }) => opts;
-const sanitize = (value: string | null): string | null => value;
+const normalize = (input: { value: string | null }) => ({ value: input.value });
 
 export const levaPluginTokenImage = createPlugin({
   normalize,
-  sanitize,
   component: TokenImageReference,
 });

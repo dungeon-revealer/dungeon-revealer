@@ -12,7 +12,6 @@ const { Row, Label } = LevaComponents;
 
 const NoteReference = () => {
   const { displayValue, setValue } = useInputContext<any>();
-
   const noteWindowActions = useNoteWindowActions();
 
   const [reactNode, showSelectNoteModal] = useShowSelectNoteModal();
@@ -61,11 +60,13 @@ const NoteReference = () => {
   );
 };
 
-const normalize = (opts: { value: string | null }) => opts;
-const sanitize = (value: string | null): string | null => value;
+type NoteReferenceIdValue = string | null;
+
+const normalize = (input: { value: NoteReferenceIdValue }) => ({
+  value: input.value,
+});
 
 export const levaPluginNoteReference = createPlugin({
   normalize,
-  sanitize,
   component: NoteReference,
 });

@@ -180,26 +180,11 @@ const TokenRenderer = (props: {
   isLocked: boolean;
   isMovableByPlayers: boolean;
   isVisibleForPlayers: boolean;
-  reference: null | { type: "note"; id: string };
+  referenceId: null | string;
   tokenImageId: string | null;
   columnWidth: number | null;
 }) => {
   const sharedMapState = React.useContext(SharedMapState);
-
-  const query = useQuery<mapView_TokenImageQuery>(
-    MapTokenImageQuery,
-    props.tokenImageId
-      ? {
-          id: props.tokenImageId,
-        }
-      : undefined,
-    { skip: props.tokenImageId === null }
-  );
-  const [, cachedQueryResult] = useCurrent(
-    query,
-    !query.error && !query.data,
-    0
-  );
 
   const latestTokenProps = React.useRef({ ...props });
 
@@ -229,7 +214,7 @@ const TokenRenderer = (props: {
 
   React.useEffect(() => {
     latestTokenProps.current = { ...props };
-  });
+  }, Object.values(props));
 
   const store = useCreateStore();
   const updateRadiusRef = React.useRef<null | ((radius: number) => void)>(null);
@@ -312,8 +297,8 @@ const TokenRenderer = (props: {
         label: "Movable by players",
         value: props.isMovableByPlayers,
       },
-      reference: levaPluginNoteReference({
-        value: props.reference?.id ?? null,
+      referenceId: levaPluginNoteReference({
+        value: props.referenceId ?? null,
       }),
       tokenImageId: levaPluginTokenImage({
         value: props.tokenImageId ?? null,
@@ -383,18 +368,14 @@ const TokenRenderer = (props: {
           });
         },
       },
-      reference: levaPluginNoteReference({
-        value: props.reference?.id ?? null,
-        // @ts-ignore
-        onChange: (referenceId: null | undefined | string) => {
-          if (referenceId === undefined) {
+      referenceId: levaPluginNoteReference({
+        value: props.referenceId,
+        onChange: (referenceId: string | null) => {
+          if (latestTokenProps.current.referenceId === referenceId) {
             return;
           }
-          if (
-            (latestTokenProps.current.reference?.id ?? null) === referenceId
-          ) {
-            return;
-          }
+          latestTokenProps.current.referenceId = referenceId;
+
           updateToken(props.id, {
             reference: referenceId ? { type: "note", id: referenceId } : null,
           });
@@ -402,14 +383,12 @@ const TokenRenderer = (props: {
       }),
       tokenImageId: levaPluginTokenImage({
         value: props.tokenImageId,
-        // @ts-ignore
-        onChange: (tokenImageId: null | undefined | string) => {
-          if (tokenImageId === undefined) {
-            return;
-          }
+        onChange: (tokenImageId: null | string) => {
           if (latestTokenProps.current.tokenImageId === tokenImageId) {
             return;
           }
+          latestTokenProps.current.tokenImageId = tokenImageId;
+
           updateToken(props.id, {
             tokenImageId,
           });
@@ -433,8 +412,8 @@ const TokenRenderer = (props: {
       color: props.color,
       isMovableByPlayers: props.isMovableByPlayers,
       isVisibleForPlayers: props.isVisibleForPlayers,
-      reference: props.reference?.id ?? null,
-      tokenImageId: props.tokenImageId ?? null,
+      referenceId: props.referenceId,
+      tokenImageId: props.tokenImageId,
     });
   }, [
     setValues,
@@ -446,9 +425,24 @@ const TokenRenderer = (props: {
     props.color,
     props.isMovableByPlayers,
     props.isVisibleForPlayers,
-    props.reference?.id,
+    props.referenceId,
     props.tokenImageId,
   ]);
+
+  const query = useQuery<mapView_TokenImageQuery>(
+    MapTokenImageQuery,
+    values.tokenImageId
+      ? {
+          id: values.tokenImageId,
+        }
+      : undefined,
+    { skip: values.tokenImageId === null }
+  );
+  const [, cachedQueryResult] = useCurrent(
+    query,
+    !query.error && !query.data,
+    0
+  );
 
   const setStore = React.useContext(SetSelectedTokenStoreContext);
 
@@ -512,9 +506,9 @@ const TokenRenderer = (props: {
             onPointerDown.current();
             // left mouse
             if (event.button === 0) {
-              if (props.reference) {
+              if (values.referenceId) {
                 noteWindowActions.focusOrShowNoteInNewWindow(
-                  props.reference.id
+                  values.referenceId
                 );
               }
             }
@@ -647,7 +641,7 @@ const TokenRenderer = (props: {
         scale={animatedProps.circleScale}
         renderOrder={LayerRenderOrder.token}
       >
-        {props.tokenImageId && cachedQueryResult?.data?.tokenImage ? null : (
+        {values.tokenImageId && cachedQueryResult?.data?.tokenImage ? null : (
           <>
             <mesh>
               <circleBufferGeometry
@@ -675,7 +669,7 @@ const TokenRenderer = (props: {
             </mesh>
           </>
         )}
-        {props.tokenImageId &&
+        {values.tokenImageId &&
         cachedQueryResult?.data?.tokenImage &&
         cachedQueryResult.data.tokenImage.__typename === "TokenImage" ? (
           <TokenAttachment
@@ -686,7 +680,7 @@ const TokenRenderer = (props: {
             opacity={values.isVisibleForPlayers ? 1 : 0.5}
           />
         ) : null}
-        {props.tokenImageId && cachedQueryResult?.data?.tokenImage ? null : (
+        {values.tokenImageId && cachedQueryResult?.data?.tokenImage ? null : (
           <mesh {...dragProps()} renderOrder={LayerRenderOrder.tokenGesture}>
             {/* This one is for attaching the gesture handlers */}
             <circleBufferGeometry
@@ -1124,8 +1118,8 @@ const MapRenderer: React.FC<{
             isMovableByPlayers={token.isMovableByPlayers}
             isVisibleForPlayers={token.isVisibleForPlayers}
             radius={token.radius}
-            reference={token.reference}
-            tokenImageId={token.tokenImageId}
+            referenceId={token.reference?.id ?? null}
+            tokenImageId={token.tokenImageId ?? null}
             columnWidth={props.grid?.columnWidth ?? null}
           />
         ))}

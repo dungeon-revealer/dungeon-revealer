@@ -1,7 +1,6 @@
 import * as React from "react";
 import produce from "immer";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
-import debounce from "lodash/debounce";
 import { ReactRelayContext } from "relay-hooks";
 import styled from "@emotion/styled/macro";
 import { loadImage, LoadImageTask } from "./util";
