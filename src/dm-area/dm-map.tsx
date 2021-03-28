@@ -1064,7 +1064,6 @@ export const DmMap = (props: {
                 </Toolbar.Item>
               </Toolbar.Group>
             </Toolbar>
-            {/* <div style={{ marginLeft: 24 }} /> */}
             <MarginLeftDiv />
             <Toolbar horizontal>
               <Toolbar.Group>
