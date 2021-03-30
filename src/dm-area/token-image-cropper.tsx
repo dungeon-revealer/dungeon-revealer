@@ -78,28 +78,20 @@ export const TokenImageCropper = (props: {
       return null;
     }
 
-    let height = windowDimensions.height / 2;
-    let minZoomHeight = height / imageDimensions.height;
+    let height = windowDimensions.height / 3;
+    let width = windowDimensions.width / 3;
 
-    if (height > imageDimensions.height) {
+    if (height > imageDimensions.height || width > imageDimensions.width) {
       height = imageDimensions.height;
-      minZoomHeight = 1;
-    }
-
-    let width = windowDimensions.width / 2;
-    let minZoomWidth = width / imageDimensions.width;
-
-    if (width > imageDimensions.width) {
       width = imageDimensions.width;
-      minZoomWidth = 1;
     }
 
-    let minZoom = 0;
-    if (height > width) {
-      minZoom = minZoomWidth;
+    let minZoom = 1;
+    if (imageDimensions.height > imageDimensions.width) {
+      minZoom = width / imageDimensions.width;
       height = width;
     } else {
-      minZoom = minZoomHeight;
+      minZoom = height / imageDimensions.height;
       width = height;
     }
 
@@ -239,7 +231,7 @@ export const TokenImageCropper = (props: {
                 aria-label="slider-zoom"
                 min={cropSize?.minZoom}
                 max={cropSize?.maxZoom}
-                step={0.1}
+                step={0.01}
                 value={zoom}
                 onChange={(zoom) => setZoom(zoom)}
                 size="sm"
