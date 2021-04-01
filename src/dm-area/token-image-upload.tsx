@@ -209,6 +209,7 @@ export const useTokenImageUpload = () => {
     cropTokenImageState === null ? null : (
       <React.Suspense fallback={null}>
         <TokenImageCropper
+          key={cropTokenImageState.imageUrl}
           imageUrl={cropTokenImageState.imageUrl}
           sourceImageHash={cropTokenImageState.sourceImageHash}
           onConfirm={cropTokenImageState.onConfirm}

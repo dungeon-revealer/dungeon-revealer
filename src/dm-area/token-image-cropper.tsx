@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useQuery } from "relay-hooks";
 import type { Area } from "react-easy-crop/types";
+import useMeasure from "react-use-measure";
 import {
   Button,
   FormControl,
@@ -22,6 +23,7 @@ import { loadImage } from "../util";
 import { tokenImageCropper_TokenLibraryImagesQuery } from "./__generated__/tokenImageCropper_TokenLibraryImagesQuery.graphql";
 import { useStaticRef } from "../hooks/use-static-ref";
 import { useWindowDimensions } from "../hooks/use-window-dimensions";
+import type CropperType from "react-easy-crop";
 
 const TokenLibraryImagesQuery = graphql`
   query tokenImageCropper_TokenLibraryImagesQuery($sourceImageSha256: String!) {
@@ -73,49 +75,53 @@ export const TokenImageCropper = (props: {
     height: number;
   } | null>(null);
 
-  const cropSize = React.useMemo(() => {
-    if (!imageDimensions) {
-      return null;
-    }
+  const [ref, bounds] = useMeasure();
+  const cropperRef = React.useRef<CropperType | null>();
 
-    let height = windowDimensions.height / 3;
-    let width = windowDimensions.width / 3;
-
-    if (height > imageDimensions.height || width > imageDimensions.width) {
-      height = imageDimensions.height;
-      width = imageDimensions.width;
-    }
-
-    let minZoom = 1;
-    if (imageDimensions.height > imageDimensions.width) {
-      minZoom = width / imageDimensions.width;
-      height = width;
-    } else {
-      minZoom = height / imageDimensions.height;
-      width = height;
-    }
-
-    let maxZoom = (imageDimensions.width * 4) / width;
-
-    return { height, width, minZoom, maxZoom };
-  }, [windowDimensions, imageDimensions]);
+  const [cropSize, setCropSize] = React.useState<null | {
+    width: number;
+    height: number;
+    minZoom: number;
+    maxZoom: number;
+  }>(null);
 
   React.useEffect(() => {
-    const task = loadImage(props.imageUrl);
+    if (!cropperRef.current?.imageRef || bounds.height === 0) {
+      return;
+    }
 
-    task.promise
-      .then((image) => {
-        setImageDimensions({
-          width: image.naturalWidth,
-          height: image.naturalHeight,
-        });
-      })
-      .catch(() => {
-        console.log("Canceled loading the image.");
-      });
+    const imageDimensions = {
+      width: cropperRef.current.imageRef.width,
+      height: cropperRef.current.imageRef.height,
+    };
 
-    return () => task.cancel();
-  }, [props.sourceImageHash]);
+    let ratio = imageDimensions.width / imageDimensions.height;
+    let width = imageDimensions.width;
+    let height = imageDimensions.height;
+
+    const minBoundSide = Math.min(bounds.width - 30, bounds.height - 30);
+
+    let sideLength = Math.min(minBoundSide, width);
+
+    let minZoom = sideLength / imageDimensions.width;
+
+    if (ratio > 1) {
+      sideLength = Math.min(minBoundSide, height);
+      minZoom = sideLength / imageDimensions.height;
+    }
+
+    let maxZoom = (imageDimensions.width * 4) / sideLength;
+    setCropSize({ height: sideLength, width: sideLength, minZoom, maxZoom });
+    setZoom((zoom) => {
+      if (zoom < minZoom) {
+        return minZoom;
+      }
+      if (zoom > maxZoom) {
+        return maxZoom;
+      }
+      return zoom;
+    });
+  }, [windowDimensions, imageDimensions, bounds]);
 
   return (
     <>
@@ -129,23 +135,12 @@ export const TokenImageCropper = (props: {
         zIndex={1}
         padding={4}
       >
-        <GridItem colSpan={4} rowSpan={3}>
-          <Cropper
-            image={props.imageUrl}
-            crop={crop}
-            minZoom={cropSize?.minZoom ?? 1}
-            maxZoom={cropSize?.maxZoom ?? 1}
-            zoom={zoom}
-            onCropChange={setCrop}
-            onCropComplete={(_, croppedAreaPixels) => {
-              setCroppedAreaPixels(croppedAreaPixels);
-            }}
-            onZoomChange={setZoom}
-            aspect={1}
-            cropSize={cropSize ?? undefined}
-          />
-        </GridItem>
-        <GridItem rowSpan={5} colSpan={1} display="flex" alignItems="center">
+        <GridItem
+          rowSpan={{ base: 1, xl: 4 }}
+          colSpan={{ base: 5, xl: 1 }}
+          display="flex"
+          alignItems="center"
+        >
           {data.data?.tokenImages?.edges.length ? (
             <Stack
               spacing={2}
@@ -154,9 +149,11 @@ export const TokenImageCropper = (props: {
               background="white"
               maxHeight={500}
               zIndex={10}
+              width="100%"
+              maxWidth={{ base: undefined, xl: "300px" }}
             >
               <Heading size="xs">Token Images from this Source</Heading>
-              <Stack>
+              <Stack direction={{ base: "row", xl: "column" }}>
                 {data.data.tokenImages.edges.map((edge) => (
                   <Grid
                     templateRows="repeat(3, 1fr)"
@@ -206,8 +203,40 @@ export const TokenImageCropper = (props: {
           ) : null}
         </GridItem>
         <GridItem
-          colSpan={4}
-          rowSpan={2}
+          colSpan={{ base: 5, xl: 4 }}
+          rowSpan={{ base: 3, xl: 3 }}
+          ref={ref}
+          position="relative"
+        >
+          <Cropper
+            // @ts-ignore
+            ref={cropperRef}
+            image={props.imageUrl}
+            crop={crop}
+            minZoom={cropSize?.minZoom ?? 1}
+            maxZoom={cropSize?.maxZoom ?? 1}
+            zoom={zoom}
+            onCropChange={setCrop}
+            onCropComplete={(_, croppedAreaPixels) => {
+              setCroppedAreaPixels(croppedAreaPixels);
+            }}
+            onZoomChange={setZoom}
+            onMediaLoaded={({ width, height }) => {
+              setImageDimensions({ width, height });
+            }}
+            cropSize={cropSize ?? undefined}
+            style={{
+              containerStyle: {
+                height: bounds.height,
+                width: bounds.width,
+                overflow: "visible",
+              },
+            }}
+          />
+        </GridItem>
+        <GridItem
+          colSpan={{ base: 5, xl: 4 }}
+          rowSpan={{ base: 2, xl: 1 }}
           display="flex"
           justifyContent="center"
         >
