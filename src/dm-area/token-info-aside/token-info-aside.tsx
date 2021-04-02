@@ -135,7 +135,7 @@ const extractNode = (
   return input.note;
 };
 
-const TitleAutoSaveInput: React.FC<{ id: string; title: string }> = (props) => {
+const TitleAutoSaveInput = (props: { id: string; title: string }) => {
   const [title, setTitle] = useNoteTitleAutoSave(props.id, props.title);
   return (
     <Input
@@ -157,11 +157,11 @@ const PermissionMenuContainer = styled.div`
   z-index: 900;
 `;
 
-const PermissionsMenu: React.FC<{
+const PermissionsMenu = (props: {
   close: () => void;
   position: { x: number; y: number };
   fragmentRef: tokenInfoAside_permissionsPopUpFragment$key;
-}> = (props) => {
+}) => {
   const data = useFragment(
     TokenInfoAside_permissionsPopUpFragment,
     props.fragmentRef
@@ -251,7 +251,7 @@ const PermissionsMenu: React.FC<{
   );
 };
 
-const WindowRenderer: React.FC<{
+const WindowRenderer = (props: {
   windowId: string;
   noteId: string | null;
   close: () => void;
@@ -260,7 +260,7 @@ const WindowRenderer: React.FC<{
   navigateBack: null | (() => void);
   replaceCurrent: (noteId: string | null) => void;
   initialShowLibrary: boolean;
-}> = (props) => {
+}) => {
   const isSkipped = props.noteId === null;
   const data = useQuery<tokenInfoAside_nodeQuery>(
     TokenInfoAside_nodeQuery,
@@ -329,6 +329,7 @@ const WindowRenderer: React.FC<{
                     },
                     onCompleted: () => {
                       props.replaceCurrent(null);
+                      setIsEditMode(false);
                     },
                   });
                 },
@@ -554,7 +555,7 @@ const WindowRenderer: React.FC<{
   );
 };
 
-export const TokenInfoAside: React.FC<{}> = () => {
+export const TokenInfoAside = () => {
   const noteWindowActions = useNoteWindowActions();
   const noteWindows = useNoteWindows();
 

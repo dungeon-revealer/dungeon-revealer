@@ -30,6 +30,7 @@ export const globalStyles = css`
       "Segoe UI Symbol";
     /* user-select: none; */
     font-size: 16px;
+    overflow: hidden;
   }
 
   html {
