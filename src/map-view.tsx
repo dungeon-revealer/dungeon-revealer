@@ -270,7 +270,7 @@ const TokenRenderer = (props: {
           enqueueSave();
         },
       },
-      radiusOptions: buttonGroup({
+      " ": buttonGroup({
         "0.25x": () => updateRadiusRef.current?.(0.25),
         "0.5x": () => updateRadiusRef.current?.(0.5),
         "1x": () => updateRadiusRef.current?.(1),
