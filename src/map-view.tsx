@@ -280,69 +280,48 @@ const TokenRenderer = (props: {
       isLocked: {
         label: "Position locked",
         value: props.isLocked,
-      },
-      text: {
-        label: "Title",
-        value: typeof props.textLabel === "string" ? props.textLabel : "",
-      },
-      color: {
-        label: "Color",
-        value: props.color ?? "rgb(255, 255, 255)",
-      },
-      isVisibleForPlayers: {
-        label: "Visible to players",
-        value: props.isVisibleForPlayers,
-      },
-      isMovableByPlayers: {
-        label: "Movable by players",
-        value: props.isMovableByPlayers,
-      },
-      referenceId: levaPluginNoteReference({
-        value: props.referenceId ?? null,
-      }),
-      tokenImageId: levaPluginTokenImage({
-        value: props.tokenImageId ?? null,
-      }),
-    }),
-    { store }
-  );
-
-  useControls(
-    {
-      text: {
-        value: props.textLabel,
-        onChange: (label: string) => {
-          if (latestTokenProps.current.textLabel === label) {
-            return;
-          }
-          updateToken(props.id, {
-            label,
-          });
-        },
-      },
-      isLocked: {
-        value: props.isLocked,
         onChange: (isLocked: boolean) => {
           if (latestTokenProps.current.isLocked === isLocked) {
             return;
           }
+          latestTokenProps.current.isLocked = isLocked;
           updateToken(props.id, {
             isLocked,
           });
         },
+        transient: false,
+      },
+      text: {
+        label: "Title",
+        value: typeof props.textLabel === "string" ? props.textLabel : "",
+        onChange: (label: string) => {
+          if (latestTokenProps.current.textLabel === label) {
+            return;
+          }
+
+          latestTokenProps.current.textLabel = label;
+          updateToken(props.id, {
+            label,
+          });
+        },
+        transient: false,
       },
       color: {
-        value: "rgb(255, 255, 255)",
+        label: "Color",
+        value: props.color ?? "rgb(255, 255, 255)",
         onChange: (color: string) => {
           if (latestTokenProps.current.color === color) {
             return;
           }
+          latestTokenProps.current.color = color;
           updateToken(props.id, {
             color,
           });
         },
+        transient: false,
       },
       isVisibleForPlayers: {
+        label: "Visible to players",
         value: props.isVisibleForPlayers,
         onChange: (isVisibleForPlayers: boolean) => {
           if (
@@ -350,12 +329,15 @@ const TokenRenderer = (props: {
           ) {
             return;
           }
+          latestTokenProps.current.isVisibleForPlayers = isVisibleForPlayers;
           updateToken(props.id, {
             isVisibleForPlayers,
           });
         },
+        transient: false,
       },
       isMovableByPlayers: {
+        label: "Movable by players",
         value: props.isMovableByPlayers,
         onChange: (isMovableByPlayers: boolean) => {
           if (
@@ -363,38 +345,40 @@ const TokenRenderer = (props: {
           ) {
             return;
           }
+          latestTokenProps.current.isMovableByPlayers = isMovableByPlayers;
           updateToken(props.id, {
             isMovableByPlayers,
           });
         },
+        transient: false,
       },
       referenceId: levaPluginNoteReference({
-        value: props.referenceId,
+        value: props.referenceId ?? null,
         onChange: (referenceId: string | null) => {
           if (latestTokenProps.current.referenceId === referenceId) {
             return;
           }
           latestTokenProps.current.referenceId = referenceId;
-
           updateToken(props.id, {
             reference: referenceId ? { type: "note", id: referenceId } : null,
           });
         },
+        transient: false,
       }),
       tokenImageId: levaPluginTokenImage({
-        value: props.tokenImageId,
+        value: props.tokenImageId ?? null,
         onChange: (tokenImageId: null | string) => {
           if (latestTokenProps.current.tokenImageId === tokenImageId) {
             return;
           }
           latestTokenProps.current.tokenImageId = tokenImageId;
-
           updateToken(props.id, {
             tokenImageId,
           });
         },
+        transient: false,
       }),
-    },
+    }),
     { store }
   );
 
@@ -584,12 +568,10 @@ const TokenRenderer = (props: {
           setStore(store);
         }, 1000);
         onPointerDown.current = () => clearTimeout(timeout);
+        event.stopPropagation();
 
         if (isMovable === false) {
           return;
-        }
-        if (isLocked === false) {
-          event.stopPropagation();
         }
       },
       onPointerOver: () => {
@@ -1410,7 +1392,7 @@ const MapViewRenderer = (props: {
     onKeyDown: KeyboardEvent;
   }>({
     onPointerDown: (args) => {
-      setTimeout(() => setStore(null));
+      setStore(null);
       toolRef.current?.handlers?.onPointerDown?.(args);
     },
     onPointerUp: (args) => toolRef.current?.handlers?.onPointerUp?.(args),
