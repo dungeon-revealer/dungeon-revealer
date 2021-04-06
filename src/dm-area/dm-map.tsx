@@ -604,7 +604,7 @@ const activeDmMapToolIdModel: PersistedStateModel<
         if (value !== null) {
           console.log(
             "Error occured while trying to decode value.\n" +
-            JSON.stringify(err, null, 2)
+              JSON.stringify(err, null, 2)
           );
         }
         return DragPanZoomMapTool.id;
@@ -916,8 +916,8 @@ export const DmMap = (props: {
           removeMarkedArea={props.removeMarkedArea}
           grid={
             props.map.grid &&
-              props.map.showGrid &&
-              activeTool !== ConfigureGridMapTool
+            props.map.showGrid &&
+            activeTool !== ConfigureGridMapTool
               ? props.map.grid
               : null
           }
@@ -1184,6 +1184,11 @@ export const DmMap = (props: {
             },
           }}
           hideCopyButton
+          titleBar={{
+            filter: false,
+            drag: false,
+            title: "Token Properties",
+          }}
         />
       </animated.div>
       {contextMenuState ? (
@@ -1252,7 +1257,7 @@ const LeftToolbarContainer = styled.div`
   @media (max-width: 580px) {
     top: 1em;
     align-items: start;
-   }
+  }
 `;
 
 const BottomToolbarContainer = styled.div`
@@ -1266,11 +1271,11 @@ const BottomToolbarContainer = styled.div`
 `;
 
 const MarginLeftDiv = styled.div`
- margin-left: 24px;
- @media (max-width: 580px) {
-  margin-left: 0px;
- }
-`
+  margin-left: 24px;
+  @media (max-width: 580px) {
+    margin-left: 0px;
+  }
+`;
 
 const MenuItemRenderer = (props: {
   record: ToolMapRecord;
