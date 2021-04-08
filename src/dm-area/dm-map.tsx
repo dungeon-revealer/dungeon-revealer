@@ -2,7 +2,6 @@ import * as React from "react";
 import { v4 as uuid } from "uuid";
 import styled from "@emotion/styled/macro";
 import { useToast } from "@chakra-ui/react";
-import { CirclePicker } from "react-color";
 import * as io from "io-ts";
 import { pipe, identity } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
@@ -457,27 +456,16 @@ const TokenMarkerSettings = (): React.ReactElement => {
       </FormControl>
       <FormControl size="sm">
         <FormLabel>Color</FormLabel>
-        <Stack>
-          <ColorPickerInput
-            size="sm"
-            color={tokenMarkerContext.state.tokenColor}
-            onChange={(color) => {
-              tokenMarkerContext.setState((state) => ({
-                ...state,
-                tokenColor: color,
-              }));
-            }}
-          />
-          <ColorPicker
-            color={tokenMarkerContext.state.tokenColor}
-            onChange={(color) => {
-              tokenMarkerContext.setState((state) => ({
-                ...state,
-                tokenColor: color,
-              }));
-            }}
-          />
-        </Stack>
+        <ColorPickerInput
+          size="sm"
+          color={tokenMarkerContext.state.tokenColor}
+          onChange={(color) => {
+            tokenMarkerContext.setState((state) => ({
+              ...state,
+              tokenColor: color,
+            }));
+          }}
+        />
       </FormControl>
       <FormControl size="sm">
         <FormLabel>Label</FormLabel>
@@ -539,17 +527,6 @@ const TokenMarkerSettings = (): React.ReactElement => {
     </Stack>
   );
 };
-
-const ColorPicker = React.memo(
-  (props: { color: string; onChange: (color: string) => void }) => {
-    return (
-      <CirclePicker
-        color={props.color}
-        onChangeComplete={(color) => props.onChange(color.hex)}
-      />
-    );
-  }
-);
 
 const DM_TOOL_MAP: Array<ToolMapRecord> = [
   {
