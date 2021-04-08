@@ -1,10 +1,9 @@
 import * as React from "react";
 import { v4 as uuid } from "uuid";
 import styled from "@emotion/styled/macro";
-import { useToast } from "@chakra-ui/react";
 import * as io from "io-ts";
-import { pipe, identity } from "fp-ts/lib/function";
-import * as E from "fp-ts/lib/Either";
+import { pipe, identity } from "fp-ts/function";
+import * as E from "fp-ts/Either";
 import {
   Box,
   FormControl,
@@ -25,6 +24,7 @@ import {
   Menu,
   MenuList,
   MenuItem,
+  useToast,
 } from "@chakra-ui/react";
 import { ReactRelayContext } from "relay-hooks";
 import * as Icons from "../feather-icons";
@@ -528,7 +528,7 @@ const TokenMarkerSettings = (): React.ReactElement => {
   );
 };
 
-const DM_TOOL_MAP: Array<ToolMapRecord> = [
+const dmTools: Array<ToolMapRecord> = [
   {
     name: "Move",
     icon: <Icons.MoveIcon size={20} />,
@@ -580,7 +580,7 @@ const activeDmMapToolIdModel: PersistedStateModel<
       E.fold((err) => {
         if (value !== null) {
           console.log(
-            "Error occured while trying to decode value.\n" +
+            "Error occurred while trying to decode value.\n" +
               JSON.stringify(err, null, 2)
           );
         }
@@ -680,10 +680,8 @@ export const DmMap = (props: {
   );
 
   const userSelectedTool = React.useMemo(() => {
-    return (
-      DM_TOOL_MAP.find((tool) => tool.tool.id === activeToolId) ??
-      DM_TOOL_MAP[0]
-    ).tool;
+    return (dmTools.find((tool) => tool.tool.id === activeToolId) ?? dmTools[0])
+      .tool;
   }, [activeToolId]);
 
   const [toolOverride, setToolOverride] = React.useState<null | MapTool>(null);
@@ -763,7 +761,7 @@ export const DmMap = (props: {
         case "4":
         case "5": {
           const toolIndex = parseInt(ev.key, 10) - 1;
-          setActiveToolId(DM_TOOL_MAP[toolIndex].tool.id);
+          setActiveToolId(dmTools[toolIndex].tool.id);
           break;
         }
         case "s": {
@@ -921,7 +919,7 @@ export const DmMap = (props: {
             <Toolbar>
               <Toolbar.Logo />
               <Toolbar.Group divider>
-                {DM_TOOL_MAP.map((record) => (
+                {dmTools.map((record) => (
                   <MenuItemRenderer
                     key={record.tool.id}
                     record={record}
