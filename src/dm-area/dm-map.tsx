@@ -87,9 +87,9 @@ import {
 import { NoteWindowActionsContext } from "./token-info-aside";
 import { ColorPickerInput } from "../color-picker-input";
 import { StoreType } from "leva/dist/declarations/src/types";
-import { LevaPanel } from "leva";
+import { LevaPanel, useControls, useCreateStore } from "leva";
 import { ChatPositionContext } from "../authenticated-app-shell";
-import { animated, to } from "@react-spring/web";
+import { animated, to, useSpring } from "@react-spring/web";
 import { darken } from "polished";
 
 type ToolMapRecord = {
@@ -99,82 +99,80 @@ type ToolMapRecord = {
   MenuComponent: null | (() => React.ReactElement);
 };
 
+const levaTheme = {
+  colors: {
+    leva__elevation1: darken(0.05, "white"),
+    leva__elevation2: "white",
+    leva__elevation3: darken(0.03, "white"),
+    leva__accent1: darken(0.2, "white"),
+    leva__accent2: darken(0.1, "white"),
+    leva__accent3: darken(0.2, "white"),
+    leva__highlight1: darken(0.3, "white"),
+    leva__highlight2: "black",
+    leva__highlight3: "black",
+  },
+  fonts: {
+    leva__mono: "inherit",
+    leva__sans: "inherit",
+  },
+};
+
 const BrushSettings = (): React.ReactElement => {
   const { state, setState } = React.useContext(BrushToolContext);
 
-  return (
-    <>
-      <h6 style={{ margin: 0, marginBottom: 12 }}>Brush Shape</h6>
-      <div style={{ display: "flex" }}>
-        <div style={{ flex: 1, textAlign: "left" }}>
-          <ShapeButton
-            isActive={BrushShape.circle === state.brushShape}
-            onClick={() => {
-              setState((state) => ({
-                ...state,
-                brushShape: BrushShape.circle,
-              }));
-            }}
-          >
-            <Icons.CircleIcon size={20} />
-            <Icons.Label>Circle</Icons.Label>
-          </ShapeButton>
-        </div>
-        <div style={{ flex: 1, textAlign: "right" }}>
-          <ShapeButton
-            isActive={BrushShape.square === state.brushShape}
-            onClick={() => {
-              setState((state) => ({
-                ...state,
-                brushShape: BrushShape.square,
-              }));
-            }}
-          >
-            <Icons.SquareIcon size={20} />
-            <Icons.Label>Square</Icons.Label>
-          </ShapeButton>
-        </div>
-      </div>
-      <h6 style={{ margin: 0, marginTop: 12, marginBottom: 0 }}>Brush Size</h6>
-      <input
-        type="range"
-        min="1"
-        max="200"
-        step="1"
-        value={state.brushSize}
-        onChange={(ev) => {
+  // TODO: refactor this construct into a re-usable hook structure.
+  const store = useCreateStore();
+  const [, set] = useControls(
+    () => ({
+      brushSize: {
+        label: "Brush Size",
+        value: state.brushSize.get(),
+        onChange: (value) => state.brushSize.set(value),
+        min: 1,
+        max: 300,
+        step: 1,
+      },
+      // TODO: this needs a custom leva panel
+      brushShape: {
+        label: "Brush Shape",
+        value: state.brushShape === BrushShape.circle ? true : false,
+        onChange: (value) =>
           setState((state) => ({
             ...state,
-            brushSize: Math.min(
-              200,
-              Math.max(0, parseInt(ev.target.value, 10))
-            ),
-          }));
-        }}
+            brushShape: value ? BrushShape.circle : BrushShape.square,
+          })),
+      },
+    }),
+    { store },
+    [state.brushShape]
+  );
+
+  // sync external change back into leva store
+  useSpring({
+    from: {
+      brushSize: state.brushSize,
+    },
+    immediate: true,
+    onChange: ({ brushSize }) => {
+      set({ brushSize });
+    },
+  });
+
+  return (
+    <div
+      onKeyDown={(ev) => {
+        ev.stopPropagation();
+      }}
+    >
+      <LevaPanel
+        fill={true}
+        titleBar={false}
+        store={store}
+        theme={levaTheme}
+        oneLineLabels
+        hideCopyButton
       />
-      <div style={{ display: "flex" }}>
-        <div
-          style={{
-            flex: 1,
-            textAlign: "left",
-            fontWeight: "bold",
-            fontSize: 10,
-          }}
-        >
-          1
-        </div>
-        <div
-          style={{
-            flex: 1,
-            textAlign: "right",
-            fontWeight: "bold",
-            fontSize: 10,
-          }}
-        >
-          200
-        </div>
-      </div>
-    </>
+    </div>
   );
 };
 
@@ -1141,23 +1139,7 @@ export const DmMap = (props: {
         <LevaPanel
           store={store}
           fill={true}
-          theme={{
-            colors: {
-              leva__elevation1: darken(0.05, "white"),
-              leva__elevation2: "white",
-              leva__elevation3: darken(0.03, "white"),
-              leva__accent1: darken(0.2, "white"),
-              leva__accent2: darken(0.1, "white"),
-              leva__accent3: darken(0.2, "white"),
-              leva__highlight1: darken(0.3, "white"),
-              leva__highlight2: "black",
-              leva__highlight3: "black",
-            },
-            fonts: {
-              leva__mono: "inherit",
-              leva__sans: "inherit",
-            },
-          }}
+          theme={levaTheme}
           hideCopyButton
           titleBar={{
             filter: false,
