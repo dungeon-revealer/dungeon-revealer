@@ -89,8 +89,9 @@ import { ColorPickerInput } from "../color-picker-input";
 import { StoreType } from "leva/dist/declarations/src/types";
 import { LevaPanel, useControls, useCreateStore } from "leva";
 import { ChatPositionContext } from "../authenticated-app-shell";
-import { animated, to, useSpring } from "@react-spring/web";
+import { animated, to } from "@react-spring/web";
 import { darken } from "polished";
+import { levaPluginIconPicker } from "../leva-plugin/leva-plugin-icon-picker";
 
 type ToolMapRecord = {
   name: string;
@@ -120,9 +121,8 @@ const levaTheme = {
 const BrushSettings = (): React.ReactElement => {
   const { state, setState } = React.useContext(BrushToolContext);
 
-  // TODO: refactor this construct into a re-usable hook structure.
   const store = useCreateStore();
-  const [, set] = useControls(
+  useControls(
     () => ({
       brushSize: {
         label: "Brush Size",
@@ -132,31 +132,31 @@ const BrushSettings = (): React.ReactElement => {
         max: 300,
         step: 1,
       },
-      // TODO: this needs a custom leva panel
-      brushShape: {
+      brushShape: levaPluginIconPicker({
         label: "Brush Shape",
-        value: state.brushShape === BrushShape.circle ? true : false,
-        onChange: (value) =>
+        value: state.brushShape,
+        options: [
+          {
+            value: BrushShape.square,
+            icon: <Icons.SquareIcon size={20} />,
+            label: "Square",
+          },
+          {
+            value: BrushShape.circle,
+            icon: <Icons.CircleIcon size={20} />,
+            label: "Circle",
+          },
+        ],
+        onChange: (brushShape) =>
           setState((state) => ({
             ...state,
-            brushShape: value ? BrushShape.circle : BrushShape.square,
+            brushShape,
           })),
-      },
+      }),
     }),
     { store },
     [state.brushShape]
   );
-
-  // sync external change back into leva store
-  useSpring({
-    from: {
-      brushSize: state.brushSize,
-    },
-    immediate: true,
-    onChange: ({ brushSize }) => {
-      set({ brushSize });
-    },
-  });
 
   return (
     <div
@@ -1264,22 +1264,6 @@ const MenuItemRenderer = (props: {
     </Toolbar.Item>
   );
 };
-
-const ShapeButton = styled.button<{ isActive: boolean }>`
-  border: none;
-  cursor: pointer;
-  background-color: transparent;
-  color: ${(p) => (p.isActive ? "rgba(0, 0, 0, 1)" : "hsl(211, 27%, 70%)")};
-  &:hover {
-    filter: drop-shadow(
-      0 0 4px
-        ${(p) => (p.isActive ? "rgba(0, 0, 0, .3)" : "rgba(200, 200, 200, .6)")}
-    );
-  }
-  > svg {
-    stroke: ${(p) => (p.isActive ? "rgba(0, 0, 0, 1)" : "hsl(211, 27%, 70%)")};
-  }
-`;
 
 const GridConfigurator = (props: {
   onAbort: () => void;
