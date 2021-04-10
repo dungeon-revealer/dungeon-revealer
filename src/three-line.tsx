@@ -19,6 +19,8 @@ export type LineProps = {
     "color" | "vertexColors" | "resolution" | "args"
   >;
 
+export type ThreeLine2 = Line2;
+
 /**
  * @source https://github.com/pmndrs/drei/blob/418a9ac0491e72cbfa1076cdd8d4ad483d216f66/src/Line.tsx#L1-L57
  */
