@@ -95,7 +95,6 @@ import {
 } from "leva";
 import { ChatPositionContext } from "../authenticated-app-shell";
 import { animated, to } from "@react-spring/web";
-import { darken } from "polished";
 import { levaPluginIconPicker } from "../leva-plugin/leva-plugin-icon-picker";
 
 type ToolMapRecord = {
@@ -107,21 +106,23 @@ type ToolMapRecord = {
 
 const levaTheme = {
   colors: {
-    leva__elevation1: darken(0.05, "white"),
-    leva__elevation2: "white",
-    leva__elevation3: darken(0.03, "white"),
-    leva__accent1: darken(0.2, "white"),
-    leva__accent2: darken(0.1, "white"),
-    leva__accent3: darken(0.2, "white"),
-    leva__highlight1: darken(0.3, "white"),
-    leva__highlight2: "black",
-    leva__highlight3: "black",
+    elevation1: "#f2f2f2",
+    elevation2: "#ffffff",
+    elevation3: "#f7f7f7",
+    accent1: "#ccc",
+    accent2: "#e6e6e6",
+    accent3: "#ccc",
+    highlight1: "#b3b3b3",
+    highlight2: "#000",
+    highlight3: "#000",
   },
   fonts: {
-    leva__mono: "inherit",
-    leva__sans: "inherit",
+    mono: "inherit",
+    sans: "inherit",
   },
 };
+
+console.log(levaTheme);
 
 const BrushSettings = (): React.ReactElement => {
   const { state, setState } = React.useContext(BrushToolContext);
