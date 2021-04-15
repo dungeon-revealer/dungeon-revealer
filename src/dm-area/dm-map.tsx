@@ -86,16 +86,11 @@ import {
 import { NoteWindowActionsContext } from "./token-info-aside";
 import { ColorPickerInput } from "../color-picker-input";
 import { StoreType } from "leva/dist/declarations/src/types";
-import {
-  buttonGroup,
-  LevaPanel,
-  useControls,
-  useCreateStore,
-  LevaInputs,
-} from "leva";
+import { buttonGroup, useControls, useCreateStore, LevaInputs } from "leva";
 import { ChatPositionContext } from "../authenticated-app-shell";
 import { animated, to } from "@react-spring/web";
 import { levaPluginIconPicker } from "../leva-plugin/leva-plugin-icon-picker";
+import { ThemedLevaPanel } from "../themed-leva-panel";
 
 type ToolMapRecord = {
   name: string;
@@ -103,26 +98,6 @@ type ToolMapRecord = {
   tool: MapTool;
   MenuComponent: null | (() => React.ReactElement);
 };
-
-const levaTheme = {
-  colors: {
-    elevation1: "#f2f2f2",
-    elevation2: "#ffffff",
-    elevation3: "#f7f7f7",
-    accent1: "#ccc",
-    accent2: "#e6e6e6",
-    accent3: "#ccc",
-    highlight1: "#b3b3b3",
-    highlight2: "#000",
-    highlight3: "#000",
-  },
-  fonts: {
-    mono: "inherit",
-    sans: "inherit",
-  },
-};
-
-console.log(levaTheme);
 
 const BrushSettings = (): React.ReactElement => {
   const { state, setState } = React.useContext(BrushToolContext);
@@ -180,11 +155,10 @@ const BrushSettings = (): React.ReactElement => {
         ev.stopPropagation();
       }}
     >
-      <LevaPanel
+      <ThemedLevaPanel
         fill={true}
         titleBar={false}
         store={store}
-        theme={levaTheme}
         oneLineLabels
         hideCopyButton
       />
@@ -216,11 +190,10 @@ const AreaSelectSettings = (): React.ReactElement => {
         ev.stopPropagation();
       }}
     >
-      <LevaPanel
+      <ThemedLevaPanel
         fill={true}
         titleBar={false}
         store={store}
-        theme={levaTheme}
         oneLineLabels
         hideCopyButton
       />
@@ -494,11 +467,10 @@ const TokenMarkerSettings = (): React.ReactElement => {
         ev.stopPropagation();
       }}
     >
-      <LevaPanel
+      <ThemedLevaPanel
         fill={true}
         titleBar={false}
         store={store}
-        theme={levaTheme}
         oneLineLabels
         hideCopyButton
       />
@@ -1116,10 +1088,9 @@ export const DmMap = (props: {
         }}
         onKeyDown={(ev) => ev.stopPropagation()}
       >
-        <LevaPanel
+        <ThemedLevaPanel
           store={store}
           fill={true}
-          theme={levaTheme}
           hideCopyButton
           titleBar={{
             filter: false,
