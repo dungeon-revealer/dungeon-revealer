@@ -31,7 +31,7 @@ import { TextureLoader } from "three";
 import { ReactEventHandlers } from "react-use-gesture/dist/types";
 import { useQuery } from "relay-hooks";
 import { mapView_TokenImageQuery } from "./__generated__/mapView_TokenImageQuery.graphql";
-import { buttonGroup, useControls, useCreateStore } from "leva";
+import { buttonGroup, useControls, useCreateStore, LevaInputs } from "leva";
 import { StoreType } from "leva/dist/declarations/src/types";
 import { levaPluginNoteReference } from "./leva-plugin/leva-plugin-note-reference";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
@@ -110,9 +110,7 @@ const Plane = React.forwardRef(
             },
             target: null,
           };
-          setTimeout(() => {
-            showContextMenu(state);
-          });
+          showContextMenu(state);
         }}
       >
         <mesh ref={ref} {...props}>
@@ -221,6 +219,7 @@ const TokenRenderer = (props: {
   const [values, setValues] = useControls(
     () => ({
       position: {
+        type: LevaInputs.VECTOR2D,
         label: "Position",
         value: [props.x, props.y],
         step: 1,
@@ -247,6 +246,7 @@ const TokenRenderer = (props: {
         },
       },
       radius: {
+        type: LevaInputs.NUMBER,
         label: "Size",
         value: props.radius,
         step: 1,
@@ -278,6 +278,7 @@ const TokenRenderer = (props: {
         "3x": () => updateRadiusRef.current?.(3),
       }),
       isLocked: {
+        type: LevaInputs.BOOLEAN,
         label: "Position locked",
         value: props.isLocked,
         onChange: (isLocked: boolean) => {
@@ -292,6 +293,7 @@ const TokenRenderer = (props: {
         transient: false,
       },
       text: {
+        type: LevaInputs.STRING,
         label: "Title",
         value: typeof props.textLabel === "string" ? props.textLabel : "",
         onChange: (label: string) => {
@@ -307,6 +309,7 @@ const TokenRenderer = (props: {
         transient: false,
       },
       color: {
+        type: LevaInputs.COLOR,
         label: "Color",
         value: props.color ?? "rgb(255, 255, 255)",
         onChange: (color: string) => {
@@ -321,6 +324,7 @@ const TokenRenderer = (props: {
         transient: false,
       },
       isVisibleForPlayers: {
+        type: LevaInputs.BOOLEAN,
         label: "Visible to players",
         value: props.isVisibleForPlayers,
         onChange: (isVisibleForPlayers: boolean) => {
@@ -337,6 +341,7 @@ const TokenRenderer = (props: {
         transient: false,
       },
       isMovableByPlayers: {
+        type: LevaInputs.BOOLEAN,
         label: "Movable by players",
         value: props.isMovableByPlayers,
         onChange: (isMovableByPlayers: boolean) => {
@@ -522,9 +527,13 @@ const TokenRenderer = (props: {
                   id: props.id,
                 },
               };
-              setTimeout(() => {
-                showContextMenu(state);
-              });
+
+              event.stopPropagation();
+              // @ts-ignore
+              event.nativeEvent.stopPropagation();
+              // @ts-ignore
+              event.nativeEvent.preventDefault();
+              showContextMenu(state);
             }
           }
 

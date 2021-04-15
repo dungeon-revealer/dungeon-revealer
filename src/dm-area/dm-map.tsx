@@ -20,7 +20,6 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  Input,
   Menu,
   MenuList,
   MenuItem,
@@ -87,7 +86,13 @@ import {
 import { NoteWindowActionsContext } from "./token-info-aside";
 import { ColorPickerInput } from "../color-picker-input";
 import { StoreType } from "leva/dist/declarations/src/types";
-import { LevaPanel, useControls, useCreateStore } from "leva";
+import {
+  buttonGroup,
+  LevaPanel,
+  useControls,
+  useCreateStore,
+  LevaInputs,
+} from "leva";
 import { ChatPositionContext } from "../authenticated-app-shell";
 import { animated, to } from "@react-spring/web";
 import { darken } from "polished";
@@ -125,9 +130,15 @@ const BrushSettings = (): React.ReactElement => {
   useControls(
     () => ({
       brushSize: {
+        type: LevaInputs.NUMBER,
         label: "Brush Size",
         value: state.brushSize.get(),
-        onChange: (value) => state.brushSize.set(value),
+        onChange: (value, _, { initial }) => {
+          if (initial) {
+            return;
+          }
+          state.brushSize.set(value);
+        },
         min: 1,
         max: 300,
         step: 1,
@@ -147,11 +158,15 @@ const BrushSettings = (): React.ReactElement => {
             label: "Circle",
           },
         ],
-        onChange: (brushShape) =>
+        onChange: (brushShape, _, { initial }) => {
+          if (initial) {
+            return;
+          }
           setState((state) => ({
             ...state,
             brushShape,
-          })),
+          }));
+        },
       }),
     }),
     { store },
@@ -179,21 +194,35 @@ const BrushSettings = (): React.ReactElement => {
 const AreaSelectSettings = (): React.ReactElement => {
   const { state, setState } = React.useContext(AreaSelectContext);
 
+  const store = useCreateStore();
+  useControls(
+    () => ({
+      snapToGrid: {
+        type: LevaInputs.BOOLEAN,
+        label: "Snap to Grid",
+        value: state.snapToGrid,
+        onChange: (value) =>
+          setState((state) => ({ ...state, snapToGrid: value })),
+      },
+    }),
+    { store },
+    [state.snapToGrid]
+  );
+
   return (
-    <div>
-      <h6 style={{ margin: 0, marginBottom: 12 }}>Snap to grid</h6>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <Switch
-          isChecked={state.snapToGrid}
-          onChange={(ev) => {
-            const snapToGrid = ev.target.checked;
-            setState((state) => ({ ...state, snapToGrid }));
-          }}
-        />
-        <span style={{ fontWeight: "bold", marginLeft: 8 }}>
-          {state.snapToGrid ? "On" : "Off"}
-        </span>
-      </div>
+    <div
+      onKeyDown={(ev) => {
+        ev.stopPropagation();
+      }}
+    >
+      <LevaPanel
+        fill={true}
+        titleBar={false}
+        store={store}
+        theme={levaTheme}
+        oneLineLabels
+        hideCopyButton
+      />
     </div>
   );
 };
@@ -254,7 +283,7 @@ const ShowGridSettingsPopup = React.memo(
 
     return (
       <Toolbar.Popup>
-        <VStack minWidth="300px">
+        <VStack minWidth="300px" padding="3">
           <HStack width="100%" justifyContent="space-between">
             <Box>
               <Heading size="xs">Grid Settings</Heading>
@@ -369,160 +398,110 @@ const TokenMarkerSettings = (): React.ReactElement => {
   const tokenMarkerContext = React.useContext(TokenMarkerContext);
   const configureGridContext = React.useContext(ConfigureGridMapToolContext);
 
-  const updateTokenRadius = (factor: number) => {
-    tokenMarkerContext.setState((state) => ({
-      ...state,
-      tokenRadius: (configureGridContext.state.columnWidth / 2) * factor * 0.9,
-    }));
-  };
+  const updateRadiusRef = React.useRef<null | ((radius: number) => void)>(null);
+
+  const store = useCreateStore();
+  const [, set] = useControls(
+    () => ({
+      radius: {
+        type: LevaInputs.NUMBER,
+        label: "Size",
+        value: tokenMarkerContext.state.tokenRadius.get(),
+        step: 1,
+        onChange: (value) => {
+          tokenMarkerContext.state.tokenRadius.set(value);
+        },
+      },
+      radiusShortcuts: buttonGroup({
+        label: null,
+        opts: {
+          "0.25x": () => updateRadiusRef.current?.(0.25),
+          "0.5x": () => updateRadiusRef.current?.(0.5),
+          "1x": () => updateRadiusRef.current?.(1),
+          "2x": () => updateRadiusRef.current?.(2),
+          "3x": () => updateRadiusRef.current?.(3),
+        },
+      }),
+      color: {
+        type: LevaInputs.COLOR,
+        label: "Color",
+        value: tokenMarkerContext.state.tokenColor ?? "rgb(255, 255, 255)",
+        onChange: (color: string) => {
+          tokenMarkerContext.setState((state) => ({
+            ...state,
+            tokenColor: color,
+          }));
+        },
+      },
+      label: {
+        type: LevaInputs.STRING,
+        label: "Label",
+        value: tokenMarkerContext.state.tokenText,
+        optional: true,
+        disabled: !tokenMarkerContext.state.includeTokenText,
+        onChange: (tokenText, _, { initial, disabled, fromPanel }) => {
+          if (initial || !fromPanel) {
+            return;
+          }
+
+          tokenMarkerContext.setState((state) => ({
+            ...state,
+            includeTokenText: !disabled,
+            tokenText: tokenText ?? state.tokenText,
+          }));
+        },
+      },
+      counter: {
+        type: LevaInputs.NUMBER,
+        label: "Counter",
+        step: 1,
+        min: 0,
+        value: tokenMarkerContext.state.tokenCounter,
+        optional: true,
+        disabled: !tokenMarkerContext.state.includeTokenCounter,
+        onChange: (tokenCounter, _, { initial, disabled, fromPanel }) => {
+          if (initial || !fromPanel) {
+            return;
+          }
+
+          tokenMarkerContext.setState((state) => ({
+            ...state,
+            includeTokenCounter: !disabled,
+            tokenCounter: tokenCounter ?? state.tokenCounter,
+          }));
+        },
+      },
+    }),
+    { store },
+    [tokenMarkerContext.state]
+  );
+
+  React.useEffect(() => {
+    updateRadiusRef.current = (factor) => {
+      tokenMarkerContext.state.tokenRadius.set(
+        (configureGridContext.state.columnWidth / 2) * factor * 0.9
+      );
+      set({
+        radius: tokenMarkerContext.state.tokenRadius.get(),
+      });
+    };
+  });
 
   return (
-    <Stack
+    <div
       onKeyDown={(ev) => {
         ev.stopPropagation();
       }}
     >
-      <FormControl size="sm">
-        <FormLabel>Radius</FormLabel>
-        <Stack>
-          <InputGroup size="sm">
-            <NumberInput
-              size="sm"
-              value={tokenMarkerContext.state.tokenRadius}
-              min={1}
-              onChange={(valueString) => {
-                let tokenRadius = parseFloat(valueString);
-                if (Number.isNaN(tokenRadius)) {
-                  tokenRadius = 1;
-                }
-                tokenMarkerContext.setState((state) => ({
-                  ...state,
-                  tokenRadius,
-                }));
-              }}
-            >
-              <NumberInputField />
-              <NumberInputStepper>
-                <NumberIncrementStepper />
-                <NumberDecrementStepper />
-              </NumberInputStepper>
-            </NumberInput>
-          </InputGroup>
-          <HStack>
-            <Button.Tertiary
-              small
-              onClick={() => {
-                updateTokenRadius(0.25);
-              }}
-            >
-              0.25x
-            </Button.Tertiary>
-            <Button.Tertiary
-              small
-              onClick={() => {
-                updateTokenRadius(0.5);
-              }}
-            >
-              0.5x
-            </Button.Tertiary>
-            <Button.Tertiary
-              small
-              onClick={() => {
-                updateTokenRadius(1);
-              }}
-            >
-              1x
-            </Button.Tertiary>
-            <Button.Tertiary
-              small
-              onClick={() => {
-                updateTokenRadius(2);
-              }}
-            >
-              2x
-            </Button.Tertiary>
-            <Button.Tertiary
-              small
-              onClick={() => {
-                updateTokenRadius(3);
-              }}
-            >
-              3x
-            </Button.Tertiary>
-          </HStack>
-        </Stack>
-      </FormControl>
-      <FormControl size="sm">
-        <FormLabel>Color</FormLabel>
-        <ColorPickerInput
-          size="sm"
-          color={tokenMarkerContext.state.tokenColor}
-          onChange={(color) => {
-            tokenMarkerContext.setState((state) => ({
-              ...state,
-              tokenColor: color,
-            }));
-          }}
-        />
-      </FormControl>
-      <FormControl size="sm">
-        <FormLabel>Label</FormLabel>
-        <Input
-          size="sm"
-          type="text"
-          value={tokenMarkerContext.state.tokenText}
-          onChange={(ev) => {
-            const tokenText = ev.target.value;
-            tokenMarkerContext.setState((state) => ({
-              ...state,
-              tokenText,
-            }));
-          }}
-        />
-      </FormControl>
-      <FormControl display="flex" alignItems="center">
-        <FormLabel htmlFor="switch-include-token-counter" mb="0">
-          Append Counter
-        </FormLabel>
-        <Switch
-          id="switch-include-token-counter"
-          isChecked={tokenMarkerContext.state.includeTokenCounter}
-          onChange={(ev) => {
-            const includeTokenCounter = ev.target.checked;
-            tokenMarkerContext.setState((state) => ({
-              ...state,
-              includeTokenCounter,
-            }));
-          }}
-        />
-      </FormControl>
-      {tokenMarkerContext.state.includeTokenCounter ? (
-        <FormControl size="sm">
-          <InputGroup size="sm">
-            <NumberInput
-              value={tokenMarkerContext.state.tokenCounter}
-              min={1}
-              onChange={(valueString) => {
-                let tokenCounter = parseFloat(valueString);
-                if (Number.isNaN(tokenCounter)) {
-                  tokenCounter = 1;
-                }
-                tokenMarkerContext.setState((state) => ({
-                  ...state,
-                  tokenCounter,
-                }));
-              }}
-            >
-              <NumberInputField />
-              <NumberInputStepper>
-                <NumberIncrementStepper />
-                <NumberDecrementStepper />
-              </NumberInputStepper>
-            </NumberInput>
-          </InputGroup>
-        </FormControl>
-      ) : null}
-    </Stack>
+      <LevaPanel
+        fill={true}
+        titleBar={false}
+        store={store}
+        theme={levaTheme}
+        oneLineLabels
+        hideCopyButton
+      />
+    </div>
   );
 };
 
@@ -1153,6 +1132,7 @@ export const DmMap = (props: {
           position="absolute"
           left={contextMenuState.clientPosition.x}
           top={contextMenuState.clientPosition.y}
+          onContextMenu={(ev) => ev.preventDefault()}
         >
           <Menu defaultIsOpen={true} onClose={() => setContextMenuState(null)}>
             <MenuList>
