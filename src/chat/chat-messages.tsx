@@ -15,7 +15,7 @@ const ChatMessageContainer = styled.div`
 
 const FollowButtonContainer = styled.div<{ isVisible: boolean }>`
   position: absolute;
-  right: 12px;
+  right: 24px;
   bottom: 12px;
   opacity: ${(p) => (p.isVisible ? "1" : "0")};
 `;
@@ -92,6 +92,23 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
         itemContent={(_, edge) => {
           return <ChatMessage message={edge.node} />;
         }}
+        components={React.useMemo(
+          () => ({
+            List: React.forwardRef(({ children, ...props }, ref) => (
+              <div
+                {...props}
+                style={{
+                  ...props.style,
+                  paddingRight: 10,
+                }}
+                ref={ref}
+              >
+                {children}
+              </div>
+            )),
+          }),
+          []
+        )}
       />
       <FollowButtonContainer isVisible={showButton}>
         <IconButton
