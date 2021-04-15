@@ -35,7 +35,7 @@ const useLoadedMapId = () =>
             return parsedValue;
           }
           // eslint-disable-next-line no-empty
-        } catch (e) { }
+        } catch (e) {}
       }
 
       return null;
@@ -54,25 +54,25 @@ const useDmPassword = () =>
           }
         }
         // eslint-disable-next-line no-empty
-      } catch (e) { }
+      } catch (e) {}
       return "";
     },
   });
 
 type Mode =
   | {
-    title: "LOADING";
-    data: null;
-  }
+      title: "LOADING";
+      data: null;
+    }
   | {
-    title: "SHOW_MAP_LIBRARY";
-  }
+      title: "SHOW_MAP_LIBRARY";
+    }
   | {
-    title: "EDIT_MAP";
-  }
+      title: "EDIT_MAP";
+    }
   | {
-    title: "MEDIA_LIBRARY";
-  };
+      title: "MEDIA_LIBRARY";
+    };
 
 const createInitialMode = (): Mode => ({
   title: "LOADING",
@@ -86,34 +86,35 @@ type MapData = {
 
 type SocketTokenEvent =
   | {
-    type: "add";
-    data: {
-      token: MapTokenEntity;
-    };
-  }
+      type: "add";
+      data: {
+        token: MapTokenEntity;
+      };
+    }
   | {
-    type: "update";
-    data: {
-      token: MapTokenEntity;
-    };
-  }
+      type: "update";
+      data: {
+        token: MapTokenEntity;
+      };
+    }
   | {
-    type: "remove";
-    data: {
-      tokenId: string;
+      type: "remove";
+      data: {
+        tokenId: string;
+      };
     };
-  };
 
 type TokenPartial = Omit<Partial<MapTokenEntity>, "id">;
 
 const LoadedMapDiv = styled.div`
-display: flex;
-height: 100vh;
-/* Mobile Chrome 100vh issue with address bar */
-@media screen and (max-width: 580px) and (-webkit-min-device-pixel-ratio:0) { 
-  height: calc(100vh - 56px);
-}
-`
+  display: flex;
+  height: 100vh;
+  /* Mobile Chrome 100vh issue with address bar */
+  @media screen and (max-width: 580px) and (-webkit-min-device-pixel-ratio: 0) {
+    height: calc(100vh - 56px);
+  }
+`;
+
 const Content = ({
   socket,
   password: dmPassword,
@@ -254,9 +255,9 @@ const Content = ({
       setData((data) =>
         data
           ? {
-            ...data,
-            maps: [...data.maps, response.data.map],
-          }
+              ...data,
+              maps: [...data.maps, response.data.map],
+            }
           : data
       );
     },
@@ -302,9 +303,9 @@ const Content = ({
       setData((data) =>
         data
           ? {
-            ...data,
-            maps: data.maps.filter((map) => map.id !== mapId),
-          }
+              ...data,
+              maps: data.maps.filter((map) => map.id !== mapId),
+            }
           : null
       );
     },

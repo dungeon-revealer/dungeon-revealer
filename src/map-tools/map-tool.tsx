@@ -8,6 +8,7 @@ type Vector2D = [number, number];
 type Vector3D = [number, number, number];
 
 export type SharedMapToolState = {
+  ratio: number;
   mapImage: HTMLImageElement;
   mapCanvas: HTMLCanvasElement;
   fogCanvas: HTMLCanvasElement;
