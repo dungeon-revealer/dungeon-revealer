@@ -55,6 +55,29 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
   }, [showButton, chat.edges.length]);
 
   const virtuosoRef = React.useRef<VirtuosoHandle | null>(null);
+  /**
+   * Virtuoso does not continue to follow the output when the window is minimized/ tab is switched.
+   * We work around this by checking whether the output is following when the window is hidden
+   * and scrolling to the last item when the window/tab becomes active again.
+   */
+  const atBottomRef = React.useRef(atBottom);
+  React.useEffect(() => {
+    atBottomRef.current = atBottom;
+  });
+  React.useEffect(() => {
+    let isAtBottomWhenHidden = atBottomRef.current;
+    const listener = () => {
+      if (window.document.visibilityState === "hidden") {
+        isAtBottomWhenHidden = atBottomRef.current;
+      } else if (isAtBottomWhenHidden) {
+        virtuosoRef.current?.scrollToIndex(initialEdgeLength.current);
+      }
+    };
+    window.document.addEventListener("visibilitychange", listener, false);
+    return () => {
+      window.document.removeEventListener("visibilitychange", listener, false);
+    };
+  }, []);
 
   return (
     <ChatMessageContainer>
