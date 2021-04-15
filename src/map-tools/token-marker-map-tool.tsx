@@ -1,5 +1,5 @@
 import * as React from "react";
-import { animated, useSpring } from "@react-spring/three";
+import { animated, SpringValue } from "@react-spring/three";
 import * as io from "io-ts";
 import { identity, pipe } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
@@ -14,12 +14,20 @@ const TokenMarkerStateModel = io.type({
   tokenRadius: io.number,
   tokenColor: io.string,
   tokenText: io.string,
+  includeTokenText: io.boolean,
   tokenCounter: io.number,
   /* whether the value of tokenCounter should be appended to the tokenText */
   includeTokenCounter: io.boolean,
 });
 
-type TokenMarkerState = io.TypeOf<typeof TokenMarkerStateModel>;
+type TokenMarkerState = {
+  tokenRadius: SpringValue<number>;
+  tokenColor: string;
+  tokenText: string;
+  includeTokenText: boolean;
+  tokenCounter: number;
+  includeTokenCounter: boolean;
+};
 
 type AddTokenFunction = (token: {
   color: string;
@@ -41,24 +49,30 @@ export const TokenMarkerContext = React.createContext<TokenMarkerContextValue>(
 );
 
 const createDefaultTokenMarkerState = (): TokenMarkerState => ({
-  tokenColor: "red",
-  tokenRadius: 100,
-  tokenText: "Token #",
+  tokenColor: "#000000",
+  tokenRadius: new SpringValue({ from: 100 }),
+  tokenText: "",
+  includeTokenText: false,
   tokenCounter: 1,
   includeTokenCounter: false,
 });
 
 const tokenMarkerPersistedStateModel: PersistedStateModel<TokenMarkerState> = {
-  encode: (value) => JSON.stringify(value),
+  encode: ({ tokenRadius, ...value }) =>
+    JSON.stringify({ ...value, tokenRadius: tokenRadius.get() }),
   decode: (value) =>
     pipe(
       io.string.decode(value),
       E.chainW((value) => E.parseJSON(value, E.toError)),
       E.chainW(TokenMarkerStateModel.decode),
+      E.map((value) => ({
+        ...value,
+        tokenRadius: new SpringValue({ from: value.tokenRadius }),
+      })),
       E.fold((err) => {
         if (value !== null) {
           console.log(
-            "Error occured while trying to decode value.\n" +
+            "Error occurred while trying to decode value.\n" +
               JSON.stringify(err, null, 2)
           );
         }
@@ -117,10 +131,14 @@ export const TokenMarkerMapTool: MapTool = {
             point.y,
           ]);
 
-          let label = tokenMarkerContext.state.tokenText;
+          let label = "";
+
+          if (tokenMarkerContext.state.includeTokenText) {
+            label = tokenMarkerContext.state.tokenText;
+          }
 
           if (tokenMarkerContext.state.includeTokenCounter) {
-            label = `${label}${tokenMarkerContext.state.tokenCounter}`;
+            label = `${label} ${tokenMarkerContext.state.tokenCounter}`;
             tokenMarkerContext.setState((state) => ({
               ...state,
               tokenCounter: state.tokenCounter + 1,
@@ -129,31 +147,25 @@ export const TokenMarkerMapTool: MapTool = {
 
           tokenMarkerContext.addToken({
             color: tokenMarkerContext.state.tokenColor,
-            radius: tokenMarkerContext.state.tokenRadius,
+            radius: tokenMarkerContext.state.tokenRadius.get(),
             x,
             y,
-            label,
+            label: label.trim(),
           });
         }
       },
     });
 
-    const { radius } = useSpring({
-      radius: React.useMemo(() => {
-        const [width] = props.mapContext.helper.vector.canvasToThree(
-          props.mapContext.helper.vector.imageToCanvas([
-            tokenMarkerContext.state.tokenRadius,
-            tokenMarkerContext.state.tokenRadius,
-          ])
-        );
-        return width;
-      }, [tokenMarkerContext.state.tokenRadius]),
-    });
-
     return (
       <animated.mesh
         position={props.mapContext.pointerPosition}
-        scale={radius.to((radius) => [radius, radius, radius])}
+        scale={tokenMarkerContext.state.tokenRadius.to((radius) => {
+          const [width] = props.mapContext.helper.vector.canvasToThree(
+            props.mapContext.helper.vector.imageToCanvas([radius, radius])
+          );
+
+          return [width, width, width];
+        })}
       >
         <ringBufferGeometry attach="geometry" args={[1 - 0.05, 1, 128]} />
         <meshStandardMaterial

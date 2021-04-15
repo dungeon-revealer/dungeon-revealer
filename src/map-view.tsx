@@ -14,6 +14,7 @@ import { animated, useSpring, SpringValue, to } from "@react-spring/three";
 import { useGesture } from "react-use-gesture";
 import styled from "@emotion/styled/macro";
 import { darken, lighten } from "polished";
+import debounce from "lodash/debounce";
 import { getOptimalDimensions } from "./util";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { buildUrl } from "./public-url";
@@ -31,12 +32,11 @@ import { TextureLoader } from "three";
 import { ReactEventHandlers } from "react-use-gesture/dist/types";
 import { useQuery } from "relay-hooks";
 import { mapView_TokenImageQuery } from "./__generated__/mapView_TokenImageQuery.graphql";
-import { buttonGroup, useControls, useCreateStore } from "leva";
+import { buttonGroup, useControls, useCreateStore, LevaInputs } from "leva";
 import { StoreType } from "leva/dist/declarations/src/types";
 import { levaPluginNoteReference } from "./leva-plugin/leva-plugin-note-reference";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
 import { useCurrent } from "./hooks/use-current";
-import throttle from "lodash/throttle";
 
 type Vector2D = [number, number];
 
@@ -110,9 +110,7 @@ const Plane = React.forwardRef(
             },
             target: null,
           };
-          setTimeout(() => {
-            showContextMenu(state);
-          });
+          showContextMenu(state);
         }}
       >
         <mesh ref={ref} {...props}>
@@ -193,17 +191,10 @@ const TokenRenderer = (props: {
   const pendingChangesRef = React.useRef<TokenPartialChanges>({});
 
   const enqueueSave = useStaticRef(() =>
-    throttle(
-      () => {
-        updateToken(props.id, pendingChangesRef.current);
-        pendingChangesRef.current = {};
-      },
-      200,
-      {
-        leading: false,
-        trailing: true,
-      }
-    )
+    debounce(() => {
+      updateToken(props.id, pendingChangesRef.current);
+      pendingChangesRef.current = {};
+    }, 100)
   );
 
   const [isDragging, setIsDragging] = React.useState(false);
@@ -212,19 +203,27 @@ const TokenRenderer = (props: {
     isDraggingRef.current = isDragging;
   });
 
-  React.useEffect(() => {
-    latestTokenProps.current = { ...props };
-  }, Object.values(props));
+  const editingStateRef = React.useRef({
+    position: 0,
+    radius: 0,
+    color: 0,
+  }).current;
+
+  console.log();
 
   const store = useCreateStore();
   const updateRadiusRef = React.useRef<null | ((radius: number) => void)>(null);
   const [values, setValues] = useControls(
     () => ({
       position: {
+        type: LevaInputs.VECTOR2D,
         label: "Position",
         value: [props.x, props.y],
         step: 1,
-        onChange: (value: [number, number]) => {
+        onChange: (value: [number, number], _, { initial }) => {
+          if (initial) {
+            return;
+          }
           set({
             position: [
               ...sharedMapState.helper.imageCoordinatesToThreePoint(value),
@@ -232,26 +231,30 @@ const TokenRenderer = (props: {
             ],
             immediate: isDraggingRef.current,
           });
-
-          if (
-            latestTokenProps.current.x === value[0] &&
-            latestTokenProps.current.y === value[1]
-          ) {
-            return;
-          }
-          latestTokenProps.current.x = value[0];
-          latestTokenProps.current.y = value[1];
+          pendingChangesRef.current.x = value[0];
+          pendingChangesRef.current.y = value[1];
+          enqueueSave();
+        },
+        onEditStart: () => {
+          editingStateRef.position++;
+        },
+        onEditEnd: (value) => {
+          editingStateRef.position--;
           pendingChangesRef.current.x = value[0];
           pendingChangesRef.current.y = value[1];
           enqueueSave();
         },
       },
       radius: {
+        type: LevaInputs.NUMBER,
         label: "Size",
         value: props.radius,
         step: 1,
         min: 1,
-        onChange: (value: number) => {
+        onChange: (value: number, _, { initial }) => {
+          if (initial) {
+            return;
+          }
           const newRadius = sharedMapState.helper.size.fromImageToThree(value);
           set({
             circleScale: [
@@ -261,26 +264,37 @@ const TokenRenderer = (props: {
             ],
           });
 
-          if (latestTokenProps.current.radius === value) {
-            return;
-          }
-
-          latestTokenProps.current.radius = value;
+          pendingChangesRef.current.radius = value;
+          enqueueSave();
+        },
+        onEditStart: () => {
+          editingStateRef.radius++;
+        },
+        onEditEnd: (value) => {
+          editingStateRef.radius--;
           pendingChangesRef.current.radius = value;
           enqueueSave();
         },
       },
-      " ": buttonGroup({
-        "0.25x": () => updateRadiusRef.current?.(0.25),
-        "0.5x": () => updateRadiusRef.current?.(0.5),
-        "1x": () => updateRadiusRef.current?.(1),
-        "2x": () => updateRadiusRef.current?.(2),
-        "3x": () => updateRadiusRef.current?.(3),
+      radiusOptions: buttonGroup({
+        label: null,
+        opts: {
+          "0.25x": () => updateRadiusRef.current?.(0.25),
+          "0.5x": () => updateRadiusRef.current?.(0.5),
+          "1x": () => updateRadiusRef.current?.(1),
+          "2x": () => updateRadiusRef.current?.(2),
+          "3x": () => updateRadiusRef.current?.(3),
+        },
       }),
       isLocked: {
+        type: LevaInputs.BOOLEAN,
         label: "Position locked",
         value: props.isLocked,
-        onChange: (isLocked: boolean) => {
+        onChange: (isLocked: boolean, _, { initial }) => {
+          if (initial) {
+            return;
+          }
+
           if (latestTokenProps.current.isLocked === isLocked) {
             return;
           }
@@ -292,14 +306,13 @@ const TokenRenderer = (props: {
         transient: false,
       },
       text: {
+        type: LevaInputs.STRING,
         label: "Title",
         value: typeof props.textLabel === "string" ? props.textLabel : "",
-        onChange: (label: string) => {
-          if (latestTokenProps.current.textLabel === label) {
+        onChange: (label: string, _, { initial, fromPanel }) => {
+          if (initial || !fromPanel) {
             return;
           }
-
-          latestTokenProps.current.textLabel = label;
           updateToken(props.id, {
             label,
           });
@@ -307,29 +320,34 @@ const TokenRenderer = (props: {
         transient: false,
       },
       color: {
+        type: LevaInputs.COLOR,
         label: "Color",
         value: props.color ?? "rgb(255, 255, 255)",
-        onChange: (color: string) => {
-          if (latestTokenProps.current.color === color) {
+        onChange: (color: string, _, { initial, fromPanel }) => {
+          if (initial || !fromPanel) {
             return;
           }
-          latestTokenProps.current.color = color;
-          updateToken(props.id, {
-            color,
-          });
+          pendingChangesRef.current.color = color;
+          enqueueSave();
         },
         transient: false,
+        onEditStart: () => {
+          editingStateRef.color++;
+        },
+        onEditEnd: (color) => {
+          editingStateRef.color--;
+          pendingChangesRef.current.color = color;
+          enqueueSave();
+        },
       },
       isVisibleForPlayers: {
+        type: LevaInputs.BOOLEAN,
         label: "Visible to players",
         value: props.isVisibleForPlayers,
-        onChange: (isVisibleForPlayers: boolean) => {
-          if (
-            latestTokenProps.current.isVisibleForPlayers === isVisibleForPlayers
-          ) {
+        onChange: (isVisibleForPlayers: boolean, _, { initial, fromPanel }) => {
+          if (initial || !fromPanel) {
             return;
           }
-          latestTokenProps.current.isVisibleForPlayers = isVisibleForPlayers;
           updateToken(props.id, {
             isVisibleForPlayers,
           });
@@ -337,15 +355,13 @@ const TokenRenderer = (props: {
         transient: false,
       },
       isMovableByPlayers: {
+        type: LevaInputs.BOOLEAN,
         label: "Movable by players",
         value: props.isMovableByPlayers,
-        onChange: (isMovableByPlayers: boolean) => {
-          if (
-            latestTokenProps.current.isMovableByPlayers === isMovableByPlayers
-          ) {
+        onChange: (isMovableByPlayers: boolean, _, { initial, fromPanel }) => {
+          if (initial || !fromPanel) {
             return;
           }
-          latestTokenProps.current.isMovableByPlayers = isMovableByPlayers;
           updateToken(props.id, {
             isMovableByPlayers,
           });
@@ -354,11 +370,10 @@ const TokenRenderer = (props: {
       },
       referenceId: levaPluginNoteReference({
         value: props.referenceId ?? null,
-        onChange: (referenceId: string | null) => {
-          if (latestTokenProps.current.referenceId === referenceId) {
+        onChange: (referenceId: string | null, _, { initial, fromPanel }) => {
+          if (initial || !fromPanel) {
             return;
           }
-          latestTokenProps.current.referenceId = referenceId;
           updateToken(props.id, {
             reference: referenceId ? { type: "note", id: referenceId } : null,
           });
@@ -367,11 +382,10 @@ const TokenRenderer = (props: {
       }),
       tokenImageId: levaPluginTokenImage({
         value: props.tokenImageId ?? null,
-        onChange: (tokenImageId: null | string) => {
-          if (latestTokenProps.current.tokenImageId === tokenImageId) {
+        onChange: (tokenImageId: null | string, _, { initial, fromPanel }) => {
+          if (initial || !fromPanel) {
             return;
           }
-          latestTokenProps.current.tokenImageId = tokenImageId;
           updateToken(props.id, {
             tokenImageId,
           });
@@ -381,24 +395,32 @@ const TokenRenderer = (props: {
     }),
     { store }
   );
-
   React.useEffect(() => {
     updateRadiusRef.current = (value) =>
       setValues({ radius: ((props.columnWidth ?? 50) / 2) * value * 0.9 });
   });
 
   React.useEffect(() => {
-    setValues({
-      position: [props.x, props.y],
-      radius: props.radius,
+    const values: Record<string, any> = {
       text: props.textLabel,
       isLocked: props.isLocked,
-      color: props.color,
       isMovableByPlayers: props.isMovableByPlayers,
       isVisibleForPlayers: props.isVisibleForPlayers,
       referenceId: props.referenceId,
       tokenImageId: props.tokenImageId,
-    });
+    };
+
+    if (editingStateRef.radius === 0) {
+      values["radius"] = props.radius;
+    }
+    if (editingStateRef.position === 0) {
+      values["position"] = [props.x, props.y];
+    }
+    if (editingStateRef.color === 0) {
+      values["color"] = props.color;
+    }
+
+    setValues(values);
   }, [
     setValues,
     props.x,
@@ -429,7 +451,6 @@ const TokenRenderer = (props: {
   );
 
   const setStore = React.useContext(SetSelectedTokenStoreContext);
-
   const initialRadius = useStaticRef(() =>
     sharedMapState.helper.size.fromImageToThree(Math.max(1, props.radius))
   );
@@ -475,11 +496,19 @@ const TokenRenderer = (props: {
         event,
         movement,
         memo = animatedProps.position.get(),
+        first,
         last,
         tap,
       }) => {
         setStore(store);
         setIsDragging(!last);
+
+        if (first) {
+          editingStateRef.position++;
+        }
+        if (last) {
+          editingStateRef.position--;
+        }
 
         // onClick replacement
         // events are handled different in react-three-fiber
@@ -522,9 +551,13 @@ const TokenRenderer = (props: {
                   id: props.id,
                 },
               };
-              setTimeout(() => {
-                showContextMenu(state);
-              });
+
+              event.stopPropagation();
+              // @ts-ignore
+              event.nativeEvent.stopPropagation();
+              // @ts-ignore
+              event.nativeEvent.preventDefault();
+              showContextMenu(state);
             }
           }
 
@@ -895,6 +928,7 @@ const MarkedAreaRenderer: React.FC<{
   remove: () => void;
   radius: number;
 }> = (props) => {
+  const sharedMapState = React.useContext(SharedMapState);
   const initialRadius = 10 * props.factor;
 
   const spring = useSpring({
@@ -922,8 +956,16 @@ const MarkedAreaRenderer: React.FC<{
     <animated.mesh
       scale={spring.scale}
       position={[
-        calculateX(props.x, props.factor, props.dimensions.width),
-        calculateY(props.y, props.factor, props.dimensions.height),
+        calculateX(
+          props.x,
+          props.factor * sharedMapState.ratio,
+          props.dimensions.width
+        ),
+        calculateY(
+          props.y,
+          props.factor * sharedMapState.ratio,
+          props.dimensions.height
+        ),
         0,
       ]}
     >
@@ -1303,6 +1345,7 @@ const MapViewRenderer = (props: {
       isDragAllowed,
       isAltPressed,
       pointerPosition,
+      ratio: optimalDimensions.ratio,
       helper: {
         threePointToImageCoordinates: ([x, y]) => {
           const position = spring.position.get();
@@ -1430,19 +1473,9 @@ const MapViewRenderer = (props: {
           mapImageTexture={mapTexture}
           fogTexture={fogTexture}
           viewport={viewport}
-          // TODO: Tokens and MarkedAreas are scaled to the image
-          // the actual canvas size can differ, so we have to
-          // calculate the coordinates relative to the canvas
-          tokens={props.tokens.map((token) => ({
-            ...token,
-            radius: token.radius * optimalDimensions.ratio,
-          }))}
+          tokens={props.tokens}
           markerRadius={20}
-          markedAreas={props.markedAreas.map((area) => ({
-            ...area,
-            x: area.x * optimalDimensions.ratio,
-            y: area.y * optimalDimensions.ratio,
-          }))}
+          markedAreas={props.markedAreas}
           removeMarkedArea={props.removeMarkedArea}
           grid={props.grid}
           scale={spring.scale}

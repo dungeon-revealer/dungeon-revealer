@@ -124,9 +124,8 @@ const ToolbarItemPopupContainer = styled.div<{ horizontal?: boolean }>`
   top: ${(p) => (p.horizontal ? null : `0`)};
   bottom: ${(p) => (p.horizontal ? `55px` : null)};
   left: ${(p) => (p.horizontal ? `-12px` : `55px`)};
-  padding: 8px 12px;
   filter: none;
-  min-width: 120px;
+  min-width: 180px;
 `;
 
 const ToolbarItemPopup = React.forwardRef<
