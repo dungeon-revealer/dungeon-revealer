@@ -183,13 +183,8 @@ const TokenRenderer = (props: {
   columnWidth: number | null;
 }) => {
   const sharedMapState = React.useContext(SharedMapState);
-
-  const latestTokenProps = React.useRef({ ...props });
-
   const updateToken = React.useContext(UpdateTokenContext);
-
   const pendingChangesRef = React.useRef<TokenPartialChanges>({});
-
   const enqueueSave = useStaticRef(() =>
     debounce(() => {
       updateToken(props.id, pendingChangesRef.current);
@@ -209,8 +204,6 @@ const TokenRenderer = (props: {
     color: 0,
   }).current;
 
-  console.log();
-
   const store = useCreateStore();
   const updateRadiusRef = React.useRef<null | ((radius: number) => void)>(null);
   const [values, setValues] = useControls(
@@ -220,7 +213,7 @@ const TokenRenderer = (props: {
         label: "Position",
         value: [props.x, props.y],
         step: 1,
-        onChange: (value: [number, number], _, { initial }) => {
+        onChange: (value: [number, number], _, { initial, fromPanel }) => {
           if (initial) {
             return;
           }
@@ -231,6 +224,10 @@ const TokenRenderer = (props: {
             ],
             immediate: isDraggingRef.current,
           });
+
+          if (!fromPanel) {
+            return;
+          }
           pendingChangesRef.current.x = value[0];
           pendingChangesRef.current.y = value[1];
           enqueueSave();
@@ -251,7 +248,7 @@ const TokenRenderer = (props: {
         value: props.radius,
         step: 1,
         min: 1,
-        onChange: (value: number, _, { initial }) => {
+        onChange: (value: number, _, { initial, fromPanel }) => {
           if (initial) {
             return;
           }
@@ -263,6 +260,10 @@ const TokenRenderer = (props: {
               1,
             ],
           });
+
+          if (!fromPanel) {
+            return;
+          }
 
           pendingChangesRef.current.radius = value;
           enqueueSave();
@@ -290,15 +291,10 @@ const TokenRenderer = (props: {
         type: LevaInputs.BOOLEAN,
         label: "Position locked",
         value: props.isLocked,
-        onChange: (isLocked: boolean, _, { initial }) => {
-          if (initial) {
+        onChange: (isLocked: boolean, _, { initial, fromPanel }) => {
+          if (initial || !fromPanel) {
             return;
           }
-
-          if (latestTokenProps.current.isLocked === isLocked) {
-            return;
-          }
-          latestTokenProps.current.isLocked = isLocked;
           updateToken(props.id, {
             isLocked,
           });
@@ -396,8 +392,13 @@ const TokenRenderer = (props: {
     { store }
   );
   React.useEffect(() => {
-    updateRadiusRef.current = (value) =>
-      setValues({ radius: ((props.columnWidth ?? 50) / 2) * value * 0.9 });
+    updateRadiusRef.current = (value) => {
+      const radius = ((props.columnWidth ?? 50) / 2) * value * 0.9;
+      setValues({ radius });
+      updateToken(props.id, {
+        radius,
+      });
+    };
   });
 
   React.useEffect(() => {
