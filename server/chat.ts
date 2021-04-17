@@ -46,7 +46,11 @@ const processRawContent = (
 
   for (const part of parts) {
     if (part.startsWith("[") && part.endsWith("]")) {
-      const notation = part.slice(1, part.length - 1);
+      const notation = part
+        .slice(1, part.length - 1)
+        // fix for https://github.com/airjp73/dice-notation/issues/8
+        .replace(/\+ *\-/g, "-")
+        .replace(/\- *\+/g, "-");
       const rollResult = tryRoll(notation);
       if (rollResult) {
         diceRolls.push(rollResult);
