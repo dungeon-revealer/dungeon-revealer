@@ -118,10 +118,9 @@ const calculateValueRemovingHighest = (
   token: RollToken,
   rolls: number[]
 ): number =>
-  Array.from(getDroppedIndicesDropHighest(token, rolls)).reduce(
-    (aggregate: number, index: number) => aggregate + rolls[index],
-    0
-  );
+  Array.from(
+    getInvertedIndices(rolls, getDroppedIndicesDropHighest(token, rolls))
+  ).reduce((aggregate: number, index: number) => aggregate + rolls[index], 0);
 
 const calculateValueKeepingLowest = (
   token: RollToken,
