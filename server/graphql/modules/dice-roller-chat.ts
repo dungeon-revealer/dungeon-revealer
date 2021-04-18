@@ -2,11 +2,8 @@ import { t } from "..";
 import { GraphQLPageInfoType } from "./relay-spec";
 import * as ImageModule from "./image";
 import * as NotesModule from "./notes";
-import type {
-  DiceRollDetail,
-  ApplicationRecordSchema,
-  DiceRollResult,
-} from "../../chat";
+import type { ApplicationRecordSchema } from "../../chat";
+import type { DiceRollDetail, DiceRollResult } from "../../roll-dice";
 import * as E from "fp-ts/lib/Either";
 import * as RT from "fp-ts/lib/ReaderTask";
 
@@ -40,6 +37,7 @@ const GraphQLDiceRollResult = t.objectType<{
   dice: string;
   result: number;
   category: DiceRollType;
+  crossedOut: boolean;
 }>({
   name: "DiceRollResult",
   fields: () => [
@@ -54,6 +52,10 @@ const GraphQLDiceRollResult = t.objectType<{
     t.field("category", {
       type: t.NonNull(GraphQLDiceRollCategory),
       resolve: (obj) => obj.category,
+    }),
+    t.field("crossedOut", {
+      type: t.NonNull(t.Boolean),
+      resolve: (obj) => obj.crossedOut,
     }),
   ],
 });
@@ -115,11 +117,12 @@ const GraphQLDiceRollDiceRollNode = t.objectType<
       resolve: (object) =>
         object.rolls.map((result) => ({
           dice: object.content.substring(1),
-          result,
+          result: result.value,
+          crossedOut: result.crossedOut,
           category:
-            result === object.detail.min
+            result.value === object.detail.min
               ? DiceRollType.MIN
-              : result === object.detail.max
+              : result.value === object.detail.max
               ? DiceRollType.MAX
               : DiceRollType.DEFAULT,
         })),

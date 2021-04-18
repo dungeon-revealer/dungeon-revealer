@@ -33,6 +33,7 @@ type DiceRollResult {
   dice: String!
   result: Float!
   category: DiceRollCategory!
+  crossedOut: Boolean!
 }
 
 enum DiceRollCategory {
