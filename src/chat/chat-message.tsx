@@ -264,6 +264,7 @@ export const ChatMessage = createFragmentContainer(ChatMessageRenderer, {
                 dice
                 result
                 category
+                crossedOut
               }
             }
           }
