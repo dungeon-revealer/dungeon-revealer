@@ -3,7 +3,7 @@
 [![Build Status](https://img.shields.io/github/workflow/status/dungeon-revealer/dungeon-revealer/Node.js%20CI)](https://github.com/dungeon-revealer/dungeon-revealer/actions)
 [![Downloads](https://img.shields.io/github/downloads/dungeon-revealer/dungeon-revealer/total.svg?logo=github)](https://github.com/dungeon-revealer/dungeon-revealer/releases)
 [![Release](https://img.shields.io/github/v/release/dungeon-revealer/dungeon-revealer?logo=github&color=orange)](https://github.com/dungeon-revealer/dungeon-revealer/releases/latest)
-[![Docker](https://img.shields.io/static/v1?label=docker&message=v1.13.0&color=blue&logo=Docker)](https://hub.docker.com/layers/dungeonrevealer/dungeon-revealer/v1.13.0)
+[![Docker](https://img.shields.io/static/v1?label=docker&message=v1.13.1&color=blue&logo=Docker)](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer/tags?page=1&ordering=last_updated&name=v1.13.1)
 [![Docker pulls](https://img.shields.io/docker/pulls/dungeonrevealer/dungeon-revealer)](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer)
 [![Discord](https://img.shields.io/discord/709687178422386708)](https://discord.gg/dS5khqk)
 
