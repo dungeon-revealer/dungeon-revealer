@@ -1,6 +1,7 @@
-import { withPlugins, random } from "@airjp73/dice-notation";
-import { RollInformation } from "@airjp73/dice-notation/dist/roll";
-import { DiceRule } from "@airjp73/dice-notation/dist/rules/types";
+import { withPlugins, createDiceRoller } from "@airjp73/dice-notation";
+import type { Random, DiceRule } from "@airjp73/dice-notation";
+import type { RollInformation } from "@airjp73/dice-notation/dist/roll";
+import times from "lodash/times";
 
 interface RollToken {
   numDice: number;
@@ -8,13 +9,8 @@ interface RollToken {
   numToDrop: number;
 }
 
-const generateRolls = (token: RollToken) => {
-  const rolls: number[] = [];
-  for (let i = 0; i < token.numDice; i++) {
-    rolls.push(random(1, token.numSides));
-  }
-  return rolls;
-};
+const generateRolls = (token: RollToken, { random }: { random: Random }) =>
+  times(token.numDice, () => random(1, token.numSides));
 
 const getInvertedIndices = (
   items: Array<unknown>,
@@ -81,7 +77,7 @@ export const getDroppedIndicesKeepHighestN = (
   getDroppedIndicesDropLowest(
     {
       ...token,
-      numToDrop: Math.max(0, token.numDice - token.numToDrop),
+      numToDrop: token.numToDrop,
     },
     rolls
   );
@@ -93,7 +89,7 @@ export const getDroppedIndicesKeepLowestN = (
   getDroppedIndicesDropHighest(
     {
       ...token,
-      numToDrop: Math.max(0, token.numDice - token.numToDrop),
+      numToDrop: token.numToDrop,
     },
     rolls
   );
@@ -130,114 +126,111 @@ const calculateValueKeepingLowest = (
     getInvertedIndices(rolls, getDroppedIndicesKeepLowestN(token, rolls))
   ).reduce((aggregate: number, index: number) => aggregate + rolls[index], 0);
 
-// Custom dice roll rule for format [XdY-L]
-// (i.e. roll X dY's and drop the one lowest)
-const rollRuleDropLowest: DiceRule<RollToken> = {
-  regex: /\d+d\d+\-L/,
-  typeConstant: "DropLowest",
-  tokenize: (raw: string): RollToken => {
-    return {
-      numDice: parseInt(raw.split("d")[0]),
-      numSides: parseInt(raw.split("-")[0].split("d")[1]),
-      numToDrop: 1,
-    };
-  },
-  roll: generateRolls,
-  calculateValue: calculateValueRemovingLowest,
-};
-
-// Custom dice roll rule for format [XdY-H]
-// (i.e. roll X dY's and drop the one highest)
-const rollRuleDropHighest: DiceRule<RollToken> = {
-  regex: /\d+d\d+\-H/,
-  typeConstant: "DropHighest",
-  tokenize: (raw: string): RollToken => {
-    return {
-      numDice: parseInt(raw.split("d")[0]),
-      numSides: parseInt(raw.split("-")[0].split("d")[1]),
-      numToDrop: 1,
-    };
-  },
-  roll: generateRolls,
-  calculateValue: calculateValueRemovingHighest,
-};
-
-// Common tokenization for Keep / Drop N rules
-const tokenizeKeepDropN = (result: RegExpMatchArray | null) => {
-  if (result) {
-    return {
-      numDice: parseInt(result[2]),
-      numSides: parseInt(result[3]),
-      numToDrop: parseInt(result[5]),
-    };
-  } else {
-    throw new Error("Invalid raw data passed to tokenizer");
-  }
-};
-
-// Custom dice roll rule for formats [XdYdN] and [XdYdlN]
-// (i.e. Roll X dY's, drop the lowest N)
-const dropLowestN: RegExp = /((\d+)d(\d+))(d|dl)(\d+)/;
-const detectDropLowestN: RegExp = /\d+d\d+d\d+|\d+d\d+dl\d+/;
+// Custom dice roll rule for format [XdYdl] and [XdYdlN]
+// Roll XdY drop lowest N = 1
+const dropLowestN: RegExp = /((\d+)d(\d+))dl(?:(\d+))?/;
+const detectDropLowestN: RegExp = /\d+d\d+dl(?:\d+)?/;
 const rollRuleDropLowestN: DiceRule<RollToken> = {
   regex: detectDropLowestN,
   typeConstant: "DropLowestN",
-  tokenize: (raw: string): RollToken =>
-    tokenizeKeepDropN(raw.match(dropLowestN)),
+  tokenize: (raw: string): RollToken => {
+    const result = raw.match(dropLowestN);
+    if (!result) {
+      throw new Error("Error while parsing.");
+    }
+    const [, , numDiceRaw, numSidesRaw, numToDropRaw = "1"] = result;
+    return {
+      numDice: parseInt(numDiceRaw, 10),
+      numSides: parseInt(numSidesRaw, 10),
+      numToDrop: parseInt(numToDropRaw, 10),
+    };
+  },
   roll: generateRolls,
   calculateValue: calculateValueRemovingLowest,
 };
 
-// Custom dice roll rule for format [XdYdhN]
-// (i.e. Roll X dY's, drop the lowest N)
-const dropHighestN: RegExp = /((\d+)d(\d+))(dh)(\d+)/;
-const detectDropHighestN: RegExp = /\d+d\d+dh\d+/;
+// Custom dice roll rule for format [XdYdh] [XdYdhN]
+// Roll XdY drop highest N = 1
+const dropHighestN: RegExp = /((\d+)d(\d+))dh(?:(\d+))?/;
+const detectDropHighestN: RegExp = /\d+d\d+dh(?:\d+)?/;
 const rollRuleDropHighestN: DiceRule<RollToken> = {
   regex: detectDropHighestN,
   typeConstant: "DropHighestN",
-  tokenize: (raw: string): RollToken =>
-    tokenizeKeepDropN(raw.match(dropHighestN)),
+  tokenize: (raw: string): RollToken => {
+    const result = raw.match(dropHighestN);
+    if (!result) {
+      throw new Error("Error while parsing.");
+    }
+    const [, , numDiceRaw, numSidesRaw, numToDropRaw = "1"] = result;
+    return {
+      numDice: parseInt(numDiceRaw, 10),
+      numSides: parseInt(numSidesRaw, 10),
+      numToDrop: parseInt(numToDropRaw, 10),
+    };
+  },
   roll: generateRolls,
   calculateValue: calculateValueRemovingHighest,
 };
 
-// Custom dice roll rule for formats [XdYvN] and [XdYklN]
-// (i.e. Roll X dY's, keep the lowest N)
-const keepLowestN: RegExp = /((\d+)d(\d+))(v|kl)(\d+)/;
-const detectKeepLowestN: RegExp = /\d+d\d+v\d+|\d+d\d+kl\d+/;
+// Custom dice roll rule for format[XdYkl] [XdYklN]
+// Roll XdY keep lowest N = 1
+const keepLowestN: RegExp = /((\d+)d(\d+))kl(?:(\d+))?/;
+const detectKeepLowestN: RegExp = /\d+d\d+kl(?:\d+)?/;
 const rollRuleKeepLowestN: DiceRule<RollToken> = {
   regex: detectKeepLowestN,
   typeConstant: "KeepLowestN",
-  tokenize: (raw: string): RollToken =>
-    tokenizeKeepDropN(raw.match(keepLowestN)),
+  tokenize: (raw: string): RollToken => {
+    const result = raw.match(keepLowestN);
+    if (!result) {
+      throw new Error("Error while parsing.");
+    }
+    const [, , numDiceRaw, numSidesRaw, numToKeepRaw = "1"] = result;
+    const numDice = parseInt(numDiceRaw, 10);
+    const numToKeep = parseInt(numToKeepRaw, 10);
+    return {
+      numDice,
+      numSides: parseInt(numSidesRaw, 10),
+      numToDrop: Math.max(0, numDice - numToKeep),
+    };
+  },
   roll: generateRolls,
   calculateValue: calculateValueKeepingLowest,
 };
 
-// Custom dice roll rule for formats [XdY^N], [XdYkN] and [XdYkhN]
-// (i.e.Roll X dY's, keep the highest N)
-const keepHighestN: RegExp = /((\d+)d(\d+))(\^|k|kh)(\d+)/;
-const detectKeepHighestN: RegExp = /\d+d\d+\^\d+|\d+d\d+k\d+|\d+d\d+kh\d+/;
+// Custom dice roll rule for format [XdYkh] or [XdYkhN]
+// Roll XdY keep highest N = 1
+const keepHighestN: RegExp = /((\d+)d(\d+))kh(?:(\d+))?/;
+const detectKeepHighestN: RegExp = /\d+d\d+kh(?:\d+)?/;
 const rollRuleKeepHighestN: DiceRule<RollToken> = {
   regex: detectKeepHighestN,
   typeConstant: "KeepHighestN",
-  tokenize: (raw: string): RollToken =>
-    tokenizeKeepDropN(raw.match(keepHighestN)),
+  tokenize: (raw: string): RollToken => {
+    const result = raw.match(keepHighestN);
+    if (!result) {
+      throw new Error("Error while parsing.");
+    }
+    const [, , numDiceRaw, numSidesRaw, numToKeepRaw = "1"] = result;
+    const numDice = parseInt(numDiceRaw, 10);
+    const numToKeep = parseInt(numToKeepRaw, 10);
+    return {
+      numDice,
+      numSides: parseInt(numSidesRaw, 10),
+      numToDrop: Math.max(0, numDice - numToKeep),
+    };
+  },
   roll: generateRolls,
   calculateValue: calculateValueKeepingHighest,
 };
 
 // Configure defined roll rules
 const rollRules: DiceRule<RollToken>[] = [
-  rollRuleDropLowest,
   rollRuleDropLowestN,
-  rollRuleDropHighest,
   rollRuleDropHighestN,
   rollRuleKeepLowestN,
   rollRuleKeepHighestN,
 ];
 
-const { roll } = withPlugins(...rollRules);
+const { roll } = createDiceRoller(withPlugins(...rollRules));
 
 export type DiceRollDetail =
   | {
@@ -288,49 +281,22 @@ const formatRoll = (result: RollInformation): DiceRollResult => {
             rolls: rollResults.map((value) => ({ value, crossedOut: false })),
           };
         } else if (
-          token.detailType === "DropLowest" ||
           token.detailType === "DropLowestN" ||
-          token.detailType === "DropHighest" ||
           token.detailType === "DropHighestN" ||
           token.detailType === "KeepLowestN" ||
           token.detailType === "KeepHighestN"
         ) {
           const rollResults = result.rolls[index] as number[];
           let crossedOutIndices: null | Set<number> = null;
-          let diceType: string = "";
+          const diceType: string = `${token.detail.numDice}d${token.detail.numSides}`;
 
           switch (token.detailType) {
-            case "DropLowest":
-            case "DropHighest":
-              diceType = token.content.split("-")[0];
-              break;
-            case "KeepLowestN":
-            case "KeepHighestN":
-              diceType = token.content
-                .split("k")[0]
-                .split("^")[0]
-                .split("v")[0];
-              break;
-            case "DropLowestN":
-            case "DropHighestN":
-              diceType = `${token.content.split("d")[0]}d${
-                token.content.split("d")[1]
-              }`;
-              break;
-            default:
-              diceType = token.content;
-              break;
-          }
-
-          switch (token.detailType) {
-            case "DropLowest":
             case "DropLowestN":
               crossedOutIndices = getDroppedIndicesDropLowest(
                 token.detail,
                 rollResults
               );
               break;
-            case "DropHighest":
             case "DropHighestN":
               crossedOutIndices = getDroppedIndicesDropHighest(
                 token.detail,
@@ -398,6 +364,7 @@ export const tryRoll = (input: string): DiceRollResult | null => {
     const result = roll(input);
     return formatRoll(result);
   } catch (err) {
+    // TODO: Better error handling :/
     return null;
   }
 };
