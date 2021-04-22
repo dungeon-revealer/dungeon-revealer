@@ -34,6 +34,9 @@ export const getDroppedIndicesDropLowest = (
   const droppedValues: Array<number> = [];
 
   for (let counter = 0; counter < token.numToDrop; counter++) {
+    if (rollCopy.length === 0) {
+      break;
+    }
     const index = rollCopy.indexOf(Math.min(...rollCopy));
     droppedValues.push(rollCopy[index]);
     rollCopy.splice(index, 1);
