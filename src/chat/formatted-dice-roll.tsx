@@ -1,6 +1,6 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
-import type { chatMessage_message } from "./__generated__/chatMessage_message.graphql";
+import { DiceRollResultContext } from "./chat-message";
 
 const StyledDiceRoll = styled.span`
   padding-right: 4px;
@@ -16,7 +16,7 @@ const Wrapper = styled.span`
   padding-right: 4px;
 `;
 
-const ResultWraper = styled(Wrapper)`
+const ResultWrapper = styled(Wrapper)`
   font-weight: bold;
 `;
 
@@ -26,23 +26,25 @@ const EqualSign = styled.span`
   padding-bottom: 2px;
 `;
 
+const RollWrapper = styled.span<{ crossedOut: boolean }>`
+  text-decoration: ${(p) => (p.crossedOut ? "line-through" : null)};
+`;
+
 const colors = {
   fail: "#730505",
   crit: "#247305",
 };
 
-const RollResult = styled.span<{ type: "DEFAULT" | "MIN" | "MAX" | unknown }>`
+const RollResult = styled.span<{
+  type: "DEFAULT" | "MIN" | "MAX" | unknown;
+}>`
   color: ${(p) =>
     p.type === "MIN" ? colors.fail : p.type === "MAX" ? colors.crit : null};
   font-weight: ${(p) => (p.type !== "DEFAULT" ? "bold" : null)};
 `;
 
-export const FormattedDiceRoll: React.FC<{
-  diceRoll: Extract<
-    chatMessage_message,
-    { __typename: "UserChatMessage" }
-  >["diceRolls"][number];
-}> = ({ diceRoll }) => {
+export const FormattedDiceRoll = ({ index }: { index: string }) => {
+  const diceRoll = React.useContext(DiceRollResultContext)[parseInt(index, 10)];
   return (
     <StyledDiceRoll>
       <Wrapper>
@@ -51,10 +53,12 @@ export const FormattedDiceRoll: React.FC<{
             case "DiceRollDiceRollNode":
               return node.rollResults.map((result, index) => (
                 <span key={index}>
-                  <RollResult type={result.category}>
-                    {result.result}
-                  </RollResult>{" "}
-                  ({result.dice})
+                  <RollWrapper crossedOut={result.crossedOut}>
+                    <RollResult type={result.category}>
+                      {result.result}
+                    </RollResult>{" "}
+                    ({result.dice})
+                  </RollWrapper>
                   {index + 1 === node.rollResults.length ? null : " + "}{" "}
                 </span>
               ));
@@ -66,9 +70,7 @@ export const FormattedDiceRoll: React.FC<{
         })}
       </Wrapper>
       <EqualSign>{" = "}</EqualSign>
-      <ResultWraper style={{ fontWeight: "bold" }}>
-        {diceRoll.result}
-      </ResultWraper>
+      <ResultWrapper>{diceRoll.result}</ResultWrapper>
     </StyledDiceRoll>
   );
 };

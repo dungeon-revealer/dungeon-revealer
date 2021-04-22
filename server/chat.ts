@@ -1,6 +1,7 @@
 import { v4 as uuid } from "uuid";
 import { roll } from "@airjp73/dice-notation";
 import { createPubSub } from "./pubsub";
+import { DiceRollResult, tryRoll } from "./roll-dice";
 
 type SharedResourceType =
   | { type: "NOTE"; id: string }
@@ -8,38 +9,6 @@ type SharedResourceType =
       type: "IMAGE";
       id: string;
     };
-
-export type DiceRollDetail =
-  | {
-      type: "DiceRoll";
-      content: string;
-      detail: {
-        max: number;
-        min: number;
-      };
-      rolls: Array<number>;
-    }
-  | {
-      type: "Constant";
-      content: string;
-    }
-  | {
-      type: "Operator";
-      content: string;
-    }
-  | {
-      type: "OpenParen";
-      content: string;
-    }
-  | {
-      type: "CloseParen";
-      content: string;
-    };
-
-export type DiceRollResult = {
-  result: number;
-  detail: Array<DiceRollDetail>;
-};
 
 export type DiceTokenType = ReturnType<typeof roll>["tokens"][0];
 
@@ -65,56 +34,6 @@ export type ApplicationRecordSchema =
       authorName: string;
       createdAt: number;
     };
-
-// We map the result to our own representation
-const tryRoll = (input: string): DiceRollResult | null => {
-  try {
-    const result = roll(input);
-    return {
-      result: result.result,
-      detail: result.tokens.map((token, index) => {
-        if (token.type === "DiceRoll") {
-          if (token.detailType === "_SimpleDieRoll") {
-            const rollResuls = result.rolls[index] as number[];
-            return {
-              type: "DiceRoll" as const,
-              content: token.content,
-              detail: {
-                min: 1,
-                max: token.detail.numSides as number,
-              },
-              rolls: rollResuls,
-            };
-          } else if (token.detailType === "_Constant") {
-            return {
-              type: "Constant" as const,
-              content: token.content,
-            };
-          }
-          throw new Error("Invalid Type.");
-        } else if (token.type === "Operator") {
-          return {
-            type: "Operator" as const,
-            content: token.content,
-          };
-        } else if (token.type === "OpenParen") {
-          return {
-            type: "OpenParen" as const,
-            content: token.content,
-          };
-        } else if (token.type === "CloseParen") {
-          return {
-            type: "CloseParen" as const,
-            content: token.content,
-          };
-        }
-        throw new Error("Invalid Type.");
-      }),
-    };
-  } catch (err) {
-    return null;
-  }
-};
 
 const processRawContent = (
   message: string

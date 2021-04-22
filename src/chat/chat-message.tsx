@@ -37,12 +37,15 @@ const sanitizeHtml = (html: string) =>
       "code",
       "img",
       ...Object.keys(chatMessageComponents),
+      "FormattedDiceRoll",
     ],
     allowedAttributes: {
       span: ["style"],
       div: ["style"],
       img: ["src"],
+      FormattedDiceRoll: ["index"],
     },
+    selfClosing: ["FormattedDiceRoll"],
     transformTags: {
       // since our p element could also contain div elements and that makes react/the browser go brrrt
       // we simply convert them to div elements for now
@@ -58,50 +61,45 @@ const TextRenderer: React.FC<{ text: string }> = ({ text }) => {
   return <MarkdownView markdown={text} sanitizeHtml={sanitizeHtml} />;
 };
 
-const UserMessageRenderer: React.FC<{
+type DiceRollResultArray = Extract<
+  chatMessage_message,
+  { __typename: "UserChatMessage" }
+>["diceRolls"];
+
+export const DiceRollResultContext = React.createContext<DiceRollResultArray>(
+  // TODO: Use context that throws by default
+  undefined as any
+);
+
+const UserMessageRenderer = ({
+  content,
+  diceRolls,
+}: {
   content: string;
   diceRolls: Extract<
     chatMessage_message,
     { __typename: "UserChatMessage" }
   >["diceRolls"];
-}> = ({ content, diceRolls }) => {
+}) => {
+  const markdown = React.useMemo(
+    () =>
+      content.replace(
+        /{(\d*)}/g,
+        (_, p1) => `<FormattedDiceRoll index="${p1}" />`
+      ),
+    [content]
+  );
   return (
-    <MarkdownView
-      markdown={content}
-      components={chatMessageComponents}
-      sanitizeHtml={sanitizeHtml}
-      /**
-       * We monkey patched MarkdownView.
-       * We replace the "{number}" placeholders with our actual dice roll components, so they are embedded nicely :)
-       * E.g. "{0}" -> <FormattedDiceRoll diceRoll={diceRolls[0]} />
-       */
-      MONKEY_PATCHED_textMapper={(text) => {
-        const parts = text.split(/({\d*})/).filter(Boolean);
-        const nodes: React.ReactNode[] = [];
-        for (const part of parts) {
-          if (part.startsWith("{") && part.endsWith("}")) {
-            const index = parseInt(part.substr(1, part.length - 1), 10);
-            if (diceRolls[index]) {
-              const content = (
-                <FormattedDiceRoll
-                  diceRoll={diceRolls[index]}
-                  key={`dice_roll_${index}`}
-                />
-              );
-              nodes.push(content);
-            } else {
-              nodes.push(part);
-            }
-          } else {
-            nodes.push(part);
-          }
-        }
-        return nodes;
-      }}
-      options={{
-        simpleLineBreaks: true,
-      }}
-    />
+    <DiceRollResultContext.Provider value={diceRolls}>
+      <MarkdownView
+        markdown={markdown}
+        components={{ ...chatMessageComponents, FormattedDiceRoll }}
+        sanitizeHtml={sanitizeHtml}
+        options={{
+          simpleLineBreaks: true,
+        }}
+      />
+    </DiceRollResultContext.Provider>
   );
 };
 
@@ -264,6 +262,7 @@ export const ChatMessage = createFragmentContainer(ChatMessageRenderer, {
                 dice
                 result
                 category
+                crossedOut
               }
             }
           }
