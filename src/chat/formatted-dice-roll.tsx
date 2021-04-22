@@ -1,6 +1,6 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
-import type { chatMessage_message } from "./__generated__/chatMessage_message.graphql";
+import { DiceRollResultContext } from "./chat-message";
 
 const StyledDiceRoll = styled.span`
   padding-right: 4px;
@@ -43,12 +43,8 @@ const RollResult = styled.span<{
   font-weight: ${(p) => (p.type !== "DEFAULT" ? "bold" : null)};
 `;
 
-export const FormattedDiceRoll: React.FC<{
-  diceRoll: Extract<
-    chatMessage_message,
-    { __typename: "UserChatMessage" }
-  >["diceRolls"][number];
-}> = ({ diceRoll }) => {
+export const FormattedDiceRoll = ({ index }: { index: string }) => {
+  const diceRoll = React.useContext(DiceRollResultContext)[parseInt(index, 10)];
   return (
     <StyledDiceRoll>
       <Wrapper>
