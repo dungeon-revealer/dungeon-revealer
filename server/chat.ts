@@ -1,7 +1,8 @@
 import { v4 as uuid } from "uuid";
 import { roll } from "@airjp73/dice-notation";
+import { Liquid } from "liquidjs";
 import { createPubSub } from "./pubsub";
-import { DiceRollResult, tryRoll } from "./roll-dice";
+import { DiceRollResult, isDiceRollResult, tryRoll } from "./roll-dice";
 
 type SharedResourceType =
   | { type: "NOTE"; id: string }
@@ -18,6 +19,7 @@ export type ApplicationRecordSchema =
       id: string;
       content: string;
       diceRolls: DiceRollResult[];
+      referencedDiceRolls: DiceRollResult[];
       authorName: string;
       createdAt: number;
     }
@@ -35,6 +37,8 @@ export type ApplicationRecordSchema =
       createdAt: number;
     };
 
+const isDiceRoll = (part: string) => part.startsWith("[") && part.endsWith("]");
+
 const processRawContent = (
   message: string
 ): { content: string; diceRolls: DiceRollResult[] } => {
@@ -46,11 +50,7 @@ const processRawContent = (
 
   for (const part of parts) {
     if (part.startsWith("[") && part.endsWith("]")) {
-      const notation = part
-        .slice(1, part.length - 1)
-        // fix for https://github.com/airjp73/dice-notation/issues/8
-        .replace(/\+ *\-/g, "-")
-        .replace(/\- *\+/g, "-");
+      const notation = part.slice(1, part.length - 1);
       const rollResult = tryRoll(notation);
       if (rollResult) {
         diceRolls.push(rollResult);
@@ -66,13 +66,61 @@ const processRawContent = (
   return { content, diceRolls };
 };
 
+const processVariables = (variables: Record<string, string>) => {
+  return Object.fromEntries(
+    Object.entries(variables).map(([key, value]) => {
+      if (typeof value === "string" && isDiceRoll(value)) {
+        const rollResult = tryRoll(value.slice(1, value.length - 1));
+        return [key, rollResult];
+      }
+      return [key, value];
+    })
+  );
+};
+
 type NewMessagesPayload = {
   messages: Array<ApplicationRecordSchema>;
 };
 
 const MAXIMUM_CHAT_SIZE = 500;
 
+const diceRollSymbol = Symbol("DiceRoll");
+
 export const createChat = () => {
+  const templateEngine = new Liquid({
+    fs: {
+      exists: () => Promise.reject(new Error("Not supported.")),
+      readFile: () => Promise.reject(new Error("Not supported.")),
+      readFileSync: () => {
+        throw new Error("Not supported.");
+      },
+      existsSync: () => {
+        throw new Error("Not supported.");
+      },
+      resolve: () => {
+        throw new Error("Not supported.");
+      },
+    },
+  });
+
+  templateEngine.registerTag("renderDiceRoll", {
+    parse: function (tagToken) {
+      this.variable = tagToken.args;
+    },
+    render: function* (ctx) {
+      const scope = ctx.bottom() as any;
+      const maybeDiceRoll = scope[this.variable];
+
+      if (isDiceRollResult(maybeDiceRoll)) {
+        (ctx.environments as any)[diceRollSymbol].push(maybeDiceRoll);
+        return `{r${(ctx.environments as any)[diceRollSymbol].length - 1}}`;
+      }
+      return "ERROR: Not a dice roll";
+    },
+  });
+
+  templateEngine.registerFilter("diceRoll", (value) => tryRoll(value));
+
   let state: Array<ApplicationRecordSchema> = [];
   const pubSub = createPubSub<NewMessagesPayload>();
 
@@ -87,15 +135,34 @@ export const createChat = () => {
     });
   };
 
-  const addUserMessage = (args: { authorName: string; rawContent: string }) => {
+  const addUserMessage = (args: {
+    authorName: string;
+    rawContent: string;
+    variables: { [key: string]: string };
+  }) => {
     const { content, diceRolls } = processRawContent(args.rawContent);
+    const variables = args.variables;
+
+    const vars = processVariables(variables);
+
+    const scope = {
+      context: {
+        authorName: args.authorName,
+      },
+      vars,
+      [diceRollSymbol]: [],
+    };
+
+    const text = templateEngine.parseAndRenderSync(content, scope);
+
     const message: ApplicationRecordSchema = {
       id: uuid(),
       type: "USER_MESSAGE",
       createdAt: new Date().getTime(),
-      ...args,
-      content,
+      authorName: args.authorName,
+      content: text,
       diceRolls,
+      referencedDiceRolls: scope[diceRollSymbol],
     };
     addMessageToStack(message);
   };

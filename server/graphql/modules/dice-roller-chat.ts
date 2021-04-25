@@ -298,13 +298,18 @@ const GraphQLUserChatMessageType = t.objectType<UserChatMessageType>({
       type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageDiceRoll))),
       resolve: (message) => message.diceRolls,
     }),
+    t.field("referencedDiceRolls", {
+      type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageDiceRoll))),
+      resolve: (message) => message.referencedDiceRolls,
+    }),
     t.field("createdAt", {
       type: t.NonNull(t.String),
       resolve: (message) => new Date(message.createdAt).toISOString(),
     }),
     t.field("containsDiceRoll", {
       type: t.NonNull(t.Boolean),
-      resolve: (message) => message.diceRolls.length > 0,
+      resolve: (message) =>
+        message.diceRolls.length > 0 || message.referencedDiceRolls.length > 0,
     }),
   ],
   isTypeOf: (src) => src?.type === "USER_MESSAGE",
@@ -387,6 +392,9 @@ const GraphQLChatMessageCreateInputType = t.inputObjectType({
     rawContent: {
       type: t.NonNullInput(t.String),
     },
+    variables: {
+      type: t.String,
+    },
   }),
 });
 
@@ -429,6 +437,7 @@ export const mutationFields = [
       context.chat.addUserMessage({
         authorName: user.name,
         rawContent: args.input.rawContent,
+        variables: args.input.variables ? JSON.parse(args.input.variables) : {},
       });
       return null;
     },

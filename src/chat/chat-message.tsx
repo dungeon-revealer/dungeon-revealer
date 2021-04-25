@@ -25,37 +25,63 @@ const AuthorName = styled.div`
   font-weight: bold;
 `;
 
-const sanitizeHtml = (html: string) =>
-  _sanitizeHtml(html, {
-    allowedTags: [
-      "div",
-      "blockquote",
-      "span",
-      "em",
-      "strong",
-      "pre",
-      "code",
-      "img",
-      ...Object.keys(chatMessageComponents),
-      "FormattedDiceRoll",
-    ],
-    allowedAttributes: {
-      span: ["style"],
-      div: ["style"],
-      img: ["src"],
-      FormattedDiceRoll: ["index"],
-    },
-    selfClosing: ["FormattedDiceRoll"],
-    transformTags: {
-      // since our p element could also contain div elements and that makes react/the browser go brrrt
-      // we simply convert them to div elements for now
-      // in the future we might have a better solution.
-      p: "div",
-    },
-    parser: {
-      lowerCaseTags: false,
-    },
-  });
+type ReactComponent = (props: any) => React.ReactElement | null;
+
+const { sanitizeHtml, components } = (() => {
+  const allowedTags = [
+    "div",
+    "blockquote",
+    "span",
+    "em",
+    "strong",
+    "pre",
+    "code",
+    "img",
+    "FormattedDiceRoll",
+  ];
+
+  const allowedAttributes: Record<string, Array<string>> = {
+    span: ["style"],
+    div: ["style"],
+    img: ["src"],
+    FormattedDiceRoll: ["index", "reference"],
+  };
+
+  const components: Record<string, ReactComponent> = {};
+
+  for (const [name, config] of Object.entries(chatMessageComponents)) {
+    if (typeof config === "function") {
+      allowedTags.push(name);
+      components[name] = config;
+      continue;
+    }
+    if (typeof config === "object") {
+      if (config.allowedAttributes != null) {
+        allowedAttributes[name] = config.allowedAttributes;
+        allowedTags.push(name);
+        components[name] = config.Component;
+      }
+    }
+  }
+
+  const sanitizeHtml = (html: string) =>
+    _sanitizeHtml(html, {
+      allowedTags,
+      allowedAttributes,
+      transformTags: {
+        // since our p element could also contain div elements and that makes react/the browser go brrrt
+        // we simply convert them to div elements for now
+        // in the future we might have a better solution.
+        p: "div",
+      },
+      selfClosing: ["FormattedDiceRoll"],
+      parser: {
+        lowerCaseTags: false,
+      },
+    });
+
+  return { sanitizeHtml, components };
+})();
 
 const TextRenderer: React.FC<{ text: string }> = ({ text }) => {
   return <MarkdownView markdown={text} sanitizeHtml={sanitizeHtml} />;
@@ -66,7 +92,12 @@ type DiceRollResultArray = Extract<
   { __typename: "UserChatMessage" }
 >["diceRolls"];
 
-export const DiceRollResultContext = React.createContext<DiceRollResultArray>(
+type DiceRollResultContextValue = {
+  diceRolls: DiceRollResultArray;
+  referencedDiceRolls: DiceRollResultArray;
+};
+
+export const DiceRollResultContext = React.createContext<DiceRollResultContextValue>(
   // TODO: Use context that throws by default
   undefined as any
 );
@@ -74,23 +105,24 @@ export const DiceRollResultContext = React.createContext<DiceRollResultArray>(
 const UserMessageRenderer = ({
   content,
   diceRolls,
+  referencedDiceRolls,
 }: {
   content: string;
-  diceRolls: Extract<
-    chatMessage_message,
-    { __typename: "UserChatMessage" }
-  >["diceRolls"];
+  diceRolls: DiceRollResultArray;
+  referencedDiceRolls: DiceRollResultArray;
 }) => {
   const markdown = React.useMemo(
     () =>
       content.replace(
-        /{(\d*)}/g,
-        (_, p1) => `<FormattedDiceRoll index="${p1}" />`
+        /{(r)?(\d*)}/g,
+        // prettier-ignore
+        (_, isReferenced, index) => `<FormattedDiceRoll index="${index}"${isReferenced ? ` reference="yes"` : ``} />`
       ),
     [content]
   );
+
   return (
-    <DiceRollResultContext.Provider value={diceRolls}>
+    <DiceRollResultContext.Provider value={{ diceRolls, referencedDiceRolls }}>
       <MarkdownView
         markdown={markdown}
         components={{ ...chatMessageComponents, FormattedDiceRoll }}
@@ -213,6 +245,7 @@ const ChatMessageRenderer: React.FC<{
           <UserMessageRenderer
             content={message.content}
             diceRolls={message.diceRolls}
+            referencedDiceRolls={message.referencedDiceRolls}
           />
         </Container>
       );
@@ -237,6 +270,37 @@ export const ChatMessage = createFragmentContainer(ChatMessageRenderer, {
         authorName
         content
         diceRolls {
+          result
+          detail {
+            ... on DiceRollOperatorNode {
+              __typename
+              content
+            }
+            ... on DiceRollConstantNode {
+              __typename
+              content
+            }
+            ... on DiceRollOpenParenNode {
+              __typename
+              content
+            }
+            ... on DiceRollCloseParenNode {
+              __typename
+              content
+            }
+            ... on DiceRollDiceRollNode {
+              __typename
+              content
+              rollResults {
+                dice
+                result
+                category
+                crossedOut
+              }
+            }
+          }
+        }
+        referencedDiceRolls {
           result
           detail {
             ... on DiceRollOperatorNode {

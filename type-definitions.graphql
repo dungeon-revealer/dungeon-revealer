@@ -55,6 +55,7 @@ type UserChatMessage implements ChatMessage & TextChatMessage {
   authorName: String!
   content: String!
   diceRolls: [DiceRoll!]!
+  referencedDiceRolls: [DiceRoll!]!
   createdAt: String!
   containsDiceRoll: Boolean!
 }
@@ -260,6 +261,7 @@ input ChangeNameInput {
 
 input ChatMessageCreateInput {
   rawContent: String!
+  variables: String
 }
 
 input ShareResourceInput {

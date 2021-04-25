@@ -1,18 +1,21 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
-import { useMessageAddMutation } from "../../chat/message-add-mutation";
-import { TemplateContext } from "./html-container";
-import { Button, ButtonGroup, IconButton } from "@chakra-ui/button";
-import { ChakraIcon } from "../../feather-icons";
+
 import {
+  Button,
+  ButtonGroup,
+  IconButton,
+  Portal,
   Popover,
   PopoverArrow,
   PopoverContent,
   PopoverTrigger,
-} from "@chakra-ui/popover";
+} from "@chakra-ui/react";
 import { button, useControls, useCreateStore } from "leva";
-import { Portal } from "@chakra-ui/portal";
 import { ThemedLevaPanel } from "../../themed-leva-panel";
+import { useMessageAddMutation } from "../../chat/message-add-mutation";
+import { ChakraIcon } from "../../feather-icons";
+import { TemplateContext } from "./html-container";
 
 export const StyledChatMessageButton = styled.button`
   all: unset;
@@ -32,25 +35,24 @@ export const StyledChatMessageButton = styled.button`
 
 type ComplexOption = {
   value: number;
-  min: number | undefined;
-  max: number | undefined;
+  min?: number | undefined;
+  max?: number | undefined;
   step: number | undefined;
-  label: string | undefined;
+  label?: string | undefined;
 };
 
-const tryParseJsonSafe = (value: string): string | ComplexOption => {
+const tryParseJsonSafe = (value: string): null | ComplexOption => {
   try {
     const values = JSON.parse(value);
-
     return {
       value: values.value ?? 0,
-      min: values.min ?? undefined,
-      max: values.max ?? undefined,
+      min: values.min ?? -10,
+      max: values.max ?? 10,
       step: values.step ?? 1,
       label: values.label ?? undefined,
     };
   } catch (_) {
-    return value;
+    return null;
   }
 };
 
@@ -61,9 +63,11 @@ const getVariableProps = (props: { [key: string]: any }) => {
     )
     .map(([name, value]) => ({
       name: name.replace("var-", ""),
-      value: tryParseJsonSafe(value),
+      value,
     }));
 };
+
+type VariablesMap = Map<string, string>;
 
 export const ChatMessageButton: React.FC<{
   message?: string;
@@ -74,20 +78,32 @@ export const ChatMessageButton: React.FC<{
   let message = props.message;
 
   const controls = new Map<string, ComplexOption>();
+  const variables: VariablesMap = new Map();
 
   if (templateId) {
-    const variables = getVariableProps(props);
-    message = templateMap.get(templateId);
-    if (!message) {
+    const template = templateMap.get(templateId);
+    if (template == null) {
       message = "ERROR: Cannot find template";
     } else {
-      for (const { name, value } of variables) {
-        if (typeof value !== "string") {
-          controls.set(name, value);
-        } else {
-          message = message.replace(new RegExp(`{{${name}}}`, "g"), value);
+      for (const [name, variable] of template.variables.entries()) {
+        if (variable.value.type === "plainAttributeValue") {
+          const maybeJSONValue = tryParseJsonSafe(variable.value.value);
+          if (maybeJSONValue) {
+            controls.set(name, maybeJSONValue);
+          }
+        } else if (variable.value.type === "stringAttributeValue") {
+          variables.set(name, variable.value.value);
         }
       }
+      message = template.content;
+
+      const replaceVariables = getVariableProps(props);
+
+      for (const { name, value } of replaceVariables) {
+        message = message.replace(new RegExp(`{{${name}}}`, "g"), value);
+      }
+
+      console.log(template);
     }
   } else if (!message) {
     message = "ERROR: Cannot find template";
@@ -95,14 +111,18 @@ export const ChatMessageButton: React.FC<{
 
   if (controls.size === 0) {
     return (
-      <SimpleChatMessageButton message={message}>
+      <SimpleChatMessageButton message={message} variables={variables}>
         {children}
       </SimpleChatMessageButton>
     );
   }
 
   return (
-    <ComplexChatMessageButton message={message} controls={controls}>
+    <ComplexChatMessageButton
+      message={message}
+      controls={controls}
+      variables={variables}
+    >
       {children}
     </ComplexChatMessageButton>
   );
@@ -111,6 +131,7 @@ export const ChatMessageButton: React.FC<{
 const SimpleChatMessageButton = (props: {
   message: string;
   children?: React.ReactNode;
+  variables: VariablesMap;
 }) => {
   const messageAdd = useMessageAddMutation();
 
@@ -123,7 +144,12 @@ const SimpleChatMessageButton = (props: {
         if (!props.message) {
           return;
         }
-        messageAdd({ rawContent: props.message });
+        messageAdd({
+          rawContent: props.message,
+          variables: JSON.stringify(
+            Object.fromEntries(props.variables.entries())
+          ),
+        });
       }}
     >
       {props.children}
@@ -135,13 +161,13 @@ const ComplexChatMessageButton = (props: {
   message: string;
   controls: Map<string, ComplexOption>;
   children?: React.ReactNode;
+  variables: VariablesMap;
 }) => {
   const messageAdd = useMessageAddMutation();
 
   const store = useCreateStore();
 
   const stateRef = React.useRef({} as Record<string, any>);
-
   const [state] = useControls(
     () =>
       Object.fromEntries([
@@ -149,16 +175,13 @@ const ComplexChatMessageButton = (props: {
         [
           "Roll with Modification",
           button(() => {
-            let msgWithContent = props.message;
-            for (const [name] of props.controls.entries()) {
-              const defaultValue = String(stateRef.current[name] ?? 0);
-              msgWithContent = msgWithContent.replace(
-                new RegExp(`{{${name}}}`, "g"),
-                defaultValue
-              );
-            }
-
-            messageAdd({ rawContent: msgWithContent });
+            messageAdd({
+              rawContent: props.message,
+              variables: JSON.stringify({
+                ...Object.fromEntries(props.variables.entries()),
+                ...stateRef.current,
+              }),
+            });
           }),
         ] as any,
       ]),
@@ -176,16 +199,17 @@ const ComplexChatMessageButton = (props: {
           if (!props.message) {
             return;
           }
-          let msgWithContent = props.message;
-          for (const [name, value] of props.controls.entries()) {
-            const defaultValue = String(value.value ?? 0);
-            msgWithContent = msgWithContent.replace(
-              new RegExp(`{{${name}}}`, "g"),
-              defaultValue
-            );
-          }
-
-          messageAdd({ rawContent: msgWithContent });
+          messageAdd({
+            rawContent: props.message,
+            variables: JSON.stringify(
+              Object.fromEntries([
+                ...props.variables.entries(),
+                ...Array.from(
+                  props.controls.entries()
+                ).map(([name, option]) => [name, option.value]),
+              ])
+            ),
+          });
         }}
       >
         {props.children}

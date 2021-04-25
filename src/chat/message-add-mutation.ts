@@ -14,7 +14,7 @@ export const useMessageAddMutation = () => {
     MessageAddMutationDocument
   );
   return useCallback(
-    (input: { rawContent: string }) => {
+    (input: { rawContent: string; variables?: string }) => {
       mutation({
         variables: { input },
       });

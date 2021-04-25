@@ -43,8 +43,15 @@ const RollResult = styled.span<{
   font-weight: ${(p) => (p.type !== "DEFAULT" ? "bold" : null)};
 `;
 
-export const FormattedDiceRoll = ({ index }: { index: string }) => {
-  const diceRoll = React.useContext(DiceRollResultContext)[parseInt(index, 10)];
+export const FormattedDiceRoll = (props: {
+  index: string;
+  reference?: string;
+}) => {
+  const index = parseInt(props.index, 10);
+  const isReference = !!props.reference;
+  const diceRoll = React.useContext(DiceRollResultContext)[
+    isReference ? "referencedDiceRolls" : "diceRolls"
+  ][index];
   return (
     <StyledDiceRoll>
       <Wrapper>
