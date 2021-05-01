@@ -1,6 +1,4 @@
 import * as React from "react";
-import styled from "@emotion/styled/macro";
-
 import {
   Button,
   ButtonGroup,
@@ -11,53 +9,92 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@chakra-ui/react";
-import { button, useControls, useCreateStore } from "leva";
+import { button, useControls, useCreateStore, LevaInputs } from "leva";
+import * as t from "io-ts";
+import { flow, identity } from "fp-ts/function";
+import * as E from "fp-ts/Either";
+import * as Json from "fp-ts/Json";
 import { ThemedLevaPanel } from "../../themed-leva-panel";
 import { useMessageAddMutation } from "../../chat/message-add-mutation";
 import { ChakraIcon } from "../../feather-icons";
 import { TemplateContext } from "./html-container";
 
-export const StyledChatMessageButton = styled.button`
-  all: unset;
-  cursor: pointer;
-  background: white;
-  border-radius: 3px;
-  border: 1px solid #d1d1d1;
-  padding-left: 4px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  padding-right: 4px;
+const PartialSelectVariableModel = t.intersection([
+  t.type({
+    type: t.literal("select"),
+    options: t.array(
+      t.type({
+        label: t.string,
+        value: t.unknown,
+      })
+    ),
+  }),
+  t.partial({
+    label: t.string,
+  }),
+]);
 
-  &:hover {
-    background: #d1d1d1;
-  }
-`;
+const PartialNumberVariableModel = t.intersection([
+  t.type({
+    type: t.literal("number"),
+    value: t.number,
+  }),
+  t.partial({
+    label: t.string,
+    min: t.number,
+    max: t.number,
+    step: t.number,
+  }),
+]);
 
-type ComplexOption = {
-  value: number;
-  min?: number | undefined;
-  max?: number | undefined;
-  step: number | undefined;
-  label?: string | undefined;
-};
+const PartialTextVariableModel = t.intersection([
+  t.type({
+    type: t.literal("text"),
+    value: t.string,
+  }),
+  t.partial({
+    label: t.string,
+  }),
+]);
 
-const tryParseJsonSafe = (value: string): null | ComplexOption => {
-  try {
-    const values = JSON.parse(value);
-    return {
-      value: values.value ?? 0,
-      min: values.min ?? -10,
-      max: values.max ?? 10,
-      step: values.step ?? 1,
-      label: values.label ?? undefined,
-    };
-  } catch (_) {
-    return null;
-  }
-};
+const ComplexOptionModel = t.union([
+  PartialSelectVariableModel,
+  PartialNumberVariableModel,
+  PartialTextVariableModel,
+]);
 
-const getVariableProps = (props: { [key: string]: any }) => {
-  return Object.entries(props)
+const tryParseJsonSafe = (key: string) =>
+  flow(
+    Json.parse,
+    E.chainW(ComplexOptionModel.decode),
+    E.map((value) => {
+      switch (value.type) {
+        case "number":
+          return {
+            ...value,
+            label: value.label ?? key,
+            min: value.min ?? value.value - 10,
+            max: value.max ?? value.value + 10,
+            step: value.step ?? 1,
+          };
+        case "text":
+        case "select":
+          return {
+            ...value,
+            label: value.label ?? key,
+          };
+      }
+    }),
+    E.fold((err) => null, identity)
+  );
+
+type ComplexOption = Exclude<
+  ReturnType<ReturnType<typeof tryParseJsonSafe>>,
+  null
+>;
+
+const getVariableProps = (props: { [key: string]: any }) =>
+  Object.entries(props)
     .filter(
       ([key, value]) => key.startsWith("var-") && typeof value === "string"
     )
@@ -65,9 +102,36 @@ const getVariableProps = (props: { [key: string]: any }) => {
       name: name.replace("var-", ""),
       value,
     }));
-};
 
 type VariablesMap = Map<string, string>;
+
+const toLevaInputSetting = (input: ComplexOption) => {
+  switch (input.type) {
+    case "select":
+      return {
+        type: LevaInputs.SELECT,
+        label: input.label,
+        options: Object.fromEntries(
+          input.options.map((option) => [option.label, option])
+        ),
+      };
+    case "number":
+      return {
+        type: LevaInputs.NUMBER,
+        label: input.label,
+        value: input.value,
+        min: input.min,
+        max: input.max,
+        step: input.step,
+      };
+    case "text":
+      return {
+        type: LevaInputs.STRING,
+        label: input.label,
+        value: input.value,
+      };
+  }
+};
 
 export const ChatMessageButton: React.FC<{
   message?: string;
@@ -87,7 +151,7 @@ export const ChatMessageButton: React.FC<{
     } else {
       for (const [name, variable] of template.variables.entries()) {
         if (variable.value.type === "plainAttributeValue") {
-          const maybeJSONValue = tryParseJsonSafe(variable.value.value);
+          const maybeJSONValue = tryParseJsonSafe(name)(variable.value.value);
           if (maybeJSONValue) {
             controls.set(name, maybeJSONValue);
           }
@@ -102,19 +166,9 @@ export const ChatMessageButton: React.FC<{
       for (const { name, value } of replaceVariables) {
         message = message.replace(new RegExp(`{{${name}}}`, "g"), value);
       }
-
-      console.log(template);
     }
   } else if (!message) {
     message = "ERROR: Cannot find template";
-  }
-
-  if (controls.size === 0) {
-    return (
-      <SimpleChatMessageButton message={message} variables={variables}>
-        {children}
-      </SimpleChatMessageButton>
-    );
   }
 
   return (
@@ -125,35 +179,6 @@ export const ChatMessageButton: React.FC<{
     >
       {children}
     </ComplexChatMessageButton>
-  );
-};
-
-const SimpleChatMessageButton = (props: {
-  message: string;
-  children?: React.ReactNode;
-  variables: VariablesMap;
-}) => {
-  const messageAdd = useMessageAddMutation();
-
-  return (
-    <Button
-      size="xs"
-      isAttached
-      variant="outline"
-      onClick={() => {
-        if (!props.message) {
-          return;
-        }
-        messageAdd({
-          rawContent: props.message,
-          variables: JSON.stringify(
-            Object.fromEntries(props.variables.entries())
-          ),
-        });
-      }}
-    >
-      {props.children}
-    </Button>
   );
 };
 
@@ -171,7 +196,10 @@ const ComplexChatMessageButton = (props: {
   const [state] = useControls(
     () =>
       Object.fromEntries([
-        ...Array.from(props.controls),
+        ...Array.from(props.controls).map(([key, value]) => [
+          key,
+          toLevaInputSetting(value),
+        ]),
         [
           "Roll with Modification",
           button(() => {
@@ -204,9 +232,10 @@ const ComplexChatMessageButton = (props: {
             variables: JSON.stringify(
               Object.fromEntries([
                 ...props.variables.entries(),
-                ...Array.from(
-                  props.controls.entries()
-                ).map(([name, option]) => [name, option.value]),
+                ...Array.from(props.controls.entries()).map(([name, _]) => [
+                  name,
+                  state[name],
+                ]),
               ])
             ),
           });
@@ -214,24 +243,29 @@ const ComplexChatMessageButton = (props: {
       >
         {props.children}
       </Button>
-      <Popover placement="right">
-        <PopoverTrigger>
-          <IconButton aria-label="Add to friends" icon={<ChakraIcon.Right />} />
-        </PopoverTrigger>
-        <Portal>
-          <PopoverContent maxWidth={200}>
-            <PopoverArrow />
-            <ThemedLevaPanel
-              fill={true}
-              flat={true}
-              store={store}
-              titleBar={false}
-              oneLineLabels
-              hideCopyButton
+      {props.controls.size > 0 ? (
+        <Popover placement="right">
+          <PopoverTrigger>
+            <IconButton
+              aria-label="Apply options"
+              icon={<ChakraIcon.Right />}
             />
-          </PopoverContent>
-        </Portal>
-      </Popover>
+          </PopoverTrigger>
+          <Portal>
+            <PopoverContent maxWidth={200}>
+              <PopoverArrow />
+              <ThemedLevaPanel
+                fill={true}
+                flat={true}
+                store={store}
+                titleBar={false}
+                oneLineLabels
+                hideCopyButton
+              />
+            </PopoverContent>
+          </Portal>
+        </Popover>
+      ) : null}
     </ButtonGroup>
   );
 };
