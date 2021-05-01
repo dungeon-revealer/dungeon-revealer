@@ -226,7 +226,7 @@ type TokenImage implements Node {
 type Mutation {
   logIn(input: LogInInput): LogInResult!
   changeName(input: ChangeNameInput!): ChangeNameResult!
-  chatMessageCreate(input: ChatMessageCreateInput!): Boolean
+  chatMessageCreate(input: ChatMessageCreateInput!): ChatMessageCreateResult!
   shareResource(input: ShareResourceInput!): Boolean
   shareImage(input: ShareImageInput!): Boolean
   splashShareImage(input: SplashShareImageInput!): Boolean
@@ -257,6 +257,19 @@ type ChangeNameResult {
 
 input ChangeNameInput {
   name: String!
+}
+
+type ChatMessageCreateResult {
+  error: ChatMessageCreateResultError
+  success: ChatMessageCreateResultSuccess
+}
+
+type ChatMessageCreateResultError {
+  reason: String!
+}
+
+type ChatMessageCreateResultSuccess {
+  _: Boolean
 }
 
 input ChatMessageCreateInput {

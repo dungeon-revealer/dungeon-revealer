@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid";
 import { roll } from "@airjp73/dice-notation";
-import { Liquid } from "liquidjs";
+import { Liquid, LiquidError } from "liquidjs";
 import { createPubSub } from "./pubsub";
 import { DiceRollResult, isDiceRollResult, tryRoll } from "./roll-dice";
 
@@ -18,7 +18,9 @@ export type ApplicationRecordSchema =
       type: "USER_MESSAGE";
       id: string;
       content: string;
+      /** Dice rolls produces via inline [] strings. */
       diceRolls: DiceRollResult[];
+      /** Dice rolls produces via liquid.js diceRoll filter. */
       referencedDiceRolls: DiceRollResult[];
       authorName: string;
       createdAt: number;
@@ -86,7 +88,7 @@ const MAXIMUM_CHAT_SIZE = 500;
 
 const diceRollSymbol = Symbol("DiceRoll");
 
-export const createChat = () => {
+const createTemplateEngine = () => {
   const templateEngine = new Liquid({
     fs: {
       exists: () => Promise.reject(new Error("Not supported.")),
@@ -118,9 +120,12 @@ export const createChat = () => {
       return "ERROR: Not a dice roll";
     },
   });
-
   templateEngine.registerFilter("diceRoll", (value) => tryRoll(value));
+  return templateEngine;
+};
 
+export const createChat = () => {
+  const templateEngine = createTemplateEngine();
   let state: Array<ApplicationRecordSchema> = [];
   const pubSub = createPubSub<NewMessagesPayload>();
 
@@ -139,12 +144,11 @@ export const createChat = () => {
     authorName: string;
     rawContent: string;
     variables: { [key: string]: string };
-  }) => {
+  }): null | string => {
     const { content, diceRolls } = processRawContent(args.rawContent);
     const variables = args.variables;
 
     const vars = processVariables(variables);
-
     const scope = {
       context: {
         authorName: args.authorName,
@@ -153,18 +157,27 @@ export const createChat = () => {
       [diceRollSymbol]: [],
     };
 
-    const text = templateEngine.parseAndRenderSync(content, scope);
+    try {
+      const text = templateEngine.parseAndRenderSync(content, scope);
 
-    const message: ApplicationRecordSchema = {
-      id: uuid(),
-      type: "USER_MESSAGE",
-      createdAt: new Date().getTime(),
-      authorName: args.authorName,
-      content: text,
-      diceRolls,
-      referencedDiceRolls: scope[diceRollSymbol],
-    };
-    addMessageToStack(message);
+      const message: ApplicationRecordSchema = {
+        id: uuid(),
+        type: "USER_MESSAGE",
+        createdAt: new Date().getTime(),
+        authorName: args.authorName,
+        content: text,
+        diceRolls,
+        referencedDiceRolls: scope[diceRollSymbol],
+      };
+      addMessageToStack(message);
+
+      return null;
+    } catch (err) {
+      if (err instanceof LiquidError) {
+        return err.message + "\n\n" + err.context;
+      }
+      return "Unexpected Error occurred.";
+    }
   };
 
   const addSharedResourceMessage = (args: {

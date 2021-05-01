@@ -359,7 +359,7 @@ export const subscriptionFields = [
   t.subscriptionField("chatMessagesAdded", {
     type: t.NonNull(GraphQLChatMessagesAddedSubscriptionType),
     resolve: (obj) => obj as any,
-    subscribe: (obj, args, context) => context.chat.subscribe.newMessages(),
+    subscribe: (_, __, context) => context.chat.subscribe.newMessages(),
   }),
 ];
 
@@ -370,7 +370,7 @@ export const queryFields = [
       first: t.arg(t.Int),
       after: t.arg(t.ID),
     },
-    resolve: (_, args, ctx) => ctx.chat.getMessages(),
+    resolve: (_, __, ctx) => ctx.chat.getMessages(),
   }),
   t.field("sharedSplashImage", {
     type: ImageModule.GraphQLImageType,
@@ -425,21 +425,87 @@ const GraphQLSplashShareImageInputType = t.inputObjectType({
   }),
 });
 
+type ChatMessageCreateError = {
+  type: "error";
+  error: {
+    reason: string;
+  };
+};
+
+const GraphQLChatMessageCreateResultError = t.objectType<ChatMessageCreateError>(
+  {
+    name: "ChatMessageCreateResultError",
+    fields: () => [
+      t.field("reason", {
+        type: t.NonNull(t.String),
+        resolve: (obj) => obj.error.reason,
+      }),
+    ],
+  }
+);
+
+type ChatMessageCreateSuccess = { type: "success" };
+
+const GraphQLChatMessageCreateResultSuccess = t.objectType<ChatMessageCreateSuccess>(
+  {
+    name: "ChatMessageCreateResultSuccess",
+    fields: () => [
+      t.field("_", {
+        type: t.Boolean,
+        resolve: () => true,
+      }),
+    ],
+  }
+);
+
+const GraphQLChatMessageCreateResultObjectType = t.objectType<
+  ChatMessageCreateError | ChatMessageCreateSuccess
+>({
+  name: "ChatMessageCreateResult",
+  fields: () => [
+    t.field("error", {
+      type: GraphQLChatMessageCreateResultError,
+      resolve: (obj) => (obj.type === "error" ? obj : null),
+    }),
+    t.field("success", {
+      type: GraphQLChatMessageCreateResultSuccess,
+      resolve: (obj) => (obj.type === "success" ? obj : null),
+    }),
+  ],
+});
+
 export const mutationFields = [
   t.field("chatMessageCreate", {
-    type: t.Boolean,
+    type: t.NonNull(GraphQLChatMessageCreateResultObjectType),
     args: {
       input: t.arg(t.NonNullInput(GraphQLChatMessageCreateInputType)),
     },
-    resolve: (obj, args, context) => {
+    resolve: (_, args, context) => {
       const user = context.user.get(context.session.id);
-      if (!user) return null;
-      context.chat.addUserMessage({
+      if (!user) {
+        return {
+          type: "error" as const,
+          error: {
+            reason: "Not authenticated.",
+          },
+        };
+      }
+      const addMessageResult = context.chat.addUserMessage({
         authorName: user.name,
         rawContent: args.input.rawContent,
         variables: args.input.variables ? JSON.parse(args.input.variables) : {},
       });
-      return null;
+      if (addMessageResult === null) {
+        return {
+          type: "success" as const,
+        };
+      }
+      return {
+        type: "error" as const,
+        error: {
+          reason: addMessageResult,
+        },
+      };
     },
   }),
   t.field("shareResource", {
@@ -447,7 +513,7 @@ export const mutationFields = [
     args: {
       input: t.arg(t.NonNullInput(GraphQLShareResourceInputType)),
     },
-    resolve: (obj, args, context) => {
+    resolve: (_, args, context) => {
       const user = context.user.get(context.session.id);
       if (!user) return null;
       const decodedId = NotesModule.decodeNoteId(args.input.contentId);
@@ -467,7 +533,7 @@ export const mutationFields = [
     args: {
       input: t.arg(t.NonNullInput(GraphQLShareImageInputType)),
     },
-    resolve: (obj, args, context) => {
+    resolve: (_, args, context) => {
       const user = context.user.get(context.session.id);
       if (!user) return null;
 
@@ -485,7 +551,7 @@ export const mutationFields = [
     args: {
       input: t.arg(t.NonNullInput(GraphQLSplashShareImageInputType)),
     },
-    resolve: (obj, args, context) => {
+    resolve: (_, args, context) => {
       const user = context.user.get(context.session.id);
       if (!user || context.session.role !== "admin") {
         return null;
