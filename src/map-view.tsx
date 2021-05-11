@@ -204,6 +204,8 @@ const TokenRenderer = (props: {
     color: 0,
   }).current;
 
+  const columnWidth = props.columnWidth ?? 150;
+
   const store = useCreateStore();
   const updateRadiusRef = React.useRef<null | ((radius: number) => void)>(null);
   const [values, setValues] = useControls(
@@ -393,7 +395,7 @@ const TokenRenderer = (props: {
   );
   React.useEffect(() => {
     updateRadiusRef.current = (value) => {
-      const radius = ((props.columnWidth ?? 50) / 2) * value * 0.9;
+      const radius = (columnWidth / 2) * value * 0.9;
       setValues({ radius });
       updateToken(props.id, {
         radius,
@@ -719,7 +721,7 @@ const TokenRenderer = (props: {
             [animatedProps.circleScale, animatedProps.position],
             ([scale], [x, y, z]) =>
               query.data?.tokenImage
-                ? [x, y - 0.04 - initialRadius * scale, z]
+                ? [x, y - 0.03 - initialRadius * scale, z]
                 : [x, y, z]
           )}
           renderOrder={LayerRenderOrder.token}
@@ -728,6 +730,7 @@ const TokenRenderer = (props: {
             text={textLabel}
             position={undefined}
             backgroundColor={query.data?.tokenImage ? "#ffffff" : null}
+            fontSize={(columnWidth * sharedMapState.ratio) / 2800}
           />
         </animated.group>
       ) : null}
@@ -747,6 +750,7 @@ const TokenLabel = (props: {
   text: string;
   position?: [number, number, number];
   backgroundColor: null | string;
+  fontSize: number;
 }) => {
   const [blockBounds, setBlockBounds] = React.useState<
     [number, number, number, number] | null
@@ -799,9 +803,8 @@ const TokenLabel = (props: {
           />
         </mesh>
       ) : null}
-
       <CanvasText
-        fontSize={0.06}
+        fontSize={props.fontSize}
         color="black"
         font={buildUrl("/fonts/Roboto-Bold.ttf")}
         anchorX="center"
