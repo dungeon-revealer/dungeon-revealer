@@ -50,7 +50,7 @@ const components = {
   ol: OrderedList,
   li: ListItem,
   hr: Divider,
-  p: Text,
+  p: (props: React.ComponentProps<typeof Text>) => <Text {...props} as="div" />,
 };
 
 const allowedTags = [
@@ -175,7 +175,7 @@ const HtmlContainerStyled = styled.div`
   line-height: 1.5;
 
   > div > * {
-    margin-bottom: 12px;
+    margin-bottom: 6px;
   }
 
   blockquote {

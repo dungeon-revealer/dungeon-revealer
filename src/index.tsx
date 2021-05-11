@@ -1,11 +1,15 @@
 import * as React from "react";
-import { Global } from "@emotion/react";
 import { render } from "react-dom";
+import { Global, CacheProvider } from "@emotion/react";
+import createCache from "@emotion/cache";
 import { ChakraProvider } from "@chakra-ui/react";
 import { getUrlPrefix } from "./public-url";
 import { globalStyles } from "./global-styles";
 import { Modal } from "./modal";
 import { registerSoundPlayback } from "./register-sound-playback";
+
+const emotionCache = createCache({ key: "chache" });
+emotionCache.compat = true;
 
 const element = document.querySelector("#root");
 
@@ -41,12 +45,14 @@ const main = async () => {
   }
   if (element) {
     render(
-      <ChakraProvider>
-        <Modal.Provider>
-          <Global styles={globalStyles}></Global>
-          {component}
-        </Modal.Provider>
-      </ChakraProvider>,
+      <CacheProvider value={emotionCache}>
+        <ChakraProvider>
+          <Modal.Provider>
+            <Global styles={globalStyles}></Global>
+            {component}
+          </Modal.Provider>
+        </ChakraProvider>
+      </CacheProvider>,
       element
     );
   }
