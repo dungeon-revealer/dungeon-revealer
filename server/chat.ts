@@ -1,6 +1,7 @@
 import { v4 as uuid } from "uuid";
 import { roll } from "@airjp73/dice-notation";
 import { Liquid, LiquidError } from "liquidjs";
+import type { Json } from "fp-ts/lib/Json";
 import { createPubSub } from "./pubsub";
 import { DiceRollResult, isDiceRollResult, tryRoll } from "./roll-dice";
 
@@ -55,9 +56,9 @@ const processRawContent = (
       const notation = part.slice(1, part.length - 1);
       const rollResult = tryRoll(notation);
       if (rollResult) {
-        diceRolls.push(rollResult);
         content = content + `{${diceRollIndex}}`;
         diceRollIndex = diceRollIndex + 1;
+        diceRolls.push(rollResult(String(diceRollIndex)));
         continue;
       }
       // in case the parsing fails we just return it as a basic text node
@@ -68,25 +69,49 @@ const processRawContent = (
   return { content, diceRolls };
 };
 
-const processVariables = (variables: Record<string, string>) => {
+const processVariables = (
+  variables: Record<string, string>
+): Record<string, DiceRollResult | Json> => {
   return Object.fromEntries(
     Object.entries(variables).map(([key, value]) => {
       if (typeof value === "string" && isDiceRoll(value)) {
         const rollResult = tryRoll(value.slice(1, value.length - 1));
-        return [key, rollResult];
+        return [key, rollResult?.(key) ?? value];
       }
       return [key, value];
     })
   );
 };
 
+const diceRollSymbol = Symbol("DiceRoll");
+const generateIdSymbol = Symbol("GenerateId");
+
 type NewMessagesPayload = {
   messages: Array<ApplicationRecordSchema>;
 };
 
-const MAXIMUM_CHAT_SIZE = 500;
+type TemplateEnvironment = {
+  /**
+   * A context with some random information that can be referenced from within the template.
+   */
+  context: {
+    authorName: string;
+  };
+  /**
+   * The vars sent from the client, that can be referenced from within the template.
+   */
+  vars: Record<string, DiceRollResult | Json>;
+  /**
+   * All dice that are generated during template evaluation are put into this array.
+   */
+  [diceRollSymbol]: Array<DiceRollResult>;
+  /**
+   * The dice rolls generated via the `diceRoll` filter receive a unique id.
+   */
+  [generateIdSymbol]: () => string;
+};
 
-const diceRollSymbol = Symbol("DiceRoll");
+const MAXIMUM_CHAT_SIZE = 500;
 
 const createTemplateEngine = () => {
   const templateEngine = new Liquid({
@@ -110,17 +135,23 @@ const createTemplateEngine = () => {
       this.variable = tagToken.args;
     },
     render: function* (ctx) {
-      const scope = ctx.bottom() as any;
+      const scope = ctx.bottom() as Record<string, Json>;
       const maybeDiceRoll = scope[this.variable];
-
+      const environment = ctx.environments as TemplateEnvironment;
       if (isDiceRollResult(maybeDiceRoll)) {
-        (ctx.environments as any)[diceRollSymbol].push(maybeDiceRoll);
-        return `{r${(ctx.environments as any)[diceRollSymbol].length - 1}}`;
+        const rolls = environment[diceRollSymbol];
+        rolls.push(maybeDiceRoll);
+        return `{r${rolls.length - 1}}`;
       }
       return "ERROR: Not a dice roll";
     },
   });
-  templateEngine.registerFilter("diceRoll", (value) => tryRoll(value));
+  templateEngine.registerFilter("diceRoll", function (value) {
+    const maybeRoll = tryRoll(value);
+    const environment = this.context.environments as TemplateEnvironment;
+    const id = environment[generateIdSymbol]();
+    return maybeRoll?.(id) ?? null;
+  });
   return templateEngine;
 };
 
@@ -145,21 +176,22 @@ export const createChat = () => {
     rawContent: string;
     variables: { [key: string]: string };
   }): null | string => {
+    // Apply normal dice roll logic
     const { content, diceRolls } = processRawContent(args.rawContent);
-    const variables = args.variables;
-
-    const vars = processVariables(variables);
-    const scope = {
+    let filterDiceRollIds = 0;
+    const scope: TemplateEnvironment = {
       context: {
         authorName: args.authorName,
       },
-      vars,
+      vars: processVariables(args.variables),
       [diceRollSymbol]: [],
+      [generateIdSymbol]: () => {
+        return String(++filterDiceRollIds);
+      },
     };
 
     try {
       const text = templateEngine.parseAndRenderSync(content, scope);
-
       const message: ApplicationRecordSchema = {
         id: uuid(),
         type: "USER_MESSAGE",

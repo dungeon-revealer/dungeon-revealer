@@ -1,6 +1,6 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
-import { DiceRollResultContext } from "./chat-message";
+import { DiceRollResultContext, DiceRollType } from "./chat-message";
 
 const StyledDiceRoll = styled.span`
   padding-right: 4px;
@@ -52,10 +52,14 @@ export const FormattedDiceRoll = (props: {
   const diceRoll = React.useContext(DiceRollResultContext)[
     isReference ? "referencedDiceRolls" : "diceRolls"
   ][index];
+  return <DiceRoll diceRoll={diceRoll} />;
+};
+
+export const DiceRoll = (props: { diceRoll: DiceRollType }) => {
   return (
     <StyledDiceRoll>
       <Wrapper>
-        {diceRoll.detail.map((node) => {
+        {props.diceRoll.detail.map((node) => {
           switch (node.__typename) {
             case "DiceRollDiceRollNode":
               return node.rollResults.map((result, index) => (
@@ -77,7 +81,7 @@ export const FormattedDiceRoll = (props: {
         })}
       </Wrapper>
       <EqualSign>{" = "}</EqualSign>
-      <ResultWrapper>{diceRoll.result}</ResultWrapper>
+      <ResultWrapper>{props.diceRoll.result}</ResultWrapper>
     </StyledDiceRoll>
   );
 };

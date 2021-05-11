@@ -1,17 +1,36 @@
 import React from "react";
 import { createFragmentContainer } from "react-relay";
 import graphql from "babel-plugin-relay/macro";
-import type { chatMessage_message } from "./__generated__/chatMessage_message.graphql";
 import styled from "@emotion/styled/macro";
 import MarkdownView from "react-showdown";
-import * as Button from "../button";
-import { FormattedDiceRoll } from "./formatted-dice-roll";
 import _sanitizeHtml from "sanitize-html";
-import { chatMessageComponents } from "../user-content-components";
 import { useFragment } from "relay-hooks";
-import { chatMessage_SharedResourceChatMessageFragment$key } from "./__generated__/chatMessage_SharedResourceChatMessageFragment.graphql";
+import {
+  HStack,
+  IconButton,
+  Popover,
+  PopoverBody,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTrigger,
+  Portal,
+  Table,
+  Thead,
+  Tr,
+  Th,
+  Tbody,
+  Td,
+  Code,
+} from "@chakra-ui/react";
 import { useNoteWindowActions } from "../dm-area/token-info-aside";
 import { SharableImage } from "../dm-area/components/sharable-image";
+import { ChakraIcon } from "../feather-icons";
+import * as Button from "../button";
+import { chatMessageComponents } from "../user-content-components";
+import type { chatMessage_message } from "./__generated__/chatMessage_message.graphql";
+import { chatMessage_SharedResourceChatMessageFragment$key } from "./__generated__/chatMessage_SharedResourceChatMessageFragment.graphql";
+import { DiceRoll, FormattedDiceRoll } from "./formatted-dice-roll";
 
 const Container = styled.div`
   padding-bottom: 4px;
@@ -92,21 +111,26 @@ type DiceRollResultArray = Extract<
   { __typename: "UserChatMessage" }
 >["diceRolls"];
 
+export type DiceRollType = DiceRollResultArray[number];
+
 type DiceRollResultContextValue = {
   diceRolls: DiceRollResultArray;
   referencedDiceRolls: DiceRollResultArray;
 };
 
-export const DiceRollResultContext = React.createContext<DiceRollResultContextValue>(
-  // TODO: Use context that throws by default
-  undefined as any
-);
+export const DiceRollResultContext =
+  React.createContext<DiceRollResultContextValue>(
+    // TODO: Use context that throws by default
+    undefined as any
+  );
 
 const UserMessageRenderer = ({
+  authorName,
   content,
   diceRolls,
   referencedDiceRolls,
 }: {
+  authorName: string;
   content: string;
   diceRolls: DiceRollResultArray;
   referencedDiceRolls: DiceRollResultArray;
@@ -123,14 +147,59 @@ const UserMessageRenderer = ({
 
   return (
     <DiceRollResultContext.Provider value={{ diceRolls, referencedDiceRolls }}>
-      <MarkdownView
-        markdown={markdown}
-        components={{ ...chatMessageComponents, FormattedDiceRoll }}
-        sanitizeHtml={sanitizeHtml}
-        options={{
-          simpleLineBreaks: true,
-        }}
-      />
+      <Container>
+        <HStack justifyContent="space-between">
+          <AuthorName>{authorName}: </AuthorName>
+          {diceRolls.length || referencedDiceRolls.length ? (
+            <Popover placement="left">
+              <PopoverTrigger>
+                <IconButton
+                  aria-label="Show Info"
+                  icon={<ChakraIcon.Info />}
+                  size="sm"
+                  variant="unstyled"
+                />
+              </PopoverTrigger>
+              <Portal>
+                <PopoverContent>
+                  <PopoverHeader>Dice Rolls</PopoverHeader>
+                  <PopoverCloseButton />
+                  <PopoverBody>
+                    <Table size="sm">
+                      <Thead>
+                        <Tr>
+                          <Th>ID</Th>
+                          <Th>Result</Th>
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {[...diceRolls, ...referencedDiceRolls].map((roll) => (
+                          <Tr key={roll.rollId}>
+                            <Td>
+                              <Code>{roll.rollId}</Code>
+                            </Td>
+                            <Td>
+                              <DiceRoll diceRoll={roll} />
+                            </Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                  </PopoverBody>
+                </PopoverContent>
+              </Portal>
+            </Popover>
+          ) : null}
+        </HStack>
+        <MarkdownView
+          markdown={markdown}
+          components={{ ...chatMessageComponents, FormattedDiceRoll }}
+          sanitizeHtml={sanitizeHtml}
+          options={{
+            simpleLineBreaks: true,
+          }}
+        />
+      </Container>
     </DiceRollResultContext.Provider>
   );
 };
@@ -240,14 +309,12 @@ const ChatMessageRenderer: React.FC<{
   switch (message.__typename) {
     case "UserChatMessage":
       return (
-        <Container>
-          <AuthorName>{message.authorName}: </AuthorName>
-          <UserMessageRenderer
-            content={message.content}
-            diceRolls={message.diceRolls}
-            referencedDiceRolls={message.referencedDiceRolls}
-          />
-        </Container>
+        <UserMessageRenderer
+          authorName={message.authorName}
+          content={message.content}
+          diceRolls={message.diceRolls}
+          referencedDiceRolls={message.referencedDiceRolls}
+        />
       );
     case "OperationalChatMessage":
       return (
@@ -270,6 +337,7 @@ export const ChatMessage = createFragmentContainer(ChatMessageRenderer, {
         authorName
         content
         diceRolls {
+          rollId
           result
           detail {
             ... on DiceRollOperatorNode {
@@ -301,6 +369,7 @@ export const ChatMessage = createFragmentContainer(ChatMessageRenderer, {
           }
         }
         referencedDiceRolls {
+          rollId
           result
           detail {
             ... on DiceRollOperatorNode {

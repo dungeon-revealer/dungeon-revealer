@@ -265,6 +265,7 @@ export type DiceRollDetail =
 const isDiceRollResultSymbol = Symbol("isDiceRollResult");
 
 export type DiceRollResult = {
+  id: string;
   [isDiceRollResultSymbol]: true;
   result: number;
   detail: Array<DiceRollDetail>;
@@ -273,9 +274,10 @@ export type DiceRollResult = {
 export const isDiceRollResult = (obj: unknown): obj is DiceRollResult =>
   typeof obj === "object" && obj != null && isDiceRollResultSymbol in obj;
 
-const formatRoll = (result: RollInformation): DiceRollResult => {
+const formatRoll = (result: RollInformation, id: string): DiceRollResult => {
   return Object.freeze({
     [isDiceRollResultSymbol]: true,
+    id,
     result: result.result,
     detail: result.tokens.map((token, index) => {
       if (token.type === "DiceRoll") {
@@ -369,10 +371,10 @@ const formatRoll = (result: RollInformation): DiceRollResult => {
 };
 
 // We map the result to our own representation
-export const tryRoll = (input: string): DiceRollResult | null => {
+export const tryRoll = (input: string) => {
   try {
     const result = roll(input);
-    return formatRoll(result);
+    return (id: string) => formatRoll(result, id);
   } catch (err) {
     // TODO: Better error handling :/
     return null;

@@ -169,6 +169,10 @@ const GraphQLChatMessageDiceRoll = t.objectType<DiceRollResult>({
       type: t.NonNull(t.List(t.NonNull(GraphQLDiceRollDetailNode))),
       resolve: (input) => input.detail,
     }),
+    t.field("rollId", {
+      type: t.NonNull(t.String),
+      resolve: (obj) => obj.id,
+    }),
   ],
 });
 
@@ -204,8 +208,8 @@ type SharedResourceResourceResolveType = Promise<
   NotesModule.NoteModelType | ImageModule.ImageModelType
 >;
 
-const GraphQLSharedResourceChatMessageType = t.objectType<SharedResourceChatMessageType>(
-  {
+const GraphQLSharedResourceChatMessageType =
+  t.objectType<SharedResourceChatMessageType>({
     name: "SharedResourceChatMessage",
     interfaces: [GraphQLChatMessageInterfaceType],
     isTypeOf: (input) => input?.type === "SHARED_RESOURCE",
@@ -242,11 +246,10 @@ const GraphQLSharedResourceChatMessageType = t.objectType<SharedResourceChatMess
         },
       }),
     ],
-  }
-);
+  });
 
-const GraphQLOperationalChatMessageType = t.objectType<OperationalChatMessageType>(
-  {
+const GraphQLOperationalChatMessageType =
+  t.objectType<OperationalChatMessageType>({
     interfaces: [
       GraphQLChatMessageInterfaceType,
       GraphQLTextChatMessageInterfaceType,
@@ -271,8 +274,7 @@ const GraphQLOperationalChatMessageType = t.objectType<OperationalChatMessageTyp
       }),
     ],
     isTypeOf: (src) => src?.type === "OPERATIONAL_MESSAGE",
-  }
-);
+  });
 
 const GraphQLUserChatMessageType = t.objectType<UserChatMessageType>({
   interfaces: [
@@ -432,8 +434,8 @@ type ChatMessageCreateError = {
   };
 };
 
-const GraphQLChatMessageCreateResultError = t.objectType<ChatMessageCreateError>(
-  {
+const GraphQLChatMessageCreateResultError =
+  t.objectType<ChatMessageCreateError>({
     name: "ChatMessageCreateResultError",
     fields: () => [
       t.field("reason", {
@@ -441,13 +443,12 @@ const GraphQLChatMessageCreateResultError = t.objectType<ChatMessageCreateError>
         resolve: (obj) => obj.error.reason,
       }),
     ],
-  }
-);
+  });
 
 type ChatMessageCreateSuccess = { type: "success" };
 
-const GraphQLChatMessageCreateResultSuccess = t.objectType<ChatMessageCreateSuccess>(
-  {
+const GraphQLChatMessageCreateResultSuccess =
+  t.objectType<ChatMessageCreateSuccess>({
     name: "ChatMessageCreateResultSuccess",
     fields: () => [
       t.field("_", {
@@ -455,8 +456,7 @@ const GraphQLChatMessageCreateResultSuccess = t.objectType<ChatMessageCreateSucc
         resolve: () => true,
       }),
     ],
-  }
-);
+  });
 
 const GraphQLChatMessageCreateResultObjectType = t.objectType<
   ChatMessageCreateError | ChatMessageCreateSuccess
