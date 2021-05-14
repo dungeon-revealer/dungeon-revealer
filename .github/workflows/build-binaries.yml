@@ -127,7 +127,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set environment
+      - name: "Set environment: Branch" 
+        if: startsWith(github.ref, 'refs/heads/')
+        run: |
+          echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "GH_TAG=${GITHUB_REF/refs\/heads\//}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: "Set environment: Tags"
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           echo "GH_TAG=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
@@ -168,8 +175,7 @@ jobs:
           name: Release ${{ github.ref }}
           draft: true
           files: |
-            mv bin/*.zip
-
+            bin/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
