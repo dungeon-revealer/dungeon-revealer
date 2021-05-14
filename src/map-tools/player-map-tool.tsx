@@ -4,17 +4,35 @@ import { MarkAreaToolContext } from "./mark-area-map-tool";
 import { usePinchWheelZoom } from "./drag-pan-zoom-map-tool";
 import { useGesture } from "react-use-gesture";
 
+export const useMarkArea = () => {
+  const markAreaContext = React.useContext(MarkAreaToolContext);
+  const timeoutRef = React.useRef<null | (() => void)>(null);
+
+  const init = (point: [number, number]) => {
+    const timeout = setTimeout(() => {
+      markAreaContext.onMarkArea(point);
+    }, 300);
+    timeoutRef.current = () => clearTimeout(timeout);
+  };
+
+  const cancel = () => {
+    timeoutRef.current?.();
+  };
+
+  React.useEffect(() => cancel, []);
+
+  return [init, cancel] as const;
+};
+
 export const PlayerMapTool: MapTool = {
   id: "player-map-tool",
   Component: (props) => {
-    const markAreaContext = React.useContext(MarkAreaToolContext);
     usePinchWheelZoom(props.mapContext);
-
-    const timeoutRef = React.useRef<null | (() => void)>(null);
+    const [initMarkArea, cancelMarkArea] = useMarkArea();
 
     props.useMapGesture({
       onPointerUp: () => {
-        timeoutRef.current?.();
+        cancelMarkArea();
       },
       onPointerDown: ({ event }) => {
         const point: THREE.Vector3 = event.point;
@@ -22,17 +40,13 @@ export const PlayerMapTool: MapTool = {
           point.x,
           point.y,
         ]);
-        timeoutRef.current?.();
-        const timeout = setTimeout(() => {
-          markAreaContext.onMarkArea([x, y]);
-        }, 300);
-        timeoutRef.current = () => clearTimeout(timeout);
+        initMarkArea([x, y]);
       },
       onDrag: ({ movement, memo, event, tap }) => {
         if (tap) {
           return;
         }
-        timeoutRef.current?.();
+        cancelMarkArea();
         event.stopPropagation();
         memo = memo ?? props.mapContext.mapState.position.get();
         props.mapContext.setMapState({
@@ -50,7 +64,7 @@ export const PlayerMapTool: MapTool = {
     useGesture(
       {
         onPinch: () => {
-          timeoutRef.current?.();
+          cancelMarkArea();
         },
       },
       {

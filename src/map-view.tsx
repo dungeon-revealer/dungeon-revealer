@@ -37,6 +37,7 @@ import { StoreType } from "leva/dist/declarations/src/types";
 import { levaPluginNoteReference } from "./leva-plugin/leva-plugin-note-reference";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
 import { useCurrent } from "./hooks/use-current";
+import { useMarkArea } from "./map-tools/player-map-tool";
 
 type Vector2D = [number, number];
 
@@ -92,13 +93,11 @@ const Plane = React.forwardRef(
           event.nativeEvent.stopPropagation();
           event.nativeEvent.preventDefault();
 
-          const [
-            imageX,
-            imageY,
-          ] = sharedMapState.helper.threePointToImageCoordinates([
-            event.point.x,
-            event.point.y,
-          ]);
+          const [imageX, imageY] =
+            sharedMapState.helper.threePointToImageCoordinates([
+              event.point.x,
+              event.point.y,
+            ]);
           const state: ContextMenuState = {
             clientPosition: {
               x: event.clientX,
@@ -487,6 +486,7 @@ const TokenRenderer = (props: {
   const hoverCounter = React.useRef(0);
 
   const showContextMenu = React.useContext(ContextMenuContext);
+  const [initMarkArea, cancelMarkArea] = useMarkArea();
 
   const dragProps = useGesture<{
     onClick: PointerEvent;
@@ -530,16 +530,14 @@ const TokenRenderer = (props: {
             }
 
             if (event.button === 2) {
-              const [
-                imageX,
-                imageY,
-              ] = sharedMapState.helper.threePointToImageCoordinates([
-                // TODO: figure out why the point is not in the typings.
-                // @ts-ignore
-                event.point.x,
-                // @ts-ignore
-                event.point.y,
-              ]);
+              const [imageX, imageY] =
+                sharedMapState.helper.threePointToImageCoordinates([
+                  // TODO: figure out why the point is not in the typings.
+                  // @ts-ignore
+                  event.point.x,
+                  // @ts-ignore
+                  event.point.y,
+                ]);
               const state: ContextMenuState = {
                 clientPosition: {
                   x: event.clientX,
@@ -567,6 +565,8 @@ const TokenRenderer = (props: {
           setIsHover(() => false);
           return;
         }
+
+        cancelMarkArea();
 
         if (isMovable === false) {
           return;
@@ -603,12 +603,13 @@ const TokenRenderer = (props: {
           onPointerDown.current = null;
           setStore(store);
         }, 1000);
-        onPointerDown.current = () => clearTimeout(timeout);
         event.stopPropagation();
-
-        if (isMovable === false) {
-          return;
-        }
+        onPointerDown.current = () => clearTimeout(timeout);
+        const [x, y] = sharedMapState.helper.threePointToImageCoordinates([
+          event.point.x,
+          event.point.y,
+        ]);
+        initMarkArea([x, y]);
       },
       onPointerOver: () => {
         hoverCounter.current++;
@@ -622,10 +623,7 @@ const TokenRenderer = (props: {
       onPointerUp: () => {
         setIsDragging(false);
         onPointerDown.current?.();
-
-        if (isMovable === false) {
-          return;
-        }
+        cancelMarkArea();
       },
       onPointerOut: () => {
         setIsDragging(false);
@@ -752,9 +750,8 @@ const TokenLabel = (props: {
   backgroundColor: null | string;
   fontSize: number;
 }) => {
-  const [blockBounds, setBlockBounds] = React.useState<
-    [number, number, number, number] | null
-  >(null);
+  const [blockBounds, setBlockBounds] =
+    React.useState<[number, number, number, number] | null>(null);
 
   const textRef = React.useRef<CanvasTextRef | null>(null);
   const lastBlockBounds = React.useRef(blockBounds);
@@ -1423,11 +1420,12 @@ const MapViewRenderer = (props: {
     };
   });
 
-  const toolRef = React.useRef<{
-    contextState: any;
-    localState: any;
-    handlers?: MapToolMapGestureHandlers;
-  } | null>(null);
+  const toolRef =
+    React.useRef<{
+      contextState: any;
+      localState: any;
+      handlers?: MapToolMapGestureHandlers;
+    } | null>(null);
 
   const setStore = React.useContext(SetSelectedTokenStoreContext);
 
