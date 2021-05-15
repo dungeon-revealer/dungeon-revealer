@@ -51,14 +51,16 @@ const decodeNoteList: (
   )
 );
 
-export const getNoteById = (
-  id: string
-): RTE.ReaderTaskEither<Dependencies, DecodeError, NoteModelType> => ({ db }) =>
-  pipe(
-    TE.tryCatch(
-      () =>
-        db.get(
-          /* SQL */ `
+export const getNoteById =
+  (
+    id: string
+  ): RTE.ReaderTaskEither<Dependencies, DecodeError, NoteModelType> =>
+  ({ db }) =>
+    pipe(
+      TE.tryCatch(
+        () =>
+          db.get(
+            /* SQL */ `
         SELECT
           "id",
           "title",
@@ -71,35 +73,35 @@ export const getNoteById = (
         WHERE
           "id" = ?;
       `,
-          id
-        ),
-      E.toError
-    ),
-    TE.chainW(flow(decodeNote, TE.fromEither))
-  );
+            id
+          ),
+        E.toError
+      ),
+      TE.chainW(flow(decodeNote, TE.fromEither))
+    );
 
-export const getPaginatedNotes = (params: {
-  /* amount of items to fetch */
-  first: number;
-  /* whether only public notes should be returned */
-  onlyPublic: boolean;
-  /* whether only entrypoints should be returned */
-  onlyEntryPoints: boolean;
-  /* cursor which can be used to fetch more */
-  cursor: null | {
-    /* createdAt date of the item after which items should be fetched */
-    lastCreatedAt: number;
-    /* id of the item after which items should be fetched */
-    lastId: string;
-  };
-}): RTE.ReaderTaskEither<Dependencies, DecodeError, NodeModelListType> => ({
-  db,
-}) =>
-  pipe(
-    TE.tryCatch(
-      () =>
-        db.all(
-          /* SQL */ `
+export const getPaginatedNotes =
+  (params: {
+    /* amount of items to fetch */
+    first: number;
+    /* whether only public notes should be returned */
+    onlyPublic: boolean;
+    /* whether only entrypoints should be returned */
+    onlyEntryPoints: boolean;
+    /* cursor which can be used to fetch more */
+    cursor: null | {
+      /* createdAt date of the item after which items should be fetched */
+      lastCreatedAt: number;
+      /* id of the item after which items should be fetched */
+      lastId: string;
+    };
+  }): RTE.ReaderTaskEither<Dependencies, DecodeError, NodeModelListType> =>
+  ({ db }) =>
+    pipe(
+      TE.tryCatch(
+        () =>
+          db.all(
+            /* SQL */ `
             SELECT
               "id",
               "title",
@@ -122,61 +124,63 @@ export const getPaginatedNotes = (params: {
             LIMIT $first
             ;
           `,
-          {
-            $last_created_at: params.cursor?.lastCreatedAt,
-            $last_id: params.cursor?.lastId,
-            $first: params.first,
-          }
-        ),
-      E.toError
-    ),
-    TE.chainW(flow(decodeNoteList, TE.fromEither))
-  );
+            {
+              $last_created_at: params.cursor?.lastCreatedAt,
+              $last_id: params.cursor?.lastId,
+              $first: params.first,
+            }
+          ),
+        E.toError
+      ),
+      TE.chainW(flow(decodeNoteList, TE.fromEither))
+    );
 
-export const deleteNote = (
-  noteId: string
-): RTE.ReaderTaskEither<Dependencies, DecodeError, string> => ({ db }) =>
-  pipe(
-    TE.tryCatch(async () => {
-      await db.run(
-        /* SQL */ `
+export const deleteNote =
+  (noteId: string): RTE.ReaderTaskEither<Dependencies, DecodeError, string> =>
+  ({ db }) =>
+    pipe(
+      TE.tryCatch(async () => {
+        await db.run(
+          /* SQL */ `
           DELETE FROM "notes"
           WHERE
             "id" = $id
           ;
         `,
-        {
-          $id: noteId,
-        }
-      );
-      await db.run(
-        /* SQL */ `
+          {
+            $id: noteId,
+          }
+        );
+        await db.run(
+          /* SQL */ `
           DELETE
           FROM "notes_search"
           WHERE
             "id" = $id
           ;
         `,
-        {
-          $id: noteId,
-        }
-      );
-    }, E.toError),
-    TE.map(() => noteId)
-  );
+          {
+            $id: noteId,
+          }
+        );
+      }, E.toError),
+      TE.map(() => noteId)
+    );
 
-export const updateOrInsertNote = (record: {
-  id: string;
-  title: string;
-  content: string;
-  sanitizedContent: string;
-  access: "public" | "admin";
-  isEntryPoint: boolean;
-}): RTE.ReaderTaskEither<Dependencies, Error, string> => ({ db }) =>
-  pipe(
-    TE.tryCatch(async () => {
-      await db.run(
-        /* SQL */ `
+export const updateOrInsertNote =
+  (record: {
+    id: string;
+    title: string;
+    content: string;
+    sanitizedContent: string;
+    access: "public" | "admin";
+    isEntryPoint: boolean;
+  }): RTE.ReaderTaskEither<Dependencies, Error, string> =>
+  ({ db }) =>
+    pipe(
+      TE.tryCatch(async () => {
+        await db.run(
+          /* SQL */ `
           INSERT OR REPLACE INTO "notes" (
             "id",
             "title",
@@ -195,19 +199,19 @@ export const updateOrInsertNote = (record: {
             $updated_at
           );
         `,
-        {
-          $id: record.id,
-          $title: record.title,
-          $content: record.content,
-          $type: record.access,
-          $is_entry_point: BooleanFromNumber.encode(record.isEntryPoint),
-          $created_at: getTimestamp(),
-          $updated_at: getTimestamp(),
-        }
-      );
+          {
+            $id: record.id,
+            $title: record.title,
+            $content: record.content,
+            $type: record.access,
+            $is_entry_point: BooleanFromNumber.encode(record.isEntryPoint),
+            $created_at: getTimestamp(),
+            $updated_at: getTimestamp(),
+          }
+        );
 
-      await db.run(
-        /* SQL */ `
+        await db.run(
+          /* SQL */ `
           INSERT OR REPLACE INTO "notes_search" (
             "rowid",
             "id",
@@ -222,16 +226,16 @@ export const updateOrInsertNote = (record: {
             $access
           );
         `,
-        {
-          $id: record.id,
-          $title: record.title,
-          $sanitized_content: record.sanitizedContent,
-          $access: record.access,
-        }
-      );
-    }, E.toError),
-    TE.map(() => record.id)
-  );
+          {
+            $id: record.id,
+            $title: record.title,
+            $sanitized_content: record.sanitizedContent,
+            $access: record.access,
+          }
+        );
+      }, E.toError),
+      TE.map(() => record.id)
+    );
 
 export const NoteSearchMatch = t.type(
   {
@@ -261,19 +265,17 @@ export const decodeNoteSearchMatchList: (
   )
 );
 
-export const searchNotes = (
-  query: string,
-  onlyPublic: boolean
-): RTE.ReaderTaskEither<
-  Dependencies,
-  DecodeError,
-  NoteSearchMatchListType
-> => ({ db }) =>
-  pipe(
-    TE.tryCatch(
-      () =>
-        db.all(
-          /* SQL */ `
+export const searchNotes =
+  (
+    query: string,
+    onlyPublic: boolean
+  ): RTE.ReaderTaskEither<Dependencies, DecodeError, NoteSearchMatchListType> =>
+  ({ db }) =>
+    pipe(
+      TE.tryCatch(
+        () =>
+          db.all(
+            /* SQL */ `
           SELECT
             "id" as "note_id",
             "title",
@@ -286,13 +288,13 @@ export const searchNotes = (
           LIMIT 10
           ;
         `,
-          {
-            $query: `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*))${
-              onlyPublic ? ` AND access:"public"` : ""
-            }`,
-          }
-        ),
-      E.toError
-    ),
-    TE.chainW(flow(decodeNoteSearchMatchList, TE.fromEither))
-  );
+            {
+              $query: `(title:"${query}" OR (title:"${query}"* OR content:"${query}"*))${
+                onlyPublic ? ` AND access:"public"` : ""
+              }`,
+            }
+          ),
+        E.toError
+      ),
+      TE.chainW(flow(decodeNoteSearchMatchList, TE.fromEither))
+    );

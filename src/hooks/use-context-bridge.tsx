@@ -11,13 +11,14 @@ export function useContextBridge(...contexts: Array<React.Context<any>>) {
   const cRef = React.useRef<Array<React.Context<any>>>([]);
   cRef.current = contexts.map((context) => React.useContext(context));
   return React.useMemo(
-    () => ({ children }: { children: React.ReactElement<any> }) =>
-      contexts.reduceRight(
-        (acc, Context, i) => (
-          <Context.Provider value={cRef.current[i]} children={acc} />
+    () =>
+      ({ children }: { children: React.ReactElement<any> }) =>
+        contexts.reduceRight(
+          (acc, Context, i) => (
+            <Context.Provider value={cRef.current[i]} children={acc} />
+          ),
+          children
         ),
-        children
-      ),
     []
   );
 }

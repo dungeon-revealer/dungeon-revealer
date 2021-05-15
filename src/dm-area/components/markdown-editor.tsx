@@ -543,30 +543,31 @@ export const MarkdownEditor: React.FC<{
     []
   );
 
-  const [menu, setMenu] = React.useState<
-    | {
-        type: "image";
-        data: {
-          id: string;
-          textPosition: {
-            start: number;
-            end: number;
+  const [menu, setMenu] =
+    React.useState<
+      | {
+          type: "image";
+          data: {
+            id: string;
+            textPosition: {
+              start: number;
+              end: number;
+            };
           };
-        };
-      }
-    | {
-        type: "link";
-        data: {
-          id: string;
-          innerContent: string;
-          textPosition: {
-            start: number;
-            end: number;
+        }
+      | {
+          type: "link";
+          data: {
+            id: string;
+            innerContent: string;
+            textPosition: {
+              start: number;
+              end: number;
+            };
           };
-        };
-      }
-    | null
-  >(null);
+        }
+      | null
+    >(null);
 
   // TODO: Ideally we only have one showMediaLibrary state that is more complex
 
@@ -879,22 +880,23 @@ export const MarkdownEditor: React.FC<{
                           menu.data.textPosition.start + newTag.length
                         );
 
-                        editorStateRef.current.decorations = editor.deltaDecorations(
-                          editorStateRef.current.decorations,
-                          [
-                            {
-                              range: new MonacoRange(
-                                startPosition.lineNumber,
-                                startPosition.column,
-                                endPosition.lineNumber,
-                                endPosition.column
-                              ),
-                              options: {
-                                inlineClassName: ".active-image-component",
+                        editorStateRef.current.decorations =
+                          editor.deltaDecorations(
+                            editorStateRef.current.decorations,
+                            [
+                              {
+                                range: new MonacoRange(
+                                  startPosition.lineNumber,
+                                  startPosition.column,
+                                  endPosition.lineNumber,
+                                  endPosition.column
+                                ),
+                                options: {
+                                  inlineClassName: ".active-image-component",
+                                },
                               },
-                            },
-                          ]
-                        );
+                            ]
+                          );
                         setShowMediaLibrary(false);
                         setTimeout(() => editor.focus());
                       }}
@@ -944,22 +946,23 @@ export const MarkdownEditor: React.FC<{
                       menu.data.textPosition.start + newTag.length
                     );
 
-                    editorStateRef.current.decorations = editor.deltaDecorations(
-                      editorStateRef.current.decorations,
-                      [
-                        {
-                          range: new MonacoRange(
-                            startPosition.lineNumber,
-                            startPosition.column,
-                            endPosition.lineNumber,
-                            endPosition.column
-                          ),
-                          options: {
-                            inlineClassName: ".active-image-component",
+                    editorStateRef.current.decorations =
+                      editor.deltaDecorations(
+                        editorStateRef.current.decorations,
+                        [
+                          {
+                            range: new MonacoRange(
+                              startPosition.lineNumber,
+                              startPosition.column,
+                              endPosition.lineNumber,
+                              endPosition.column
+                            ),
+                            options: {
+                              inlineClassName: ".active-image-component",
+                            },
                           },
-                        },
-                      ]
-                    );
+                        ]
+                      );
                   }}
                 />
               ) : null}

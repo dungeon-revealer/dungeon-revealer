@@ -78,27 +78,25 @@ const ImageImportModal: React.FC<{
     }, [file, fileTitleWithoutExtension, close])
   );
 
-  const [
-    isImportingMediaLibraryItem,
-    onClickImportMediaLibraryItem,
-  ] = useAsyncTask(
-    React.useCallback(async () => {
-      const formData = new FormData();
-      formData.append("file", file);
+  const [isImportingMediaLibraryItem, onClickImportMediaLibraryItem] =
+    useAsyncTask(
+      React.useCallback(async () => {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      const task = sendRequest({
-        url: buildApiUrl("/images"),
-        method: "POST",
-        body: formData,
-        headers: {
-          Authorization: accessToken ? `Bearer ${accessToken}` : null,
-        },
-      });
+        const task = sendRequest({
+          url: buildApiUrl("/images"),
+          method: "POST",
+          body: formData,
+          headers: {
+            Authorization: accessToken ? `Bearer ${accessToken}` : null,
+          },
+        });
 
-      await task.done;
-      close();
-    }, [file, close, accessToken])
-  );
+        await task.done;
+        close();
+      }, [file, close, accessToken])
+    );
 
   const areButtonsDisabled = isImportingMediaLibraryItem || isCreatingMap;
 
@@ -217,9 +215,8 @@ const NoteImportLogRenderer = (props: {
 const NoteImportModal: React.FC<{ file: File; close: () => void }> = (
   props
 ) => {
-  const [state, setState] = React.useState<
-    "notStarted" | "inProgress" | "finished"
-  >("notStarted");
+  const [state, setState] =
+    React.useState<"notStarted" | "inProgress" | "finished">("notStarted");
   const [logs, setLogs] = React.useState([] as ImportFileLogRecord[]);
   const [importedFilesCount, setImportedFilesCount] = React.useState(0);
   const [failedFilesCount, setFailedFilesCount] = React.useState(0);

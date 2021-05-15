@@ -2,7 +2,7 @@ import * as E from "fp-ts/lib/Either";
 import * as lib from "./notes-lib";
 
 const createNotesUpdates = (...events: Array<lib.NotesUpdatesPayload>) => {
-  return ({
+  return {
     publish: () => {},
     subscribe: () => {
       const iterator = {
@@ -17,7 +17,7 @@ const createNotesUpdates = (...events: Array<lib.NotesUpdatesPayload>) => {
 
       return iterator;
     },
-  } as any) as lib.NotesUpdates;
+  } as any as lib.NotesUpdates;
 };
 
 const createSession = (

@@ -166,16 +166,14 @@ const PermissionsMenu = (props: {
     TokenInfoAside_permissionsPopUpFragment,
     props.fragmentRef
   );
-  const [
-    updateNoteAccess,
-  ] = useMutation<tokenInfoAside_noteUpdateAccessMutation>(
-    TokenInfoAside_noteUpdateAccessMutation
-  );
-  const [
-    updateIsEntryPoint,
-  ] = useMutation<tokenInfoAside_noteUpdateIsEntryPointMutation>(
-    TokenInfoAside_nodeUpdateIsEntryPointMutation
-  );
+  const [updateNoteAccess] =
+    useMutation<tokenInfoAside_noteUpdateAccessMutation>(
+      TokenInfoAside_noteUpdateAccessMutation
+    );
+  const [updateIsEntryPoint] =
+    useMutation<tokenInfoAside_noteUpdateIsEntryPointMutation>(
+      TokenInfoAside_nodeUpdateIsEntryPointMutation
+    );
   const ref = React.useRef<null | HTMLDivElement>(null);
   useOnClickOutside<HTMLDivElement>(ref, props.close);
 
@@ -293,10 +291,8 @@ const WindowRenderer = (props: {
     TokenInfoAside_NoteDeleteMutation
   );
 
-  const [
-    permissionPopUpNode,
-    setPermissionPopUpNode,
-  ] = React.useState<React.ReactNode>(null);
+  const [permissionPopUpNode, setPermissionPopUpNode] =
+    React.useState<React.ReactNode>(null);
   const viewerRole = useViewerRole();
   const isDm = viewerRole === "DM";
 

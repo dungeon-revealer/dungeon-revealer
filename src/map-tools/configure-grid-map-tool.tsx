@@ -16,9 +16,8 @@ type ConfigureGridMapToolContextValue = {
   setState: React.Dispatch<React.SetStateAction<ConfigureMapToolState>>;
 };
 
-export const ConfigureGridMapToolContext = React.createContext<ConfigureGridMapToolContextValue>(
-  undefined as any
-);
+export const ConfigureGridMapToolContext =
+  React.createContext<ConfigureGridMapToolContextValue>(undefined as any);
 
 export const ConfigureGridMapTool: MapTool = {
   id: "configure-grid-map-tool",
@@ -50,25 +49,21 @@ export const ConfigureGridMapTool: MapTool = {
       },
     });
 
-    const [
-      offsetX,
-      offsetY,
-    ] = props.mapContext.helper.coordinates.canvasToThree(
-      props.mapContext.helper.coordinates.imageToCanvas([
-        configureGridContext.state.offsetX,
-        configureGridContext.state.offsetY,
-      ])
-    );
+    const [offsetX, offsetY] =
+      props.mapContext.helper.coordinates.canvasToThree(
+        props.mapContext.helper.coordinates.imageToCanvas([
+          configureGridContext.state.offsetX,
+          configureGridContext.state.offsetY,
+        ])
+      );
 
-    const [
-      columnWidth,
-      columnHeight,
-    ] = props.mapContext.helper.vector.canvasToThree(
-      props.mapContext.helper.vector.imageToCanvas([
-        configureGridContext.state.columnWidth,
-        configureGridContext.state.columnHeight,
-      ])
-    );
+    const [columnWidth, columnHeight] =
+      props.mapContext.helper.vector.canvasToThree(
+        props.mapContext.helper.vector.imageToCanvas([
+          configureGridContext.state.columnWidth,
+          configureGridContext.state.columnHeight,
+        ])
+      );
 
     return (
       <>

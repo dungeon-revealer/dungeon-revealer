@@ -48,8 +48,8 @@ const GraphQLTokenImageType = t.objectType<lib.TokenImageType>({
   isTypeOf: isTypeOfTokenImage,
 });
 
-const GraphQLRequestTokenImageUploadDuplicateType = t.objectType<lib.RequestTokenImageUploadDuplicate>(
-  {
+const GraphQLRequestTokenImageUploadDuplicateType =
+  t.objectType<lib.RequestTokenImageUploadDuplicate>({
     name: "RequestTokenImageUploadDuplicate",
     description: "A image with the given SHA-256 does already exist.",
     fields: () => [
@@ -59,11 +59,10 @@ const GraphQLRequestTokenImageUploadDuplicateType = t.objectType<lib.RequestToke
         resolve: (record) => record.tokenImage,
       }),
     ],
-  }
-);
+  });
 
-const GraphQLRequestTokenImageUploadUrlType = t.objectType<lib.RequestTokenImageUploadUrl>(
-  {
+const GraphQLRequestTokenImageUploadUrlType =
+  t.objectType<lib.RequestTokenImageUploadUrl>({
     name: "RequestTokenImageUploadUrl",
     fields: () => [
       t.field("uploadUrl", {
@@ -71,11 +70,10 @@ const GraphQLRequestTokenImageUploadUrlType = t.objectType<lib.RequestTokenImage
         resolve: (record) => record.uploadUrl,
       }),
     ],
-  }
-);
+  });
 
-const GraphQLRequestTokenImageUploadResultType = t.unionType<lib.RequestTokenImageUploadResult>(
-  {
+const GraphQLRequestTokenImageUploadResultType =
+  t.unionType<lib.RequestTokenImageUploadResult>({
     name: "RequestImageTokenUploadResult",
     types: [
       GraphQLRequestTokenImageUploadDuplicateType,
@@ -89,8 +87,7 @@ const GraphQLRequestTokenImageUploadResultType = t.unionType<lib.RequestTokenIma
           return GraphQLRequestTokenImageUploadUrlType;
       }
     },
-  }
-);
+  });
 
 const GraphQLRequestTokenImageUploadInputType = t.inputObjectType({
   name: "RequestTokenImageUploadInput",
@@ -166,8 +163,8 @@ type TokenImageConnectionType = {
   };
 };
 
-const GraphQLTokenImageConnectionObjectType = t.objectType<TokenImageConnectionType>(
-  {
+const GraphQLTokenImageConnectionObjectType =
+  t.objectType<TokenImageConnectionType>({
     name: "TokenImageConnection",
     fields: () => [
       t.field("edges", {
@@ -179,8 +176,7 @@ const GraphQLTokenImageConnectionObjectType = t.objectType<TokenImageConnectionT
         resolve: (source) => source.pageInfo,
       }),
     ],
-  }
-);
+  });
 
 const sequenceReaderTask = sequenceT(RT.readerTask);
 
@@ -243,8 +239,8 @@ const GraphQLTokenImageCreateInput = t.inputObjectType({
   }),
 });
 
-const GraphQLTokenImageCreateSuccessType = t.objectType<lib.CreateTokenImageSuccess>(
-  {
+const GraphQLTokenImageCreateSuccessType =
+  t.objectType<lib.CreateTokenImageSuccess>({
     name: "TokenImageCreateSuccess",
     fields: () => [
       t.field("createdTokenImage", {
@@ -253,8 +249,7 @@ const GraphQLTokenImageCreateSuccessType = t.objectType<lib.CreateTokenImageSucc
           RT.run(lib.getTokenImageById(tokenImageId), context),
       }),
     ],
-  }
-);
+  });
 
 const GraphQLTokenImageCreateErrorType = t.objectType({
   name: "TokenImageCreateError",
@@ -266,8 +261,8 @@ const GraphQLTokenImageCreateErrorType = t.objectType({
   ],
 });
 
-const GraphQLTokenImageCreateResultUnionType = t.unionType<lib.CreateTokenImageResult>(
-  {
+const GraphQLTokenImageCreateResultUnionType =
+  t.unionType<lib.CreateTokenImageResult>({
     name: "TokenImageCreateResult",
     types: [
       GraphQLTokenImageCreateSuccessType,
@@ -282,8 +277,7 @@ const GraphQLTokenImageCreateResultUnionType = t.unionType<lib.CreateTokenImageR
       }
       throw new Error("Unexpected runtime type.");
     },
-  }
-);
+  });
 
 export const mutationFields = [
   t.field("requestTokenImageUpload", {

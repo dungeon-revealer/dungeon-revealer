@@ -54,15 +54,14 @@ export const createResourceTaskProcessor = () => {
   };
 };
 
-export const handleUnexpectedError = (response: express.Response) => (
-  thrownThing: any
-) => {
-  console.error(thrownThing);
-  response.status(500).send({
-    data: null,
-    error: {
-      message: "An unexpected error occured.",
-      code: "ERR_UNEXPECTED",
-    },
-  });
-};
+export const handleUnexpectedError =
+  (response: express.Response) => (thrownThing: any) => {
+    console.error(thrownThing);
+    response.status(500).send({
+      data: null,
+      error: {
+        message: "An unexpected error occured.",
+        code: "ERR_UNEXPECTED",
+      },
+    });
+  };

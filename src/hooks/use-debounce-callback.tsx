@@ -38,9 +38,9 @@ export const useDebounceCallback = (
     if (ref.current.timer) {
       clearTimeout(ref.current.timer);
     }
-    ref.current.timer = (setTimeout(
+    ref.current.timer = setTimeout(
       () => ref.current.callback(),
       ref.current.delay
-    ) as unknown) as number;
+    ) as unknown as number;
   }, []);
 };

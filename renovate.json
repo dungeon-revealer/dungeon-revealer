@@ -39,10 +39,7 @@
     },
     {
       "groupName": "three and react-three-fiber",
-      "packagePatterns": [
-        "three",
-        "react-three-fiber"
-      ]
+      "packagePatterns": ["three", "react-three-fiber"]
     }
   ],
   "postUpdateOptions": ["npmDedupe"]

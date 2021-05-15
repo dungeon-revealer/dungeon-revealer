@@ -4,7 +4,6 @@ Running from the command prompt will present connection information and some deb
 Optionally, you may set a password for the dungeon master and/or players by setting the environmental variables `DM_PASSWORD` and `PC_PASSWORD` when starting the app. e.g. for linux `PC_PASSWORD='password1' DM_PASSWORD='password2' ./dungeon-revealer-linux`
 Leaving a variable undefined will disable authentication and allow public access for that section of the map.
 
-
 ### Windows
 
 Double click the app. A command prompt will open with useful information.
@@ -18,7 +17,6 @@ Open the zip file and extract the files to your preferred location.
 Double click the app. A terminal will open with useful information.
 Then go to `localhost:3000` in your browser and point your players to `<YOUR_IPADDRESS>:3000`.
 This information is also present in the terminal window.
-
 
 ### Linux
 
@@ -34,7 +32,6 @@ Then go to `localhost:3000` in your browser and point your players to `<YOUR_IPA
 This information is also present in the terminal window.
 
 There is also a community maintained [AUR package](https://aur.archlinux.org/packages/dungeon-revealer-bin/).
-
 
 ### Docker
 

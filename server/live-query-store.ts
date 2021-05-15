@@ -7,7 +7,9 @@ type LiveQueryStoreDependency = {
   liveQueryStore: InMemoryLiveQueryStore;
 };
 
-export const invalidateResources = (
-  identifier: Array<string>
-): RTE.ReaderTaskEither<LiveQueryStoreDependency, Error, void> => (deps) =>
-  TE.tryCatch(() => deps.liveQueryStore.invalidate(identifier), E.toError);
+export const invalidateResources =
+  (
+    identifier: Array<string>
+  ): RTE.ReaderTaskEither<LiveQueryStoreDependency, Error, void> =>
+  (deps) =>
+    TE.tryCatch(() => deps.liveQueryStore.invalidate(identifier), E.toError);

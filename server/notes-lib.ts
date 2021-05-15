@@ -23,12 +23,11 @@ export type SessionDependency = { session: SocketSessionRecord };
 
 const isAdmin = (viewerRole: ViewerRole) => viewerRole === "admin";
 
-const checkAdmin = (): RTE.ReaderTaskEither<SessionDependency, Error, void> => (
-  d
-) =>
-  isAdmin(d.session.role)
-    ? TE.right(undefined)
-    : TE.left(new Error("Insufficient permissions."));
+const checkAdmin =
+  (): RTE.ReaderTaskEither<SessionDependency, Error, void> => (d) =>
+    isAdmin(d.session.role)
+      ? TE.right(undefined)
+      : TE.left(new Error("Insufficient permissions."));
 
 const checkAuthenticated = (): RTE.ReaderTaskEither<
   SessionDependency,

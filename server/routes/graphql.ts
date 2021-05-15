@@ -73,20 +73,22 @@ export default ({
     return result;
   };
 
-  const applyExecuteMiddleware = <T>(apply: (target: T) => MaybePromise<T>) => (
-    input: MaybePromise<AsyncIterableIterator<T> | T>
-  ): MaybePromise<AsyncIterableIterator<T> | T> => {
-    const handler = (
-      result: AsyncIterableIterator<T> | T
-    ): AsyncIterableIterator<T> | MaybePromise<T> => {
-      if (isAsyncIterable(result)) {
-        return AsyncIteratorUtil.map(apply)(result);
-      } else {
-        return apply(result);
-      }
+  const applyExecuteMiddleware =
+    <T>(apply: (target: T) => MaybePromise<T>) =>
+    (
+      input: MaybePromise<AsyncIterableIterator<T> | T>
+    ): MaybePromise<AsyncIterableIterator<T> | T> => {
+      const handler = (
+        result: AsyncIterableIterator<T> | T
+      ): AsyncIterableIterator<T> | MaybePromise<T> => {
+        if (isAsyncIterable(result)) {
+          return AsyncIteratorUtil.map(apply)(result);
+        } else {
+          return apply(result);
+        }
+      };
+      return input instanceof Promise ? input.then(handler) : handler(input);
     };
-    return input instanceof Promise ? input.then(handler) : handler(input);
-  };
 
   const execute = flow(
     liveQueryStore.execute,

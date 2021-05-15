@@ -6,10 +6,11 @@ type MarkAreaToolContextValue = {
   onMarkArea: (point: [number, number]) => void;
 };
 
-export const MarkAreaToolContext = React.createContext<MarkAreaToolContextValue>(
-  // TODO: use context that throws if no value is provided
-  undefined as any
-);
+export const MarkAreaToolContext =
+  React.createContext<MarkAreaToolContextValue>(
+    // TODO: use context that throws if no value is provided
+    undefined as any
+  );
 
 export const MarkAreaMapTool: MapTool = {
   id: "mark-area-map-tool",

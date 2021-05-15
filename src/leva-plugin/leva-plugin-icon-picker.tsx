@@ -30,9 +30,8 @@ const ShapeButton = styled.button<{ isActive: boolean }>`
 `;
 
 const IconPicker = () => {
-  const { displayValue, label, onUpdate, options } = useInputContext<
-    Configuration<string> & LevaInputProps<string>
-  >();
+  const { displayValue, label, onUpdate, options } =
+    useInputContext<Configuration<string> & LevaInputProps<string>>();
   return (
     <Row input>
       <Label>{label}</Label>

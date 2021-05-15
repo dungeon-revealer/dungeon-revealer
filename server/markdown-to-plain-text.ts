@@ -22,19 +22,17 @@ export const markdownToPlainText = (text: string) => {
     .replace(/^\n*/, "");
 };
 
-export const shortenText = (
-  length: number,
-  delimiter = " ",
-  appendix = "..."
-) => (text: string) => {
-  if (text.length <= length) return text;
+export const shortenText =
+  (length: number, delimiter = " ", appendix = "...") =>
+  (text: string) => {
+    if (text.length <= length) return text;
 
-  let trimmedStr = text.substr(0, length + delimiter.length);
+    let trimmedStr = text.substr(0, length + delimiter.length);
 
-  const lastDelimiterIndex = trimmedStr.lastIndexOf(delimiter);
-  if (lastDelimiterIndex >= 0)
-    trimmedStr = trimmedStr.substr(0, lastDelimiterIndex);
+    const lastDelimiterIndex = trimmedStr.lastIndexOf(delimiter);
+    if (lastDelimiterIndex >= 0)
+      trimmedStr = trimmedStr.substr(0, lastDelimiterIndex);
 
-  if (trimmedStr) trimmedStr += appendix;
-  return trimmedStr;
-};
+    if (trimmedStr) trimmedStr += appendix;
+    return trimmedStr;
+  };

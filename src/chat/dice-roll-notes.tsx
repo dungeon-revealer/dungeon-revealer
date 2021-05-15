@@ -139,9 +139,8 @@ const usePersitedDiceNotesValue = () =>
 
 export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
   const [mode, setMode] = React.useState<"read" | "write">("read");
-  const editorRef = React.useRef<monacoEditor.editor.IStandaloneCodeEditor | null>(
-    null
-  );
+  const editorRef =
+    React.useRef<monacoEditor.editor.IStandaloneCodeEditor | null>(null);
   const [content, _setContent] = usePersitedDiceNotesValue();
   const setContent = useStaticRef(() => debounce(_setContent, 200));
   const editorOnResizeRef = React.useRef(null as null | (() => void));
