@@ -27,16 +27,16 @@ export const decodeId = flow(
   IDParts.decode
 );
 
-export const decodeFirst = (maximumCount = 50, defaultCount = maximumCount) => (
-  first: number | null | undefined
-): RT.ReaderTask<any, number> =>
-  first == null
-    ? RT.of(defaultCount)
-    : first < 0
-    ? () => () => Promise.reject(new Error("Invalid first argument."))
-    : first > maximumCount
-    ? () => () => Promise.reject(new Error("Invalid first argument."))
-    : RT.of(first);
+export const decodeFirst =
+  (maximumCount = 50, defaultCount = maximumCount) =>
+  (first: number | null | undefined): RT.ReaderTask<any, number> =>
+    first == null
+      ? RT.of(defaultCount)
+      : first < 0
+      ? () => () => Promise.reject(new Error("Invalid first argument."))
+      : first > maximumCount
+      ? () => () => Promise.reject(new Error("Invalid first argument."))
+      : RT.of(first);
 
 export const buildConnectionObject = <T>(params: {
   listData: T[];

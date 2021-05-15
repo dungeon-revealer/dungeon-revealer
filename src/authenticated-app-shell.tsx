@@ -90,10 +90,8 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
   children,
 }) => {
   const [chatState, setShowChatState] = useShowChatState();
-  const [
-    diceRollNotesState,
-    setDiceRollNotesState,
-  ] = useShowDiceRollNotesState();
+  const [diceRollNotesState, setDiceRollNotesState] =
+    useShowDiceRollNotesState();
 
   const toggleShowDiceRollNotes = React.useCallback(() => {
     setDiceRollNotesState((state) => (state === "show" ? "hidden" : "show"));
@@ -207,10 +205,11 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
   );
 };
 
-export const ChatPositionContext = React.createContext<{
-  width: number;
-  x: SpringValue<number>;
-} | null>(null);
+export const ChatPositionContext =
+  React.createContext<{
+    width: number;
+    x: SpringValue<number>;
+  } | null>(null);
 
 const DiceRollNotes = React.lazy(() =>
   import("./chat/dice-roll-notes").then((mod) => ({
@@ -240,9 +239,8 @@ export const AuthenticatedAppShell: React.FC<{
 }> = ({ socket, password, isMapOnly, role, children }) => {
   const relayEnvironment = useStaticRef(() => createEnvironment(socket));
   // WebSocket connection state
-  const [connectionMode, setConnectionMode] = React.useState<ConnectionMode>(
-    "connecting"
-  );
+  const [connectionMode, setConnectionMode] =
+    React.useState<ConnectionMode>("connecting");
 
   /**
    * We only use one tab at a time. The others will be disconnected automatically upon opening dungeon-revealer in another tab.

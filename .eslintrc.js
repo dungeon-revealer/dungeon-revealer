@@ -13,38 +13,38 @@ module.exports = {
     "react-hooks/exhaustive-deps": [
       "warn",
       {
-        additionalHooks: "useAsyncEffect|useResetState"
-      }
-    ]
+        additionalHooks: "useAsyncEffect|useResetState",
+      },
+    ],
   },
   parserOptions: {
-    ecmaVersion: 2017
+    ecmaVersion: 2017,
   },
   overrides: [
     {
       env: {
-        node: true
+        node: true,
       },
       parserOptions: {
-        sourceType: "script"
+        sourceType: "script",
       },
       files: ["*/**.js", "!src/**/*.js"],
       rules: {
         strict: ["warn", "global"],
-        "no-path-concat": ["warn"]
-      }
+        "no-path-concat": ["warn"],
+      },
     },
     {
       files: ["src/**/*.js"],
       env: {
-        browser: true
+        browser: true,
       },
       parserOptions: {
         sourceType: "module",
         ecmaFeatures: {
-          jsx: true
-        }
-      }
-    }
-  ]
+          jsx: true,
+        },
+      },
+    },
+  ],
 };

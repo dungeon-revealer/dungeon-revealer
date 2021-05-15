@@ -58,9 +58,8 @@ export const TokenImageCropper = (props: {
 }): React.ReactElement => {
   const [crop, setCrop] = React.useState({ x: 0, y: 0 });
   const [zoom, setZoom] = React.useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = React.useState<Area | null>(
-    null
-  );
+  const [croppedAreaPixels, setCroppedAreaPixels] =
+    React.useState<Area | null>(null);
   const [title, setTitle] = React.useState("New Token Image");
   const data = useQuery<tokenImageCropper_TokenLibraryImagesQuery>(
     TokenLibraryImagesQuery,
@@ -70,20 +69,22 @@ export const TokenImageCropper = (props: {
   );
 
   const windowDimensions = useWindowDimensions();
-  const [imageDimensions, setImageDimensions] = React.useState<{
-    width: number;
-    height: number;
-  } | null>(null);
+  const [imageDimensions, setImageDimensions] =
+    React.useState<{
+      width: number;
+      height: number;
+    } | null>(null);
 
   const [ref, bounds] = useMeasure();
   const cropperRef = React.useRef<CropperType | null>();
 
-  const [cropSize, setCropSize] = React.useState<null | {
-    width: number;
-    height: number;
-    minZoom: number;
-    maxZoom: number;
-  }>(null);
+  const [cropSize, setCropSize] =
+    React.useState<null | {
+      width: number;
+      height: number;
+      minZoom: number;
+      maxZoom: number;
+    }>(null);
 
   React.useEffect(() => {
     if (!cropperRef.current?.imageRef || bounds.height === 0) {

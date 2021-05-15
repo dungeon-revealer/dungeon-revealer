@@ -341,8 +341,7 @@ const GridSettingButton = (props: {
           if (!props.map.grid) {
             showDialog({
               header: "Configure Grid",
-              body:
-                "This map currently has no grid data. Do you wanna add a new grid using the grid configurator?",
+              body: "This map currently has no grid data. Do you wanna add a new grid using the grid configurator?",
               onConfirm: props.enterConfigureGridMode,
               confirmButtonText: "Add Grid",
             });
@@ -740,29 +739,24 @@ export const DmMap = (props: {
 
   const [confirmDialogNode, showDialog] = useConfirmationDialog();
 
-  const [
-    configureGridMapToolState,
-    setConfigureGridMapToolState,
-  ] = useResetState<ConfigureMapToolState>(
-    () => ({
-      offsetX: props.map.grid?.offsetX ?? 0,
-      offsetY: props.map.grid?.offsetY ?? 0,
-      columnWidth: props.map.grid?.columnWidth ?? 50,
-      columnHeight: props.map.grid?.columnHeight ?? 50,
-    }),
-    [props.map.grid]
-  );
+  const [configureGridMapToolState, setConfigureGridMapToolState] =
+    useResetState<ConfigureMapToolState>(
+      () => ({
+        offsetX: props.map.grid?.offsetX ?? 0,
+        offsetY: props.map.grid?.offsetY ?? 0,
+        columnWidth: props.map.grid?.columnWidth ?? 50,
+        columnHeight: props.map.grid?.columnHeight ?? 50,
+      }),
+      [props.map.grid]
+    );
 
   const [store, setStore] = React.useState<StoreType | null>();
 
   const chatPosition = React.useContext(ChatPositionContext);
-  const [
-    contextMenuState,
-    setContextMenuState,
-  ] = React.useState<ContextMenuState>(null);
-  const [copiedToken, setCopiedToken] = React.useState<MapTokenEntity | null>(
-    null
-  );
+  const [contextMenuState, setContextMenuState] =
+    React.useState<ContextMenuState>(null);
+  const [copiedToken, setCopiedToken] =
+    React.useState<MapTokenEntity | null>(null);
 
   return (
     <FlatContextProvider
@@ -896,9 +890,8 @@ export const DmMap = (props: {
                           if (!context) {
                             return;
                           }
-                          const canvasContext = context.fogCanvas.getContext(
-                            "2d"
-                          )!;
+                          const canvasContext =
+                            context.fogCanvas.getContext("2d")!;
                           applyFogRectangle(
                             FogMode.shroud,
                             [0, 0],
@@ -926,9 +919,8 @@ export const DmMap = (props: {
                           if (!context) {
                             return;
                           }
-                          const canvasContext = context.fogCanvas.getContext(
-                            "2d"
-                          )!;
+                          const canvasContext =
+                            context.fogCanvas.getContext("2d")!;
                           applyFogRectangle(
                             FogMode.clear,
                             [0, 0],

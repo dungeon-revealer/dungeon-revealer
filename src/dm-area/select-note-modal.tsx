@@ -101,13 +101,13 @@ export const SelectNoteModal: React.FC<{
     SelectNoteModal_ReferenceQuery,
     {}
   );
-  const [activeNoteId, setActiveNoteId] = React.useState<{
-    id: string;
-    documentId: string;
-  } | null>(null);
-  const [mutate] = useMutation<selectNoteModal_NoteCreateMutation>(
-    NoteCreateMutation
-  );
+  const [activeNoteId, setActiveNoteId] =
+    React.useState<{
+      id: string;
+      documentId: string;
+    } | null>(null);
+  const [mutate] =
+    useMutation<selectNoteModal_NoteCreateMutation>(NoteCreateMutation);
 
   const attachNewNote = React.useCallback(() => {
     mutate({

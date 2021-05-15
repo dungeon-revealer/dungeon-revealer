@@ -463,9 +463,8 @@ const Content = ({
     setMode({ title: "SHOW_MAP_LIBRARY" });
   }, []);
 
-  const [importModalFile, setImportModalFile] = React.useState<null | File>(
-    null
-  );
+  const [importModalFile, setImportModalFile] =
+    React.useState<null | File>(null);
 
   const [markedAreas, setMarkedAreas] = React.useState<MarkedAreaEntity[]>(
     () => []

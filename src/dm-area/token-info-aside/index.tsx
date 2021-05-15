@@ -29,9 +29,8 @@ type NoteWindowActions = {
 };
 
 const NoteWindowContext = React.createContext<NoteWindowInterface | null>(null);
-export const NoteWindowActionsContext = React.createContext<NoteWindowActions | null>(
-  null
-);
+export const NoteWindowActionsContext =
+  React.createContext<NoteWindowActions | null>(null);
 
 export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
   const [windows, setWindows] = React.useState([] as NoteWindow[]);

@@ -1,10 +1,7 @@
 {
   "name": "Dungeon Revealer",
   "description": "A web app for tabletop gaming to allow the game master to reveal areas of the game map to players.",
-  "keywords": [
-    "rpg",
-    "VTT"
-  ],
+  "keywords": ["rpg", "VTT"],
   "success_url": "/dm",
   "repository": "https://github.com/dungeon-revealer/dungeon-revealer",
   "env": {

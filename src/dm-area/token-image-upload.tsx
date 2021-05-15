@@ -62,23 +62,24 @@ const TokenImageCreateMutation = graphql`
  * Hook for creating TokenImage from a File with cropping etc.
  */
 export const useTokenImageUpload = () => {
-  const [cropTokenImageState, setCropTokenImageState] = React.useState<{
-    imageUrl: string;
-    sourceImageHash: string;
-    onConfirm: (
-      params:
-        | {
-            type: "File";
-            file: File;
-            title: string;
-          }
-        | {
-            type: "TokenImage";
-            tokenImageId: string;
-          }
-    ) => unknown;
-    onClose: () => void;
-  } | null>(null);
+  const [cropTokenImageState, setCropTokenImageState] =
+    React.useState<{
+      imageUrl: string;
+      sourceImageHash: string;
+      onConfirm: (
+        params:
+          | {
+              type: "File";
+              file: File;
+              title: string;
+            }
+          | {
+              type: "TokenImage";
+              tokenImageId: string;
+            }
+      ) => unknown;
+      onClose: () => void;
+    } | null>(null);
 
   const objectUrlCleanupRef = React.useRef<null | (() => void)>(null);
   React.useEffect(
@@ -107,24 +108,23 @@ export const useTokenImageUpload = () => {
     ) => {
       let tokenImageId: string;
 
-      const {
-        requestTokenImageUpload,
-      } = await new Promise<tokenImageUpload_RequestTokenImageUploadMutationResponse>(
-        (resolve) =>
-          commitMutation<tokenImageUpload_RequestTokenImageUploadMutation>(
-            environment,
-            {
-              mutation: RequestTokenImageUploadMutation,
-              variables: {
-                input: {
-                  sha256: fileHash,
-                  extension: "webp",
+      const { requestTokenImageUpload } =
+        await new Promise<tokenImageUpload_RequestTokenImageUploadMutationResponse>(
+          (resolve) =>
+            commitMutation<tokenImageUpload_RequestTokenImageUploadMutation>(
+              environment,
+              {
+                mutation: RequestTokenImageUploadMutation,
+                variables: {
+                  input: {
+                    sha256: fileHash,
+                    extension: "webp",
+                  },
                 },
-              },
-              onCompleted: resolve,
-            }
-          )
-      );
+                onCompleted: resolve,
+              }
+            )
+        );
 
       if (requestTokenImageUpload.__typename === "RequestTokenImageUploadUrl") {
         const res = await fetch(requestTokenImageUpload.uploadUrl, {
@@ -137,26 +137,25 @@ export const useTokenImageUpload = () => {
             "Received invalid response code: " + res.status + "\n\n" + body
           );
         }
-        const {
-          tokenImageCreate,
-        } = await new Promise<tokenImageUpload_TokenImageCreateMutationResponse>(
-          (resolve) =>
-            commitMutation<tokenImageUpload_TokenImageCreateMutation>(
-              environment,
-              {
-                mutation: TokenImageCreateMutation,
-                variables: {
-                  input: {
-                    title,
-                    sha256: fileHash,
-                    sourceSha256: sourceFileHash,
+        const { tokenImageCreate } =
+          await new Promise<tokenImageUpload_TokenImageCreateMutationResponse>(
+            (resolve) =>
+              commitMutation<tokenImageUpload_TokenImageCreateMutation>(
+                environment,
+                {
+                  mutation: TokenImageCreateMutation,
+                  variables: {
+                    input: {
+                      title,
+                      sha256: fileHash,
+                      sourceSha256: sourceFileHash,
+                    },
+                    connections,
                   },
-                  connections,
-                },
-                onCompleted: resolve,
-              }
-            )
-        );
+                  onCompleted: resolve,
+                }
+              )
+          );
 
         if (tokenImageCreate.__typename !== "TokenImageCreateSuccess") {
           throw new Error("Unexpected response.");

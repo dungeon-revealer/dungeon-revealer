@@ -47,9 +47,10 @@ export type Dependencies = {
 export const getTokenImageBySHA256 = (sha256: string) =>
   pipe(
     RT.ask<Dependencies>(),
-    RT.chainW((deps) => () => () =>
-      deps.db.get(
-        /* SQL */ `
+    RT.chainW(
+      (deps) => () => () =>
+        deps.db.get(
+          /* SQL */ `
           SELECT
             "id",
             "title",
@@ -61,10 +62,10 @@ export const getTokenImageBySHA256 = (sha256: string) =>
           WHERE
             "sha256" = $sha256
           `,
-        {
-          $sha256: Buffer.from(sha256, "hex"),
-        }
-      )
+          {
+            $sha256: Buffer.from(sha256, "hex"),
+          }
+        )
     ),
     RT.chainW(applyDecoder(MaybeTokenImageModal))
   );
@@ -72,9 +73,10 @@ export const getTokenImageBySHA256 = (sha256: string) =>
 export const getTokenById = (id: number) =>
   pipe(
     RT.ask<Dependencies>(),
-    RT.chainW((deps) => () => () =>
-      deps.db.get(
-        /* SQL */ `
+    RT.chainW(
+      (deps) => () => () =>
+        deps.db.get(
+          /* SQL */ `
           SELECT
             "id",
             "title",
@@ -86,8 +88,8 @@ export const getTokenById = (id: number) =>
           WHERE
             "id" = $id
         `,
-        { $id: id }
-      )
+          { $id: id }
+        )
     ),
     RT.chainW(applyDecoder(TokenImageModel))
   );
@@ -100,9 +102,10 @@ export const createTokenImage = (params: {
 }) =>
   pipe(
     RT.ask<Dependencies>(),
-    RT.chainW((deps) => () => () =>
-      deps.db.run(
-        /* SQL */ `
+    RT.chainW(
+      (deps) => () => () =>
+        deps.db.run(
+          /* SQL */ `
           INSERT INTO "tokenImages" (
             "title",
             "sha256",
@@ -119,17 +122,17 @@ export const createTokenImage = (params: {
             $createdAt
           )
         `,
-        {
-          $title: params.title,
-          $sha256: Buffer.from(params.sha256, "hex"),
-          $sourceSha256:
-            params.sourceSha256 === null
-              ? null
-              : Buffer.from(params.sourceSha256, "hex"),
-          $extension: params.fileExtension,
-          $createdAt: getTimestamp(),
-        }
-      )
+          {
+            $title: params.title,
+            $sha256: Buffer.from(params.sha256, "hex"),
+            $sourceSha256:
+              params.sourceSha256 === null
+                ? null
+                : Buffer.from(params.sourceSha256, "hex"),
+            $extension: params.fileExtension,
+            $createdAt: getTimestamp(),
+          }
+        )
     ),
     RT.map((result) => result.lastID),
     RT.chain(applyDecoder(TokenId))
@@ -150,9 +153,10 @@ export const getPaginatedTokenImages = (
 ) =>
   pipe(
     RT.ask<Dependencies>(),
-    RT.chainW((deps) => () => () =>
-      deps.db.all(
-        /* SQL */ `
+    RT.chainW(
+      (deps) => () => () =>
+        deps.db.all(
+          /* SQL */ `
           SELECT
             "id",
             "title",
@@ -173,18 +177,18 @@ export const getPaginatedTokenImages = (
             "id" DESC
           LIMIT $first
         `,
-        {
-          $first: params.first,
-          $sourceSha256: params.sourceSha256
-            ? Buffer.from(params.sourceSha256, "hex")
-            : undefined,
-          $titleFilter: params.titleFilter
-            ? `%${params.titleFilter}%`
-            : undefined,
-          $lastCreatedAt: params.cursor?.lastCreatedAt,
-          $lastId: params.cursor?.lastId,
-        }
-      )
+          {
+            $first: params.first,
+            $sourceSha256: params.sourceSha256
+              ? Buffer.from(params.sourceSha256, "hex")
+              : undefined,
+            $titleFilter: params.titleFilter
+              ? `%${params.titleFilter}%`
+              : undefined,
+            $lastCreatedAt: params.cursor?.lastCreatedAt,
+            $lastId: params.cursor?.lastId,
+          }
+        )
     ),
     RT.chain(applyDecoder(TokenImageListModel))
   );

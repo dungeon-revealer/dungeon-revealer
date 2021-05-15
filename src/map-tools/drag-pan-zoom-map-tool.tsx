@@ -15,22 +15,18 @@ export const usePinchWheelZoom = (mapToolState: SharedMapToolState) => {
     const position = mapToolState.mapState.position.get();
     const [scale] = mapToolState.mapState.scale.get();
 
-    const {
-      imageWidth,
-      imageHeight,
-      imageTopLeftY,
-      imageTopLeftX,
-    } = calculateScreenPosition({
-      imageDimensions: mapToolState.dimensions,
-      viewportDimensions: {
-        width: mapToolState.viewport.width * mapToolState.viewport.factor,
-        height: mapToolState.viewport.height * mapToolState.viewport.factor,
-      },
-      scale,
-      translateX: position[0],
-      translateY: position[1],
-      aspect: mapToolState.viewport.factor,
-    });
+    const { imageWidth, imageHeight, imageTopLeftY, imageTopLeftX } =
+      calculateScreenPosition({
+        imageDimensions: mapToolState.dimensions,
+        viewportDimensions: {
+          width: mapToolState.viewport.width * mapToolState.viewport.factor,
+          height: mapToolState.viewport.height * mapToolState.viewport.factor,
+        },
+        scale,
+        translateX: position[0],
+        translateY: position[1],
+        aspect: mapToolState.viewport.factor,
+      });
 
     // Calculate the amount of x, y translate offset needed to
     // zoom-in to point as image scale grows

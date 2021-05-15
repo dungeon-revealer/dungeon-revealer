@@ -33,34 +33,35 @@ const Context = React.createContext<CreateModalRegistrationFunction>(
 const Provider: React.FC<{}> = ({ children }) => {
   const registeredModals = useStaticRef<ModalRegistration[]>(() => []);
 
-  const createModalRegistration: CreateModalRegistrationFunction = useCallback(() => {
-    const modalRegistration = {};
+  const createModalRegistration: CreateModalRegistrationFunction =
+    useCallback(() => {
+      const modalRegistration = {};
 
-    const prevLength = registeredModals.length;
+      const prevLength = registeredModals.length;
 
-    registeredModals.unshift(modalRegistration);
+      registeredModals.unshift(modalRegistration);
 
-    const postLength = registeredModals.length;
+      const postLength = registeredModals.length;
 
-    if (prevLength === 0 && postLength > 0) {
-      disableBodyScroll(bodyElement);
-    }
+      if (prevLength === 0 && postLength > 0) {
+        disableBodyScroll(bodyElement);
+      }
 
-    return {
-      destroy: () => {
-        const index = registeredModals.findIndex(
-          (registration) => registration === modalRegistration
-        );
-        if (index === -1) {
-          throw new Error("Inconsistent state.");
-        }
-        registeredModals.splice(index, 1);
-        if (registeredModals.length === 0) {
-          enableBodyScroll(bodyElement);
-        }
-      },
-    };
-  }, [registeredModals]);
+      return {
+        destroy: () => {
+          const index = registeredModals.findIndex(
+            (registration) => registration === modalRegistration
+          );
+          if (index === -1) {
+            throw new Error("Inconsistent state.");
+          }
+          registeredModals.splice(index, 1);
+          if (registeredModals.length === 0) {
+            enableBodyScroll(bodyElement);
+          }
+        },
+      };
+    }, [registeredModals]);
 
   return (
     <Context.Provider value={createModalRegistration}>
@@ -183,17 +184,16 @@ const Dialog: React.FC<
   onSubmit: onSubmitOuter,
   ...props
 }) => {
-  const onSubmit: (
-    event: React.FormEvent<HTMLFormElement>
-  ) => void = useCallback(
-    (ev) => {
-      ev.preventDefault();
-      if (onSubmitOuter) {
-        onSubmitOuter(ev);
-      }
-    },
-    [onSubmitOuter]
-  );
+  const onSubmit: (event: React.FormEvent<HTMLFormElement>) => void =
+    useCallback(
+      (ev) => {
+        ev.preventDefault();
+        if (onSubmitOuter) {
+          onSubmitOuter(ev);
+        }
+      },
+      [onSubmitOuter]
+    );
   return (
     <form
       onSubmit={onSubmit}

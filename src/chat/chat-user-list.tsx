@@ -29,10 +29,10 @@ export const ChatUserList = createPaginationContainer(
   {
     data: graphql`
       fragment chatUserList_data on Query
-        @argumentDefinitions(
-          count: { type: "Int", defaultValue: 10 }
-          cursor: { type: "ID" }
-        ) {
+      @argumentDefinitions(
+        count: { type: "Int", defaultValue: 10 }
+        cursor: { type: "ID" }
+      ) {
         users(first: $count, after: $cursor)
           @connection(key: "chatUserList_users") {
           edges {

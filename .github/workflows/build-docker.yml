@@ -57,7 +57,6 @@ jobs:
         # foo='linux/arm/v7'
         # ${foo////-} -> linux-arm-v7
 
-
       - name: Set up QEMU
         id: qemu
         uses: docker/setup-qemu-action@v1
@@ -146,7 +145,6 @@ jobs:
           echo "COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-
       - name: Set up QEMU
         id: qemu
         uses: docker/setup-qemu-action@v1
@@ -159,7 +157,6 @@ jobs:
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
-
 
       - name: Login to DockerHub Registry
         run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
@@ -183,7 +180,7 @@ jobs:
             -t ${{ secrets.DOCKER_REPO }}:dev \
             -t ${{ secrets.DOCKER_REPO }}:$COMMIT \
             -t ${{ secrets.DOCKER_REPO }}:$COMMIT_SHORT .
-            
+
       - name: Create commit comment
         uses: peter-evans/commit-comment@v1
         if: startsWith(github.ref, 'refs/heads/') # Just the branches
@@ -194,7 +191,7 @@ jobs:
             You can easily try this build out locally with Docker.
 
             `docker run -p 3000:3000 ${{ secrets.DOCKER_REPO }}:${{ github.sha }}`
-            
+
       - name: Run Buildx Release
         if: startsWith(github.ref, 'refs/tags/') # Just the tags
         run: |

@@ -127,7 +127,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: "Set environment: Branch" 
+      - name: "Set environment: Branch"
         if: startsWith(github.ref, 'refs/heads/')
         run: |
           echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
