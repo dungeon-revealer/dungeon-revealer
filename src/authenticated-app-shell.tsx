@@ -63,6 +63,14 @@ const IconContainer = styled(animated.div)`
   display: flex;
 `;
 
+const Aside = styled.div<{ width: number }>`
+  height: 100%;
+  width: ${(p) => p.width}px;
+  border-left: 1px solid lightgrey;
+  pointer-events: all;
+  background: #fff;
+`;
+
 const CHAT_WIDTH = 400;
 const CHAT_BUTTONS_WIDTH = 85;
 
@@ -174,16 +182,9 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
                     }}
                   />
                 </IconContainer>
-                <div
-                  style={{
-                    height: "100%",
-                    width: chatWidth,
-                    borderLeft: "1px solid lightgrey",
-                    pointerEvents: "all",
-                  }}
-                >
+                <Aside width={chatWidth}>
                   <Chat toggleShowDiceRollNotes={toggleShowDiceRollNotes} />
-                </div>
+                </Aside>
               </animated.div>
             </React.Fragment>
           ) : null}

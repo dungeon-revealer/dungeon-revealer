@@ -1,6 +1,6 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
-import { DiceRollResultContext } from "./chat-message";
+import { DiceRollResultContext, DiceRollType } from "./chat-message";
 
 const StyledDiceRoll = styled.span`
   padding-right: 4px;
@@ -43,12 +43,23 @@ const RollResult = styled.span<{
   font-weight: ${(p) => (p.type !== "DEFAULT" ? "bold" : null)};
 `;
 
-export const FormattedDiceRoll = ({ index }: { index: string }) => {
-  const diceRoll = React.useContext(DiceRollResultContext)[parseInt(index, 10)];
+export const FormattedDiceRoll = (props: {
+  index: string;
+  reference?: string;
+}) => {
+  const index = parseInt(props.index, 10);
+  const isReference = !!props.reference;
+  const diceRoll = React.useContext(DiceRollResultContext)[
+    isReference ? "referencedDiceRolls" : "diceRolls"
+  ][index];
+  return <DiceRoll diceRoll={diceRoll} />;
+};
+
+export const DiceRoll = (props: { diceRoll: DiceRollType }) => {
   return (
     <StyledDiceRoll>
       <Wrapper>
-        {diceRoll.detail.map((node) => {
+        {props.diceRoll.detail.map((node) => {
           switch (node.__typename) {
             case "DiceRollDiceRollNode":
               return node.rollResults.map((result, index) => (
@@ -70,7 +81,7 @@ export const FormattedDiceRoll = ({ index }: { index: string }) => {
         })}
       </Wrapper>
       <EqualSign>{" = "}</EqualSign>
-      <ResultWrapper>{diceRoll.result}</ResultWrapper>
+      <ResultWrapper>{props.diceRoll.result}</ResultWrapper>
     </StyledDiceRoll>
   );
 };

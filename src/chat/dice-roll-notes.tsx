@@ -132,7 +132,7 @@ const usePersitedDiceNotesValue = () =>
             return parsedValue;
           }
         }
-      } catch (e) { }
+      } catch (e) {}
       return INITIAL_CONTENT;
     },
   });
@@ -144,6 +144,7 @@ export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
   );
   const [content, _setContent] = usePersitedDiceNotesValue();
   const setContent = useStaticRef(() => debounce(_setContent, 200));
+  const editorOnResizeRef = React.useRef(null as null | (() => void));
 
   return (
     <DraggableWindow
@@ -161,8 +162,8 @@ export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
             mode === "read" ? (
               <Icon.EditIcon size={16} />
             ) : (
-                <Icon.SaveIcon size={16} />
-              ),
+              <Icon.SaveIcon size={16} />
+            ),
         },
       ]}
       bodyContent={
@@ -181,6 +182,10 @@ export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
             value={content}
             onChange={(value) => setContent(value)}
             editorDidMount={(editor) => {
+              editorOnResizeRef.current = () => {
+                editor.layout();
+              };
+
               editorRef.current = editor;
             }}
           />
@@ -195,6 +200,9 @@ export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
         ev.stopPropagation();
         if (ev.key !== "Escape") return;
         if (mode === "read") close();
+      }}
+      onDidResize={() => {
+        editorOnResizeRef.current?.();
       }}
     />
   );

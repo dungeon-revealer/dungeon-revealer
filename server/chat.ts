@@ -1,7 +1,9 @@
 import { v4 as uuid } from "uuid";
 import { roll } from "@airjp73/dice-notation";
+import { Liquid, LiquidError } from "liquidjs";
+import type { Json } from "fp-ts/lib/Json";
 import { createPubSub } from "./pubsub";
-import { DiceRollResult, tryRoll } from "./roll-dice";
+import { DiceRollResult, isDiceRollResult, tryRoll } from "./roll-dice";
 
 type SharedResourceType =
   | { type: "NOTE"; id: string }
@@ -17,7 +19,10 @@ export type ApplicationRecordSchema =
       type: "USER_MESSAGE";
       id: string;
       content: string;
+      /** Dice rolls produces via inline [] strings. */
       diceRolls: DiceRollResult[];
+      /** Dice rolls produces via liquid.js diceRoll filter. */
+      referencedDiceRolls: DiceRollResult[];
       authorName: string;
       createdAt: number;
     }
@@ -35,6 +40,8 @@ export type ApplicationRecordSchema =
       createdAt: number;
     };
 
+const isDiceRoll = (part: string) => part.startsWith("[") && part.endsWith("]");
+
 const processRawContent = (
   message: string
 ): { content: string; diceRolls: DiceRollResult[] } => {
@@ -49,9 +56,9 @@ const processRawContent = (
       const notation = part.slice(1, part.length - 1);
       const rollResult = tryRoll(notation);
       if (rollResult) {
-        diceRolls.push(rollResult);
         content = content + `{${diceRollIndex}}`;
         diceRollIndex = diceRollIndex + 1;
+        diceRolls.push(rollResult(String(diceRollIndex)));
         continue;
       }
       // in case the parsing fails we just return it as a basic text node
@@ -62,13 +69,94 @@ const processRawContent = (
   return { content, diceRolls };
 };
 
+const processVariables = (
+  variables: Record<string, string>
+): Record<string, DiceRollResult | Json> => {
+  return Object.fromEntries(
+    Object.entries(variables).map(([key, value]) => {
+      if (typeof value === "string" && isDiceRoll(value)) {
+        const rollResult = tryRoll(value.slice(1, value.length - 1));
+        return [key, rollResult?.(key) ?? value];
+      }
+      return [key, value];
+    })
+  );
+};
+
+const diceRollSymbol = Symbol("DiceRoll");
+const generateIdSymbol = Symbol("GenerateId");
+
 type NewMessagesPayload = {
   messages: Array<ApplicationRecordSchema>;
 };
 
+type TemplateEnvironment = {
+  /**
+   * A context with some random information that can be referenced from within the template.
+   */
+  context: {
+    authorName: string;
+  };
+  /**
+   * The vars sent from the client, that can be referenced from within the template.
+   */
+  vars: Record<string, DiceRollResult | Json>;
+  /**
+   * All dice that are generated during template evaluation are put into this array.
+   */
+  [diceRollSymbol]: Array<DiceRollResult>;
+  /**
+   * The dice rolls generated via the `diceRoll` filter receive a unique id.
+   */
+  [generateIdSymbol]: () => string;
+};
+
 const MAXIMUM_CHAT_SIZE = 500;
 
+const createTemplateEngine = () => {
+  const templateEngine = new Liquid({
+    fs: {
+      exists: () => Promise.reject(new Error("Not supported.")),
+      readFile: () => Promise.reject(new Error("Not supported.")),
+      readFileSync: () => {
+        throw new Error("Not supported.");
+      },
+      existsSync: () => {
+        throw new Error("Not supported.");
+      },
+      resolve: () => {
+        throw new Error("Not supported.");
+      },
+    },
+  });
+
+  templateEngine.registerTag("renderDiceRoll", {
+    parse: function (tagToken) {
+      this.variable = tagToken.args;
+    },
+    render: function* (ctx) {
+      const scope = ctx.bottom() as Record<string, Json>;
+      const maybeDiceRoll = scope[this.variable];
+      const environment = ctx.environments as TemplateEnvironment;
+      if (isDiceRollResult(maybeDiceRoll)) {
+        const rolls = environment[diceRollSymbol];
+        rolls.push(maybeDiceRoll);
+        return `{r${rolls.length - 1}}`;
+      }
+      return "ERROR: Not a dice roll";
+    },
+  });
+  templateEngine.registerFilter("diceRoll", function (value) {
+    const maybeRoll = tryRoll(value);
+    const environment = this.context.environments as TemplateEnvironment;
+    const id = environment[generateIdSymbol]();
+    return maybeRoll?.(id) ?? null;
+  });
+  return templateEngine;
+};
+
 export const createChat = () => {
+  const templateEngine = createTemplateEngine();
   let state: Array<ApplicationRecordSchema> = [];
   const pubSub = createPubSub<NewMessagesPayload>();
 
@@ -83,17 +171,45 @@ export const createChat = () => {
     });
   };
 
-  const addUserMessage = (args: { authorName: string; rawContent: string }) => {
+  const addUserMessage = (args: {
+    authorName: string;
+    rawContent: string;
+    variables: { [key: string]: string };
+  }): null | string => {
+    // Apply normal dice roll logic
     const { content, diceRolls } = processRawContent(args.rawContent);
-    const message: ApplicationRecordSchema = {
-      id: uuid(),
-      type: "USER_MESSAGE",
-      createdAt: new Date().getTime(),
-      ...args,
-      content,
-      diceRolls,
+    let filterDiceRollIds = 0;
+    const scope: TemplateEnvironment = {
+      context: {
+        authorName: args.authorName,
+      },
+      vars: processVariables(args.variables),
+      [diceRollSymbol]: [],
+      [generateIdSymbol]: () => {
+        return String(++filterDiceRollIds);
+      },
     };
-    addMessageToStack(message);
+
+    try {
+      const text = templateEngine.parseAndRenderSync(content, scope);
+      const message: ApplicationRecordSchema = {
+        id: uuid(),
+        type: "USER_MESSAGE",
+        createdAt: new Date().getTime(),
+        authorName: args.authorName,
+        content: text,
+        diceRolls,
+        referencedDiceRolls: scope[diceRollSymbol],
+      };
+      addMessageToStack(message);
+
+      return null;
+    } catch (err) {
+      if (err instanceof LiquidError) {
+        return err.message + "\n\n" + err.context;
+      }
+      return "Unexpected Error occurred.";
+    }
   };
 
   const addSharedResourceMessage = (args: {

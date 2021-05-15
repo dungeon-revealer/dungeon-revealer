@@ -2,11 +2,6 @@ import React from "react";
 import styled from "@emotion/styled/macro";
 import { ShowdownExtension } from "showdown";
 import MarkdownView from "react-showdown";
-import { SharableImage } from "./sharable-image";
-import _sanitizeHtml from "sanitize-html";
-import { ChatMessageButton } from "./chat-message-button";
-import { useStaticRef } from "../../hooks/use-static-ref";
-import { NoteLink } from "./note-link";
 import {
   Heading,
   UnorderedList,
@@ -15,6 +10,15 @@ import {
   Text,
   Divider,
 } from "@chakra-ui/react";
+import _sanitizeHtml from "sanitize-html";
+import { useStaticRef } from "../../hooks/use-static-ref";
+import {
+  parseTemplateAttributes,
+  Attribute,
+} from "../../utilities/attribute-parser";
+import { NoteLink } from "./note-link";
+import { SharableImage } from "./sharable-image";
+import { ChatMessageButton } from "./chat-message-button";
 
 const H1: React.FC = (props) => <Heading as="h1">{props.children}</Heading>;
 const H2: React.FC = (props) => (
@@ -46,7 +50,7 @@ const components = {
   ol: OrderedList,
   li: ListItem,
   hr: Divider,
-  p: Text,
+  p: (props: React.ComponentProps<typeof Text>) => <Text {...props} as="div" />,
 };
 
 const allowedTags = [
@@ -77,29 +81,40 @@ const allowedTags = [
   ...Object.keys(components),
 ];
 
+type Template = { content: string; variables: Map<string, Attribute> };
+type TemplateMap = Map<string, Template>;
+
 const transformTemplateExtension = (
-  templateMap: Map<string, string>
+  templateMap: TemplateMap
 ): ShowdownExtension => ({
   type: "lang",
   filter: (text) => {
     let finalText = "";
     let startTagMatch: null | RegExpExecArray;
 
-    const START_TAG = /<Template(?:[^>]*)id="([\w_-]*)"(?:[^>]*)>/;
+    const START_TAG = /(<Template(?:[^>]*)>)/;
     const END_TAG = "</Template>";
 
     while ((startTagMatch = START_TAG.exec(text)) !== null) {
       let endTagIndex = text.indexOf(END_TAG);
-      if (endTagIndex === -1) break;
+      if (endTagIndex === -1) {
+        break;
+      }
 
       const matchStringLength = startTagMatch[0].length;
-      const templateId = startTagMatch[1];
+      const rawTemplateAttributes = startTagMatch[1];
+      const templateAttributes = parseTemplateAttributes(rawTemplateAttributes);
+      if (templateAttributes) {
+        const templateContents = text.substring(
+          startTagMatch.index + matchStringLength,
+          endTagIndex
+        );
+        templateMap.set(templateAttributes.id.value.value, {
+          content: templateContents.replace(/^\s*/gm, ""),
+          variables: templateAttributes.variables,
+        });
+      }
 
-      const templateContents = text.substring(
-        startTagMatch.index + matchStringLength,
-        endTagIndex
-      );
-      templateMap.set(templateId, templateContents.replace(/^\s*/gm, ""));
       finalText = finalText + text.substring(0, startTagMatch.index);
       text = text.substr(endTagIndex + END_TAG.length);
     }
@@ -160,7 +175,7 @@ const HtmlContainerStyled = styled.div`
   line-height: 1.5;
 
   > div > * {
-    margin-bottom: 12px;
+    margin-bottom: 6px;
   }
 
   blockquote {
@@ -203,13 +218,11 @@ const HtmlContainerStyled = styled.div`
   }
 `;
 
-export const TemplateContext = React.createContext<Map<string, string>>(
-  new Map()
-);
+export const TemplateContext = React.createContext<TemplateMap>(new Map());
 
 export const HtmlContainer: React.FC<{ markdown: string }> = React.memo(
   ({ markdown }) => {
-    const templateMap = useStaticRef(() => new Map<string, string>());
+    const templateMap: TemplateMap = useStaticRef(() => new Map());
 
     return (
       <TemplateContext.Provider value={templateMap}>

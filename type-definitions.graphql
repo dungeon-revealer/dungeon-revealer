@@ -55,6 +55,7 @@ type UserChatMessage implements ChatMessage & TextChatMessage {
   authorName: String!
   content: String!
   diceRolls: [DiceRoll!]!
+  referencedDiceRolls: [DiceRoll!]!
   createdAt: String!
   containsDiceRoll: Boolean!
 }
@@ -73,6 +74,7 @@ interface TextChatMessage implements ChatMessage {
 type DiceRoll {
   result: Float!
   detail: [DiceRollDetail!]!
+  rollId: String!
 }
 
 type OperationalChatMessage implements ChatMessage & TextChatMessage {
@@ -225,7 +227,7 @@ type TokenImage implements Node {
 type Mutation {
   logIn(input: LogInInput): LogInResult!
   changeName(input: ChangeNameInput!): ChangeNameResult!
-  chatMessageCreate(input: ChatMessageCreateInput!): Boolean
+  chatMessageCreate(input: ChatMessageCreateInput!): ChatMessageCreateResult!
   shareResource(input: ShareResourceInput!): Boolean
   shareImage(input: ShareImageInput!): Boolean
   splashShareImage(input: SplashShareImageInput!): Boolean
@@ -258,8 +260,22 @@ input ChangeNameInput {
   name: String!
 }
 
+type ChatMessageCreateResult {
+  error: ChatMessageCreateResultError
+  success: ChatMessageCreateResultSuccess
+}
+
+type ChatMessageCreateResultError {
+  reason: String!
+}
+
+type ChatMessageCreateResultSuccess {
+  _: Boolean
+}
+
 input ChatMessageCreateInput {
   rawContent: String!
+  variables: String
 }
 
 input ShareResourceInput {
