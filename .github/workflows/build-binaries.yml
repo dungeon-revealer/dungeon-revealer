@@ -172,7 +172,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: Release ${{ github.ref }}
+          name: Release ${{ env.GH_TAG }}
           draft: true
           files: |
             bin/*.zip
