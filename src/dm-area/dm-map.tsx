@@ -834,12 +834,11 @@ export const DmMap = (props: {
           markedAreas={props.markedAreas}
           removeMarkedArea={props.removeMarkedArea}
           grid={
-            props.map.grid &&
-            props.map.showGrid &&
-            activeTool !== ConfigureGridMapTool
+            props.map.grid && activeTool !== ConfigureGridMapTool
               ? props.map.grid
               : null
           }
+          isGridVisible={props.map.showGrid}
           sharedContexts={[
             MarkAreaToolContext,
             BrushToolContext,

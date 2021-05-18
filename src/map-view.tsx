@@ -488,6 +488,8 @@ const TokenRenderer = (props: {
   const showContextMenu = React.useContext(ContextMenuContext);
   const [initMarkArea, cancelMarkArea] = useMarkArea();
 
+  const firstTimeStamp = React.useRef<null | number>(null);
+
   const dragProps = useGesture<{
     onClick: PointerEvent;
     onContextMenu: PointerEvent;
@@ -503,63 +505,63 @@ const TokenRenderer = (props: {
         last,
         tap,
       }) => {
-        setStore(store);
         setIsDragging(!last);
-
         if (first) {
           editingStateRef.position++;
         }
         if (last) {
           editingStateRef.position--;
         }
-
         // onClick replacement
         // events are handled different in react-three-fiber
         // @dbismut advised me that checking for tap in onDrag
         // is the best solution when having both drag and click behavior.
-        if (tap) {
-          if (onPointerDown.current) {
-            onPointerDown.current();
-            // left mouse
-            if (event.button === 0) {
-              if (values.referenceId) {
-                noteWindowActions.focusOrShowNoteInNewWindow(
-                  values.referenceId
-                );
-              }
-            }
+        if (
+          tap &&
+          // we only want to treat this as a click if this is not a long press
+          firstTimeStamp.current !== null &&
+          new Date().getTime() - firstTimeStamp.current < 300
+        ) {
+          firstTimeStamp.current = null;
 
-            if (event.button === 2) {
-              const [imageX, imageY] =
-                sharedMapState.helper.threePointToImageCoordinates([
-                  // TODO: figure out why the point is not in the typings.
-                  // @ts-ignore
-                  event.point.x,
-                  // @ts-ignore
-                  event.point.y,
-                ]);
-              const state: ContextMenuState = {
-                clientPosition: {
-                  x: event.clientX,
-                  y: event.clientY,
-                },
-                imagePosition: {
-                  x: imageX,
-                  y: imageY,
-                },
-                target: {
-                  type: "token",
-                  id: props.id,
-                },
-              };
-
-              event.stopPropagation();
-              // @ts-ignore
-              event.nativeEvent.stopPropagation();
-              // @ts-ignore
-              event.nativeEvent.preventDefault();
-              showContextMenu(state);
+          // left mouse
+          if (event.button === 0) {
+            setStore(store);
+            if (values.referenceId) {
+              noteWindowActions.focusOrShowNoteInNewWindow(values.referenceId);
             }
+          }
+
+          if (event.button === 2) {
+            const [imageX, imageY] =
+              sharedMapState.helper.threePointToImageCoordinates([
+                // TODO: figure out why the point is not in the typings.
+                // @ts-ignore
+                event.point.x,
+                // @ts-ignore
+                event.point.y,
+              ]);
+            const state: ContextMenuState = {
+              clientPosition: {
+                x: event.clientX,
+                y: event.clientY,
+              },
+              imagePosition: {
+                x: imageX,
+                y: imageY,
+              },
+              target: {
+                type: "token",
+                id: props.id,
+              },
+            };
+
+            event.stopPropagation();
+            // @ts-ignore
+            event.nativeEvent.stopPropagation();
+            // @ts-ignore
+            event.nativeEvent.preventDefault();
+            showContextMenu(state);
           }
 
           setIsHover(() => false);
@@ -599,12 +601,8 @@ const TokenRenderer = (props: {
         return memo;
       },
       onPointerDown: ({ event }) => {
-        const timeout = setTimeout(() => {
-          onPointerDown.current = null;
-          setStore(store);
-        }, 1000);
+        firstTimeStamp.current = new Date().getTime();
         event.stopPropagation();
-        onPointerDown.current = () => clearTimeout(timeout);
         const [x, y] = sharedMapState.helper.threePointToImageCoordinates([
           event.point.x,
           event.point.y,
@@ -621,8 +619,8 @@ const TokenRenderer = (props: {
         }
       },
       onPointerUp: () => {
+        firstTimeStamp.current = null;
         setIsDragging(false);
-        onPointerDown.current?.();
         cancelMarkArea();
       },
       onPointerOut: () => {
@@ -719,7 +717,7 @@ const TokenRenderer = (props: {
             [animatedProps.circleScale, animatedProps.position],
             ([scale], [x, y, z]) =>
               query.data?.tokenImage
-                ? [x, y - 0.03 - initialRadius * scale, z]
+                ? [x, y - 0.04 - initialRadius * scale, z]
                 : [x, y, z]
           )}
           renderOrder={LayerRenderOrder.token}
@@ -728,7 +726,7 @@ const TokenRenderer = (props: {
             text={textLabel}
             position={undefined}
             backgroundColor={query.data?.tokenImage ? "#ffffff" : null}
-            fontSize={(columnWidth * sharedMapState.ratio) / 2800}
+            fontSize={(columnWidth * sharedMapState.ratio) / 930}
           />
         </animated.group>
       ) : null}
@@ -1092,6 +1090,7 @@ const MapRenderer: React.FC<{
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
   grid: MapGridEntity | null;
+  isGridVisible: boolean;
   scale: SpringValue<[number, number, number]>;
   factor: number;
   dimensions: Dimensions;
@@ -1108,7 +1107,7 @@ const MapRenderer: React.FC<{
           />
           <meshStandardMaterial attach="material" map={props.mapImageTexture} />
         </mesh>
-        {props.grid ? (
+        {props.grid && props.isGridVisible ? (
           <GridRenderer
             grid={props.grid}
             dimensions={props.dimensions}
@@ -1183,6 +1182,7 @@ const MapViewRenderer = (props: {
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
   grid: MapGridEntity | null;
+  isGridVisible: boolean;
   activeTool: MapTool | null;
   fogOpacity: number;
 }): React.ReactElement => {
@@ -1480,6 +1480,7 @@ const MapViewRenderer = (props: {
           markedAreas={props.markedAreas}
           removeMarkedArea={props.removeMarkedArea}
           grid={props.grid}
+          isGridVisible={props.isGridVisible}
           scale={spring.scale}
           dimensions={dimensions}
           factor={
@@ -1513,6 +1514,7 @@ export const MapView = (props: {
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
   grid: MapGridEntity | null;
+  isGridVisible: boolean;
   activeTool: MapTool | null;
   /* List of contexts that need to be proxied into R3F */
   sharedContexts: Array<React.Context<any>>;
@@ -1565,6 +1567,7 @@ export const MapView = (props: {
             markedAreas={props.markedAreas}
             removeMarkedArea={props.removeMarkedArea}
             grid={props.grid}
+            isGridVisible={props.isGridVisible}
             fogOpacity={props.fogOpacity}
           />
         </ContextBridge>
