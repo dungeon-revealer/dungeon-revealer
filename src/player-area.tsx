@@ -401,11 +401,8 @@ const PlayerMap: React.FC<{
                   markedAreas.filter((area) => area.id !== id)
                 );
               }}
-              grid={
-                currentMap.grid && currentMap.showGridToPlayers
-                  ? currentMap.grid
-                  : null
-              }
+              grid={currentMap.grid}
+              isGridVisible={currentMap.showGridToPlayers}
               sharedContexts={[
                 MarkAreaToolContext,
                 NoteWindowActionsContext,

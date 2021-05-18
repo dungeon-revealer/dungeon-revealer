@@ -719,7 +719,7 @@ const TokenRenderer = (props: {
             [animatedProps.circleScale, animatedProps.position],
             ([scale], [x, y, z]) =>
               query.data?.tokenImage
-                ? [x, y - 0.03 - initialRadius * scale, z]
+                ? [x, y - 0.04 - initialRadius * scale, z]
                 : [x, y, z]
           )}
           renderOrder={LayerRenderOrder.token}
@@ -728,7 +728,7 @@ const TokenRenderer = (props: {
             text={textLabel}
             position={undefined}
             backgroundColor={query.data?.tokenImage ? "#ffffff" : null}
-            fontSize={(columnWidth * sharedMapState.ratio) / 2800}
+            fontSize={(columnWidth * sharedMapState.ratio) / 930}
           />
         </animated.group>
       ) : null}
@@ -1092,6 +1092,7 @@ const MapRenderer: React.FC<{
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
   grid: MapGridEntity | null;
+  isGridVisible: boolean;
   scale: SpringValue<[number, number, number]>;
   factor: number;
   dimensions: Dimensions;
@@ -1108,7 +1109,7 @@ const MapRenderer: React.FC<{
           />
           <meshStandardMaterial attach="material" map={props.mapImageTexture} />
         </mesh>
-        {props.grid ? (
+        {props.grid && props.isGridVisible ? (
           <GridRenderer
             grid={props.grid}
             dimensions={props.dimensions}
@@ -1183,6 +1184,7 @@ const MapViewRenderer = (props: {
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
   grid: MapGridEntity | null;
+  isGridVisible: boolean;
   activeTool: MapTool | null;
   fogOpacity: number;
 }): React.ReactElement => {
@@ -1480,6 +1482,7 @@ const MapViewRenderer = (props: {
           markedAreas={props.markedAreas}
           removeMarkedArea={props.removeMarkedArea}
           grid={props.grid}
+          isGridVisible={props.isGridVisible}
           scale={spring.scale}
           dimensions={dimensions}
           factor={
@@ -1513,6 +1516,7 @@ export const MapView = (props: {
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
   grid: MapGridEntity | null;
+  isGridVisible: boolean;
   activeTool: MapTool | null;
   /* List of contexts that need to be proxied into R3F */
   sharedContexts: Array<React.Context<any>>;
@@ -1565,6 +1569,7 @@ export const MapView = (props: {
             markedAreas={props.markedAreas}
             removeMarkedArea={props.removeMarkedArea}
             grid={props.grid}
+            isGridVisible={props.isGridVisible}
             fogOpacity={props.fogOpacity}
           />
         </ContextBridge>
