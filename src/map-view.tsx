@@ -488,6 +488,8 @@ const TokenRenderer = (props: {
   const showContextMenu = React.useContext(ContextMenuContext);
   const [initMarkArea, cancelMarkArea] = useMarkArea();
 
+  const firstTimeStamp = React.useRef<null | number>(null);
+
   const dragProps = useGesture<{
     onClick: PointerEvent;
     onContextMenu: PointerEvent;
@@ -503,63 +505,63 @@ const TokenRenderer = (props: {
         last,
         tap,
       }) => {
-        setStore(store);
         setIsDragging(!last);
-
         if (first) {
           editingStateRef.position++;
         }
         if (last) {
           editingStateRef.position--;
         }
-
         // onClick replacement
         // events are handled different in react-three-fiber
         // @dbismut advised me that checking for tap in onDrag
         // is the best solution when having both drag and click behavior.
-        if (tap) {
-          if (onPointerDown.current) {
-            onPointerDown.current();
-            // left mouse
-            if (event.button === 0) {
-              if (values.referenceId) {
-                noteWindowActions.focusOrShowNoteInNewWindow(
-                  values.referenceId
-                );
-              }
-            }
+        if (
+          tap &&
+          // we only want to treat this as a click if this is not a long press
+          firstTimeStamp.current !== null &&
+          new Date().getTime() - firstTimeStamp.current < 300
+        ) {
+          firstTimeStamp.current = null;
 
-            if (event.button === 2) {
-              const [imageX, imageY] =
-                sharedMapState.helper.threePointToImageCoordinates([
-                  // TODO: figure out why the point is not in the typings.
-                  // @ts-ignore
-                  event.point.x,
-                  // @ts-ignore
-                  event.point.y,
-                ]);
-              const state: ContextMenuState = {
-                clientPosition: {
-                  x: event.clientX,
-                  y: event.clientY,
-                },
-                imagePosition: {
-                  x: imageX,
-                  y: imageY,
-                },
-                target: {
-                  type: "token",
-                  id: props.id,
-                },
-              };
-
-              event.stopPropagation();
-              // @ts-ignore
-              event.nativeEvent.stopPropagation();
-              // @ts-ignore
-              event.nativeEvent.preventDefault();
-              showContextMenu(state);
+          // left mouse
+          if (event.button === 0) {
+            setStore(store);
+            if (values.referenceId) {
+              noteWindowActions.focusOrShowNoteInNewWindow(values.referenceId);
             }
+          }
+
+          if (event.button === 2) {
+            const [imageX, imageY] =
+              sharedMapState.helper.threePointToImageCoordinates([
+                // TODO: figure out why the point is not in the typings.
+                // @ts-ignore
+                event.point.x,
+                // @ts-ignore
+                event.point.y,
+              ]);
+            const state: ContextMenuState = {
+              clientPosition: {
+                x: event.clientX,
+                y: event.clientY,
+              },
+              imagePosition: {
+                x: imageX,
+                y: imageY,
+              },
+              target: {
+                type: "token",
+                id: props.id,
+              },
+            };
+
+            event.stopPropagation();
+            // @ts-ignore
+            event.nativeEvent.stopPropagation();
+            // @ts-ignore
+            event.nativeEvent.preventDefault();
+            showContextMenu(state);
           }
 
           setIsHover(() => false);
@@ -599,12 +601,8 @@ const TokenRenderer = (props: {
         return memo;
       },
       onPointerDown: ({ event }) => {
-        const timeout = setTimeout(() => {
-          onPointerDown.current = null;
-          setStore(store);
-        }, 1000);
+        firstTimeStamp.current = new Date().getTime();
         event.stopPropagation();
-        onPointerDown.current = () => clearTimeout(timeout);
         const [x, y] = sharedMapState.helper.threePointToImageCoordinates([
           event.point.x,
           event.point.y,
@@ -621,8 +619,8 @@ const TokenRenderer = (props: {
         }
       },
       onPointerUp: () => {
+        firstTimeStamp.current = null;
         setIsDragging(false);
-        onPointerDown.current?.();
         cancelMarkArea();
       },
       onPointerOut: () => {
