@@ -33,7 +33,6 @@ import { ReactEventHandlers } from "react-use-gesture/dist/types";
 import { useQuery } from "relay-hooks";
 import { mapView_TokenImageQuery } from "./__generated__/mapView_TokenImageQuery.graphql";
 import { buttonGroup, useControls, useCreateStore, LevaInputs } from "leva";
-import { StoreType } from "leva/dist/declarations/src/types";
 import { levaPluginNoteReference } from "./leva-plugin/leva-plugin-note-reference";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
 import { useCurrent } from "./hooks/use-current";
@@ -41,6 +40,7 @@ import { useMarkArea } from "./map-tools/player-map-tool";
 import { ContextMenuState, useShowContextMenu } from "./map-context-menu";
 import {
   useClearTokenSelection,
+  useSetTokenLevaStore,
   useTokenSelection,
 } from "./shared-token-state";
 
@@ -138,10 +138,6 @@ const MapTokenImageQuery = graphql`
     }
   }
 `;
-
-export const SetSelectedTokenStoreContext = React.createContext<
-  (value: StoreType | null) => void
->(() => undefined);
 
 export const UpdateTokenContext = React.createContext<
   (id: string, props: Omit<Partial<MapTokenEntity>, "id">) => void
@@ -438,7 +434,7 @@ const TokenRenderer = (props: {
     0
   );
 
-  const setStore = React.useContext(SetSelectedTokenStoreContext);
+  const setTokenStore = useSetTokenLevaStore();
   const initialRadius = useStaticRef(() =>
     sharedMapState.helper.size.fromImageToThree(Math.max(1, props.radius))
   );
@@ -512,12 +508,12 @@ const TokenRenderer = (props: {
           firstTimeStamp.current = null;
 
           if (event.altKey) {
-            tokenSelection.toggleItem(props.id);
+            tokenSelection.toggleItem(props.id, store);
           } else {
             // left mouse
             if (event.button === 0) {
               tokenSelection.clearSelectedItems();
-              setStore(store);
+              setTokenStore(store);
               if (values.referenceId) {
                 noteWindowActions.focusOrShowNoteInNewWindow(
                   values.referenceId
@@ -1436,7 +1432,7 @@ const MapViewRenderer = (props: {
       handlers?: MapToolMapGestureHandlers;
     } | null>(null);
 
-  const setStore = React.useContext(SetSelectedTokenStoreContext);
+  const setStore = useSetTokenLevaStore();
 
   const clearTokenSelection = useClearTokenSelection();
 

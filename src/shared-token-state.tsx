@@ -1,30 +1,44 @@
 import * as React from "react";
 import create from "zustand";
+import { StoreType as LevaStoreType } from "leva/dist/declarations/src/types";
 
 export type SharedTokenStateStore = {
-  selectedItems: Set<string>;
-  toggleSelectItem: (tokenId: string) => void;
+  selectedItems: Map<string, LevaStoreType>;
+  toggleSelectItem: (tokenId: string, store: LevaStoreType) => void;
   clearSelectedItems: () => void;
+  removeSelectItem: (tokenId: string) => void;
+  tokenLevaStore: LevaStoreType | null;
+  setTokenLevaStore: (store: LevaStoreType | null) => void;
 };
 
 const createStore = () =>
   create<SharedTokenStateStore>((set, get) => ({
-    selectedItems: new Set(),
-    toggleSelectItem: (tokenId) => {
-      const selectedItems = new Set(get().selectedItems);
+    selectedItems: new Map(),
+    toggleSelectItem: (tokenId, store) => {
+      const selectedItems = new Map(get().selectedItems);
       if (selectedItems.has(tokenId)) {
         selectedItems.delete(tokenId);
       } else {
-        selectedItems.add(tokenId);
+        selectedItems.set(tokenId, store);
       }
       set({ selectedItems });
     },
     clearSelectedItems: () => {
       const state = get();
       if (state.selectedItems.size) {
-        set({ selectedItems: new Set() });
+        set({ selectedItems: new Map() });
       }
     },
+    removeSelectItem: (tokenId) => {
+      const state = get();
+      if (state.selectedItems.has(tokenId)) {
+        const selectedItems = new Map(state.selectedItems);
+        selectedItems.delete(tokenId);
+        set({ selectedItems });
+      }
+    },
+    tokenLevaStore: null,
+    setTokenLevaStore: (tokenLevaStore) => set({ tokenLevaStore }),
   }));
 
 export const SharedTokenStateStoreContext =
@@ -83,6 +97,16 @@ export const useTokenSelection = (
     [tokenId]
   );
   const store = useSharedTokenStateStore();
+
+  // ensure cleanup when the token is unmounted.
+  React.useEffect(
+    () => () => {
+      if (store) {
+        store.getState().removeSelectItem(tokenId);
+      }
+    },
+    [tokenId]
+  );
   return store ? store(selector) : noopTokenSelection;
 };
 
@@ -96,3 +120,13 @@ const selectedItemsSelector = (store: SharedTokenStateStore) =>
   [store.selectedItems, store.clearSelectedItems] as const;
 export const useSelectedItems = () =>
   useSharedTokenStateStoreStrict()(selectedItemsSelector);
+
+const tokenLevaStoreSelector = (store: SharedTokenStateStore) =>
+  store.tokenLevaStore;
+export const useTokenLevaStore = () =>
+  useSharedTokenStateStoreStrict()(tokenLevaStoreSelector);
+
+const setTokenLevaStoreSelector = (store: SharedTokenStateStore) =>
+  store.setTokenLevaStore;
+export const useSetTokenLevaStore = () =>
+  useSharedTokenStateStore()?.(setTokenLevaStoreSelector) ?? noop;

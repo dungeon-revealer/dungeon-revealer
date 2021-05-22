@@ -44,7 +44,6 @@ import {
 import {
   MapView,
   MapControlInterface,
-  SetSelectedTokenStoreContext,
   UpdateTokenContext,
   IsDungeonMasterContext,
 } from "../map-view";
@@ -80,10 +79,7 @@ import {
 } from "../map-tools/token-marker-map-tool";
 import { NoteWindowActionsContext } from "./token-info-aside";
 import { ColorPickerInput } from "../color-picker-input";
-import { StoreType } from "leva/dist/declarations/src/types";
 import { buttonGroup, useControls, useCreateStore, LevaInputs } from "leva";
-import { ChatPositionContext } from "../authenticated-app-shell";
-import { animated, to } from "@react-spring/web";
 import { levaPluginIconPicker } from "../leva-plugin/leva-plugin-icon-picker";
 import { ThemedLevaPanel } from "../themed-leva-panel";
 import {
@@ -95,6 +91,7 @@ import {
   SharedTokenStateProvider,
   SharedTokenStateStoreContext,
 } from "../shared-token-state";
+import { SharedTokenMenu } from "../shared-token-menu";
 
 type ToolMapRecord = {
   name: string;
@@ -754,10 +751,6 @@ export const DmMap = (props: {
       [props.map.grid]
     );
 
-  const [store, setStore] = React.useState<StoreType | null>();
-
-  const chatPosition = React.useContext(ChatPositionContext);
-
   return (
     <FlatContextProvider
       value={[
@@ -805,12 +798,6 @@ export const DmMap = (props: {
           React.ComponentProps<typeof TokenMarkerContextProvider>
         >,
         [
-          SetSelectedTokenStoreContext.Provider,
-          { value: setStore },
-        ] as ComponentWithPropsTuple<
-          React.ComponentProps<typeof SetSelectedTokenStoreContext["Provider"]>
-        >,
-        [
           UpdateTokenContext.Provider,
           { value: props.updateToken },
         ] as ComponentWithPropsTuple<
@@ -847,7 +834,6 @@ export const DmMap = (props: {
             TokenMarkerContext,
             NoteWindowActionsContext,
             ReactRelayContext,
-            SetSelectedTokenStoreContext,
             UpdateTokenContext,
             IsDungeonMasterContext,
             ContextMenuStoreContext,
@@ -1066,31 +1052,7 @@ export const DmMap = (props: {
         />
       )}
       {confirmDialogNode}
-      <animated.div
-        style={{
-          position: "absolute",
-          bottom: 100,
-          right:
-            chatPosition !== null
-              ? to(chatPosition.x, (value) => -value + 10 + chatPosition.width)
-              : 10,
-          // @ts-ignore
-          zIndex: 1,
-          width: 300,
-        }}
-        onKeyDown={(ev) => ev.stopPropagation()}
-      >
-        <ThemedLevaPanel
-          store={store}
-          fill={true}
-          hideCopyButton
-          titleBar={{
-            filter: false,
-            drag: false,
-            title: "Token Properties",
-          }}
-        />
-      </animated.div>
+      <SharedTokenMenu />
       <ContextMenuRenderer
         addToken={props.addToken}
         deleteToken={props.deleteToken}

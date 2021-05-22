@@ -11,7 +11,7 @@ export const ContextMenuRenderer = (props: {
 }) => {
   const { state, copyContent, showContextMenu, setCopyContent } =
     useContextMenu();
-  const [selectedTokenIds, clearSelectedItems] = useSelectedItems();
+  const [selectedItems, clearSelectedItems] = useSelectedItems();
 
   if (state === null) {
     return null;
@@ -69,14 +69,14 @@ export const ContextMenuRenderer = (props: {
           <MenuItem
             onClick={() => {
               clearSelectedItems();
-              for (const tokenId of selectedTokenIds) {
-                // TODO: we rather want to bulk delete the tokens :D
+              for (const [tokenId] of selectedItems) {
+                // TODO: we rather want to bulk delete the tokens for less network noise :)
                 props.deleteToken(tokenId);
               }
             }}
-            isDisabled={selectedTokenIds.size == 0}
+            isDisabled={selectedItems.size == 0}
           >
-            Delete selected tokens ({selectedTokenIds.size})
+            Delete selected tokens ({selectedItems.size})
           </MenuItem>
         </MenuList>
       </Menu>
