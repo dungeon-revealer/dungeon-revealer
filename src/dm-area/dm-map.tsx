@@ -20,9 +20,6 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  Menu,
-  MenuList,
-  MenuItem,
   useToast,
 } from "@chakra-ui/react";
 import { ReactRelayContext } from "relay-hooks";
@@ -50,8 +47,6 @@ import {
   SetSelectedTokenStoreContext,
   UpdateTokenContext,
   IsDungeonMasterContext,
-  ContextMenuContext,
-  ContextMenuState,
 } from "../map-view";
 import { buildApiUrl } from "../public-url";
 import { ConditionalWrap, loadImage } from "../util";
@@ -91,6 +86,11 @@ import { ChatPositionContext } from "../authenticated-app-shell";
 import { animated, to } from "@react-spring/web";
 import { levaPluginIconPicker } from "../leva-plugin/leva-plugin-icon-picker";
 import { ThemedLevaPanel } from "../themed-leva-panel";
+import {
+  ContextMenuStoreProvider,
+  ContextMenuStoreContext,
+} from "../map-context-menu";
+import { ContextMenuRenderer } from "../map-context-menu-renderer";
 
 type ToolMapRecord = {
   name: string;
@@ -753,14 +753,13 @@ export const DmMap = (props: {
   const [store, setStore] = React.useState<StoreType | null>();
 
   const chatPosition = React.useContext(ChatPositionContext);
-  const [contextMenuState, setContextMenuState] =
-    React.useState<ContextMenuState>(null);
-  const [copiedToken, setCopiedToken] =
-    React.useState<MapTokenEntity | null>(null);
 
   return (
     <FlatContextProvider
       value={[
+        [ContextMenuStoreProvider, {}] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof ContextMenuStoreProvider>
+        >,
         [
           MarkAreaToolContext.Provider,
           { value: { onMarkArea: props.markArea } },
@@ -816,12 +815,6 @@ export const DmMap = (props: {
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof IsDungeonMasterContext["Provider"]>
         >,
-        [
-          ContextMenuContext.Provider,
-          { value: setContextMenuState },
-        ] as ComponentWithPropsTuple<
-          React.ComponentProps<typeof ContextMenuContext["Provider"]>
-        >,
       ]}
     >
       {mapImage ? (
@@ -850,7 +843,7 @@ export const DmMap = (props: {
             SetSelectedTokenStoreContext,
             UpdateTokenContext,
             IsDungeonMasterContext,
-            ContextMenuContext,
+            ContextMenuStoreContext,
           ]}
           fogOpacity={0.5}
         />
@@ -1090,58 +1083,15 @@ export const DmMap = (props: {
           }}
         />
       </animated.div>
-      {contextMenuState ? (
-        <Box
-          position="absolute"
-          left={contextMenuState.clientPosition.x}
-          top={contextMenuState.clientPosition.y}
-          onContextMenu={(ev) => ev.preventDefault()}
-        >
-          <Menu defaultIsOpen={true} onClose={() => setContextMenuState(null)}>
-            <MenuList>
-              {contextMenuState.target?.type === "token" ? (
-                <>
-                  <MenuItem
-                    onClick={() => {
-                      const tokenId = contextMenuState.target?.id!;
-                      const token = props.map.tokens.find(
-                        (token) => token.id === tokenId
-                      );
-                      setCopiedToken(token ?? null);
-                    }}
-                  >
-                    Copy Token
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() =>
-                      props.deleteToken(contextMenuState.target?.id!)
-                    }
-                  >
-                    Delete
-                  </MenuItem>
-                </>
-              ) : (
-                <>
-                  <MenuItem
-                    isDisabled={copiedToken === null}
-                    onClick={() => {
-                      if (copiedToken) {
-                        props.addToken({
-                          ...copiedToken,
-                          x: contextMenuState.imagePosition.x,
-                          y: contextMenuState.imagePosition.y,
-                        });
-                      }
-                    }}
-                  >
-                    Paste Token
-                  </MenuItem>
-                </>
-              )}
-            </MenuList>
-          </Menu>
-        </Box>
-      ) : null}
+      <ContextMenuRenderer
+        addToken={props.addToken}
+        deleteToken={props.deleteToken}
+        getToken={React.useCallback(
+          (tokenId) =>
+            props.map.tokens.find((token) => token.id === tokenId) ?? null,
+          [props.map.tokens]
+        )}
+      />
     </FlatContextProvider>
   );
 };

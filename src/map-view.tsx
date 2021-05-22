@@ -38,6 +38,7 @@ import { levaPluginNoteReference } from "./leva-plugin/leva-plugin-note-referenc
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
 import { useCurrent } from "./hooks/use-current";
 import { useMarkArea } from "./map-tools/player-map-tool";
+import { ContextMenuState, useShowContextMenu } from "./map-context-menu";
 
 type Vector2D = [number, number];
 
@@ -81,7 +82,7 @@ const Plane = React.forwardRef(
     },
     ref: React.ForwardedRef<THREE.Mesh>
   ) => {
-    const showContextMenu = React.useContext(ContextMenuContext);
+    const showContextMenu = useShowContextMenu();
     const sharedMapState = React.useContext(SharedMapState);
 
     return (
@@ -145,25 +146,6 @@ const SharedMapState = React.createContext<SharedMapToolState>(
   undefined as any
 );
 export const IsDungeonMasterContext = React.createContext(false);
-
-export type ContextMenuState = {
-  clientPosition: {
-    x: number;
-    y: number;
-  };
-  imagePosition: {
-    x: number;
-    y: number;
-  };
-  target: null | {
-    type: "token";
-    id: string;
-  };
-} | null;
-
-export const ContextMenuContext = React.createContext(
-  (_props: ContextMenuState) => undefined as void
-);
 
 type TokenPartialChanges = Omit<Partial<MapTokenEntity>, "id">;
 
@@ -485,9 +467,8 @@ const TokenRenderer = (props: {
 
   const hoverCounter = React.useRef(0);
 
-  const showContextMenu = React.useContext(ContextMenuContext);
+  const showContextMenu = useShowContextMenu();
   const [initMarkArea, cancelMarkArea] = useMarkArea();
-
   const firstTimeStamp = React.useRef<null | number>(null);
 
   const dragProps = useGesture<{
