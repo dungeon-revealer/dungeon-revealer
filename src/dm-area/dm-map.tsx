@@ -91,6 +91,10 @@ import {
   ContextMenuStoreContext,
 } from "../map-context-menu";
 import { ContextMenuRenderer } from "../map-context-menu-renderer";
+import {
+  SharedTokenStateProvider,
+  SharedTokenStateStoreContext,
+} from "../shared-token-state";
 
 type ToolMapRecord = {
   name: string;
@@ -760,6 +764,9 @@ export const DmMap = (props: {
         [ContextMenuStoreProvider, {}] as ComponentWithPropsTuple<
           React.ComponentProps<typeof ContextMenuStoreProvider>
         >,
+        [SharedTokenStateProvider, {}] as ComponentWithPropsTuple<
+          React.ComponentProps<typeof SharedTokenStateProvider>
+        >,
         [
           MarkAreaToolContext.Provider,
           { value: { onMarkArea: props.markArea } },
@@ -844,6 +851,7 @@ export const DmMap = (props: {
             UpdateTokenContext,
             IsDungeonMasterContext,
             ContextMenuStoreContext,
+            SharedTokenStateStoreContext,
           ]}
           fogOpacity={0.5}
         />

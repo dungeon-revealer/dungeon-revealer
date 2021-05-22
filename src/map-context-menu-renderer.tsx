@@ -2,6 +2,7 @@ import * as React from "react";
 import { Box, Menu, MenuItem, MenuList } from "@chakra-ui/react";
 import { MapTokenEntity } from "./map-typings";
 import { useContextMenu } from "./map-context-menu";
+import { useSelectedItems } from "./shared-token-state";
 
 export const ContextMenuRenderer = (props: {
   addToken: (token: Omit<Partial<MapTokenEntity>, "id">) => void;
@@ -10,6 +11,7 @@ export const ContextMenuRenderer = (props: {
 }) => {
   const { state, copyContent, showContextMenu, setCopyContent } =
     useContextMenu();
+  const [selectedTokenIds, clearSelectedItems] = useSelectedItems();
 
   if (state === null) {
     return null;
@@ -64,6 +66,18 @@ export const ContextMenuRenderer = (props: {
               </MenuItem>
             </>
           )}
+          <MenuItem
+            onClick={() => {
+              clearSelectedItems();
+              for (const tokenId of selectedTokenIds) {
+                // TODO: we rather want to bulk delete the tokens :D
+                props.deleteToken(tokenId);
+              }
+            }}
+            isDisabled={selectedTokenIds.size == 0}
+          >
+            Delete selected tokens ({selectedTokenIds.size})
+          </MenuItem>
         </MenuList>
       </Menu>
     </Box>

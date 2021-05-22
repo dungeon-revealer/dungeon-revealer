@@ -39,6 +39,10 @@ import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
 import { useCurrent } from "./hooks/use-current";
 import { useMarkArea } from "./map-tools/player-map-tool";
 import { ContextMenuState, useShowContextMenu } from "./map-context-menu";
+import {
+  useClearTokenSelection,
+  useTokenSelection,
+} from "./shared-token-state";
 
 type Vector2D = [number, number];
 
@@ -469,6 +473,8 @@ const TokenRenderer = (props: {
 
   const showContextMenu = useShowContextMenu();
   const [initMarkArea, cancelMarkArea] = useMarkArea();
+  const tokenSelection = useTokenSelection(props.id);
+
   const firstTimeStamp = React.useRef<null | number>(null);
 
   const dragProps = useGesture<{
@@ -505,44 +511,51 @@ const TokenRenderer = (props: {
         ) {
           firstTimeStamp.current = null;
 
-          // left mouse
-          if (event.button === 0) {
-            setStore(store);
-            if (values.referenceId) {
-              noteWindowActions.focusOrShowNoteInNewWindow(values.referenceId);
+          if (event.altKey) {
+            tokenSelection.toggleItem(props.id);
+          } else {
+            // left mouse
+            if (event.button === 0) {
+              tokenSelection.clearSelectedItems();
+              setStore(store);
+              if (values.referenceId) {
+                noteWindowActions.focusOrShowNoteInNewWindow(
+                  values.referenceId
+                );
+              }
             }
-          }
 
-          if (event.button === 2) {
-            const [imageX, imageY] =
-              sharedMapState.helper.threePointToImageCoordinates([
-                // TODO: figure out why the point is not in the typings.
-                // @ts-ignore
-                event.point.x,
-                // @ts-ignore
-                event.point.y,
-              ]);
-            const state: ContextMenuState = {
-              clientPosition: {
-                x: event.clientX,
-                y: event.clientY,
-              },
-              imagePosition: {
-                x: imageX,
-                y: imageY,
-              },
-              target: {
-                type: "token",
-                id: props.id,
-              },
-            };
+            if (event.button === 2) {
+              const [imageX, imageY] =
+                sharedMapState.helper.threePointToImageCoordinates([
+                  // TODO: figure out why the point is not in the typings.
+                  // @ts-ignore
+                  event.point.x,
+                  // @ts-ignore
+                  event.point.y,
+                ]);
+              const state: ContextMenuState = {
+                clientPosition: {
+                  x: event.clientX,
+                  y: event.clientY,
+                },
+                imagePosition: {
+                  x: imageX,
+                  y: imageY,
+                },
+                target: {
+                  type: "token",
+                  id: props.id,
+                },
+              };
 
-            event.stopPropagation();
-            // @ts-ignore
-            event.nativeEvent.stopPropagation();
-            // @ts-ignore
-            event.nativeEvent.preventDefault();
-            showContextMenu(state);
+              event.stopPropagation();
+              // @ts-ignore
+              event.nativeEvent.stopPropagation();
+              // @ts-ignore
+              event.nativeEvent.preventDefault();
+              showContextMenu(state);
+            }
           }
 
           setIsHover(() => false);
@@ -617,6 +630,9 @@ const TokenRenderer = (props: {
         args.event.stopPropagation();
         args.event.nativeEvent.preventDefault();
       },
+      onClick: (args) => {
+        args.event.stopPropagation();
+      },
     },
     {
       drag: {
@@ -628,7 +644,6 @@ const TokenRenderer = (props: {
   const color =
     isHover && isMovable ? lighten(0.1, values.color) : values.color;
   const textLabel = values.text;
-
   return (
     <>
       <animated.group
@@ -664,6 +679,19 @@ const TokenRenderer = (props: {
             </mesh>
           </>
         )}
+        {tokenSelection.isSelected ? (
+          <mesh renderOrder={LayerRenderOrder.tokenGesture}>
+            <ringBufferGeometry
+              attach="geometry"
+              args={[initialRadius * (1 - 0.05), initialRadius, 128]}
+            />
+            <meshStandardMaterial
+              attach="material"
+              color="yellow"
+              transparent={true}
+            />
+          </mesh>
+        ) : null}
         {values.tokenImageId &&
         cachedQueryResult?.data?.tokenImage &&
         cachedQueryResult.data.tokenImage.__typename === "TokenImage" ? (
@@ -1410,6 +1438,8 @@ const MapViewRenderer = (props: {
 
   const setStore = React.useContext(SetSelectedTokenStoreContext);
 
+  const clearTokenSelection = useClearTokenSelection();
+
   const bind = useGesture<{
     onPointerUp: PointerEvent;
     onPointerDown: PointerEvent;
@@ -1440,7 +1470,10 @@ const MapViewRenderer = (props: {
       }
       return toolRef.current?.handlers?.onDrag?.(args);
     },
-    onClick: (args) => toolRef.current?.handlers?.onClick?.(args),
+    onClick: (args) => {
+      clearTokenSelection();
+      return toolRef.current?.handlers?.onClick?.(args);
+    },
   });
 
   return (
