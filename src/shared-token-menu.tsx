@@ -125,8 +125,6 @@ const MultiTokenPanel = (props: { currentMapId: string }) => {
             for (const store of allSelectedItemsRef.current.values()) {
               store.set({ isVisibleForPlayers }, false);
             }
-          },
-          onEditEnd: (isVisibleForPlayers: boolean) => {
             mutate({
               variables: {
                 input: {
@@ -155,8 +153,6 @@ const MultiTokenPanel = (props: { currentMapId: string }) => {
             for (const store of allSelectedItemsRef.current.values()) {
               store.set({ isMovableByPlayers }, false);
             }
-          },
-          onEditEnd: (isMovableByPlayers: boolean) => {
             mutate({
               variables: {
                 input: {
