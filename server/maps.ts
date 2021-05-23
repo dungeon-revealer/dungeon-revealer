@@ -90,7 +90,7 @@ type MapEntity = {
   tokens: Array<any>;
 };
 
-class Maps {
+export class Maps {
   private _maps: Array<MapEntity>;
   private _mapsDirectoryPath: string;
   private _processTask: (
@@ -470,6 +470,55 @@ class Maps {
     });
   }
 
+  async updateManyTokens(
+    mapId: string,
+    tokenIds: Set<string>,
+    props: {
+      color: string | undefined;
+      isVisibleForPlayers: boolean | undefined;
+      isMovableByPlayers: boolean | undefined;
+      tokenImageId: string | null | undefined;
+    }
+  ) {
+    return await this._processTask(`map:${mapId}`, async () => {
+      const map = this.get(mapId);
+      if (!map) {
+        return;
+      }
+
+      const affectedTokens: Array<any> = [];
+
+      (map.tokens || []).forEach((token) => {
+        if (tokenIds.has(token.id)) {
+          affectedTokens.push(token);
+        }
+      });
+
+      if (affectedTokens.length === 0) {
+        return;
+      }
+
+      for (const token of affectedTokens) {
+        if (props.color != null) {
+          token.color = props.color;
+        }
+        if (props.isVisibleForPlayers != null) {
+          token.isVisibleForPlayers = props.isVisibleForPlayers;
+        }
+        if (props.isMovableByPlayers != null) {
+          token.isMovableByPlayers = props.isMovableByPlayers;
+        }
+        if (props.tokenImageId !== undefined) {
+          token.tokenImageId = props.tokenImageId;
+        }
+      }
+
+      await this._updateMapSettings(map, {
+        tokens: map.tokens,
+      });
+    });
+  }
+
   async removeToken(mapId: string, tokenId: string) {
     return await this._processTask(`map:${mapId}`, async () => {
       const map = this.get(mapId);
@@ -495,5 +544,3 @@ class Maps {
     });
   }
 }
-
-module.exports = { Maps };

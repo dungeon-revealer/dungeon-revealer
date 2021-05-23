@@ -1,11 +1,10 @@
 import { t } from "..";
 import * as Relay from "./relay-spec";
 import * as io from "io-ts";
-import { flow } from "fp-ts/lib/function";
+import { flow, pipe } from "fp-ts/lib/function";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as E from "fp-ts/lib/Either";
 import * as RT from "fp-ts/lib/ReaderTask";
-import { pipe } from "fp-ts/lib/pipeable";
 
 export const IMAGE_URI = "Image" as const;
 

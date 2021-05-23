@@ -237,14 +237,22 @@ const PlayerMap: React.FC<{
           })
         );
       } else if (type === "update") {
+        const updatedTokens = new Map<string, any>();
+        for (const token of data.tokens) {
+          updatedTokens.set(token.id, token);
+        }
+
         setCurrentMap(
           produce((map) => {
             if (map) {
               map.tokens = map.tokens.map((token) => {
-                if (token.id !== data.token.id) return token;
+                const updatedToken = updatedTokens.get(token.id);
+                if (!updatedToken) {
+                  return token;
+                }
                 return {
                   ...token,
-                  ...data.token,
+                  ...updatedToken,
                 };
               });
             }

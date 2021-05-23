@@ -1,12 +1,15 @@
 import * as React from "react";
 import { animated, to } from "@react-spring/web";
 import { useControls, useCreateStore, LevaInputs } from "leva";
+import graphql from "babel-plugin-relay/macro";
+import { useMutation } from "relay-hooks";
 import { ThemedLevaPanel } from "./themed-leva-panel";
 import { ChatPositionContext } from "./authenticated-app-shell";
 import { useSelectedItems, useTokenLevaStore } from "./shared-token-state";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
+import type { sharedTokenMenuUpdateManyMapTokenMutation } from "./__generated__/sharedTokenMenuUpdateManyMapTokenMutation.graphql";
 
-export const SharedTokenMenu = () => {
+export const SharedTokenMenu = (props: { currentMapId: string }) => {
   const chatPosition = React.useContext(ChatPositionContext);
   const store = useTokenLevaStore();
   const [selectedItems] = useSelectedItems();
@@ -38,13 +41,21 @@ export const SharedTokenMenu = () => {
           }}
         />
       ) : (
-        <MultiTokenPanel />
+        <MultiTokenPanel currentMapId={props.currentMapId} />
       )}
     </animated.div>
   );
 };
 
-const MultiTokenPanel = () => {
+const SharedTokenMenuUpdateManyMapTokenMutation = graphql`
+  mutation sharedTokenMenuUpdateManyMapTokenMutation(
+    $input: MapTokenUpdateManyInput!
+  ) {
+    mapTokenUpdateMany(input: $input)
+  }
+`;
+
+const MultiTokenPanel = (props: { currentMapId: string }) => {
   const store = useCreateStore();
   const [selectedItems] = useSelectedItems();
 
@@ -57,10 +68,14 @@ const MultiTokenPanel = () => {
   for (const store of selectedItems.values()) {
     let currentTokenImageId = store.get("tokenImageId");
     if (currentTokenImageId) {
-      tokenImageId = currentTokenImageId;
+      tokenImageId = "__ID_THAT_WILL_NOT_COLLIDE_SO_WE_CAN_CHOOSE_ANY_IMAGE__";
       break;
     }
   }
+
+  const [mutate] = useMutation<sharedTokenMenuUpdateManyMapTokenMutation>(
+    SharedTokenMenuUpdateManyMapTokenMutation
+  );
 
   const [, set] = useControls(
     () => {
@@ -75,10 +90,22 @@ const MultiTokenPanel = () => {
             if (initial || !fromPanel) {
               return;
             }
-            for (const [tokenId, store] of allSelectedItemsRef.current) {
-              // TODO: persist on server
+            for (const store of allSelectedItemsRef.current.values()) {
               store.set({ color }, false);
             }
+          },
+          onEditEnd: (color: string) => {
+            mutate({
+              variables: {
+                input: {
+                  mapId: props.currentMapId,
+                  tokenIds: Array.from(allSelectedItemsRef.current.keys()),
+                  properties: {
+                    color,
+                  },
+                },
+              },
+            });
           },
         },
         isVisibleForPlayers: {
@@ -93,10 +120,22 @@ const MultiTokenPanel = () => {
             if (initial || !fromPanel) {
               return;
             }
-            for (const [tokenId, store] of allSelectedItemsRef.current) {
-              // TODO: persist on server
+            for (const store of allSelectedItemsRef.current.values()) {
               store.set({ isVisibleForPlayers }, false);
             }
+          },
+          onEditEnd: (isVisibleForPlayers: boolean) => {
+            mutate({
+              variables: {
+                input: {
+                  mapId: props.currentMapId,
+                  tokenIds: Array.from(allSelectedItemsRef.current.keys()),
+                  properties: {
+                    isVisibleForPlayers,
+                  },
+                },
+              },
+            });
           },
         },
         isMovableByPlayers: {
@@ -111,10 +150,22 @@ const MultiTokenPanel = () => {
             if (initial || !fromPanel) {
               return;
             }
-            for (const [tokenId, store] of allSelectedItemsRef.current) {
-              // TODO: persist on server
+            for (const store of allSelectedItemsRef.current.values()) {
               store.set({ isMovableByPlayers }, false);
             }
+          },
+          onEditEnd: (isMovableByPlayers: boolean) => {
+            mutate({
+              variables: {
+                input: {
+                  mapId: props.currentMapId,
+                  tokenIds: Array.from(allSelectedItemsRef.current.keys()),
+                  properties: {
+                    isMovableByPlayers,
+                  },
+                },
+              },
+            });
           },
         },
         tokenImageId: levaPluginTokenImage({
@@ -127,10 +178,20 @@ const MultiTokenPanel = () => {
             if (initial || !fromPanel) {
               return;
             }
-            for (const [tokenId, store] of allSelectedItemsRef.current) {
-              // TODO: persist on server
+            for (const store of allSelectedItemsRef.current.values()) {
               store.set({ tokenImageId }, false);
             }
+            mutate({
+              variables: {
+                input: {
+                  mapId: props.currentMapId,
+                  tokenIds: Array.from(allSelectedItemsRef.current.keys()),
+                  properties: {
+                    tokenImageId,
+                  },
+                },
+              },
+            });
           },
           transient: false,
         }),

@@ -20,6 +20,7 @@ import { NotesUpdatesPayload } from "../notes-lib";
 import { createTokenImageUploadRegister } from "../token-image-lib";
 import * as AsyncIteratorUtil from "../util/async-iterator";
 import { isAsyncIterable } from "@n1ru4l/push-pull-async-iterable-iterator";
+import type { Maps } from "../maps";
 
 type MaybePromise<T> = Promise<T> | T;
 
@@ -30,6 +31,7 @@ type Dependencies = {
   socketServer: IOServer;
   fileStoragePath: string;
   publicUrl: string;
+  maps: Maps;
 };
 
 export default ({
@@ -38,6 +40,7 @@ export default ({
   db,
   fileStoragePath,
   publicUrl,
+  maps,
 }: Dependencies) => {
   const chat = createChat();
   const user = createUser({
@@ -117,10 +120,12 @@ export default ({
           liveQueryStore,
           splashImageState,
           socket,
+          socketServer,
           notesUpdates,
           fileStoragePath,
           tokenImageUploadRegister,
           publicUrl,
+          maps,
         } as GraphQLContextType,
       },
     }),

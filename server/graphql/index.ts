@@ -1,5 +1,5 @@
 import { createTypesFactory, buildGraphQLSchema } from "gqtx";
-import type { Socket as IOSocket } from "socket.io";
+import type { Socket as IOSocket, Server as IOServer } from "socket.io";
 import type { createChat } from "../chat";
 import type { createUser } from "../user";
 import type { NotesUpdates } from "../notes-lib";
@@ -10,6 +10,7 @@ import type { Database } from "sqlite";
 import type { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
 import { GraphQLLiveDirective } from "@n1ru4l/graphql-live-query";
 import type { SplashImageState } from "../splash-image-state";
+import type { Maps } from "../maps";
 
 export type GraphQLContextType = {
   chat: ReturnType<typeof createChat>;
@@ -19,10 +20,12 @@ export type GraphQLContextType = {
   liveQueryStore: InMemoryLiveQueryStore;
   splashImageState: SplashImageState;
   socket: IOSocket;
+  socketServer: IOServer;
   notesUpdates: NotesUpdates;
   publicUrl: string;
   tokenImageUploadRegister: TokenImageUploadRegister;
   fileStoragePath: string;
+  maps: Maps;
 };
 
 export const t = createTypesFactory<GraphQLContextType>();
@@ -32,7 +35,8 @@ import * as DiceRollerChatModule from "./modules/dice-roller-chat";
 import * as UserModule from "./modules/user";
 import * as NotesModule from "./modules/notes";
 import * as TokenImageModule from "./modules/token-image";
-import { pipe } from "fp-ts/lib/pipeable";
+import * as MapModule from "./modules/map";
+import { pipe } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
 import * as RT from "fp-ts/lib/ReaderTask";
 
@@ -70,6 +74,7 @@ const Query = t.queryType({
     ...UserModule.queryFields,
     ...NotesModule.queryFields,
     ...TokenImageModule.queryFields,
+    ...MapModule.queryFields,
     nodeField,
   ],
 });
@@ -80,6 +85,7 @@ const Subscription = t.subscriptionType({
     ...DiceRollerChatModule.subscriptionFields,
     ...NotesModule.subscriptionFields,
     ...TokenImageModule.subscriptionsFields,
+    ...MapModule.subscriptionFields,
   ],
 });
 
@@ -89,6 +95,7 @@ const Mutation = t.mutationType({
     ...DiceRollerChatModule.mutationFields,
     ...NotesModule.mutationFields,
     ...TokenImageModule.mutationFields,
+    ...MapModule.mutationFields,
   ],
 });
 

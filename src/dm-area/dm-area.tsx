@@ -94,7 +94,7 @@ type SocketTokenEvent =
   | {
       type: "update";
       data: {
-        token: MapTokenEntity;
+        tokens: Array<MapTokenEntity>;
       };
     }
   | {
@@ -208,11 +208,18 @@ const Content = ({
             if (appData) {
               const map = appData.maps.find((map) => map.id === loadedMapId);
               if (map) {
+                const updatedTokens = new Map<string, any>();
+                for (const token of data.tokens) {
+                  updatedTokens.set(token.id, token);
+                }
                 map.tokens = map.tokens.map((token) => {
-                  if (token.id !== data.token.id) return token;
+                  const updatedToken = updatedTokens.get(token.id);
+                  if (!updatedToken) {
+                    return token;
+                  }
                   return {
                     ...token,
-                    ...data.token,
+                    ...updatedToken,
                   };
                 });
               }

@@ -1052,7 +1052,7 @@ export const DmMap = (props: {
         />
       )}
       {confirmDialogNode}
-      <SharedTokenMenu />
+      <SharedTokenMenu currentMapId={props.map.id} />
       <ContextMenuRenderer
         addToken={props.addToken}
         deleteToken={props.deleteToken}

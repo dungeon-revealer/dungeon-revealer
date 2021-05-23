@@ -431,7 +431,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         });
         io.emit(`token:mapId:${map.id}`, {
           type: "update",
-          data: { token: mapToken(token) },
+          data: { tokens: [mapToken(token)] },
         });
       })
       .catch(handleUnexpectedError(res));
