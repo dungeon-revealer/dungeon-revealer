@@ -40,7 +40,6 @@ import { useMarkArea } from "./map-tools/player-map-tool";
 import { ContextMenuState, useShowContextMenu } from "./map-context-menu";
 import {
   useClearTokenSelection,
-  useSetTokenLevaStore,
   useTokenSelection,
 } from "./shared-token-state";
 
@@ -434,7 +433,6 @@ const TokenRenderer = (props: {
     0
   );
 
-  const setTokenStore = useSetTokenLevaStore();
   const initialRadius = useStaticRef(() =>
     sharedMapState.helper.size.fromImageToThree(Math.max(1, props.radius))
   );
@@ -512,8 +510,7 @@ const TokenRenderer = (props: {
           } else {
             // left mouse
             if (event.button === 0) {
-              tokenSelection.clearSelectedItems();
-              setTokenStore(store);
+              tokenSelection.setSelectedItem(props.id, store);
               if (values.referenceId) {
                 noteWindowActions.focusOrShowNoteInNewWindow(
                   values.referenceId
@@ -1432,8 +1429,6 @@ const MapViewRenderer = (props: {
       handlers?: MapToolMapGestureHandlers;
     } | null>(null);
 
-  const setStore = useSetTokenLevaStore();
-
   const clearTokenSelection = useClearTokenSelection();
 
   const bind = useGesture<{
@@ -1444,7 +1439,7 @@ const MapViewRenderer = (props: {
     onKeyDown: KeyboardEvent;
   }>({
     onPointerDown: (args) => {
-      setStore(null);
+      clearTokenSelection();
       toolRef.current?.handlers?.onPointerDown?.(args);
     },
     onPointerUp: (args) => toolRef.current?.handlers?.onPointerUp?.(args),

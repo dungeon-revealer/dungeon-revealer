@@ -5,15 +5,17 @@ import graphql from "babel-plugin-relay/macro";
 import { useMutation } from "relay-hooks";
 import { ThemedLevaPanel } from "./themed-leva-panel";
 import { ChatPositionContext } from "./authenticated-app-shell";
-import { useSelectedItems, useTokenLevaStore } from "./shared-token-state";
+import { useSelectedItems } from "./shared-token-state";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
 import type { sharedTokenMenuUpdateManyMapTokenMutation } from "./__generated__/sharedTokenMenuUpdateManyMapTokenMutation.graphql";
 
+const firstMapValue = <TItemValue extends any>(
+  map: Map<any, TItemValue>
+): TItemValue => map.values().next().value as TItemValue;
+
 export const SharedTokenMenu = (props: { currentMapId: string }) => {
   const chatPosition = React.useContext(ChatPositionContext);
-  const store = useTokenLevaStore();
   const [selectedItems] = useSelectedItems();
-
   return (
     <animated.div
       style={{
@@ -29,9 +31,9 @@ export const SharedTokenMenu = (props: { currentMapId: string }) => {
       }}
       onKeyDown={(ev) => ev.stopPropagation()}
     >
-      {selectedItems.size === 0 ? (
+      {selectedItems.size === 0 ? null : selectedItems.size === 1 ? (
         <ThemedLevaPanel
-          store={store}
+          store={firstMapValue(selectedItems)}
           fill={true}
           hideCopyButton
           titleBar={{

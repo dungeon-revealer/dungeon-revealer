@@ -1,14 +1,14 @@
 import * as React from "react";
 import create from "zustand";
+import shallow from "zustand/shallow";
 import { StoreType as LevaStoreType } from "leva/dist/declarations/src/types";
 
 export type SharedTokenStateStore = {
   selectedItems: Map<string, LevaStoreType>;
   toggleSelectItem: (tokenId: string, store: LevaStoreType) => void;
+  setSelectedItem: (tokenId: string, store: LevaStoreType) => void;
   clearSelectedItems: () => void;
   removeSelectItem: (tokenId: string) => void;
-  tokenLevaStore: LevaStoreType | null;
-  setTokenLevaStore: (store: LevaStoreType | null) => void;
 };
 
 const createStore = () =>
@@ -22,6 +22,9 @@ const createStore = () =>
         selectedItems.set(tokenId, store);
       }
       set({ selectedItems });
+    },
+    setSelectedItem: (tokenId, store) => {
+      set({ selectedItems: new Map([[tokenId, store]]) });
     },
     clearSelectedItems: () => {
       const state = get();
@@ -37,8 +40,6 @@ const createStore = () =>
         set({ selectedItems });
       }
     },
-    tokenLevaStore: null,
-    setTokenLevaStore: (tokenLevaStore) => set({ tokenLevaStore }),
   }));
 
 export const SharedTokenStateStoreContext =
@@ -72,6 +73,7 @@ const useSharedTokenStateStoreStrict = () => {
 type TokenSelectionSelectorResult = {
   isSelected: boolean;
   toggleItem: SharedTokenStateStore["toggleSelectItem"];
+  setSelectedItem: SharedTokenStateStore["setSelectedItem"];
   clearSelectedItems: SharedTokenStateStore["clearSelectedItems"];
 };
 
@@ -80,12 +82,14 @@ const createTokenSelectionSelector =
   (store: SharedTokenStateStore): TokenSelectionSelectorResult => ({
     isSelected: store.selectedItems.has(tokenId),
     toggleItem: store.toggleSelectItem,
+    setSelectedItem: store.setSelectedItem,
     clearSelectedItems: store.clearSelectedItems,
   });
 const noop = () => undefined;
 const noopTokenSelection: TokenSelectionSelectorResult = {
   isSelected: false,
   toggleItem: noop,
+  setSelectedItem: noop,
   clearSelectedItems: noop,
 };
 
@@ -107,7 +111,7 @@ export const useTokenSelection = (
     },
     [tokenId]
   );
-  return store ? store(selector) : noopTokenSelection;
+  return store ? store(selector, shallow) : noopTokenSelection;
 };
 
 const clearTokenSelectionSelector = (store: SharedTokenStateStore) =>
@@ -119,14 +123,4 @@ export const useClearTokenSelection = () =>
 const selectedItemsSelector = (store: SharedTokenStateStore) =>
   [store.selectedItems, store.clearSelectedItems] as const;
 export const useSelectedItems = () =>
-  useSharedTokenStateStoreStrict()(selectedItemsSelector);
-
-const tokenLevaStoreSelector = (store: SharedTokenStateStore) =>
-  store.tokenLevaStore;
-export const useTokenLevaStore = () =>
-  useSharedTokenStateStoreStrict()(tokenLevaStoreSelector);
-
-const setTokenLevaStoreSelector = (store: SharedTokenStateStore) =>
-  store.setTokenLevaStore;
-export const useSetTokenLevaStore = () =>
-  useSharedTokenStateStore()?.(setTokenLevaStoreSelector) ?? noop;
+  useSharedTokenStateStoreStrict()(selectedItemsSelector, shallow);
