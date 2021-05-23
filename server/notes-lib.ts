@@ -1,6 +1,5 @@
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
 import { flow, pipe } from "fp-ts/lib/function";
 import { v4 as uuid } from "uuid";
 import sanitizeHtml from "sanitize-html";
@@ -10,38 +9,13 @@ import * as noteImport from "./note-import";
 import type { SocketSessionRecord } from "./socket-session-store";
 import * as AsyncIterator from "./util/async-iterator";
 import { invalidateResources } from "./live-query-store";
-
-type ViewerRole = "unauthenticated" | "admin" | "user";
+import * as auth from "./auth";
 
 export type NoteModelType = db.NoteModelType;
 export const decodeNote = db.decodeNote;
 export const NoteModel = db.NoteModel;
 
 export type NoteSearchMatchType = db.NoteSearchMatchType;
-
-export type SessionDependency = { session: SocketSessionRecord };
-
-const isAdmin = (viewerRole: ViewerRole) => viewerRole === "admin";
-
-const checkAdmin =
-  (): RTE.ReaderTaskEither<SessionDependency, Error, void> => (d) =>
-    isAdmin(d.session.role)
-      ? TE.right(undefined)
-      : TE.left(new Error("Insufficient permissions."));
-
-const checkAuthenticated = (): RTE.ReaderTaskEither<
-  SessionDependency,
-  Error,
-  void
-> =>
-  pipe(
-    RTE.ask<SessionDependency>(),
-    RTE.chain((d) =>
-      d.session.role === "unauthenticated"
-        ? RTE.left(new Error("Unauthenticated access."))
-        : RTE.right(undefined)
-    )
-  );
 
 const sanitizeNoteContent = (content: string) => {
   const [, ...contentLines] = content.split("\n");
@@ -61,13 +35,15 @@ const sanitizeNoteContent = (content: string) => {
 
 export const getNoteById = (id: string) =>
   pipe(
-    checkAuthenticated(),
+    auth.requireAuth(),
+    RTE.rightReaderTask,
     RTE.chainW(() => db.getNoteById(id)),
     RTE.chainW((note) => {
       switch (note.type) {
         case "admin":
           return pipe(
-            checkAdmin(),
+            auth.requireAdmin(),
+            RTE.rightReaderTask,
             RTE.map(() => note)
           );
         case "public":
@@ -97,7 +73,8 @@ export const getPaginatedNotes = ({
   };
 }) =>
   pipe(
-    checkAuthenticated(),
+    auth.requireAuth(),
+    RTE.rightReaderTask,
     RTE.chainW(() => RTE.ask<{ session: SocketSessionRecord }>()),
     RTE.chainW(({ session }) =>
       db.getPaginatedNotes({
@@ -119,7 +96,8 @@ export const createNote = ({
   isEntryPoint: boolean;
 }) =>
   pipe(
-    checkAdmin(),
+    auth.requireAdmin(),
+    RTE.rightReaderTask,
     RTE.chainW(() =>
       db.updateOrInsertNote({
         id: uuid(),
@@ -153,7 +131,8 @@ export const updateNoteContent = ({
   content: string;
 }) =>
   pipe(
-    checkAdmin(),
+    auth.requireAdmin(),
+    RTE.rightReaderTask,
     RTE.chainW(() => db.getNoteById(id)),
     RTE.chainW((note) =>
       db.updateOrInsertNote({
@@ -175,7 +154,8 @@ export const updateNoteAccess = ({
   access: string;
 }) =>
   pipe(
-    checkAdmin(),
+    auth.requireAdmin(),
+    RTE.rightReaderTask,
     RTE.chainW(() =>
       pipe(db.NoteAccessTypeModel.decode(access), RTE.fromEither)
     ),
@@ -234,7 +214,8 @@ export const updateNoteIsEntryPoint = ({
   isEntryPoint: boolean;
 }) =>
   pipe(
-    checkAdmin(),
+    auth.requireAdmin(),
+    RTE.rightReaderTask,
     RTE.chainW(() =>
       pipe(
         db.getNoteById(id),
@@ -270,7 +251,8 @@ export const updateNoteIsEntryPoint = ({
 
 export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
   pipe(
-    checkAdmin(),
+    auth.requireAdmin(),
+    RTE.rightReaderTask,
     RTE.chainW(() => db.getNoteById(id)),
     RTE.chainW((note) =>
       pipe(
@@ -302,7 +284,8 @@ export const updateNoteTitle = ({ id, title }: { id: string; title: string }) =>
 
 export const deleteNote = (noteId: string) =>
   pipe(
-    checkAdmin(),
+    auth.requireAdmin(),
+    RTE.rightReaderTask,
     RTE.chainW(() => db.getNoteById(noteId)),
     RTE.chainW((note) =>
       pipe(
@@ -320,8 +303,9 @@ export const deleteNote = (noteId: string) =>
 
 export const findPublicNotes = (query: string) =>
   pipe(
-    checkAuthenticated(),
-    RTE.chainW(() => RTE.ask<SessionDependency>()),
+    auth.requireAuth(),
+    RTE.rightReaderTask,
+    RTE.chainW(() => RTE.ask<auth.SessionDependency>()),
     RTE.chainW((d) => db.searchNotes(query, d.session.role === "user"))
   );
 
@@ -423,8 +407,11 @@ export const subscribeToNotesUpdates = (params: {
   hasNextPage: boolean;
 }) =>
   pipe(
-    checkAuthenticated(),
-    RTE.chainW(() => RTE.ask<NotesUpdatesDependency & SessionDependency>()),
+    auth.requireAuth(),
+    RTE.rightReaderTask,
+    RTE.chainW(() =>
+      RTE.ask<NotesUpdatesDependency & auth.SessionDependency>()
+    ),
     RTE.map((deps) =>
       pipe(
         deps.notesUpdates.subscribe(),

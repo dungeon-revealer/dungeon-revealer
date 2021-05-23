@@ -232,7 +232,7 @@ const PlayerMap: React.FC<{
         setCurrentMap(
           produce((map) => {
             if (map) {
-              map.tokens.push(data.token);
+              map.tokens.push(...data.tokens);
             }
           })
         );
@@ -262,8 +262,9 @@ const PlayerMap: React.FC<{
         setCurrentMap(
           produce((map) => {
             if (map) {
+              const removedTokenIds = new Set<string>(data.tokenIds);
               map.tokens = map.tokens = map.tokens.filter(
-                (token) => token.id !== data.tokenId
+                (token) => removedTokenIds.has(token.id) === false
               );
             }
           })

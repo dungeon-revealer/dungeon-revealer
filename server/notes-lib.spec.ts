@@ -56,22 +56,18 @@ const createNoopCursor = () => ({ lastId: "a", lastCreatedAt: 0 });
 
 describe("subscribeToNotesUpdates", () => {
   test("cannot setup if unauthenticated", async () => {
-    const result = await lib.subscribeToNotesUpdates({
-      mode: "all",
-      cursor: createNoopCursor(),
-      hasNextPage: false,
-    })({
-      session: createSession(),
-      notesUpdates: createNotesUpdates(),
-    })();
+    const result = await lib
+      .subscribeToNotesUpdates({
+        mode: "all",
+        cursor: createNoopCursor(),
+        hasNextPage: false,
+      })({
+        session: createSession(),
+        notesUpdates: createNotesUpdates(),
+      })()
+      .catch((err) => err);
 
-    expect(E.isLeft(result)).toEqual(true);
-    expect(result).toMatchInlineSnapshot(`
-      Object {
-        "_tag": "Left",
-        "left": [Error: Unauthenticated access.],
-      }
-    `);
+    expect(result).toMatchInlineSnapshot(`[Error: Unauthenticated access.]`);
   });
 
   it("can setup if viewer has role 'user'", async () => {

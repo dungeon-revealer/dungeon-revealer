@@ -49,6 +49,47 @@ const GraphQLMapTokenUpdateManyInput = t.inputObjectType({
   }),
 });
 
+const GraphQLMapTokenRemoveManyInput = t.inputObjectType({
+  name: "MapTokenRemoveManyInput",
+  fields: () => ({
+    mapId: {
+      type: t.NonNullInput(t.ID),
+      description: "The id of the map the token belong to.",
+    },
+    tokenIds: {
+      type: t.NonNullInput(t.ListInput(t.NonNullInput(t.ID))),
+      description: "The ids of the token that should be removed.",
+    },
+  }),
+});
+
+const GraphQLMapTokenAddManyTokenInput = t.inputObjectType({
+  name: "MapTokenAddManyTokenInput",
+  fields: () => ({
+    x: t.arg(t.NonNullInput(t.Float)),
+    y: t.arg(t.NonNullInput(t.Float)),
+    color: t.arg(t.NonNullInput(t.String)),
+    label: t.arg(t.NonNullInput(t.String)),
+    radius: t.arg(t.Float),
+    isVisibleForPlayers: t.arg(t.Boolean),
+    isMovableByPlayers: t.arg(t.Boolean),
+    isLocked: t.arg(t.Boolean),
+    tokenImageId: t.arg(t.ID),
+  }),
+});
+
+const GraphQLMapTokenAddManyInput = t.inputObjectType({
+  name: "MapTokenAddManyInput",
+  fields: () => ({
+    mapId: t.arg(t.NonNullInput(t.ID)),
+    tokens: t.arg(
+      t.NonNullInput(
+        t.ListInput(t.NonNullInput(GraphQLMapTokenAddManyTokenInput))
+      )
+    ),
+  }),
+});
+
 export const mutationFields = [
   t.field("mapTokenUpdateMany", {
     type: t.Boolean,
@@ -68,6 +109,34 @@ export const mutationFields = [
               input.properties.isMovableByPlayers ?? undefined,
             tokenImageId: input.properties.tokenImageId,
           },
+        }),
+        context
+      ),
+  }),
+  t.field("mapTokenRemoveMany", {
+    type: t.Boolean,
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapTokenRemoveManyInput)),
+    },
+    resolve: (_, { input }, context) =>
+      RT.run(
+        lib.removeManyMapToken({
+          mapId: input.mapId,
+          tokenIds: new Set(input.tokenIds),
+        }),
+        context
+      ),
+  }),
+  t.field("mapTokenAddMany", {
+    type: t.Boolean,
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapTokenAddManyInput)),
+    },
+    resolve: (_, { input }, context) =>
+      RT.run(
+        lib.addManyMapToken({
+          mapId: input.mapId,
+          tokenProps: input.tokens,
         }),
         context
       ),

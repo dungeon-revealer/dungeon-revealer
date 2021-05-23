@@ -555,12 +555,10 @@ export const DmMap = (props: {
   markArea: (point: [number, number]) => void;
   markedAreas: Array<MarkedAreaEntity>;
   removeMarkedArea: (id: string) => void;
-  addToken: (token: Omit<Partial<MapTokenEntity>, "id">) => void;
   updateToken: (
     id: string,
     changes: Omit<Partial<MapTokenEntity>, "id">
   ) => void;
-  deleteToken: (id: string) => void;
   updateMap: (params: Partial<MapEntity>) => void;
   controlRef: React.MutableRefObject<MapControlInterface | null>;
 }): React.ReactElement => {
@@ -791,9 +789,7 @@ export const DmMap = (props: {
         [AreaSelectContextProvider, {}],
         [
           TokenMarkerContextProvider,
-          {
-            addToken: props.addToken,
-          },
+          { currentMapId: props.map.id },
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof TokenMarkerContextProvider>
         >,
@@ -1054,8 +1050,7 @@ export const DmMap = (props: {
       {confirmDialogNode}
       <SharedTokenMenu currentMapId={props.map.id} />
       <ContextMenuRenderer
-        addToken={props.addToken}
-        deleteToken={props.deleteToken}
+        currentMapId={props.map.id}
         getTokens={React.useCallback(
           (tokenIds) => {
             const hits = new Map<string, MapTokenEntity>();

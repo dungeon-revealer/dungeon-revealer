@@ -242,6 +242,8 @@ type Mutation {
   ): RequestImageTokenUploadResult!
   tokenImageCreate(input: TokenImageCreateInput!): TokenImageCreateResult!
   mapTokenUpdateMany(input: MapTokenUpdateManyInput!): Boolean
+  mapTokenRemoveMany(input: MapTokenRemoveManyInput!): Boolean
+  mapTokenAddMany(input: MapTokenAddManyInput!): Boolean
 }
 
 type LogInResult {
@@ -424,6 +426,35 @@ input MapTokenUpdateManyPropertiesInput {
   """
   Token image id to be updated. Will be updated if null is provided.
   """
+  tokenImageId: ID
+}
+
+input MapTokenRemoveManyInput {
+  """
+  The id of the map the token belong to.
+  """
+  mapId: ID!
+
+  """
+  The ids of the token that should be removed.
+  """
+  tokenIds: [ID!]!
+}
+
+input MapTokenAddManyInput {
+  mapId: ID!
+  tokens: [MapTokenAddManyTokenInput!]!
+}
+
+input MapTokenAddManyTokenInput {
+  x: Float!
+  y: Float!
+  color: String!
+  label: String!
+  radius: Float
+  isVisibleForPlayers: Boolean
+  isMovableByPlayers: Boolean
+  isLocked: Boolean
   tokenImageId: ID
 }
 
