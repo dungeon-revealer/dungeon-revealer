@@ -1056,9 +1056,16 @@ export const DmMap = (props: {
       <ContextMenuRenderer
         addToken={props.addToken}
         deleteToken={props.deleteToken}
-        getToken={React.useCallback(
-          (tokenId) =>
-            props.map.tokens.find((token) => token.id === tokenId) ?? null,
+        getTokens={React.useCallback(
+          (tokenIds) => {
+            const hits = new Map<string, MapTokenEntity>();
+            for (const token of props.map.tokens) {
+              if (tokenIds.has(token.id)) {
+                hits.set(token.id, token);
+              }
+            }
+            return hits;
+          },
           [props.map.tokens]
         )}
       />

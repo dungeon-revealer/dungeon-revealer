@@ -19,15 +19,15 @@ export type ContextMenuState = {
 
 export type ContextMenuStore = {
   state: ContextMenuState;
-  copyContent: null | MapTokenEntity;
+  copyContent: Set<MapTokenEntity>;
   showContextMenu: (state: ContextMenuState) => void;
-  setCopyContent: (content: MapTokenEntity | null) => void;
+  setCopyContent: (content: Set<MapTokenEntity>) => void;
 };
 
 const createStore = () =>
   create<ContextMenuStore>((set) => ({
     state: null,
-    copyContent: null,
+    copyContent: new Set(),
     showContextMenu: (state) => set({ state }),
     setCopyContent: (copyContent) => set({ copyContent }),
   }));
