@@ -90,22 +90,22 @@ type MapEntity = {
   tokens: Array<any>;
 };
 
-class Maps {
+export class Maps {
   private _maps: Array<MapEntity>;
   private _mapsDirectoryPath: string;
-  private _processTask: (
+  private _processTask: <TReturnType = unknown>(
     operationIdentifier: string,
     process: () => unknown
-  ) => Promise<unknown>;
+  ) => Promise<TReturnType>;
 
   constructor({
     processTask,
     dataDirectory,
   }: {
-    processTask: (
+    processTask: <TReturnType = unknown>(
       operationIdentifier: string,
       process: () => unknown
-    ) => Promise<unknown>;
+    ) => Promise<TReturnType>;
     dataDirectory: string;
   }) {
     this._mapsDirectoryPath = path.join(dataDirectory, "maps");
@@ -309,55 +309,58 @@ class Maps {
     });
   }
 
-  async addToken(
+  async addTokens(
     mapId: string,
-    {
-      x = 0,
-      y = 0,
-      radius = null as null | number,
-      color = "red",
-      label = "A",
-      isVisibleForPlayers = false,
-      isMovableByPlayers = false,
-      isLocked = false,
-      type = "entity",
-      tokenImageId = null as string | null,
-    }
+    tokens: Array<{
+      x?: number | null;
+      y?: number | null;
+      radius?: null | number;
+      color?: string | null;
+      label?: string | null;
+      isLocked?: boolean | null;
+      isVisibleForPlayers?: boolean | null;
+      isMovableByPlayers?: boolean | null;
+      type?: "entity" | null;
+      tokenImageId?: null | string;
+    }>
   ) {
-    return await this._processTask(`map:${mapId}`, async () => {
-      const map = this.get(mapId);
-      if (!map) {
-        throw new Error(`Map with id "${mapId}" not found.`);
+    return await this._processTask<{ tokens: Array<any> }>(
+      `map:${mapId}`,
+      async () => {
+        const map = this.get(mapId);
+        if (!map) {
+          throw new Error(`Map with id "${mapId}" not found.`);
+        }
+        const newTokens = [];
+
+        for (const props of tokens) {
+          const token = {
+            id: uuid(),
+            x: props.x ?? 0,
+            y: props.y ?? 0,
+            radius: props.radius ?? (map.grid?.columnWidth ?? 50) / 2,
+            color: props.color ?? "red",
+            label: props.label ?? "A",
+            isVisibleForPlayers: props.isVisibleForPlayers ?? false,
+            isMovableByPlayers: props.isMovableByPlayers ?? false,
+            isLocked: props.isLocked ?? false,
+            type: props.type ?? "entity",
+            tokenImageId: props.tokenImageId ?? null,
+          };
+
+          newTokens.push(token);
+        }
+
+        await this._updateMapSettings(map, {
+          tokens: [...map.tokens, ...newTokens],
+        });
+
+        return {
+          map,
+          tokens: newTokens,
+        };
       }
-
-      if (radius === null) {
-        radius = (map.grid?.columnWidth ?? 50) / 2;
-      }
-      const token = prepareToken({
-        id: uuid(),
-        x,
-        y,
-        radius,
-        color,
-        label,
-        isVisibleForPlayers,
-        isMovableByPlayers,
-        isLocked,
-        type,
-        tokenImageId,
-      });
-
-      const tokens = map.tokens || [];
-
-      tokens.push(token);
-
-      await this._updateMapSettings(map, { tokens });
-
-      return {
-        map,
-        token,
-      };
-    });
+    );
   }
 
   async updateToken(
@@ -470,17 +473,66 @@ class Maps {
     });
   }
 
-  async removeToken(mapId: string, tokenId: string) {
+  async updateManyTokens(
+    mapId: string,
+    tokenIds: Set<string>,
+    props: {
+      color: string | undefined;
+      isVisibleForPlayers: boolean | undefined;
+      isMovableByPlayers: boolean | undefined;
+      tokenImageId: string | null | undefined;
+    }
+  ) {
     return await this._processTask(`map:${mapId}`, async () => {
+      const map = this.get(mapId);
+      if (!map) {
+        return;
+      }
+
+      const affectedTokens: Array<any> = [];
+
+      (map.tokens || []).forEach((token) => {
+        if (tokenIds.has(token.id)) {
+          affectedTokens.push(token);
+        }
+      });
+
+      if (affectedTokens.length === 0) {
+        return;
+      }
+
+      for (const token of affectedTokens) {
+        if (props.color != null) {
+          token.color = props.color;
+        }
+        if (props.isVisibleForPlayers != null) {
+          token.isVisibleForPlayers = props.isVisibleForPlayers;
+        }
+        if (props.isMovableByPlayers != null) {
+          token.isMovableByPlayers = props.isMovableByPlayers;
+        }
+        if (props.tokenImageId !== undefined) {
+          token.tokenImageId = props.tokenImageId;
+        }
+      }
+
+      await this._updateMapSettings(map, {
+        tokens: map.tokens,
+      });
+    });
+  }
+
+  async removeTokensById(mapId: string, tokenIds: Set<string>) {
+    return await this._processTask<Set<string>>(`map:${mapId}`, async () => {
       const map = this.get(mapId);
       if (!map) {
         throw new Error(`Map with id "${mapId}" not found.`);
       }
-
-      const tokens = (map.tokens || []).filter((token) => token.id !== tokenId);
-      const updatedMap = await this._updateMapSettings(map, { tokens });
-
-      return { map: updatedMap };
+      const tokens = (map.tokens || []).filter(
+        (token) => tokenIds.has(token.id) === false
+      );
+      await this._updateMapSettings(map, { tokens });
+      return tokenIds;
     });
   }
 
@@ -495,5 +547,3 @@ class Maps {
     });
   }
 }
-
-module.exports = { Maps };

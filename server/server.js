@@ -197,6 +197,7 @@ const bootstrapServer = async (env) => {
     db,
     fileStoragePath: path.join(env.DATA_DIRECTORY, "files"),
     publicUrl: env.PUBLIC_URL,
+    maps,
   });
   const notesImportRouter = createNotesRouter({ db, roleMiddleware });
 

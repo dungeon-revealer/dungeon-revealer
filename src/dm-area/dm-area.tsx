@@ -4,6 +4,9 @@ import produce from "immer";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import styled from "@emotion/styled/macro";
 import { Box, Center } from "@chakra-ui/react";
+import { commitMutation } from "relay-runtime";
+import { useRelayEnvironment } from "relay-hooks";
+import graphql from "babel-plugin-relay/macro";
 import { SelectMapModal } from "./select-map-modal";
 import { ImportFileModal } from "./import-file-modal";
 import { MediaLibrary } from "./media-library";
@@ -23,6 +26,7 @@ import { isFileDrag } from "../hooks/use-drop-zone";
 import { useNoteWindowActions } from "./token-info-aside";
 import { MapControlInterface } from "../map-view";
 import { useTokenImageUpload } from "./token-image-upload";
+import { dmAreaTokenAddManyMutation } from "./__generated__/dmAreaTokenAddManyMutation.graphql";
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -88,19 +92,19 @@ type SocketTokenEvent =
   | {
       type: "add";
       data: {
-        token: MapTokenEntity;
+        tokens: Array<MapTokenEntity>;
       };
     }
   | {
       type: "update";
       data: {
-        token: MapTokenEntity;
+        tokens: Array<MapTokenEntity>;
       };
     }
   | {
       type: "remove";
       data: {
-        tokenId: string;
+        tokenIds: Array<string>;
       };
     };
 
@@ -112,6 +116,12 @@ const LoadedMapDiv = styled.div`
   /* Mobile Chrome 100vh issue with address bar */
   @media screen and (max-width: 580px) and (-webkit-min-device-pixel-ratio: 0) {
     height: calc(100vh - 56px);
+  }
+`;
+
+const DmAreaTokenAddManyMutation = graphql`
+  mutation dmAreaTokenAddManyMutation($input: MapTokenAddManyInput!) {
+    mapTokenAddMany(input: $input)
   }
 `;
 
@@ -196,7 +206,7 @@ const Content = ({
             if (appData) {
               const map = appData.maps.find((map) => map.id === loadedMapId);
               if (map) {
-                map.tokens.push(data.token);
+                map.tokens.push(...data.tokens);
               }
             }
           })
@@ -208,11 +218,18 @@ const Content = ({
             if (appData) {
               const map = appData.maps.find((map) => map.id === loadedMapId);
               if (map) {
+                const updatedTokens = new Map<string, any>();
+                for (const token of data.tokens) {
+                  updatedTokens.set(token.id, token);
+                }
                 map.tokens = map.tokens.map((token) => {
-                  if (token.id !== data.token.id) return token;
+                  const updatedToken = updatedTokens.get(token.id);
+                  if (!updatedToken) {
+                    return token;
+                  }
                   return {
                     ...token,
-                    ...data.token,
+                    ...updatedToken,
                   };
                 });
               }
@@ -226,8 +243,9 @@ const Content = ({
             if (appData) {
               const map = appData.maps.find((map) => map.id === loadedMapId);
               if (map) {
+                const tokenIds = new Set(data.tokenIds);
                 map.tokens = map.tokens.filter(
-                  (token) => token.id !== data.tokenId
+                  (token) => tokenIds.has(token.id) === false
                 );
               }
             }
@@ -310,33 +328,6 @@ const Content = ({
       );
     },
     [localFetch]
-  );
-
-  const addToken = React.useCallback(
-    (token: Omit<Partial<MapTokenEntity>, "id">) => {
-      localFetch(`/map/${loadedMapId}/token`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...token,
-        }),
-      });
-    },
-    [loadedMapId, localFetch]
-  );
-
-  const deleteToken = React.useCallback(
-    (tokenId) => {
-      localFetch(`/map/${loadedMapId}/token/${tokenId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-    },
-    [loadedMapId, localFetch]
   );
 
   const updateToken = React.useCallback(
@@ -514,7 +505,7 @@ const Content = ({
     []
   );
   const [cropperNode, selectFile] = useTokenImageUpload();
-
+  const relayEnvironment = useRelayEnvironment();
   return (
     <FetchContext.Provider value={localFetch}>
       {data && mode.title === "SHOW_MAP_LIBRARY" ? (
@@ -591,18 +582,28 @@ const Content = ({
               ev.clientY,
             ]);
 
-            const addTokenWithImageId = (tokenImageId: string) =>
-              addToken({
-                color: "red",
-                x: coords[0],
-                y: coords[1],
-                isVisibleForPlayers: false,
-                isMovableByPlayers: false,
-                isLocked: false,
-                reference: null,
-                tokenImageId,
-                label: "",
+            const addTokenWithImageId = (tokenImageId: string) => {
+              commitMutation<dmAreaTokenAddManyMutation>(relayEnvironment, {
+                mutation: DmAreaTokenAddManyMutation,
+                variables: {
+                  input: {
+                    mapId: loadedMap.id,
+                    tokens: [
+                      {
+                        color: "red",
+                        x: coords[0],
+                        y: coords[1],
+                        isVisibleForPlayers: false,
+                        isMovableByPlayers: false,
+                        isLocked: false,
+                        tokenImageId,
+                        label: "",
+                      },
+                    ],
+                  },
+                },
               });
+            };
 
             selectFile(file, [], ({ tokenImageId }) => {
               addTokenWithImageId(tokenImageId);
@@ -691,9 +692,7 @@ const Content = ({
                   areas.filter((area) => area.id !== id)
                 );
               }}
-              addToken={addToken}
               updateToken={updateToken}
-              deleteToken={deleteToken}
               updateMap={(map) => {
                 updateMap(loadedMap.id, map);
               }}

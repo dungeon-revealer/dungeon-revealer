@@ -300,74 +300,6 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
       .catch(handleUnexpectedError(res));
   });
 
-  router.post("/map/:id/token", roleMiddleware.dm, (req, res) => {
-    const map = maps.get(req.params.id);
-    if (!map) {
-      return res.status(404).json({
-        data: null,
-        error: {
-          message: `Map with id '${req.params.id}' does not exist.`,
-          code: "ERR_MAP_DOES_NOT_EXIST",
-        },
-      });
-    }
-
-    maps
-      .addToken(map.id, {
-        x: req.body.x,
-        y: req.body.y,
-        color: req.body.color,
-        label: req.body.label,
-        radius: req.body.radius,
-        tokenImageId: req.body.tokenImageId,
-        isVisibleForPlayers: req.body.isVisibleForPlayers,
-        isMovableByPlayers: req.body.isMovableByPlayers,
-        isLocked: req.body.isLocked,
-      })
-      .then(({ token }) => {
-        res.json({
-          error: null,
-          data: {
-            token: mapToken(token),
-          },
-        });
-        io.emit(`token:mapId:${map.id}`, {
-          type: "add",
-          data: { token: mapToken(token) },
-        });
-      })
-      .catch(handleUnexpectedError(res));
-  });
-
-  router.delete("/map/:id/token/:tokenId", roleMiddleware.dm, (req, res) => {
-    const map = maps.get(req.params.id);
-    if (!map) {
-      return res.status(404).json({
-        data: null,
-        error: {
-          message: `Map with id '${req.params.id}' does not exist.`,
-          code: "ERR_MAP_DOES_NOT_EXIST",
-        },
-      });
-    }
-
-    maps
-      .removeToken(map.id, req.params.tokenId)
-      .then(({ map }) => {
-        res.json({
-          error: null,
-          data: {
-            map: mapMap(map),
-          },
-        });
-        io.emit(`token:mapId:${map.id}`, {
-          type: "remove",
-          data: { tokenId: req.params.tokenId },
-        });
-      })
-      .catch(handleUnexpectedError(res));
-  });
-
   router.patch("/map/:id/token/:tokenId", roleMiddleware.pc, (req, res) => {
     const map = maps.get(req.params.id);
     const token = map.tokens?.find((token) => token.id === req.params.tokenId);
@@ -431,7 +363,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         });
         io.emit(`token:mapId:${map.id}`, {
           type: "update",
-          data: { token: mapToken(token) },
+          data: { tokens: [mapToken(token)] },
         });
       })
       .catch(handleUnexpectedError(res));

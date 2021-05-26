@@ -232,19 +232,27 @@ const PlayerMap: React.FC<{
         setCurrentMap(
           produce((map) => {
             if (map) {
-              map.tokens.push(data.token);
+              map.tokens.push(...data.tokens);
             }
           })
         );
       } else if (type === "update") {
+        const updatedTokens = new Map<string, any>();
+        for (const token of data.tokens) {
+          updatedTokens.set(token.id, token);
+        }
+
         setCurrentMap(
           produce((map) => {
             if (map) {
               map.tokens = map.tokens.map((token) => {
-                if (token.id !== data.token.id) return token;
+                const updatedToken = updatedTokens.get(token.id);
+                if (!updatedToken) {
+                  return token;
+                }
                 return {
                   ...token,
-                  ...data.token,
+                  ...updatedToken,
                 };
               });
             }
@@ -254,8 +262,9 @@ const PlayerMap: React.FC<{
         setCurrentMap(
           produce((map) => {
             if (map) {
+              const removedTokenIds = new Set<string>(data.tokenIds);
               map.tokens = map.tokens = map.tokens.filter(
-                (token) => token.id !== data.tokenId
+                (token) => removedTokenIds.has(token.id) === false
               );
             }
           })

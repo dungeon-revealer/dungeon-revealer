@@ -1,14 +1,17 @@
 import * as React from "react";
 import { animated, SpringValue } from "@react-spring/three";
 import * as io from "io-ts";
-import { identity, pipe } from "fp-ts/lib/function";
-import * as E from "fp-ts/lib/Either";
+import { identity, pipe } from "fp-ts/function";
+import * as E from "fp-ts/Either";
+import graphql from "babel-plugin-relay/macro";
+import { useMutation } from "relay-hooks";
 import {
   PersistedStateModel,
   usePersistedState,
 } from "../hooks/use-persisted-state";
 import { usePinchWheelZoom } from "./drag-pan-zoom-map-tool";
 import { MapTool } from "./map-tool";
+import { tokenMarkerMapToolMapTokeMapTokenAddManyMutation } from "./__generated__/tokenMarkerMapToolMapTokeMapTokenAddManyMutation.graphql";
 
 const TokenMarkerStateModel = io.type({
   tokenRadius: io.number,
@@ -29,18 +32,10 @@ type TokenMarkerState = {
   includeTokenCounter: boolean;
 };
 
-type AddTokenFunction = (token: {
-  color: string;
-  radius: number;
-  x: number;
-  y: number;
-  label: string;
-}) => void;
-
 type TokenMarkerContextValue = {
   state: TokenMarkerState;
   setState: React.Dispatch<React.SetStateAction<TokenMarkerState>>;
-  addToken: AddTokenFunction;
+  currentMapId: string;
 };
 
 export const TokenMarkerContext = React.createContext<TokenMarkerContextValue>(
@@ -84,7 +79,7 @@ const tokenMarkerPersistedStateModel: PersistedStateModel<TokenMarkerState> = {
 
 export const TokenMarkerContextProvider = (props: {
   children: React.ReactNode;
-  addToken: AddTokenFunction;
+  currentMapId: string;
 }): React.ReactElement => {
   const [state, setState] = usePersistedState(
     "tokenMarkerMapToolSettings",
@@ -92,18 +87,31 @@ export const TokenMarkerContextProvider = (props: {
   );
   return (
     <TokenMarkerContext.Provider
-      value={{ state, setState, addToken: props.addToken }}
+      value={{ state, setState, currentMapId: props.currentMapId }}
     >
       {props.children}
     </TokenMarkerContext.Provider>
   );
 };
 
+const TokenMarkerMapToolMapTokenAddManyMutation = graphql`
+  mutation tokenMarkerMapToolMapTokeMapTokenAddManyMutation(
+    $input: MapTokenAddManyInput!
+  ) {
+    mapTokenAddMany(input: $input)
+  }
+`;
+
 export const TokenMarkerMapTool: MapTool = {
   id: "token-marker-map-tool",
   Component: (props) => {
     usePinchWheelZoom(props.mapContext);
     const tokenMarkerContext = React.useContext(TokenMarkerContext);
+
+    const [addToken] =
+      useMutation<tokenMarkerMapToolMapTokeMapTokenAddManyMutation>(
+        TokenMarkerMapToolMapTokenAddManyMutation
+      );
 
     props.useMapGesture({
       onDrag: ({ movement, memo, event, tap }) => {
@@ -145,12 +153,21 @@ export const TokenMarkerMapTool: MapTool = {
             }));
           }
 
-          tokenMarkerContext.addToken({
-            color: tokenMarkerContext.state.tokenColor,
-            radius: tokenMarkerContext.state.tokenRadius.get(),
-            x,
-            y,
-            label: label.trim(),
+          addToken({
+            variables: {
+              input: {
+                mapId: tokenMarkerContext.currentMapId,
+                tokens: [
+                  {
+                    color: tokenMarkerContext.state.tokenColor,
+                    radius: tokenMarkerContext.state.tokenRadius.get(),
+                    x,
+                    y,
+                    label: label.trim(),
+                  },
+                ],
+              },
+            },
           });
         }
       },

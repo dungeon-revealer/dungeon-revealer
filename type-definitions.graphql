@@ -241,6 +241,9 @@ type Mutation {
     input: RequestTokenImageUploadInput!
   ): RequestImageTokenUploadResult!
   tokenImageCreate(input: TokenImageCreateInput!): TokenImageCreateResult!
+  mapTokenUpdateMany(input: MapTokenUpdateManyInput!): Boolean
+  mapTokenRemoveMany(input: MapTokenRemoveManyInput!): Boolean
+  mapTokenAddMany(input: MapTokenAddManyInput!): Boolean
 }
 
 type LogInResult {
@@ -385,6 +388,74 @@ input TokenImageCreateInput {
   The SHA256 of the file the image got cut out from in hexadecimal form.
   """
   sourceSha256: String
+}
+
+input MapTokenUpdateManyInput {
+  """
+  The id of the map the token belong to.
+  """
+  mapId: ID!
+
+  """
+  The token ids that should be updated.
+  """
+  tokenIds: [ID!]!
+
+  """
+  The properties that should be updated on the affected tokens.
+  """
+  properties: MapTokenUpdateManyPropertiesInput!
+}
+
+input MapTokenUpdateManyPropertiesInput {
+  """
+  Color to be updated. Will not be updated if null is provided.
+  """
+  color: String
+
+  """
+  Color to be updated. Will not be updated if null is provided.
+  """
+  isVisibleForPlayers: Boolean
+
+  """
+  Color to be updated. Will not be updated if null is provided.
+  """
+  isMovableByPlayers: Boolean
+
+  """
+  Token image id to be updated. Will be updated if null is provided.
+  """
+  tokenImageId: ID
+}
+
+input MapTokenRemoveManyInput {
+  """
+  The id of the map the token belong to.
+  """
+  mapId: ID!
+
+  """
+  The ids of the token that should be removed.
+  """
+  tokenIds: [ID!]!
+}
+
+input MapTokenAddManyInput {
+  mapId: ID!
+  tokens: [MapTokenAddManyTokenInput!]!
+}
+
+input MapTokenAddManyTokenInput {
+  x: Float!
+  y: Float!
+  color: String!
+  label: String!
+  radius: Float
+  isVisibleForPlayers: Boolean
+  isMovableByPlayers: Boolean
+  isLocked: Boolean
+  tokenImageId: ID
 }
 
 type Subscription {
