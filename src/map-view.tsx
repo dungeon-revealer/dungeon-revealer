@@ -505,7 +505,7 @@ const TokenRenderer = (props: {
         ) {
           firstTimeStamp.current = null;
 
-          if (event.altKey) {
+          if (event.ctrlKey) {
             tokenSelection.toggleItem(props.id, store);
           } else {
             // left mouse
