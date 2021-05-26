@@ -7,7 +7,8 @@ import {
   editor,
 } from "monaco-editor";
 import { parseDocument } from "htmlparser2";
-import MonacoEditor from "react-monaco-editor";
+import MonacoEditor from "@monaco-editor/react";
+import type * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import * as Button from "../../button";
 import { sendRequest, ISendRequestTask } from "../../http-request";
 import { buildApiUrl } from "../../public-url";
@@ -32,7 +33,7 @@ import { useCurrent } from "../../hooks/use-current";
 import { useShowSelectNoteModal } from "../select-note-modal";
 
 const insertImageIntoEditor = (
-  editor: editor.IStandaloneCodeEditor,
+  editor: monacoEditor.editor.IStandaloneCodeEditor,
   id: string
 ) => {
   const model = editor.getModel();
@@ -56,7 +57,7 @@ const insertImageIntoEditor = (
 
 const useImageCommand: (opts: {
   uploadFile: (file: File) => Promise<string | null>;
-  editorReference: React.RefObject<MonacoEditor>;
+  editorReference: React.RefObject<editor.IStandaloneCodeEditor>;
 }) => [React.ReactNode, () => void] = ({ uploadFile, editorReference }) => {
   const [reactTreeNode, showFileDialog] = useSelectFileDialog(
     React.useCallback((file) => {
@@ -81,7 +82,7 @@ const useImageCommand: (opts: {
 
   const onClick = React.useCallback(() => {
     stateRef.current.onSelectImage = (file: File) => {
-      const editor = editorReference.current?.editor;
+      const editor = editorReference.current;
       const model = editor?.getModel();
       const selection = editor?.getSelection();
       if (!model || !editor || !selection) return;
@@ -103,7 +104,7 @@ const useImageCommand: (opts: {
 
       uploadFile(file).then((id) => {
         if (!stateRef.current.isMounted) return;
-        const editor = editorReference.current?.editor;
+        const editor = editorReference.current;
         const model = editor?.getModel();
         const selection = editor?.getSelection();
         if (!model || !editor || !selection) return;
@@ -523,7 +524,7 @@ export const MarkdownEditor: React.FC<{
     [accessToken]
   );
 
-  const ref = React.useRef<MonacoEditor | null>(null);
+  const ref = React.useRef<editor.IStandaloneCodeEditor | null>(null);
   const editorStateRef = React.useRef({
     decorations: [] as string[],
   });
@@ -586,7 +587,7 @@ export const MarkdownEditor: React.FC<{
         <ToolBarButton
           title="Bold"
           onClick={() => {
-            const editor = ref.current?.editor;
+            const editor = ref.current;
             const model = editor?.getModel();
             const selection = editor?.getSelection();
             if (!model || !editor || !selection) return;
@@ -626,7 +627,7 @@ export const MarkdownEditor: React.FC<{
         </ToolBarButton>
         <ToolBarButton
           onClick={() => {
-            const editor = ref.current?.editor;
+            const editor = ref.current;
             const model = editor?.getModel();
             const selection = editor?.getSelection();
             if (!model || !editor || !selection) return;
@@ -667,7 +668,7 @@ export const MarkdownEditor: React.FC<{
         <ToolBarButton
           title="Insert List"
           onClick={() => {
-            const editor = ref.current?.editor;
+            const editor = ref.current;
             const model = editor?.getModel();
             const selection = editor?.getSelection();
             if (!model || !editor || !selection) return;
@@ -716,11 +717,10 @@ export const MarkdownEditor: React.FC<{
         <ToolBarButton
           title="Insert Link"
           onClick={() => {
-            const editor = ref.current?.editor;
+            const editor = ref.current;
             const model = editor?.getModel();
             const selection = editor?.getSelection();
             if (!model || !editor || !selection) return;
-            // const selectedText = model.getValueInRange(selection);
 
             editor.executeEdits("", [
               {
@@ -741,15 +741,15 @@ export const MarkdownEditor: React.FC<{
       </TextToolBar>
       <MonacoEditor
         value={value}
-        onChange={onChange}
+        onChange={(value) => value !== undefined && onChange(value)}
         language="markdown"
         options={{
           minimap: { enabled: false },
           lineNumbers: "off",
           wordWrap: "on",
         }}
-        ref={ref}
-        editorDidMount={(editor) => {
+        onMount={(editor) => {
+          ref.current = editor;
           if (editorOnResizeRef) {
             editorOnResizeRef.current = () => {
               editor.layout();
@@ -842,8 +842,8 @@ export const MarkdownEditor: React.FC<{
                     <SelectLibraryImageModal
                       close={() => setShowMediaLibrary(false)}
                       onSelect={(id) => {
-                        if (!ref.current?.editor) return;
-                        const editor = ref.current.editor;
+                        if (!ref.current) return;
+                        const editor = ref.current;
                         const model = editor.getModel();
                         if (!model) return;
                         const value = editor.getValue();
@@ -907,8 +907,8 @@ export const MarkdownEditor: React.FC<{
                 <AsideSelectNote
                   noteId={menu.data.id}
                   onSelect={(id) => {
-                    if (!ref.current?.editor) return;
-                    const editor = ref.current.editor;
+                    if (!ref.current) return;
+                    const editor = ref.current;
                     const model = editor.getModel();
                     if (!model) return;
                     const value = editor.getValue();
@@ -974,7 +974,7 @@ export const MarkdownEditor: React.FC<{
         <SelectLibraryImageModal
           close={() => setShowMediaLibrary2(false)}
           onSelect={(id) => {
-            const editor = ref.current?.editor;
+            const editor = ref.current;
             if (!editor) return;
             setShowMediaLibrary2(false);
             insertImageIntoEditor(editor, id);
