@@ -53,6 +53,7 @@ enum LayerRenderOrder {
   tokenText = 4,
   tokenGesture = 5,
   marker = 6,
+  outline = 7,
 }
 
 // convert image relative to three.js
@@ -673,7 +674,7 @@ const TokenRenderer = (props: {
           </>
         )}
         {tokenSelection.isSelected ? (
-          <mesh renderOrder={LayerRenderOrder.tokenGesture}>
+          <mesh renderOrder={LayerRenderOrder.outline}>
             <ringBufferGeometry
               attach="geometry"
               args={[initialRadius * (1 - 0.05), initialRadius, 128]}
