@@ -643,52 +643,34 @@ export const DmMap = (props: {
   const asyncClipBoardApi = useAsyncClipboardApi();
 
   const copyMapToClipboard = () => {
-    if (!controlRef.current) {
+    if (!controlRef.current || !asyncClipBoardApi) {
       return;
     }
-    const context = controlRef.current.getContext();
-    const mapCanvas = context.mapCanvas;
-    const fogCanvas = context.fogCanvas;
+    const { mapCanvas, fogCanvas } = controlRef.current.getContext();
+    const canvas = new OffscreenCanvas(mapCanvas.width, mapCanvas.height);
+    const context = canvas.getContext("2d")!;
+    context.drawImage(mapCanvas, 0, 0);
+    context.drawImage(fogCanvas, 0, 0);
 
-    if (asyncClipBoardApi) {
-      const canvas = new OffscreenCanvas(mapCanvas.width, mapCanvas.height);
-      const context = canvas.getContext("2d")!;
-      context.drawImage(mapCanvas, 0, 0);
-      context.drawImage(fogCanvas, 0, 0);
-
-      const { clipboard, ClipboardItem } = asyncClipBoardApi;
-      canvas.convertToBlob().then((blob) => {
-        clipboard
-          .write([
-            new ClipboardItem({
-              [blob.type]: blob,
-            }),
-          ])
-          .then(() => {
-            showToast({
-              title: `Copied map image to clipboard.`,
-              status: "success",
-              duration: 3000,
-              isClosable: true,
-              position: "top",
-            });
-          })
-          .catch(console.error);
-      });
-    } else {
-      // In case we don't have the AsyncClipboard available we need to use a normal canvas in order to get the base64 string.
-      // The OffscreenCanvas has no `toDataURL` method.
-      const canvas = document.createElement("canvas");
-      canvas.width = mapCanvas.width;
-      canvas.height = mapCanvas.height;
-
-      const context = canvas.getContext("2d")!;
-      context.drawImage(mapCanvas, 0, 0);
-      context.drawImage(fogCanvas, 0, 0);
-
-      const dataUri = canvas.toDataURL("image/png");
-      window.open(dataUri, "_blank");
-    }
+    const { clipboard, ClipboardItem } = asyncClipBoardApi;
+    canvas.convertToBlob().then((blob) => {
+      clipboard
+        .write([
+          new ClipboardItem({
+            [blob.type]: blob,
+          }),
+        ])
+        .then(() => {
+          showToast({
+            title: `Copied map image to clipboard.`,
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+            position: "top",
+          });
+        })
+        .catch(console.error);
+    });
   };
 
   const isConfiguringGrid = userSelectedTool === ConfigureGridMapTool;
@@ -1012,12 +994,14 @@ export const DmMap = (props: {
                     </Icons.Label>
                   </Toolbar.Item>
                 )}
-                <Toolbar.Item isActive>
-                  <Toolbar.Button onClick={copyMapToClipboard}>
-                    <Icons.ClipboardIcon size={20} />
-                    <Icons.Label>Clipboard</Icons.Label>
-                  </Toolbar.Button>
-                </Toolbar.Item>
+                {asyncClipBoardApi ? (
+                  <Toolbar.Item isActive>
+                    <Toolbar.Button onClick={copyMapToClipboard}>
+                      <Icons.ClipboardIcon size={20} />
+                      <Icons.Label>Clipboard</Icons.Label>
+                    </Toolbar.Button>
+                  </Toolbar.Item>
+                ) : null}
                 <Toolbar.Item isActive>
                   <Toolbar.Button
                     onClick={() => {
