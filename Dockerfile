@@ -3,6 +3,7 @@ FROM node:16-alpine as base
 # add build tools for other architectures
 # subsequent builds should cache this layer
 RUN apk add make g++ python3
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 
 FROM base as dependency-builder
