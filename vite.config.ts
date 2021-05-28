@@ -17,4 +17,7 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["react-spring", "@react-spring/web", "@react-spring/three"],
   },
+  build: {
+    outDir: "build",
+  },
 });
