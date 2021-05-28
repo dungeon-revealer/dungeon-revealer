@@ -15,7 +15,7 @@
     "jsx": "react",
     "forceConsistentCasingInFileNames": true,
     "downlevelIteration": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": false
   },
   "include": ["./src"]
 }
