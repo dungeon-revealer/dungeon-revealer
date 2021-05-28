@@ -147,7 +147,7 @@ const useImageCommand: (opts: {
     };
 
     showFileDialog();
-  }, [showFileDialog]);
+  }, [showFileDialog, monaco]);
 
   return [reactTreeNode, onClick];
 };
