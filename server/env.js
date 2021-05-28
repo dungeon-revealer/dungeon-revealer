@@ -2,7 +2,7 @@
 const path = require("path");
 const { getDefaultDataDirectory } = require("./util");
 
-const PUBLIC_PATH = path.resolve(__dirname, "..", "build");
+const PUBLIC_PATH = path.resolve(__dirname, "..", "dist");
 const PUBLIC_URL = process.env.PUBLIC_URL || "";
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "0.0.0.0";

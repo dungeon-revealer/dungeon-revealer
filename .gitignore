@@ -13,6 +13,8 @@ dungeon-revealer-macos
 build
 server-build
 __generated__
+dist
+public/monaco-editor
 
 # Runtime Data/ Persisted Data #
 ################################

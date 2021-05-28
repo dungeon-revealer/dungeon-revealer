@@ -1,3 +1,4 @@
+import * as React from "react";
 import { loader } from "@monaco-editor/react";
 import { render } from "react-dom";
 import { Global, CacheProvider } from "@emotion/react";
@@ -8,7 +9,7 @@ import { globalStyles } from "./global-styles";
 import { Modal } from "./modal";
 import { registerSoundPlayback } from "./register-sound-playback";
 
-loader.config({ paths: { vs: buildUrl("/monaco-editor") } });
+loader.config({ paths: { vs: buildUrl("/monaco-editor/vs") } });
 
 const emotionCache = createCache({ key: "chache" });
 emotionCache.compat = true;
