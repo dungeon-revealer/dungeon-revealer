@@ -1,13 +1,9 @@
 import React from "react";
 import * as ReactDom from "react-dom";
 import styled from "@emotion/styled/macro";
-import {
-  Range as MonacoRange,
-  Position as MonacoPosition,
-  editor,
-} from "monaco-editor";
 import { parseDocument } from "htmlparser2";
-import MonacoEditor from "react-monaco-editor";
+import MonacoEditor, { useMonaco, Monaco } from "@monaco-editor/react";
+import type * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import * as Button from "../../button";
 import { sendRequest, ISendRequestTask } from "../../http-request";
 import { buildApiUrl } from "../../public-url";
@@ -32,7 +28,8 @@ import { useCurrent } from "../../hooks/use-current";
 import { useShowSelectNoteModal } from "../select-note-modal";
 
 const insertImageIntoEditor = (
-  editor: editor.IStandaloneCodeEditor,
+  monaco: Monaco,
+  editor: monacoEditor.editor.IStandaloneCodeEditor,
   id: string
 ) => {
   const model = editor.getModel();
@@ -43,7 +40,7 @@ const insertImageIntoEditor = (
 
   editor.executeEdits("", [
     {
-      range: new MonacoRange(
+      range: new monaco.Range(
         selection.startLineNumber,
         selection.startColumn,
         selection.endLineNumber,
@@ -55,9 +52,14 @@ const insertImageIntoEditor = (
 };
 
 const useImageCommand: (opts: {
+  monaco: Monaco | null;
   uploadFile: (file: File) => Promise<string | null>;
-  editorReference: React.RefObject<MonacoEditor>;
-}) => [React.ReactNode, () => void] = ({ uploadFile, editorReference }) => {
+  editorReference: React.RefObject<monacoEditor.editor.IStandaloneCodeEditor>;
+}) => [React.ReactNode, () => void] = ({
+  monaco,
+  uploadFile,
+  editorReference,
+}) => {
   const [reactTreeNode, showFileDialog] = useSelectFileDialog(
     React.useCallback((file) => {
       stateRef.current.onSelectImage?.(file);
@@ -81,16 +83,16 @@ const useImageCommand: (opts: {
 
   const onClick = React.useCallback(() => {
     stateRef.current.onSelectImage = (file: File) => {
-      const editor = editorReference.current?.editor;
+      const editor = editorReference.current;
       const model = editor?.getModel();
       const selection = editor?.getSelection();
-      if (!model || !editor || !selection) return;
+      if (!model || !editor || !selection || !monaco) return;
 
       const placeholderTemplate = `[Uploading ${file.name}...]`;
 
       editor.executeEdits("", [
         {
-          range: new MonacoRange(
+          range: new monaco.Range(
             selection.startLineNumber,
             selection.startColumn,
             selection.endLineNumber,
@@ -103,7 +105,7 @@ const useImageCommand: (opts: {
 
       uploadFile(file).then((id) => {
         if (!stateRef.current.isMounted) return;
-        const editor = editorReference.current?.editor;
+        const editor = editorReference.current;
         const model = editor?.getModel();
         const selection = editor?.getSelection();
         if (!model || !editor || !selection) return;
@@ -122,7 +124,7 @@ const useImageCommand: (opts: {
           const column = model.getLineMaxColumn(line);
           editor.executeEdits("", [
             {
-              range: new MonacoRange(line, column, line, column),
+              range: new monaco.Range(line, column, line, column),
               text: `\n\n${content}`,
             },
           ]);
@@ -131,7 +133,7 @@ const useImageCommand: (opts: {
           const end = model.getPositionAt(index + placeholderTemplate.length);
           editor.executeEdits("", [
             {
-              range: new MonacoRange(
+              range: new monaco.Range(
                 start.lineNumber,
                 start.column,
                 end.lineNumber,
@@ -145,7 +147,7 @@ const useImageCommand: (opts: {
     };
 
     showFileDialog();
-  }, [showFileDialog]);
+  }, [showFileDialog, monaco]);
 
   return [reactTreeNode, onClick];
 };
@@ -497,6 +499,7 @@ export const MarkdownEditor: React.FC<{
   sideBarRef: React.RefObject<HTMLElement>;
   editorOnResizeRef?: React.MutableRefObject<() => void>;
 }> = ({ value, onChange, sideBarRef, editorOnResizeRef }) => {
+  const monaco = useMonaco();
   const uploadTaskRef = React.useRef<ISendRequestTask | null>(null);
   const accessToken = useAccessToken();
 
@@ -523,7 +526,8 @@ export const MarkdownEditor: React.FC<{
     [accessToken]
   );
 
-  const ref = React.useRef<MonacoEditor | null>(null);
+  const ref =
+    React.useRef<monacoEditor.editor.IStandaloneCodeEditor | null>(null);
   const editorStateRef = React.useRef({
     decorations: [] as string[],
   });
@@ -531,6 +535,7 @@ export const MarkdownEditor: React.FC<{
   const [uploadImageNode, onClickImageButton] = useImageCommand({
     uploadFile,
     editorReference: ref,
+    monaco,
   });
 
   React.useEffect(
@@ -580,16 +585,20 @@ export const MarkdownEditor: React.FC<{
     setShowMediaLibrary2(true);
   }, []);
 
+  const monacoRef = React.useRef(monaco);
+  React.useEffect(() => {
+    monacoRef.current = monaco;
+  });
   return (
     <Container>
       <TextToolBar>
         <ToolBarButton
           title="Bold"
           onClick={() => {
-            const editor = ref.current?.editor;
+            const editor = ref.current;
             const model = editor?.getModel();
             const selection = editor?.getSelection();
-            if (!model || !editor || !selection) return;
+            if (!model || !editor || !selection || !monaco) return;
             const selectedText = model.getValueInRange(selection);
             if (
               selectedText.trim().startsWith("**") &&
@@ -597,7 +606,7 @@ export const MarkdownEditor: React.FC<{
             ) {
               editor.executeEdits("", [
                 {
-                  range: new MonacoRange(
+                  range: new monaco.Range(
                     selection.startLineNumber,
                     selection.startColumn,
                     selection.endLineNumber,
@@ -609,7 +618,7 @@ export const MarkdownEditor: React.FC<{
             } else {
               editor.executeEdits("", [
                 {
-                  range: new MonacoRange(
+                  range: new monaco.Range(
                     selection.startLineNumber,
                     selection.startColumn,
                     selection.endLineNumber,
@@ -626,10 +635,10 @@ export const MarkdownEditor: React.FC<{
         </ToolBarButton>
         <ToolBarButton
           onClick={() => {
-            const editor = ref.current?.editor;
+            const editor = ref.current;
             const model = editor?.getModel();
             const selection = editor?.getSelection();
-            if (!model || !editor || !selection) return;
+            if (!model || !editor || !selection || !monaco) return;
             const selectedText = model.getValueInRange(selection);
             if (
               selectedText.trim().startsWith("*") &&
@@ -637,7 +646,7 @@ export const MarkdownEditor: React.FC<{
             ) {
               editor.executeEdits("", [
                 {
-                  range: new MonacoRange(
+                  range: new monaco.Range(
                     selection.startLineNumber,
                     selection.startColumn,
                     selection.endLineNumber,
@@ -649,7 +658,7 @@ export const MarkdownEditor: React.FC<{
             } else {
               editor.executeEdits("", [
                 {
-                  range: new MonacoRange(
+                  range: new monaco.Range(
                     selection.startLineNumber,
                     selection.startColumn,
                     selection.endLineNumber,
@@ -667,10 +676,10 @@ export const MarkdownEditor: React.FC<{
         <ToolBarButton
           title="Insert List"
           onClick={() => {
-            const editor = ref.current?.editor;
+            const editor = ref.current;
             const model = editor?.getModel();
             const selection = editor?.getSelection();
-            if (!model || !editor || !selection) return;
+            if (!model || !editor || !selection || !monaco) return;
             let selectedText = model.getLineContent(selection.startLineNumber);
             const length = selectedText.length;
             if (selectedText.startsWith("-")) {
@@ -681,7 +690,7 @@ export const MarkdownEditor: React.FC<{
 
             editor.executeEdits("", [
               {
-                range: new MonacoRange(
+                range: new monaco.Range(
                   selection.startLineNumber,
                   1,
                   selection.startLineNumber,
@@ -691,7 +700,7 @@ export const MarkdownEditor: React.FC<{
               },
             ]);
             editor.setPosition(
-              new MonacoPosition(selection.startLineNumber, length + 1 + 2)
+              new monaco.Position(selection.startLineNumber, length + 1 + 2)
             );
             editor.focus();
           }}
@@ -716,15 +725,14 @@ export const MarkdownEditor: React.FC<{
         <ToolBarButton
           title="Insert Link"
           onClick={() => {
-            const editor = ref.current?.editor;
+            const editor = ref.current;
             const model = editor?.getModel();
             const selection = editor?.getSelection();
-            if (!model || !editor || !selection) return;
-            // const selectedText = model.getValueInRange(selection);
+            if (!model || !editor || !selection || !monaco) return;
 
             editor.executeEdits("", [
               {
-                range: new MonacoRange(
+                range: new monaco.Range(
                   selection.startLineNumber,
                   selection.startColumn,
                   selection.endLineNumber,
@@ -741,15 +749,15 @@ export const MarkdownEditor: React.FC<{
       </TextToolBar>
       <MonacoEditor
         value={value}
-        onChange={onChange}
+        onChange={(value) => value !== undefined && onChange(value)}
         language="markdown"
         options={{
           minimap: { enabled: false },
           lineNumbers: "off",
           wordWrap: "on",
         }}
-        ref={ref}
-        editorDidMount={(editor) => {
+        onMount={(editor) => {
+          ref.current = editor;
           if (editorOnResizeRef) {
             editorOnResizeRef.current = () => {
               editor.layout();
@@ -759,7 +767,9 @@ export const MarkdownEditor: React.FC<{
           editor.onDidChangeCursorPosition((event) => {
             const text = editor.getValue();
             const model = editor.getModel();
-            if (!model) return;
+            const monaco = monacoRef.current;
+            if (!model || !monaco) return;
+
             const positionOffset = model.getOffsetAt(event.position);
 
             let selectionRange =
@@ -785,7 +795,7 @@ export const MarkdownEditor: React.FC<{
               editorStateRef.current.decorations,
               [
                 {
-                  range: new MonacoRange(
+                  range: new monaco.Range(
                     startPosition.lineNumber,
                     startPosition.column,
                     endPosition.lineNumber,
@@ -842,10 +852,10 @@ export const MarkdownEditor: React.FC<{
                     <SelectLibraryImageModal
                       close={() => setShowMediaLibrary(false)}
                       onSelect={(id) => {
-                        if (!ref.current?.editor) return;
-                        const editor = ref.current.editor;
+                        if (!ref.current) return;
+                        const editor = ref.current;
                         const model = editor.getModel();
-                        if (!model) return;
+                        if (!model || !monaco) return;
                         const value = editor.getValue();
 
                         const newTag = `<Image id="${id}" />`;
@@ -885,7 +895,7 @@ export const MarkdownEditor: React.FC<{
                             editorStateRef.current.decorations,
                             [
                               {
-                                range: new MonacoRange(
+                                range: new monaco.Range(
                                   startPosition.lineNumber,
                                   startPosition.column,
                                   endPosition.lineNumber,
@@ -907,10 +917,10 @@ export const MarkdownEditor: React.FC<{
                 <AsideSelectNote
                   noteId={menu.data.id}
                   onSelect={(id) => {
-                    if (!ref.current?.editor) return;
-                    const editor = ref.current.editor;
+                    if (!ref.current) return;
+                    const editor = ref.current;
                     const model = editor.getModel();
-                    if (!model) return;
+                    if (!model || !monaco) return;
                     const value = editor.getValue();
 
                     const newTag = `[${menu.data.innerContent}](${id})`;
@@ -951,7 +961,7 @@ export const MarkdownEditor: React.FC<{
                         editorStateRef.current.decorations,
                         [
                           {
-                            range: new MonacoRange(
+                            range: new monaco.Range(
                               startPosition.lineNumber,
                               startPosition.column,
                               endPosition.lineNumber,
@@ -974,10 +984,10 @@ export const MarkdownEditor: React.FC<{
         <SelectLibraryImageModal
           close={() => setShowMediaLibrary2(false)}
           onSelect={(id) => {
-            const editor = ref.current?.editor;
-            if (!editor) return;
+            const editor = ref.current;
+            if (!editor || !monaco) return;
             setShowMediaLibrary2(false);
-            insertImageIntoEditor(editor, id);
+            insertImageIntoEditor(monaco, editor, id);
             setTimeout(() => editor.focus());
           }}
         />

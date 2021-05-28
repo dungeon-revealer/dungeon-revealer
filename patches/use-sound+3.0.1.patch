@@ -1,0 +1,13 @@
+diff --git a/node_modules/use-sound/dist/use-sound.esm.js b/node_modules/use-sound/dist/use-sound.esm.js
+index 6ec2b77..92e9295 100644
+--- a/node_modules/use-sound/dist/use-sound.esm.js
++++ b/node_modules/use-sound/dist/use-sound.esm.js
+@@ -85,7 +85,7 @@ function useSound(src, _ref) {
+   useOnMount(function () {
+     import('howler').then(function (mod) {
+       if (!isMounted.current) {
+-        HowlConstructor.current = mod.Howl;
++        HowlConstructor.current = mod.default.Howl;
+         isMounted.current = true;
+ 
+         var _sound = new HowlConstructor.current(_extends({

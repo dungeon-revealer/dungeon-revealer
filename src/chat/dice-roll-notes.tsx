@@ -1,7 +1,7 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
-import MonacoEditor from "react-monaco-editor";
-import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
+import MonacoEditor from "@monaco-editor/react";
+import type * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import * as Icon from "../feather-icons";
 import { HtmlContainer } from "../dm-area/components/html-container";
 import debounce from "lodash/debounce";
@@ -179,8 +179,8 @@ export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
               lineNumbersMinChars: 0,
             }}
             value={content}
-            onChange={(value) => setContent(value)}
-            editorDidMount={(editor) => {
+            onChange={(value) => value !== undefined && setContent(value)}
+            onMount={(editor) => {
               editorOnResizeRef.current = () => {
                 editor.layout();
               };
