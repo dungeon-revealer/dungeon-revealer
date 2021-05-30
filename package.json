@@ -121,7 +121,7 @@
     "htmlparser2": "6.1.0",
     "husky": "4.3.8",
     "immer": "9.0.2",
-    "jest": "27.0.2",
+    "jest": "27.0.3",
     "leva": "0.9.10",
     "lint-staged": "11.0.0",
     "monaco-editor": "0.23.0",
