@@ -2,24 +2,27 @@ name: Build Binaries
 
 on:
   push:
-    branches: [master] # Run on master or tags
+    branches: master # Run on master or tags
     tags:
       - "v*"
 
 jobs:
-  build_x64_native:
+  build_x64:
     name: ${{ matrix.os }} Binaries
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        os: [ubuntu, macos, windows]
+        os: [linux, macos, windows]
         include:
-          - os: ubuntu
-            runner: ubuntu-20.04
+          - os: linux
+            runner: ubuntu-latest
+            output: dungeon-revealer-linux-x64
           - os: macos
             runner: macos-latest
+            output: dungeon-revealer-macos-x64
           - os: windows
             runner: windows-latest
+            output: dungeon-revealer-windows.exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -40,37 +43,28 @@ jobs:
       - name: Compile x64 binary
         id: compile
         run: |
-          node ./scripts/copy-node-bindings-path.js
-          npm run compile
-
-      - name: Package binary
-        run: |
-          mkdir dungeon-revealer-${{ matrix.os }}
-          mv ./bin/dungeon-revealer* ./dungeon-revealer-${{ matrix.os }}/
-          mv ./node_sqlite3.node ./dungeon-revealer-${{ matrix.os }}/
-          mv ./LICENSE ./dungeon-revealer-${{ matrix.os }}/
-          mv ./README.md ./dungeon-revealer-${{ matrix.os }}/
+          npx caxa -i . -o ${{ matrix.output }} -- "{{caxa}}/node_modules/.bin/node" "{{caxa}}/server-build/index.js"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: dungeon-revealer-${{ matrix.os }}
-          path: "dungeon-revealer-${{ matrix.os }}/"
+          name: artifact-${{ matrix.output }} 
+          path: "${{ matrix.output }}"
 
   build_arm:
-    name: ${{ matrix.arch }} Binaries
-    runs-on: ubuntu-20.04
+    name: Linux ${{ matrix.arch }} Binaries
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform: [linux/arm/v7, linux/arm64/v8]
+        arch: [armv7, arm64]
         include:
-          - platform: linux/arm/v7
-            arch: armv7
-            docker_arch: arm32v7
+          - arch: armv7
+            docker_platform: linux/arm/v7
+            docker_image: arm32v7/node:12
             output: dungeon-revealer-linux-armv7
-          - platform: linux/arm64/v8
-            arch: arm64
-            docker_arch: arm64v8
+          - arch: arm64
+            docker_platform: linux/arm64/v8
+            docker_image: arm64v8/node:12
             output: dungeon-revealer-linux-arm64
     steps:
       - name: Checkout code
@@ -80,7 +74,7 @@ jobs:
         id: qemu
         uses: docker/setup-qemu-action@v1
         with:
-          platforms: ${{ matrix.platform }}
+          platforms: ${{ matrix.docker_platform }}
 
       - name: Available platforms
         run: echo ${{ steps.qemu.outputs.platforms }}
@@ -96,91 +90,79 @@ jobs:
 
       - name: Build ${{ matrix.arch }}
         run: |
-          # Build app outside of docker
-          npm install
-          npm run build
-          rm -rf node_modules
-          FETCH_CMD="mkdir -p ~/.pkg-cache/v2.6 && (cd ~/.pkg-cache/v2.6 && wget https://github.com/dungeon-revealer/pkg-binaries/releases/download/v1.0.0/fetched-v12.18.1-linux-${{ matrix.arch }} -O fetched-v12.18.1-linux-${{ matrix.arch }})"
-          CMD="echo 'unsafe-perm = true' > .npmrc && npm install && export NODE_OPTIONS='--max_old_space_size=4000' && node ./scripts/copy-node-bindings-path.js && $FETCH_CMD && npm run compile:${{ matrix.arch }}"
-          # Compile in docker container
-          docker run --rm --platform ${{ matrix.platform }} -v $PWD:/usr/src/build -w /usr/src/build ${{ matrix.docker_arch }}/node:12.18.1 sh -c "$CMD"
-
-      - name: Package binary
-        run: |
-          mkdir dungeon-revealer-linux-${{ matrix.arch }}
-          mv ./bin/dungeon-revealer-linux ./dungeon-revealer-linux-${{ matrix.arch }}/${{ matrix.output }}
-          mv ./node_sqlite3.node ./dungeon-revealer-linux-${{ matrix.arch }}/
-          mv ./LICENSE ./dungeon-revealer-linux-${{ matrix.arch }}/
-          mv ./README.md ./dungeon-revealer-linux-${{ matrix.arch }}/
+          CMD='echo "unsafe-perm = true" > .npmrc && npm install && npm run build && rm .npmrc && npx caxa -i . -o ${{ matrix.output }} -- "{{caxa}}/node_modules/.bin/node" "{{caxa}}/server-build/index.js"'
+          docker run --rm --platform ${{ matrix.docker_platform }} -v $PWD:/caxa -w /caxa ${{ matrix.docker_image }} sh -c "$CMD"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: dungeon-revealer-linux-${{ matrix.arch }}
-          path: "dungeon-revealer-linux-${{ matrix.arch }}/"
+          name: artifact-${{ matrix.output }}
+          path: ${{ matrix.output }}
 
-  job_upload:
-    name: Upload Release Assets
-    needs: [build_x64_native, build_arm]
-    runs-on: ubuntu-20.04
+  package:
+    name: Package and Release
+    needs: [build_x64, build_arm]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Get branch names
+        id: branch-name
+        uses: tj-actions/branch-names@v4.3
+
       - name: "Set environment: Branch"
-        if: startsWith(github.ref, 'refs/heads/')
+        if: steps.branch-name.outputs.is_tag == 'false'
         run: |
-          echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          echo "GH_TAG=${GITHUB_REF/refs\/heads\//}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "version_string=${{ steps.branch-name.outputs.current_branch }}-${GITHUB_SHA::6}" >> $GITHUB_ENV
 
       - name: "Set environment: Tags"
-        if: startsWith(github.ref, 'refs/tags/')
+        if: steps.branch-name.outputs.is_tag == 'true'
         run: |
-          echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          echo "GH_TAG=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
+          echo "version_string=${{ steps.branch-name.outputs.tag }}" >> $GITHUB_ENV
 
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
           path: bin/
 
-      # Zip all artifacts
+      - name: File Checksums
+        run: |
+          cd bin
+          rm -rf dungeon-revealer || true                         # remove unnecessary script
+          find . -type f -exec mv {} ./ \;                        # move files from subdirectories to top directory
+          find . -type d -not -path "." -exec rmdir {} +          # remove empty subdirectories
+          find . -type f -not -path "*.exe" -exec chmod +x {} +   # make linux & macos files executable
+          shasum -a 256 * | tee -a checksums.txt                  # show file checksums
+
       - name: Zip Archives
         run: |
           cd bin
-          chmod +x ./dungeon-revealer-macos/dungeon-revealer-macos
-          chmod +x ./dungeon-revealer-ubuntu/dungeon-revealer-linux
-          chmod +x ./dungeon-revealer-linux-armv7/dungeon-revealer-linux-armv7
-          chmod +x ./dungeon-revealer-linux-arm64/dungeon-revealer-linux-arm64
-          for idir in */;
+          for f in $(find . -type f -name "dungeon*");            # package each executable in a zip file
           do
-            (cd "$idir"; rm dungeon-revealer || true; zip -r "../${idir%/}.zip" .);
+            zip -j "${f%.exe}-${{ env.version_string }}.zip" "$f" ../LICENSE ../README.md checksums.txt;
           done
-          mv dungeon-revealer-ubuntu.zip dungeon-revealer-linux-${{ env.GH_TAG }}.zip
-          mv dungeon-revealer-macos.zip dungeon-revealer-macos-${{ env.GH_TAG }}.zip
-          mv dungeon-revealer-windows.zip dungeon-revealer-windows-${{ env.GH_TAG }}.zip
-          mv dungeon-revealer-linux-armv7.zip dungeon-revealer-linux-armv7-${{ env.GH_TAG }}.zip
-          mv dungeon-revealer-linux-arm64.zip dungeon-revealer-linux-arm64-${{ env.GH_TAG }}.zip
 
-      - name: Upload Zip Artifacts
+      - name: Upload Zip Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: dungeon-revealer-binaries-${{ github.sha }}
+          name: dungeon-revealer-zips-${{ env.version_string }}
           path: "bin/*.zip"
 
       - name: Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+        if: steps.branch-name.outputs.is_tag == 'true'
         with:
-          name: Release ${{ env.GH_TAG }}
+          name: Release ${{ env.version_string }}
           draft: true
           files: |
             bin/*.zip
+            bin/checksums.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Set environment for discord"
-        if: success() && startsWith( github.ref, 'refs/heads')
+        if: success() && steps.branch-name.outputs.is_tag == 'false'
         run: |
           # Template json to send as an embed
           # jq replaces $var with `jq --arg var <value> "$TEMPLATE"`
@@ -207,7 +189,7 @@ jobs:
           echo "DISCORD_EMBEDS=$(jq -nc --arg title "[${{ github.event.repository.name }}:${GITHUB_REF##*/}] binary build" --arg url "${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}" --arg color "16750848" --arg desc "$DESC" "$TEMPLATE")" >> $GITHUB_ENV
 
       - name: Discord notification
-        if: success() && startsWith( github.ref, 'refs/heads')
+        if: success() && steps.branch-name.outputs.is_tag == 'false'
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
         uses: Ilshidur/action-discord@0.3.0
