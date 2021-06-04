@@ -5,7 +5,9 @@ const once = require("lodash/once");
 const flatMap = require("lodash/flatMap");
 const { bootstrapServer } = require("./server");
 const os = require("os");
-const env = require("./env");
+const { getEnv } = require("./env");
+
+const env = getEnv(process.env);
 
 const getPublicInterfaces = () => {
   const ifaces = os.networkInterfaces();
