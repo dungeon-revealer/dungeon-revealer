@@ -17,7 +17,7 @@
     "build:frontend": "node scripts/copy-monaco-editor-files.js && npm run relay-compiler && vite build --base=./",
     "build:backend": "tsc --project server/tsconfig.json",
     "build": "npm run build:frontend && npm run build:backend",
-    "compile": "npx caxa -i . -o bin/dungeon-revealer-bin -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/server-build/index.js\"",
+    "compile": "npx caxa -i ./ -e server-build -e build -e package.json -e package-lock.json -e node_modules -o bin/dungeon-revealer-bin -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/server-build/index.js\"",
     "eslint": "eslint --ignore-path .gitignore --max-warnings 0 \"**/*.js\" \"bin/dungeon-revealer\"",
     "postinstall": "patch-package",
     "start": "node ./bin/dungeon-revealer",
