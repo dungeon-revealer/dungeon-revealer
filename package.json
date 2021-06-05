@@ -154,16 +154,5 @@
     "vite": "2.3.5",
     "vite-plugin-babel-macros": "1.0.5",
     "zustand": "3.5.1"
-  },
-  "pkg": {
-    "scripts": [
-      "server-build/*.js"
-    ],
-    "assets": [
-      "build/**/*"
-    ]
-  },
-  "scarfSettings": {
-    "enabled": false
   }
 }
