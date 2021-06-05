@@ -1,0 +1,34 @@
+diff --git a/node_modules/caxa/lib/index.js b/node_modules/caxa/lib/index.js
+index 50d048e..9ea4337 100644
+--- a/node_modules/caxa/lib/index.js
++++ b/node_modules/caxa/lib/index.js
+@@ -13,13 +13,7 @@ const archiver_1 = __importDefault(require("archiver"));
+ const crypto_random_string_1 = __importDefault(require("crypto-random-string"));
+ const commander_1 = __importDefault(require("commander"));
+ const globby_1 = __importDefault(require("globby"));
+-async function caxa({ input, output, command, force = true, exclude = [], filter = (() => {
+-    const pathsToExclude = globby_1.default.sync(exclude, {
+-        expandDirectories: false,
+-        onlyFiles: false,
+-    });
+-    return (path) => !pathsToExclude.includes(path);
+-})(), dedupe = true, prepareCommand, prepare = async (buildDirectory) => {
++async function caxa({ input, output, command, force = true, exclude = [], dedupe = true, prepareCommand, prepare = async (buildDirectory) => {
+     if (prepareCommand === undefined)
+         return;
+     await execa_1.default.command(prepareCommand, { cwd: buildDirectory, shell: true });
+@@ -31,7 +25,13 @@ async function caxa({ input, output, command, force = true, exclude = [], filter
+     if (process_1.default.platform === "win32" && !output.endsWith(".exe"))
+         throw new Error("An Windows executable must end in ‘.exe’.");
+     const buildDirectory = path_1.default.join(os_1.default.tmpdir(), "caxa/builds", crypto_random_string_1.default({ length: 10, type: "alphanumeric" }).toLowerCase());
+-    await fs_extra_1.default.copy(input, buildDirectory, { filter });
++    const filesToInclude = globby_1.default.sync(exclude, {
++        expandDirectories: false,
++        onlyFiles: false,
++    });
++    for (const filePath of filesToInclude) {
++        await fs_extra_1.default.copy(filePath, path_1.default.join(buildDirectory, filePath));
++    }
+     if (dedupe)
+         await execa_1.default("npm", ["dedupe", "--production"], { cwd: buildDirectory });
+     await prepare(buildDirectory);
