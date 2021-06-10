@@ -1,5 +1,4 @@
 import * as React from "react";
-import { v4 as uuid } from "uuid";
 import styled from "@emotion/styled/macro";
 import * as io from "io-ts";
 import { pipe, identity } from "fp-ts/function";
@@ -92,6 +91,7 @@ import {
   SharedTokenStateStoreContext,
 } from "../shared-token-state";
 import { SharedTokenMenu } from "../shared-token-menu";
+import { randomHash } from "../utilities/random-hash";
 
 type ToolMapRecord = {
   name: string;
@@ -540,7 +540,7 @@ const activeDmMapToolIdModel: PersistedStateModel<
 };
 
 const createCacheBusterString = () =>
-  encodeURIComponent(`${Date.now()}_${uuid()}`);
+  encodeURIComponent(`${Date.now()}_${randomHash()}`);
 
 export const DmMap = (props: {
   password: string;

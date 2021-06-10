@@ -14,7 +14,7 @@ import { useSocket } from "./socket";
 import { animated, useSpring, to } from "react-spring";
 import { MapView, MapControlInterface, UpdateTokenContext } from "./map-view";
 import { useGesture } from "react-use-gesture";
-import { v4 as uuid } from "uuid";
+import { randomHash } from "./utilities/random-hash";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
 import { usePersistedState } from "./hooks/use-persisted-state";
 import { PlayerMapTool } from "./map-tools/player-map-tool";
@@ -54,7 +54,7 @@ type MarkedArea = {
 };
 
 const createCacheBusterString = () =>
-  encodeURIComponent(`${Date.now()}_${uuid()}`);
+  encodeURIComponent(`${Date.now()}_${randomHash()}`);
 
 const PlayerMap: React.FC<{
   fetch: typeof fetch;
