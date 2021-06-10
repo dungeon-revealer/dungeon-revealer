@@ -3,7 +3,7 @@
 const once = require("lodash/once");
 const path = require("path");
 const fs = require("fs-extra");
-const { v4: uuid } = require("uuid");
+const { randomUUID } = require("crypto");
 
 /**
  *
@@ -155,7 +155,7 @@ class FileStorage {
   }
 
   async store({ fileName: originalFileName, filePath, fileExtension }) {
-    const id = uuid();
+    const id = randomUUID();
     const fileName = `${id}.${fileExtension}`;
     const destinationPath = path.join(this._storageDirectoryPath, fileName);
     const relativeDestinationPath = path.relative(

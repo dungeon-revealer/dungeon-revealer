@@ -1,6 +1,6 @@
 import * as React from "react";
-import { v4 as uuid } from "uuid";
 export { TokenInfoAside } from "./token-info-aside";
+import { randomHash } from "../../utilities/random-hash";
 
 type NoteWindow = {
   id: string;
@@ -39,7 +39,12 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
     (noteId: string, initialShowLibrary: boolean = false) => {
       setWindows((windows) => [
         ...windows,
-        { id: uuid(), currentIndex: 0, history: [noteId], initialShowLibrary },
+        {
+          id: randomHash(),
+          currentIndex: 0,
+          history: [noteId],
+          initialShowLibrary,
+        },
       ]);
     },
     []
@@ -93,7 +98,7 @@ export const NoteWindowContextProvider: React.FC<{}> = ({ children }) => {
         return [
           ...windows,
           {
-            id: uuid(),
+            id: randomHash(),
             currentIndex: 0,
             history: [noteId],
             initialShowLibrary: false,

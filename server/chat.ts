@@ -1,4 +1,4 @@
-import { v4 as uuid } from "uuid";
+import { randomUUID } from "crypto";
 import { roll } from "@airjp73/dice-notation";
 import { Liquid, LiquidError } from "liquidjs";
 import type { Json } from "fp-ts/lib/Json";
@@ -193,7 +193,7 @@ export const createChat = () => {
     try {
       const text = templateEngine.parseAndRenderSync(content, scope);
       const message: ApplicationRecordSchema = {
-        id: uuid(),
+        id: randomUUID(),
         type: "USER_MESSAGE",
         createdAt: new Date().getTime(),
         authorName: args.authorName,
@@ -217,7 +217,7 @@ export const createChat = () => {
     resource: SharedResourceType;
   }) => {
     const message: ApplicationRecordSchema = {
-      id: uuid(),
+      id: randomUUID(),
       type: "SHARED_RESOURCE",
       createdAt: new Date().getTime(),
       ...args,
@@ -227,7 +227,7 @@ export const createChat = () => {
 
   const addOperationalMessage = (args: { content: string }) => {
     const message: ApplicationRecordSchema = {
-      id: uuid(),
+      id: randomUUID(),
       type: "OPERATIONAL_MESSAGE",
       createdAt: new Date().getTime(),
       content: args.content,

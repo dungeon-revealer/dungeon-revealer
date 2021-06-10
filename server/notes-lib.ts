@@ -1,7 +1,7 @@
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as E from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
-import { v4 as uuid } from "uuid";
+import { randomUUID } from "crypto";
 import sanitizeHtml from "sanitize-html";
 import showdown from "showdown";
 import * as db from "./notes-db";
@@ -100,7 +100,7 @@ export const createNote = ({
     RTE.rightReaderTask,
     RTE.chainW(() =>
       db.updateOrInsertNote({
-        id: uuid(),
+        id: randomUUID(),
         title,
         content,
         access: "admin",

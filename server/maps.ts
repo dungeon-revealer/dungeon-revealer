@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs-extra";
 import junk from "junk";
-import { v4 as uuid } from "uuid";
+import { randomUUID } from "crypto";
 
 const isDirectory = (source: string) => fs.lstatSync(source).isDirectory();
 
@@ -170,7 +170,7 @@ export class Maps {
     filePath: string;
     fileExtension: string;
   }) {
-    const id = uuid();
+    const id = randomUUID();
     return this._processTask(`map:${id}`, async () => {
       fs.mkdirp(this._buildMapFolderPath(id));
       const mapPath = `map${fileExtension ? `.${fileExtension}` : ``}`;
@@ -335,7 +335,7 @@ export class Maps {
 
         for (const props of tokens) {
           const token = {
-            id: uuid(),
+            id: randomUUID(),
             x: props.x ?? 0,
             y: props.y ?? 0,
             radius: props.radius ?? (map.grid?.columnWidth ?? 50) / 2,
