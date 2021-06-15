@@ -1026,4 +1026,20 @@ export const ChakraIcon = {
       </>
     ),
   }),
+  Columns: createIcon({
+    displayName: "Columns",
+    viewBox: "0 0 24 24",
+    defaultProps: {
+      fill: "none",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    path: (
+      <path
+        d="M12 3h7a2 2 0 012 2v14a2 2 0 01-2 2h-7m0-18H5a2 2 0 00-2 2v14a2 2 0 002 2h7m0-18v18"
+        stroke="currentColor"
+      />
+    ),
+  }),
 };

@@ -66,6 +66,8 @@ const hasButtonParent = (el: any) => {
   return isButton;
 };
 
+export type SetWidthHandler = (f: (width: number) => number) => void;
+
 export const DraggableWindow = ({
   headerContent,
   bodyContent,
@@ -76,6 +78,7 @@ export const DraggableWindow = ({
   options = [],
   onDidResize,
   sideBarContent,
+  setWidthRef,
 }: {
   headerContent: React.ReactNode;
   bodyContent: React.ReactNode;
@@ -91,6 +94,7 @@ export const DraggableWindow = ({
   }[];
   onDidResize?: () => void;
   sideBarContent?: React.ReactElement | null | undefined;
+  setWidthRef?: React.MutableRefObject<SetWidthHandler | null>;
 }): JSX.Element => {
   const [props, set] = useSpring(() => ({
     x: window.innerWidth / 2 - 500 / 2,
@@ -98,6 +102,14 @@ export const DraggableWindow = ({
     width: 500,
     height: window.innerHeight / 2,
   }));
+
+  React.useEffect(() => {
+    if (setWidthRef) {
+      setWidthRef.current = (f) => {
+        props.width.set(f(props.width.get()));
+      };
+    }
+  });
 
   // In case the component un-mounts before the drag finished we need to remove the use-select-disabled class from body
   const onUnmountRef = React.useRef<() => void>();
