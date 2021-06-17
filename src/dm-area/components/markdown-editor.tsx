@@ -4,6 +4,7 @@ import styled from "@emotion/styled/macro";
 import { parseDocument } from "htmlparser2";
 import MonacoEditor, { useMonaco, Monaco } from "@monaco-editor/react";
 import type * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
+import { Flex, Box } from "@chakra-ui/react";
 import * as Button from "../../button";
 import { sendRequest, ISendRequestTask } from "../../http-request";
 import { buildApiUrl } from "../../public-url";
@@ -15,6 +16,7 @@ import {
   ImageIcon,
   ListIcon,
   Link,
+  ChakraIcon,
 } from "../../feather-icons";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
 import { useAccessToken } from "../../hooks/use-access-token";
@@ -26,6 +28,7 @@ import { useNoteWindowActions } from "../token-info-aside";
 import { useWindowContext } from "../token-info-aside/token-info-aside";
 import { useCurrent } from "../../hooks/use-current";
 import { useShowSelectNoteModal } from "../select-note-modal";
+import { HtmlContainer } from "./html-container";
 
 const insertImageIntoEditor = (
   monaco: Monaco,
@@ -502,6 +505,7 @@ export const MarkdownEditor: React.FC<{
   const monaco = useMonaco();
   const uploadTaskRef = React.useRef<ISendRequestTask | null>(null);
   const accessToken = useAccessToken();
+  const [isSplitView, setIsSplitView] = React.useState(false);
 
   const uploadFile = React.useCallback(
     (file: File) => {
@@ -526,8 +530,9 @@ export const MarkdownEditor: React.FC<{
     [accessToken]
   );
 
-  const ref =
-    React.useRef<monacoEditor.editor.IStandaloneCodeEditor | null>(null);
+  const ref = React.useRef<monacoEditor.editor.IStandaloneCodeEditor | null>(
+    null
+  );
   const editorStateRef = React.useRef({
     decorations: [] as string[],
   });
@@ -548,31 +553,30 @@ export const MarkdownEditor: React.FC<{
     []
   );
 
-  const [menu, setMenu] =
-    React.useState<
-      | {
-          type: "image";
-          data: {
-            id: string;
-            textPosition: {
-              start: number;
-              end: number;
-            };
+  const [menu, setMenu] = React.useState<
+    | {
+        type: "image";
+        data: {
+          id: string;
+          textPosition: {
+            start: number;
+            end: number;
           };
-        }
-      | {
-          type: "link";
-          data: {
-            id: string;
-            innerContent: string;
-            textPosition: {
-              start: number;
-              end: number;
-            };
+        };
+      }
+    | {
+        type: "link";
+        data: {
+          id: string;
+          innerContent: string;
+          textPosition: {
+            start: number;
+            end: number;
           };
-        }
-      | null
-    >(null);
+        };
+      }
+    | null
+  >(null);
 
   // TODO: Ideally we only have one showMediaLibrary state that is more complex
 
@@ -746,91 +750,113 @@ export const MarkdownEditor: React.FC<{
         >
           <Link height={16} />
         </ToolBarButton>
+        <ToolBarButton
+          style={{ marginLeft: "auto" }}
+          title="Toggle Split Mode"
+          onClick={() => {
+            setIsSplitView((isSplitView) => !isSplitView);
+          }}
+        >
+          <ChakraIcon.Columns />
+        </ToolBarButton>
       </TextToolBar>
-      <MonacoEditor
-        value={value}
-        onChange={(value) => value !== undefined && onChange(value)}
-        language="markdown"
-        options={{
-          minimap: { enabled: false },
-          lineNumbers: "off",
-          wordWrap: "on",
-        }}
-        onMount={(editor) => {
-          ref.current = editor;
-          if (editorOnResizeRef) {
-            editorOnResizeRef.current = () => {
-              editor.layout();
-            };
-          }
+      <Flex overflow="hidden" height="100%">
+        <Box
+          flex="1"
+          position="relative"
+          maxWidth={isSplitView ? "50%" : undefined}
+        >
+          <MonacoEditor
+            value={value}
+            onChange={(value) => value !== undefined && onChange(value)}
+            language="markdown"
+            options={{
+              minimap: { enabled: false },
+              lineNumbers: "off",
+              wordWrap: "on",
+            }}
+            onMount={(editor) => {
+              ref.current = editor;
+              if (editorOnResizeRef) {
+                editorOnResizeRef.current = () => {
+                  editor.layout();
+                };
+              }
 
-          editor.onDidChangeCursorPosition((event) => {
-            const text = editor.getValue();
-            const model = editor.getModel();
-            const monaco = monacoRef.current;
-            if (!model || !monaco) return;
+              editor.onDidChangeCursorPosition((event) => {
+                const text = editor.getValue();
+                const model = editor.getModel();
+                const monaco = monacoRef.current;
+                if (!model || !monaco) return;
 
-            const positionOffset = model.getOffsetAt(event.position);
+                const positionOffset = model.getOffsetAt(event.position);
 
-            let selectionRange =
-              getMarkdownImageSelectionRange(positionOffset, text) ||
-              getMarkdownLinkSelectionRange(positionOffset, text);
+                let selectionRange =
+                  getMarkdownImageSelectionRange(positionOffset, text) ||
+                  getMarkdownLinkSelectionRange(positionOffset, text);
 
-            if (!selectionRange) {
-              editorStateRef.current.decorations = editor.deltaDecorations(
-                editorStateRef.current.decorations,
-                []
-              );
-              setMenu(null);
-              return;
-            }
+                if (!selectionRange) {
+                  editorStateRef.current.decorations = editor.deltaDecorations(
+                    editorStateRef.current.decorations,
+                    []
+                  );
+                  setMenu(null);
+                  return;
+                }
 
-            const startPosition = model.getPositionAt(
-              selectionRange.position.start
-            );
-            const endPosition = model.getPositionAt(
-              selectionRange.position.end
-            );
-            editorStateRef.current.decorations = editor.deltaDecorations(
-              editorStateRef.current.decorations,
-              [
-                {
-                  range: new monaco.Range(
-                    startPosition.lineNumber,
-                    startPosition.column,
-                    endPosition.lineNumber,
-                    endPosition.column
-                  ),
-                  options: { inlineClassName: ".active-image-component" },
-                },
-              ]
-            );
+                const startPosition = model.getPositionAt(
+                  selectionRange.position.start
+                );
+                const endPosition = model.getPositionAt(
+                  selectionRange.position.end
+                );
+                editorStateRef.current.decorations = editor.deltaDecorations(
+                  editorStateRef.current.decorations,
+                  [
+                    {
+                      range: new monaco.Range(
+                        startPosition.lineNumber,
+                        startPosition.column,
+                        endPosition.lineNumber,
+                        endPosition.column
+                      ),
+                      options: { inlineClassName: ".active-image-component" },
+                    },
+                  ]
+                );
 
-            if (selectionRange.type === "image") {
-              setMenu({
-                type: selectionRange.type,
-                data: {
-                  id: selectionRange.id,
-                  textPosition: {
-                    ...selectionRange.position,
-                  },
-                },
+                if (selectionRange.type === "image") {
+                  setMenu({
+                    type: selectionRange.type,
+                    data: {
+                      id: selectionRange.id,
+                      textPosition: {
+                        ...selectionRange.position,
+                      },
+                    },
+                  });
+                } else {
+                  setMenu({
+                    type: selectionRange.type,
+                    data: {
+                      id: selectionRange.id,
+                      innerContent: selectionRange.text,
+                      textPosition: {
+                        ...selectionRange.position,
+                      },
+                    },
+                  });
+                }
               });
-            } else {
-              setMenu({
-                type: selectionRange.type,
-                data: {
-                  id: selectionRange.id,
-                  innerContent: selectionRange.text,
-                  textPosition: {
-                    ...selectionRange.position,
-                  },
-                },
-              });
-            }
-          });
-        }}
-      />
+            }}
+          />
+        </Box>
+        {isSplitView ? (
+          <Box flex="1" overflowY="scroll" padding="2">
+            <HtmlContainer markdown={value} />
+          </Box>
+        ) : null}
+      </Flex>
       {uploadImageNode}
       {menu && sideBarRef.current
         ? ReactDom.createPortal(

@@ -105,7 +105,7 @@ const HtmlContainerWrapper = styled.div`
 const EditorContainer = styled.div`
   position: relative;
   flex: 1;
-  height: 100%;
+  height: inherit;
   padding-top: 8px;
 `;
 
