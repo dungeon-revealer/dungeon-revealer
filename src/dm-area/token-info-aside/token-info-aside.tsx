@@ -142,7 +142,8 @@ const TitleAutoSaveInput = (props: { id: string; title: string }) => {
       variant="filled"
       size="sm"
       value={title}
-      style={{ width: "100%" }}
+      width="100%"
+      maxWidth="500px"
       onChange={(ev) => setTitle(ev.target.value)}
     />
   );
