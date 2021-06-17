@@ -1,6 +1,6 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
-import { Flex } from "@chakra-ui/react";
+import { Flex, Box } from "@chakra-ui/react";
 import MonacoEditor from "@monaco-editor/react";
 import type * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import * as Icon from "../feather-icons";
@@ -179,31 +179,35 @@ export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
       bodyContent={
         <Flex maxHeight="100%" height="100%">
           {mode === "write" ? (
-            <MonacoEditor
-              language="markdown"
-              options={{
-                minimap: { enabled: false },
-                lineNumbers: "off",
-                wordWrap: "on",
-                glyphMargin: false,
-                folding: false,
-                lineDecorationsWidth: 12,
-                lineNumbersMinChars: 0,
-              }}
-              value={content}
-              onChange={(value) => value !== undefined && setContent(value)}
-              onMount={(editor) => {
-                editorOnResizeRef.current = () => {
-                  editor.layout();
-                };
+            <Box maxWidth="50%" flex="1">
+              <MonacoEditor
+                language="markdown"
+                options={{
+                  minimap: { enabled: false },
+                  lineNumbers: "off",
+                  wordWrap: "on",
+                  glyphMargin: false,
+                  folding: false,
+                  lineDecorationsWidth: 12,
+                  lineNumbersMinChars: 0,
+                }}
+                value={content}
+                onChange={(value) => value !== undefined && setContent(value)}
+                onMount={(editor) => {
+                  editorOnResizeRef.current = () => {
+                    editor.layout();
+                  };
 
-                editorRef.current = editor;
-              }}
-            />
+                  editorRef.current = editor;
+                }}
+              />
+            </Box>
           ) : null}
-          <WindowContent>
-            <HtmlContainer markdown={content} />
-          </WindowContent>
+          <Box flex="1">
+            <WindowContent>
+              <HtmlContainer markdown={content} />
+            </WindowContent>
+          </Box>
         </Flex>
       }
       close={close}
