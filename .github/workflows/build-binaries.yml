@@ -196,4 +196,4 @@ jobs:
         if: success() && steps.branch-name.outputs.is_tag == 'false'
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
-        uses: Ilshidur/action-discord@0.3.0
+        uses: Ilshidur/action-discord@0.3.2
