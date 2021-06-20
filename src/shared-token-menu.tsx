@@ -1,21 +1,30 @@
 import * as React from "react";
 import { animated, to } from "@react-spring/web";
+import { Box } from "@chakra-ui/react";
 import { useControls, useCreateStore, LevaInputs } from "leva";
 import graphql from "babel-plugin-relay/macro";
-import { useMutation } from "relay-hooks";
+import { useMutation, useQuery } from "relay-hooks";
 import { ThemedLevaPanel } from "./themed-leva-panel";
 import { ChatPositionContext } from "./authenticated-app-shell";
 import { useSelectedItems } from "./shared-token-state";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
 import type { sharedTokenMenuUpdateManyMapTokenMutation } from "./__generated__/sharedTokenMenuUpdateManyMapTokenMutation.graphql";
+import type { sharedTokenMenuRererenceNoteQuery } from "./__generated__/sharedTokenMenuRererenceNoteQuery.graphql";
+
+import { State, StoreType } from "leva/dist/declarations/src/types";
+import { levaPluginNotePreview } from "./leva-plugin/leva-plugin-note-preview";
 
 const firstMapValue = <TItemValue extends any>(
   map: Map<any, TItemValue>
 ): TItemValue => map.values().next().value as TItemValue;
 
+const referenceIdSelector = (state: State): string | null =>
+  (state.data["referenceId"] as any)?.value ?? null;
+
 export const SharedTokenMenu = (props: { currentMapId: string }) => {
   const chatPosition = React.useContext(ChatPositionContext);
   const [selectedItems] = useSelectedItems();
+
   return (
     <animated.div
       style={{
@@ -32,20 +41,96 @@ export const SharedTokenMenu = (props: { currentMapId: string }) => {
       onKeyDown={(ev) => ev.stopPropagation()}
     >
       {selectedItems.size === 0 ? null : selectedItems.size === 1 ? (
-        <ThemedLevaPanel
-          store={firstMapValue(selectedItems)}
-          fill={true}
-          hideCopyButton
-          titleBar={{
-            filter: false,
-            drag: false,
-            title: "Token Properties",
-          }}
-        />
+        <SingleTokenPanels store={firstMapValue(selectedItems)} />
       ) : (
         <MultiTokenPanel currentMapId={props.currentMapId} />
       )}
     </animated.div>
+  );
+};
+
+const SharedTokenMenuReferenceNoteQuery = graphql`
+  query sharedTokenMenuRererenceNoteQuery($noteId: ID!) {
+    note(documentId: $noteId) {
+      id
+      documentId
+      title
+      content
+    }
+  }
+`;
+
+const TokenNotePreview = (props: {
+  id: string;
+  markdown: string;
+  title: string;
+}) => {
+  const store = useCreateStore();
+
+  useControls(
+    {
+      " ": levaPluginNotePreview({
+        value: {
+          id: props.id,
+          markdown: props.markdown,
+        },
+      }),
+    },
+    { store }
+  );
+
+  return (
+    <Box marginBottom="3">
+      <ThemedLevaPanel
+        store={store}
+        fill={true}
+        hideCopyButton
+        titleBar={{
+          filter: false,
+          drag: false,
+          title: props.title,
+        }}
+      />
+    </Box>
+  );
+};
+
+const NoteAsidePreview = (props: { noteId: string }) => {
+  const noteProps = useQuery<sharedTokenMenuRererenceNoteQuery>(
+    SharedTokenMenuReferenceNoteQuery,
+    { noteId: props.noteId }
+  );
+
+  if (noteProps.data?.note == null) {
+    return null;
+  }
+
+  return (
+    <TokenNotePreview
+      id={noteProps.data.note.documentId}
+      markdown={noteProps.data.note.content}
+      title={noteProps.data.note.title}
+    />
+  );
+};
+
+const SingleTokenPanels = (props: { store: StoreType }) => {
+  const referenceId = props.store.useStore(referenceIdSelector);
+
+  return (
+    <>
+      {referenceId == null ? null : <NoteAsidePreview noteId={referenceId} />}
+      <ThemedLevaPanel
+        store={props.store}
+        fill={true}
+        hideCopyButton
+        titleBar={{
+          filter: false,
+          drag: false,
+          title: "Token Properties",
+        }}
+      />
+    </>
   );
 };
 

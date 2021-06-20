@@ -27,7 +27,6 @@ import type {
 import { useContextBridge } from "./hooks/use-context-bridge";
 import { MapGridEntity, MapTokenEntity, MarkedAreaEntity } from "./map-typings";
 import { useIsKeyPressed } from "./hooks/use-is-key-pressed";
-import { useNoteWindowActions } from "./dm-area/token-info-aside";
 import { TextureLoader } from "three";
 import { ReactEventHandlers } from "react-use-gesture/dist/types";
 import { useQuery } from "relay-hooks";
@@ -460,8 +459,6 @@ const TokenRenderer = (props: {
     }
   }, [isLocked]);
 
-  const noteWindowActions = useNoteWindowActions();
-
   const onPointerDown = React.useRef<null | (() => void)>(null);
 
   const hoverCounter = React.useRef(0);
@@ -512,11 +509,6 @@ const TokenRenderer = (props: {
             // left mouse
             if (event.button === 0) {
               tokenSelection.setSelectedItem(props.id, store);
-              if (values.referenceId) {
-                noteWindowActions.focusOrShowNoteInNewWindow(
-                  values.referenceId
-                );
-              }
             }
 
             if (event.button === 2) {
@@ -751,8 +743,9 @@ const TokenLabel = (props: {
   backgroundColor: null | string;
   fontSize: number;
 }) => {
-  const [blockBounds, setBlockBounds] =
-    React.useState<[number, number, number, number] | null>(null);
+  const [blockBounds, setBlockBounds] = React.useState<
+    [number, number, number, number] | null
+  >(null);
 
   const textRef = React.useRef<CanvasTextRef | null>(null);
   const lastBlockBounds = React.useRef(blockBounds);
@@ -1423,12 +1416,11 @@ const MapViewRenderer = (props: {
     };
   });
 
-  const toolRef =
-    React.useRef<{
-      contextState: any;
-      localState: any;
-      handlers?: MapToolMapGestureHandlers;
-    } | null>(null);
+  const toolRef = React.useRef<{
+    contextState: any;
+    localState: any;
+    handlers?: MapToolMapGestureHandlers;
+  } | null>(null);
 
   const clearTokenSelection = useClearTokenSelection();
 
