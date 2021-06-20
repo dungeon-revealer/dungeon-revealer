@@ -10,8 +10,9 @@ import * as express from "express";
  * In the bundled pkg "binary" we use the execPath.
  */
 export const getDefaultDataDirectory = () => {
-  if (process.pkg) {
-    return path.resolve(path.dirname(process.execPath), "data");
+  const isCaxa = process.argv.includes("--caxa");
+  if (isCaxa) {
+    return path.resolve(process.cwd(), "data");
   } else {
     // eslint-disable-next-line id-blacklist
     return path.resolve(__dirname, "..", "data");

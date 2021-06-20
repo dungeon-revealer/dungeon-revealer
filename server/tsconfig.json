@@ -11,7 +11,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "outDir": "./../server-build",
-    "typeRoots": ["../node_modules/@types", "./@types"]
+    "typeRoots": ["../node_modules/@types"]
   },
   "include": ["./"]
 }
