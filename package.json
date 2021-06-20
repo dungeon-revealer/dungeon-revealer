@@ -59,7 +59,7 @@
     "graphql": "15.5.1",
     "io-ts": "2.2.16",
     "junk": "3.1.0",
-    "liquidjs": "9.25.0",
+    "liquidjs": "9.25.1",
     "lodash": "4.17.21",
     "morgan": "1.10.0",
     "sanitize-html": "2.4.0",
