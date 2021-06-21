@@ -40,6 +40,10 @@
     {
       "groupName": "three and react-three-fiber",
       "packagePatterns": ["three", "react-three-fiber"]
+    },
+    {
+      "groupName": "monaco-editor",
+      "packagePatterns": ["@monaco-editor/react", "monaco-editor"]
     }
   ],
   "postUpdateOptions": ["npmDedupe"]
