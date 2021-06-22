@@ -9,6 +9,7 @@ export type MapGridEntity = {
 export type MapTokenEntity = {
   id: string;
   radius: number;
+  rotation: number;
   color: string;
   label: string;
   x: number;

@@ -72,6 +72,7 @@ export const updateManyMapToken = (params: {
     isVisibleForPlayers: boolean | undefined;
     isMovableByPlayers: boolean | undefined;
     tokenImageId: string | null | undefined;
+    rotation: number | undefined;
   };
 }) =>
   pipe(
@@ -84,6 +85,7 @@ export const updateManyMapToken = (params: {
           isVisibleForPlayers: params.props.isVisibleForPlayers,
           isMovableByPlayers: params.props.isMovableByPlayers,
           tokenImageId: params.props.tokenImageId,
+          rotation: params.props.rotation,
         })
     ),
     RT.chainW(() =>
@@ -121,6 +123,7 @@ export const addManyMapToken = (params: {
     x?: number | null;
     y?: number | null;
     radius?: null | number;
+    rotation?: null | number;
     color?: string | null;
     label?: string | null;
     isLocked?: boolean | null;

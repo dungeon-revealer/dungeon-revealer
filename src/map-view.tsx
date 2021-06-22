@@ -154,6 +154,7 @@ const TokenRenderer = (props: {
   y: number;
   color: string;
   radius: number;
+  rotation: number;
   textLabel: string;
   isLocked: boolean;
   isMovableByPlayers: boolean;
@@ -182,6 +183,7 @@ const TokenRenderer = (props: {
     position: 0,
     radius: 0,
     color: 0,
+    rotation: 0,
   }).current;
 
   const columnWidth = props.columnWidth ?? 150;
@@ -199,7 +201,7 @@ const TokenRenderer = (props: {
           if (initial) {
             return;
           }
-          set({
+          setAnimatedProps({
             position: [
               ...sharedMapState.helper.imageCoordinatesToThreePoint(value),
               0,
@@ -235,7 +237,7 @@ const TokenRenderer = (props: {
             return;
           }
           const newRadius = sharedMapState.helper.size.fromImageToThree(value);
-          set({
+          setAnimatedProps({
             circleScale: [
               newRadius / initialRadius,
               newRadius / initialRadius,
@@ -269,6 +271,37 @@ const TokenRenderer = (props: {
           "3x": () => updateRadiusRef.current?.(3),
         },
       }),
+      rotation: {
+        type: LevaInputs.NUMBER,
+        label: "Rotation",
+        min: 0,
+        max: Math.PI * 2,
+        step: Math.PI / 360,
+        value: props.rotation,
+        onChange: (rotation: number, _, { initial, fromPanel }) => {
+          if (initial) {
+            return;
+          }
+          setAnimatedProps({
+            rotation,
+          });
+
+          if (!fromPanel) {
+            return;
+          }
+
+          pendingChangesRef.current.rotation = rotation;
+          enqueueSave();
+        },
+        onEditStart: () => {
+          editingStateRef.rotation++;
+        },
+        onEditEnd: (value) => {
+          editingStateRef.rotation--;
+          pendingChangesRef.current.rotation = value;
+          enqueueSave();
+        },
+      },
       isLocked: {
         type: LevaInputs.BOOLEAN,
         label: "Position locked",
@@ -402,6 +435,9 @@ const TokenRenderer = (props: {
     if (editingStateRef.color === 0) {
       values["color"] = props.color;
     }
+    if (editingStateRef.rotation === 0) {
+      values["rotation"] = props.rotation;
+    }
 
     setValues(values);
   }, [
@@ -416,6 +452,7 @@ const TokenRenderer = (props: {
     props.isVisibleForPlayers,
     props.referenceId,
     props.tokenImageId,
+    props.rotation,
   ]);
 
   const query = useQuery<mapView_TokenImageQuery>(
@@ -445,12 +482,13 @@ const TokenRenderer = (props: {
 
   const [isHover, setIsHover] = React.useState(false);
 
-  const [animatedProps, set] = useSpring(() => ({
+  const [animatedProps, setAnimatedProps] = useSpring(() => ({
     position: [
       ...sharedMapState.helper.imageCoordinatesToThreePoint([props.x, props.y]),
       0,
     ] as [number, number, number],
     circleScale: [1, 1, 1] as [number, number, number],
+    rotation: props.rotation,
   }));
 
   React.useEffect(() => {
@@ -687,6 +725,7 @@ const TokenRenderer = (props: {
             dragProps={dragProps}
             isHover={isHover}
             opacity={values.isVisibleForPlayers ? 1 : 0.5}
+            rotation={animatedProps.rotation}
           />
         ) : null}
         {values.tokenImageId && cachedQueryResult?.data?.tokenImage ? null : (
@@ -816,6 +855,7 @@ const TokenAttachment = (props: {
   isHover: boolean;
   opacity: number;
   dragProps: () => ReactEventHandlers;
+  rotation: SpringValue<number>;
 }) => {
   return (
     <React.Suspense fallback={null}>
@@ -834,6 +874,7 @@ const TokenAttachment = (props: {
         initialRadius={props.initialRadius}
         isHover={props.isHover}
         opacity={props.opacity}
+        rotation={props.rotation}
       />
     </React.Suspense>
   );
@@ -845,11 +886,21 @@ const TextureElement = (props: {
   initialRadius: number;
   isHover: boolean;
   opacity: number;
+  rotation: SpringValue<number>;
 }) => {
   const texture = useLoader(TextureLoader, props.url);
 
   return (
-    <mesh renderOrder={LayerRenderOrder.tokenGesture} {...props.dragProps()}>
+    <animated.mesh
+      renderOrder={LayerRenderOrder.tokenGesture}
+      // ts-expect-error:
+      rotation={props.rotation.to<[number, number, number]>((value) => [
+        0,
+        0,
+        -value,
+      ])}
+      {...props.dragProps()}
+    >
       <circleBufferGeometry
         attach="geometry"
         args={[props.initialRadius, 128]}
@@ -860,7 +911,7 @@ const TextureElement = (props: {
         transparent={true}
         opacity={props.isHover ? props.opacity + 0.1 : props.opacity}
       />
-    </mesh>
+    </animated.mesh>
   );
 };
 
@@ -1138,6 +1189,7 @@ const MapRenderer: React.FC<{
             isMovableByPlayers={token.isMovableByPlayers}
             isVisibleForPlayers={token.isVisibleForPlayers}
             radius={token.radius}
+            rotation={token.rotation}
             referenceId={token.reference?.id ?? null}
             tokenImageId={token.tokenImageId ?? null}
             columnWidth={props.grid?.columnWidth ?? null}

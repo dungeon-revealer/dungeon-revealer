@@ -342,6 +342,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         label: req.body.label,
         color: req.body.color,
         radius: req.body.radius,
+        rotation: req.body.rotation,
         isVisibleForPlayers: req.body.isVisibleForPlayers,
         isLocked: req.body.isLocked,
         isMovableByPlayers: req.body.isMovableByPlayers,
