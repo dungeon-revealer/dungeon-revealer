@@ -58,8 +58,10 @@ export const TokenImageCropper = (props: {
 }): React.ReactElement => {
   const [crop, setCrop] = React.useState({ x: 0, y: 0 });
   const [zoom, setZoom] = React.useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] =
-    React.useState<Area | null>(null);
+  const [rotation, setRotation] = React.useState(0);
+  const [croppedAreaPixels, setCroppedAreaPixels] = React.useState<Area | null>(
+    null
+  );
   const [title, setTitle] = React.useState("New Token Image");
   const data = useQuery<tokenImageCropper_TokenLibraryImagesQuery>(
     TokenLibraryImagesQuery,
@@ -69,22 +71,20 @@ export const TokenImageCropper = (props: {
   );
 
   const windowDimensions = useWindowDimensions();
-  const [imageDimensions, setImageDimensions] =
-    React.useState<{
-      width: number;
-      height: number;
-    } | null>(null);
+  const [imageDimensions, setImageDimensions] = React.useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   const [ref, bounds] = useMeasure();
   const cropperRef = React.useRef<CropperType | null>();
 
-  const [cropSize, setCropSize] =
-    React.useState<null | {
-      width: number;
-      height: number;
-      minZoom: number;
-      maxZoom: number;
-    }>(null);
+  const [cropSize, setCropSize] = React.useState<null | {
+    width: number;
+    height: number;
+    minZoom: number;
+    maxZoom: number;
+  }>(null);
 
   React.useEffect(() => {
     if (!cropperRef.current?.imageRef || bounds.height === 0) {
@@ -214,9 +214,13 @@ export const TokenImageCropper = (props: {
             ref={cropperRef}
             image={props.imageUrl}
             crop={crop}
+            rotation={rotation}
             minZoom={cropSize?.minZoom ?? 1}
             maxZoom={cropSize?.maxZoom ?? 1}
             zoom={zoom}
+            onRotationChange={(rotation) => {
+              setRotation(rotation);
+            }}
             onCropChange={setCrop}
             onCropComplete={(_, croppedAreaPixels) => {
               setCroppedAreaPixels(croppedAreaPixels);
@@ -272,6 +276,23 @@ export const TokenImageCropper = (props: {
                 <SliderThumb />
               </Slider>
             </FormControl>
+            <FormControl id="rotation">
+              <FormLabel fontSize="small">Rotation</FormLabel>
+              <Slider
+                aria-label="slider-rotation"
+                min={0}
+                max={360}
+                step={0.01}
+                value={rotation}
+                onChange={(rotation) => setRotation(rotation)}
+                size="sm"
+              >
+                <SliderTrack>
+                  <SliderFilledTrack />
+                </SliderTrack>
+                <SliderThumb />
+              </Slider>
+            </FormControl>
             <FormControl id="token-title">
               <FormLabel fontSize="small">Title</FormLabel>
               <Input
@@ -298,7 +319,8 @@ export const TokenImageCropper = (props: {
                   }
                   const file = await cropImage(
                     props.imageUrl,
-                    croppedAreaPixels
+                    croppedAreaPixels,
+                    rotation
                   );
                   props.onConfirm({ type: "File", file, title });
                 }}
@@ -315,24 +337,30 @@ export const TokenImageCropper = (props: {
 
 const Cropper = React.lazy(() => import("react-easy-crop"));
 
-const cropImage = async (imageUrl: string, crop: Area) => {
+const cropImage = async (imageUrl: string, crop: Area, rotation: number) => {
   const image = await loadImage(imageUrl).promise;
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
 
   const maxSize = Math.max(image.width, image.height);
+  const safeArea = 2 * ((maxSize / 2) * Math.sqrt(2));
 
   // set each dimensions to double largest dimension to allow for a safe area for the
   // image to rotate in without being clipped by canvas context
-  canvas.width = maxSize;
-  canvas.height = maxSize;
+  canvas.width = safeArea;
+  canvas.height = safeArea;
+
+  // translate canvas context to a central location on image to allow rotating around the center.
+  ctx.translate(safeArea / 2, safeArea / 2);
+  ctx.rotate(degreeToRadian(rotation));
+  ctx.translate(-safeArea / 2, -safeArea / 2);
 
   ctx.drawImage(
     image,
-    maxSize / 2 - image.width * 0.5,
-    maxSize / 2 - image.height * 0.5
+    safeArea / 2 - image.width * 0.5,
+    safeArea / 2 - image.height * 0.5
   );
-  const data = ctx.getImageData(0, 0, maxSize, maxSize);
+  const data = ctx.getImageData(0, 0, safeArea, safeArea);
 
   // set canvas width to final desired crop size - this will clear existing context
   canvas.width = crop.width;
@@ -341,8 +369,8 @@ const cropImage = async (imageUrl: string, crop: Area) => {
   // paste generated rotate image with correct offsets for x,y crop values.
   ctx.putImageData(
     data,
-    Math.round(0 - maxSize / 2 + image.width * 0.5 - crop.x),
-    Math.round(0 - maxSize / 2 + image.height * 0.5 - crop.y)
+    Math.round(0 - safeArea / 2 + image.width * 0.5 - crop.x),
+    Math.round(0 - safeArea / 2 + image.height * 0.5 - crop.y)
   );
 
   return await new Promise<File>((resolve, reject) => {
@@ -354,3 +382,5 @@ const cropImage = async (imageUrl: string, crop: Area) => {
     }, "image/webp");
   });
 };
+
+const degreeToRadian = (degree: number) => (degree * Math.PI) / 180;
