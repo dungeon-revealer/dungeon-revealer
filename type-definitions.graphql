@@ -427,6 +427,11 @@ input MapTokenUpdateManyPropertiesInput {
   Token image id to be updated. Will be updated if null is provided.
   """
   tokenImageId: ID
+
+  """
+  Rotation to be updated. Will not be updated if null is provided.
+  """
+  rotation: Float
 }
 
 input MapTokenRemoveManyInput {
@@ -452,6 +457,7 @@ input MapTokenAddManyTokenInput {
   color: String!
   label: String!
   radius: Float
+  rotation: Float
   isVisibleForPlayers: Boolean
   isMovableByPlayers: Boolean
   isLocked: Boolean

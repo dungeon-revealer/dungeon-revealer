@@ -454,8 +454,9 @@ const Content = ({
     setMode({ title: "SHOW_MAP_LIBRARY" });
   }, []);
 
-  const [importModalFile, setImportModalFile] =
-    React.useState<null | File>(null);
+  const [importModalFile, setImportModalFile] = React.useState<null | File>(
+    null
+  );
 
   const [markedAreas, setMarkedAreas] = React.useState<MarkedAreaEntity[]>(
     () => []
@@ -593,6 +594,7 @@ const Content = ({
                         color: "red",
                         x: coords[0],
                         y: coords[1],
+                        rotation: 0,
                         isVisibleForPlayers: false,
                         isMovableByPlayers: false,
                         isLocked: false,

@@ -21,6 +21,9 @@ const prepareToken = (token: { [key: string]: unknown }) => {
   if (token.isMovableByPlayers === undefined) {
     token.isMovableByPlayers = true;
   }
+  if (token.rotation === undefined) {
+    token.rotation = 0;
+  }
   if (token.reference === undefined) {
     token.reference = null;
   }
@@ -322,6 +325,7 @@ export class Maps {
       isMovableByPlayers?: boolean | null;
       type?: "entity" | null;
       tokenImageId?: null | string;
+      rotation?: number | null;
     }>
   ) {
     return await this._processTask<{ tokens: Array<any> }>(
@@ -346,6 +350,7 @@ export class Maps {
             isLocked: props.isLocked ?? false,
             type: props.type ?? "entity",
             tokenImageId: props.tokenImageId ?? null,
+            rotation: props.rotation ?? 0,
           };
 
           newTokens.push(token);
@@ -380,6 +385,7 @@ export class Maps {
       description,
       reference,
       tokenImageId,
+      rotation,
     }: {
       type?: string;
       x?: number;
@@ -400,6 +406,7 @@ export class Maps {
             id: string;
           };
       tokenImageId?: null | string;
+      rotation?: number;
     }
   ) {
     return await this._processTask(`map:${mapId}`, async () => {
@@ -461,6 +468,9 @@ export class Maps {
       if (tokenImageId !== undefined) {
         token.tokenImageId = tokenImageId;
       }
+      if (rotation !== undefined) {
+        token.rotation = rotation;
+      }
 
       const updatedMap = await this._updateMapSettings(map, {
         tokens: map.tokens,
@@ -481,6 +491,7 @@ export class Maps {
       isVisibleForPlayers: boolean | undefined;
       isMovableByPlayers: boolean | undefined;
       tokenImageId: string | null | undefined;
+      rotation: number | undefined;
     }
   ) {
     return await this._processTask(`map:${mapId}`, async () => {
@@ -513,6 +524,9 @@ export class Maps {
         }
         if (props.tokenImageId !== undefined) {
           token.tokenImageId = props.tokenImageId;
+        }
+        if (props.rotation !== undefined) {
+          token.rotation = props.rotation;
         }
       }
 

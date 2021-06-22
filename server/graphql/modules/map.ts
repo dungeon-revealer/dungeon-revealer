@@ -27,6 +27,11 @@ const GraphQLMapTokenUpdateManyPropertiesInput = t.inputObjectType({
       description:
         "Token image id to be updated. Will be updated if null is provided.",
     },
+    rotation: {
+      type: t.Float,
+      description:
+        "Rotation to be updated. Will not be updated if null is provided.",
+    },
   }),
 });
 
@@ -71,6 +76,7 @@ const GraphQLMapTokenAddManyTokenInput = t.inputObjectType({
     color: t.arg(t.NonNullInput(t.String)),
     label: t.arg(t.NonNullInput(t.String)),
     radius: t.arg(t.Float),
+    rotation: t.arg(t.Float),
     isVisibleForPlayers: t.arg(t.Boolean),
     isMovableByPlayers: t.arg(t.Boolean),
     isLocked: t.arg(t.Boolean),
@@ -108,6 +114,7 @@ export const mutationFields = [
             isMovableByPlayers:
               input.properties.isMovableByPlayers ?? undefined,
             tokenImageId: input.properties.tokenImageId,
+            rotation: input.properties.rotation ?? undefined,
           },
         }),
         context
