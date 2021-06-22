@@ -30,7 +30,7 @@ const GraphQLMapTokenUpdateManyPropertiesInput = t.inputObjectType({
     rotation: {
       type: t.Float,
       description:
-        "Rotation to be updated. WIll not be updated if null is provided.",
+        "Rotation to be updated. Will not be updated if null is provided.",
     },
   }),
 });
