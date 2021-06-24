@@ -97,7 +97,8 @@ const GraphQLMapTokenAddManyInput = t.inputObjectType({
 });
 
 export const mutationFields = [
-  t.field("mapTokenUpdateMany", {
+  t.field({
+    name: "mapTokenUpdateMany",
     type: t.Boolean,
     args: {
       input: t.arg(t.NonNullInput(GraphQLMapTokenUpdateManyInput)),
@@ -120,7 +121,8 @@ export const mutationFields = [
         context
       ),
   }),
-  t.field("mapTokenRemoveMany", {
+  t.field({
+    name: "mapTokenRemoveMany",
     type: t.Boolean,
     args: {
       input: t.arg(t.NonNullInput(GraphQLMapTokenRemoveManyInput)),
@@ -134,7 +136,8 @@ export const mutationFields = [
         context
       ),
   }),
-  t.field("mapTokenAddMany", {
+  t.field({
+    name: "mapTokenAddMany",
     type: t.Boolean,
     args: {
       input: t.arg(t.NonNullInput(GraphQLMapTokenAddManyInput)),

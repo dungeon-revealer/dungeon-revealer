@@ -29,15 +29,18 @@ const GraphQLTokenImageType = t.objectType<lib.TokenImageType>({
   name: "TokenImage",
   description: "A entity that can be attached to an image.",
   fields: () => [
-    t.field("id", {
+    t.field({
+      name: "id",
       type: t.NonNull(t.ID),
       resolve: (record) => encodeImageId(String(record.id)),
     }),
-    t.field("title", {
+    t.field({
+      name: "title",
       type: t.NonNull(t.String),
       resolve: (record) => record.title,
     }),
-    t.field("url", {
+    t.field({
+      name: "url",
       type: t.NonNull(t.String),
       resolve: (record, _, context) =>
         // prettier-ignore
@@ -53,7 +56,8 @@ const GraphQLRequestTokenImageUploadDuplicateType =
     name: "RequestTokenImageUploadDuplicate",
     description: "A image with the given SHA-256 does already exist.",
     fields: () => [
-      t.field("tokenImage", {
+      t.field({
+        name: "tokenImage",
         type: t.NonNull(GraphQLTokenImageType),
         description: "The TokenImage that already exists for the given hash.",
         resolve: (record) => record.tokenImage,
@@ -65,7 +69,8 @@ const GraphQLRequestTokenImageUploadUrlType =
   t.objectType<lib.RequestTokenImageUploadUrl>({
     name: "RequestTokenImageUploadUrl",
     fields: () => [
-      t.field("uploadUrl", {
+      t.field({
+        name: "uploadUrl",
         type: t.NonNull(t.String),
         resolve: (record) => record.uploadUrl,
       }),
@@ -142,11 +147,13 @@ type TokenImageEdgeType = {
 const GraphQLTokenImageEdgeObjectType = t.objectType<TokenImageEdgeType>({
   name: "TokenImageEdge",
   fields: () => [
-    t.field("cursor", {
+    t.field({
+      name: "cursor",
       type: t.NonNull(t.String),
       resolve: (source) => source.cursor,
     }),
-    t.field("node", {
+    t.field({
+      name: "node",
       type: t.NonNull(GraphQLTokenImageType),
       resolve: (source) => source.node,
     }),
@@ -167,11 +174,13 @@ const GraphQLTokenImageConnectionObjectType =
   t.objectType<TokenImageConnectionType>({
     name: "TokenImageConnection",
     fields: () => [
-      t.field("edges", {
+      t.field({
+        name: "edges",
         type: t.NonNull(t.List(t.NonNull(GraphQLTokenImageEdgeObjectType))),
         resolve: (source) => source.edges,
       }),
-      t.field("pageInfo", {
+      t.field({
+        name: "pageInfo",
         type: t.NonNull(Relay.GraphQLPageInfoType),
         resolve: (source) => source.pageInfo,
       }),
@@ -181,7 +190,8 @@ const GraphQLTokenImageConnectionObjectType =
 const sequenceReaderTask = sequenceT(RT.readerTask);
 
 export const queryFields = [
-  t.field("tokenImages", {
+  t.field({
+    name: "tokenImages",
     type: GraphQLTokenImageConnectionObjectType,
     args: {
       first: t.arg(t.Int),
@@ -243,7 +253,8 @@ const GraphQLTokenImageCreateSuccessType =
   t.objectType<lib.CreateTokenImageSuccess>({
     name: "TokenImageCreateSuccess",
     fields: () => [
-      t.field("createdTokenImage", {
+      t.field({
+        name: "createdTokenImage",
         type: t.NonNull(GraphQLTokenImageType),
         resolve: ({ tokenImageId }, _, context) =>
           RT.run(lib.getTokenImageById(tokenImageId), context),
@@ -254,7 +265,8 @@ const GraphQLTokenImageCreateSuccessType =
 const GraphQLTokenImageCreateErrorType = t.objectType({
   name: "TokenImageCreateError",
   fields: () => [
-    t.field("reason", {
+    t.field({
+      name: "reason",
       type: t.NonNull(t.String),
       resolve: () => "A unexpected error occured.",
     }),
@@ -280,7 +292,8 @@ const GraphQLTokenImageCreateResultUnionType =
   });
 
 export const mutationFields = [
-  t.field("requestTokenImageUpload", {
+  t.field({
+    name: "requestTokenImageUpload",
     type: t.NonNull(GraphQLRequestTokenImageUploadResultType),
     args: {
       input: t.arg(t.NonNullInput(GraphQLRequestTokenImageUploadInputType)),
@@ -288,7 +301,8 @@ export const mutationFields = [
     resolve: (_, args, context) =>
       RT.run(lib.requestTokenImageUpload(args.input), context),
   }),
-  t.field("tokenImageCreate", {
+  t.field({
+    name: "tokenImageCreate",
     type: t.NonNull(GraphQLTokenImageCreateResultUnionType),
     args: {
       input: t.arg(t.NonNullInput(GraphQLTokenImageCreateInput)),

@@ -6,7 +6,7 @@ import { sequenceT } from "fp-ts/lib/Apply";
 import * as io from "io-ts";
 import first from "lodash/first";
 import * as Relay from "./relay-spec";
-import type { SubscriptionField } from "gqtx/dist/types";
+import type { SubscriptionField } from "gqtx";
 import { t } from "..";
 import * as notes from "../../notes-lib";
 import * as util from "../../markdown-to-plain-text";
@@ -35,48 +35,59 @@ export const GraphQLNoteType = t.objectType<notes.NoteModelType>({
   interfaces: [Relay.GraphQLNodeInterface],
   isTypeOf: isTypeOfNote,
   fields: () => [
-    t.field("id", {
+    t.field({
+      name: "id",
       type: t.NonNull(t.ID),
       resolve: ({ id }) => encodeNoteId(id),
     }),
-    t.field("documentId", {
+    t.field({
+      name: "documentId",
       type: t.NonNull(t.ID),
       resolve: (record) => record.id,
     }),
-    t.field("title", {
+    t.field({
+      name: "title",
       type: t.NonNull(t.String),
       resolve: (obj) => obj.title,
     }),
-    t.field("content", {
+    t.field({
+      name: "content",
       type: t.NonNull(t.String),
       resolve: (obj) => obj.content,
     }),
-    t.field("contentPreview", {
+    t.field({
+      name: "contentPreview",
       type: t.NonNull(t.String),
       resolve: (obj) =>
         pipe(util.markdownToPlainText(obj.content), util.shortenText(100)),
     }),
-    t.field("createdAt", {
+    t.field({
+      name: "createdAt",
       type: t.NonNull(t.Int),
       resolve: (obj) => obj.createdAt,
     }),
-    t.field("viewerCanEdit", {
+    t.field({
+      name: "viewerCanEdit",
       type: t.NonNull(t.Boolean),
       resolve: (_, __, context) => context.session.role === "admin",
     }),
-    t.field("viewerCanShare", {
+    t.field({
+      name: "viewerCanShare",
       type: t.NonNull(t.Boolean),
       resolve: (obj) => obj.type === "public",
     }),
-    t.field("access", {
+    t.field({
+      name: "access",
       type: t.NonNull(t.String),
       resolve: (obj) => obj.type,
     }),
-    t.field("isEntryPoint", {
+    t.field({
+      name: "isEntryPoint",
       type: t.NonNull(t.Boolean),
       resolve: (obj) => obj.isEntryPoint,
     }),
-    t.field("updatedAt", {
+    t.field({
+      name: "updatedAt",
       type: t.NonNull(t.Int),
       resolve: (obj) => obj.updatedAt,
     }),
@@ -101,11 +112,13 @@ type NoteConnectionType = {
 const GraphQLNoteEdgeType = t.objectType<NoteEdgeType>({
   name: "NoteEdge",
   fields: () => [
-    t.field("cursor", {
+    t.field({
+      name: "cursor",
       type: t.NonNull(t.String),
       resolve: (edge) => edge.cursor,
     }),
-    t.field("node", {
+    t.field({
+      name: "node",
       type: t.NonNull(GraphQLNoteType),
       resolve: (edge) => edge.node,
     }),
@@ -115,11 +128,13 @@ const GraphQLNoteEdgeType = t.objectType<NoteEdgeType>({
 const GraphQLNoteConnectionType = t.objectType<NoteConnectionType>({
   name: "NoteConnection",
   fields: () => [
-    t.field("edges", {
+    t.field({
+      name: "edges",
       type: t.NonNull(t.List(t.NonNull(GraphQLNoteEdgeType))),
       resolve: (connection) => connection.edges,
     }),
-    t.field("pageInfo", {
+    t.field({
+      name: "pageInfo",
       type: t.NonNull(Relay.GraphQLPageInfoType),
       resolve: (obj) => obj.pageInfo,
     }),
@@ -168,19 +183,23 @@ export const resolveNote = flow(
 const GraphQLNoteSearchResultType = t.objectType<notes.NoteSearchMatchType>({
   name: "NoteSearchResultType",
   fields: () => [
-    t.field("noteId", {
+    t.field({
+      name: "noteId",
       type: t.NonNull(t.ID),
       resolve: (obj) => encodeNoteId(obj.noteId),
     }),
-    t.field("documentId", {
+    t.field({
+      name: "documentId",
       type: t.NonNull(t.ID),
       resolve: (obj) => obj.noteId,
     }),
-    t.field("title", {
+    t.field({
+      name: "title",
       type: t.NonNull(t.String),
       resolve: (obj) => obj.title,
     }),
-    t.field("preview", {
+    t.field({
+      name: "preview",
       type: t.NonNull(t.String),
       resolve: (obj) => obj.preview,
     }),
@@ -190,11 +209,13 @@ const GraphQLNoteSearchResultType = t.objectType<notes.NoteSearchMatchType>({
 const GraphQLNoteSearchEdgeType = t.objectType<notes.NoteSearchMatchType>({
   name: "NoteSearchEdgeType",
   fields: () => [
-    t.field("cursor", {
+    t.field({
+      name: "cursor",
       type: t.NonNull(t.String),
       resolve: (obj) => obj.noteId,
     }),
-    t.field("node", {
+    t.field({
+      name: "node",
       type: t.NonNull(GraphQLNoteSearchResultType),
       resolve: (obj) => obj,
     }),
@@ -208,11 +229,13 @@ type NoteSearchConnectionType = {
 const GraphQLNoteSearchConnectionType = t.objectType<NoteSearchConnectionType>({
   name: "NoteSearchConnection",
   fields: () => [
-    t.field("pageInfo", {
+    t.field({
+      name: "pageInfo",
       type: Relay.GraphQLPageInfoType,
       resolve: () => ({}),
     }),
-    t.field("edges", {
+    t.field({
+      name: "edges",
       type: t.NonNull(t.List(t.NonNull(GraphQLNoteSearchEdgeType))),
       resolve: (obj) => obj.edges,
     }),
@@ -289,7 +312,8 @@ const GraphQLNotesFilterEnum = t.enumType<"entrypoint" | "all">({
 const sequenceRT = sequenceT(RT.readerTask);
 
 export const queryFields = [
-  t.field("notes", {
+  t.field({
+    name: "notes",
     type: t.NonNull(GraphQLNoteConnectionType),
     args: {
       first: t.arg(t.Int),
@@ -315,7 +339,8 @@ export const queryFields = [
       );
     },
   }),
-  t.field("notesSearch", {
+  t.field({
+    name: "notesSearch",
     type: t.NonNull(GraphQLNoteSearchConnectionType),
     args: {
       first: t.arg(t.Int),
@@ -325,7 +350,8 @@ export const queryFields = [
     resolve: (_, args, context) =>
       RT.run(resolveNotesSearch(args.query || ""), context),
   }),
-  t.field("note", {
+  t.field({
+    name: "note",
     type: GraphQLNoteType,
     args: {
       documentId: t.arg(t.NonNullInput(t.ID)),
@@ -361,7 +387,8 @@ const GraphQLNoteCreateInput = t.inputObjectType({
 const GraphQLNoteCreateResult = t.objectType<{ note: notes.NoteModelType }>({
   name: "NoteCreateResult",
   fields: () => [
-    t.field("note", {
+    t.field({
+      name: "note",
       type: t.NonNull(GraphQLNoteType),
       resolve: (obj) => obj.note,
     }),
@@ -402,11 +429,13 @@ const GraphQLNoteDeleteInputType = t.inputObjectType({
 const GraphQLNoteDeleteResult = t.objectType<{ deletedNoteId: string }>({
   name: "NoteDeleteResult",
   fields: () => [
-    t.field("success", {
+    t.field({
+      name: "success",
       type: t.NonNull(t.Boolean),
       resolve: () => true,
     }),
-    t.field("deletedNoteId", {
+    t.field({
+      name: "deletedNoteId",
       type: t.NonNull(t.ID),
       resolve: (obj) => obj.deletedNoteId,
     }),
@@ -440,7 +469,8 @@ const GraphQLNoteUpdateIsEntryPointInputType = t.inputObjectType({
 const GraphQLNoteUpdateResult = t.objectType<{ note: notes.NoteModelType }>({
   name: "NoteUpdateResult",
   fields: () => [
-    t.field("note", {
+    t.field({
+      name: "note",
       type: GraphQLNoteType,
       resolve: (obj) => obj.note,
     }),
@@ -487,7 +517,8 @@ const GraphQLNoteUpdateTitleInputType = t.inputObjectType({
 });
 
 export const mutationFields = [
-  t.field("noteCreate", {
+  t.field({
+    name: "noteCreate",
     type: t.NonNull(GraphQLNoteCreateResult),
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteCreateInput)),
@@ -495,7 +526,8 @@ export const mutationFields = [
     resolve: (_, { input }, context) =>
       RT.run(resolveNoteCreate(input), context),
   }),
-  t.field("noteDelete", {
+  t.field({
+    name: "noteDelete",
     type: t.NonNull(GraphQLNoteDeleteResult),
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteDeleteInputType)),
@@ -503,7 +535,8 @@ export const mutationFields = [
     resolve: (src, { input }, context) =>
       RT.run(resolveNoteDelete(input.noteId), context),
   }),
-  t.field("noteUpdateContent", {
+  t.field({
+    name: "noteUpdateContent",
     type: t.NonNull(GraphQLNoteUpdateResult),
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteUpdateContentInputType)),
@@ -518,7 +551,8 @@ export const mutationFields = [
       );
     },
   }),
-  t.field("noteUpdateTitle", {
+  t.field({
+    name: "noteUpdateTitle",
     type: t.NonNull(GraphQLNoteUpdateResult),
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteUpdateTitleInputType)),
@@ -533,7 +567,8 @@ export const mutationFields = [
       );
     },
   }),
-  t.field("noteUpdateAccess", {
+  t.field({
+    name: "noteUpdateAccess",
     type: t.NonNull(GraphQLNoteUpdateResult),
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteUpdateAccessInputType)),
@@ -548,7 +583,8 @@ export const mutationFields = [
       );
     },
   }),
-  t.field("noteUpdateIsEntryPoint", {
+  t.field({
+    name: "noteUpdateIsEntryPoint",
     type: t.NonNull(GraphQLNoteUpdateResult),
     args: {
       input: t.arg(t.NonNullInput(GraphQLNoteUpdateIsEntryPointInputType)),
@@ -573,14 +609,16 @@ const GraphQLNotesConnectionEdgeInsertionUpdateType = t.objectType<{
   description:
     "Describes where a edge should be inserted inside a NotesConnection.",
   fields: () => [
-    t.field("previousCursor", {
+    t.field({
+      name: "previousCursor",
       type: t.String,
       description:
         "The cursor of the item before which the node should be inserted.",
       resolve: (obj) =>
         obj.previousNote ? encodeNotesConnectionCursor(obj.previousNote) : null,
     }),
-    t.field("edge", {
+    t.field({
+      name: "edge",
       type: GraphQLNoteEdgeType,
       description: "The edge that should be inserted.",
       resolve: (obj) => ({
@@ -600,7 +638,8 @@ const GraphQLNotesUpdatesType = t.objectType<{
   name: "NotesUpdates",
   description: "Describes update instructions for the NoteConnection type.",
   fields: () => [
-    t.field("addedNode", {
+    t.field({
+      name: "addedNode",
       type: GraphQLNotesConnectionEdgeInsertionUpdateType,
       description: "A node that was added to the connection.",
       resolve: (obj, _, context) =>
@@ -633,7 +672,8 @@ const GraphQLNotesUpdatesType = t.objectType<{
             )
           : null,
     }),
-    t.field("updatedNote", {
+    t.field({
+      name: "updatedNote",
       type: GraphQLNoteType,
       description: "A note that was updated.",
       resolve: (obj, _, context) =>
@@ -641,7 +681,8 @@ const GraphQLNotesUpdatesType = t.objectType<{
           ? RT.run(resolveNote(obj.updatedNoteId), context)
           : null,
     }),
-    t.field("removedNoteId", {
+    t.field({
+      name: "removedNoteId",
       type: t.ID,
       description: "A note that was removed.",
       resolve: (obj) =>
@@ -651,14 +692,14 @@ const GraphQLNotesUpdatesType = t.objectType<{
 });
 
 export const subscriptionFields: SubscriptionField<any, any, any, any>[] = [
-  t.subscriptionField("notesUpdates", {
+  t.subscriptionField({
+    name: "notesUpdates",
     type: t.NonNull(GraphQLNotesUpdatesType),
     args: {
       filter: t.arg(GraphQLNotesFilterEnum),
       endCursor: t.arg(t.NonNullInput(t.String)),
       hasNextPage: t.arg(t.NonNullInput(t.Boolean)),
     },
-    resolve: (obj) => obj as any,
     subscribe: (_, args, context) =>
       RT.run(
         pipe(

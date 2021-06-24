@@ -2,7 +2,7 @@ import { t } from "..";
 import { GraphQLPageInfoType } from "./relay-spec";
 import * as ImageModule from "./image";
 import * as NotesModule from "./notes";
-import type { ApplicationRecordSchema } from "../../chat";
+import type { ApplicationRecordSchema, NewMessagesPayload } from "../../chat";
 import type { DiceRollDetail, DiceRollResult } from "../../roll-dice";
 import * as E from "fp-ts/lib/Either";
 import * as RT from "fp-ts/lib/ReaderTask";
@@ -41,19 +41,23 @@ const GraphQLDiceRollResult = t.objectType<{
 }>({
   name: "DiceRollResult",
   fields: () => [
-    t.field("dice", {
+    t.field({
+      name: "dice",
       type: t.NonNull(t.String),
       resolve: (obj) => obj.dice,
     }),
-    t.field("result", {
+    t.field({
+      name: "result",
       type: t.NonNull(t.Float),
       resolve: (obj) => obj.result,
     }),
-    t.field("category", {
+    t.field({
+      name: "category",
       type: t.NonNull(GraphQLDiceRollCategory),
       resolve: (obj) => obj.category,
     }),
-    t.field("crossedOut", {
+    t.field({
+      name: "crossedOut",
       type: t.NonNull(t.Boolean),
       resolve: (obj) => obj.crossedOut,
     }),
@@ -62,7 +66,9 @@ const GraphQLDiceRollResult = t.objectType<{
 
 const GraphQLDiceRollDetailNode = t.interfaceType<DiceRollDetail>({
   name: "DiceRollDetail",
-  fields: () => [t.abstractField("content", t.NonNull(t.String))],
+  fields: () => [
+    t.abstractField({ name: "content", type: t.NonNull(t.String) }),
+  ],
 });
 
 const GraphQLDiceRollOperatorNode = t.objectType<
@@ -72,7 +78,8 @@ const GraphQLDiceRollOperatorNode = t.objectType<
   interfaces: [GraphQLDiceRollDetailNode],
   isTypeOf: (src) => src?.type === "Operator",
   fields: () => [
-    t.field("content", {
+    t.field({
+      name: "content",
       type: t.NonNull(t.String),
       resolve: (object) => object.content,
     }),
@@ -86,7 +93,8 @@ const GraphQLDiceRollConstantNode = t.objectType<
   interfaces: [GraphQLDiceRollDetailNode],
   isTypeOf: (src) => src?.type === "Constant",
   fields: () => [
-    t.field("content", {
+    t.field({
+      name: "content",
       type: t.NonNull(t.String),
       resolve: (object) => object.content,
     }),
@@ -100,19 +108,23 @@ const GraphQLDiceRollDiceRollNode = t.objectType<
   interfaces: [GraphQLDiceRollDetailNode],
   isTypeOf: (src) => src?.type === "DiceRoll",
   fields: () => [
-    t.field("content", {
+    t.field({
+      name: "content",
       type: t.NonNull(t.String),
       resolve: (object) => object.content,
     }),
-    t.field("min", {
+    t.field({
+      name: "min",
       type: t.NonNull(t.Float),
       resolve: (object) => object.detail.min,
     }),
-    t.field("max", {
+    t.field({
+      name: "max",
       type: t.NonNull(t.Float),
       resolve: (object) => object.detail.max,
     }),
-    t.field("rollResults", {
+    t.field({
+      name: "rollResults",
       type: t.NonNull(t.List(t.NonNull(GraphQLDiceRollResult))),
       resolve: (object) =>
         object.rolls.map((result) => ({
@@ -137,7 +149,8 @@ const GraphQLDiceRollOpenParenNode = t.objectType<
   interfaces: [GraphQLDiceRollDetailNode],
   isTypeOf: (src) => src?.type === "OpenParen",
   fields: () => [
-    t.field("content", {
+    t.field({
+      name: "content",
       type: t.NonNull(t.String),
       resolve: (object) => object.content,
     }),
@@ -151,7 +164,8 @@ const GraphQLDiceRollCloseParenNode = t.objectType<
   interfaces: [GraphQLDiceRollDetailNode],
   isTypeOf: (src) => src?.type === "CloseParen",
   fields: () => [
-    t.field("content", {
+    t.field({
+      name: "content",
       type: t.NonNull(t.String),
       resolve: (object) => object.content,
     }),
@@ -161,15 +175,18 @@ const GraphQLDiceRollCloseParenNode = t.objectType<
 const GraphQLChatMessageDiceRoll = t.objectType<DiceRollResult>({
   name: "DiceRoll",
   fields: () => [
-    t.field("result", {
+    t.field({
+      name: "result",
       type: t.NonNull(t.Float),
       resolve: (input) => input.result,
     }),
-    t.field("detail", {
+    t.field({
+      name: "detail",
       type: t.NonNull(t.List(t.NonNull(GraphQLDiceRollDetailNode))),
       resolve: (input) => input.detail,
     }),
-    t.field("rollId", {
+    t.field({
+      name: "rollId",
       type: t.NonNull(t.String),
       resolve: (obj) => obj.id,
     }),
@@ -178,17 +195,17 @@ const GraphQLChatMessageDiceRoll = t.objectType<DiceRollResult>({
 
 const GraphQLChatMessageInterfaceType = t.interfaceType<ChatMessageType>({
   name: "ChatMessage",
-  fields: () => [t.abstractField("id", t.NonNull(t.ID))],
+  fields: () => [t.abstractField({ name: "id", type: t.NonNull(t.ID) })],
 });
 
 const GraphQLTextChatMessageInterfaceType = t.interfaceType<ChatMessageType>({
   name: "TextChatMessage",
   interfaces: [GraphQLChatMessageInterfaceType],
   fields: () => [
-    t.abstractField("id", t.NonNull(t.ID)),
-    t.abstractField("content", t.NonNull(t.String)),
-    t.abstractField("createdAt", t.NonNull(t.String)),
-    t.abstractField("containsDiceRoll", t.NonNull(t.Boolean)),
+    t.abstractField({ name: "id", type: t.NonNull(t.ID) }),
+    t.abstractField({ name: "content", type: t.NonNull(t.String) }),
+    t.abstractField({ name: "createdAt", type: t.NonNull(t.String) }),
+    t.abstractField({ name: "containsDiceRoll", type: t.NonNull(t.Boolean) }),
   ],
 });
 
@@ -214,15 +231,14 @@ const GraphQLSharedResourceChatMessageType =
     interfaces: [GraphQLChatMessageInterfaceType],
     isTypeOf: (input) => input?.type === "SHARED_RESOURCE",
     fields: () => [
-      t.field("id", {
-        type: t.NonNull(t.ID),
-        resolve: (obj) => obj.id,
-      }),
-      t.field("authorName", {
+      t.field({ name: "id", type: t.NonNull(t.ID), resolve: (obj) => obj.id }),
+      t.field({
+        name: "authorName",
         type: t.NonNull(t.String),
         resolve: (obj) => obj.authorName,
       }),
-      t.field("resource", {
+      t.field({
+        name: "resource",
         type: GraphQLSharedResourceEnumType,
         resolve: (
           input,
@@ -256,19 +272,23 @@ const GraphQLOperationalChatMessageType =
     ],
     name: "OperationalChatMessage",
     fields: () => [
-      t.field("id", {
+      t.field({
+        name: "id",
         type: t.NonNull(t.ID),
         resolve: (message) => message.id,
       }),
-      t.field("content", {
+      t.field({
+        name: "content",
         type: t.NonNull(t.String),
         resolve: (message) => message.content,
       }),
-      t.field("createdAt", {
+      t.field({
+        name: "createdAt",
         type: t.NonNull(t.String),
         resolve: (message) => new Date(message.createdAt).toISOString(),
       }),
-      t.field("containsDiceRoll", {
+      t.field({
+        name: "containsDiceRoll",
         type: t.NonNull(t.Boolean),
         resolve: () => false,
       }),
@@ -284,31 +304,38 @@ const GraphQLUserChatMessageType = t.objectType<UserChatMessageType>({
   name: "UserChatMessage",
   description: "A chat message",
   fields: () => [
-    t.field("id", {
+    t.field({
+      name: "id",
       type: t.NonNull(t.ID),
       resolve: (message) => message.id,
     }),
-    t.field("authorName", {
+    t.field({
+      name: "authorName",
       type: t.NonNull(t.String),
       resolve: (message) => message.authorName,
     }),
-    t.field("content", {
+    t.field({
+      name: "content",
       type: t.NonNull(t.String),
       resolve: (message) => message.content,
     }),
-    t.field("diceRolls", {
+    t.field({
+      name: "diceRolls",
       type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageDiceRoll))),
       resolve: (message) => message.diceRolls,
     }),
-    t.field("referencedDiceRolls", {
+    t.field({
+      name: "referencedDiceRolls",
       type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageDiceRoll))),
       resolve: (message) => message.referencedDiceRolls,
     }),
-    t.field("createdAt", {
+    t.field({
+      name: "createdAt",
       type: t.NonNull(t.String),
       resolve: (message) => new Date(message.createdAt).toISOString(),
     }),
-    t.field("containsDiceRoll", {
+    t.field({
+      name: "containsDiceRoll",
       type: t.NonNull(t.Boolean),
       resolve: (message) =>
         message.diceRolls.length > 0 || message.referencedDiceRolls.length > 0,
@@ -320,11 +347,13 @@ const GraphQLUserChatMessageType = t.objectType<UserChatMessageType>({
 const GraphQLChatMessageEdgeType = t.objectType<ChatMessageType>({
   name: "ChatMessageEdge",
   fields: () => [
-    t.field("cursor", {
+    t.field({
+      name: "cursor",
       type: t.NonNull(t.String),
       resolve: (input) => input.id,
     }),
-    t.field("node", {
+    t.field({
+      name: "node",
       type: t.NonNull(GraphQLChatMessageInterfaceType),
       resolve: (input) => input,
     }),
@@ -334,39 +363,42 @@ const GraphQLChatMessageEdgeType = t.objectType<ChatMessageType>({
 const GraphQLChatMessageConnectionType = t.objectType<Array<ChatMessageType>>({
   name: "ChatMessageConnection",
   fields: () => [
-    t.field("edges", {
+    t.field({
+      name: "edges",
       type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageEdgeType))),
       resolve: (input) => input,
     }),
-    t.field("pageInfo", {
+    t.field({
+      name: "pageInfo",
       type: t.NonNull(GraphQLPageInfoType),
       resolve: () => ({}),
     }),
   ],
 });
 
-const GraphQLChatMessagesAddedSubscriptionType = t.objectType<{
-  messages: Array<UserChatMessageType>;
-}>({
-  name: "ChatMessagesAddedSubscription",
-  fields: () => [
-    t.field("messages", {
-      type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageInterfaceType))),
-      resolve: (input) => input.messages,
-    }),
-  ],
-});
+const GraphQLChatMessagesAddedSubscriptionType =
+  t.objectType<NewMessagesPayload>({
+    name: "ChatMessagesAddedSubscription",
+    fields: () => [
+      t.field({
+        name: "messages",
+        type: t.NonNull(t.List(t.NonNull(GraphQLChatMessageInterfaceType))),
+        resolve: (input) => input.messages,
+      }),
+    ],
+  });
 
 export const subscriptionFields = [
-  t.subscriptionField("chatMessagesAdded", {
+  t.subscriptionField({
+    name: "chatMessagesAdded",
     type: t.NonNull(GraphQLChatMessagesAddedSubscriptionType),
-    resolve: (obj) => obj as any,
     subscribe: (_, __, context) => context.chat.subscribe.newMessages(),
   }),
 ];
 
 export const queryFields = [
-  t.field("chat", {
+  t.field({
+    name: "chat",
     type: t.NonNull(GraphQLChatMessageConnectionType),
     args: {
       first: t.arg(t.Int),
@@ -374,7 +406,8 @@ export const queryFields = [
     },
     resolve: (_, __, ctx) => ctx.chat.getMessages(),
   }),
-  t.field("sharedSplashImage", {
+  t.field({
+    name: "sharedSplashImage",
     type: ImageModule.GraphQLImageType,
     resolve: (_, args, context) => {
       const id = context.splashImageState.get();
@@ -438,7 +471,8 @@ const GraphQLChatMessageCreateResultError =
   t.objectType<ChatMessageCreateError>({
     name: "ChatMessageCreateResultError",
     fields: () => [
-      t.field("reason", {
+      t.field({
+        name: "reason",
         type: t.NonNull(t.String),
         resolve: (obj) => obj.error.reason,
       }),
@@ -451,10 +485,7 @@ const GraphQLChatMessageCreateResultSuccess =
   t.objectType<ChatMessageCreateSuccess>({
     name: "ChatMessageCreateResultSuccess",
     fields: () => [
-      t.field("_", {
-        type: t.Boolean,
-        resolve: () => true,
-      }),
+      t.field({ name: "_", type: t.Boolean, resolve: () => true }),
     ],
   });
 
@@ -463,11 +494,13 @@ const GraphQLChatMessageCreateResultObjectType = t.objectType<
 >({
   name: "ChatMessageCreateResult",
   fields: () => [
-    t.field("error", {
+    t.field({
+      name: "error",
       type: GraphQLChatMessageCreateResultError,
       resolve: (obj) => (obj.type === "error" ? obj : null),
     }),
-    t.field("success", {
+    t.field({
+      name: "success",
       type: GraphQLChatMessageCreateResultSuccess,
       resolve: (obj) => (obj.type === "success" ? obj : null),
     }),
@@ -475,7 +508,8 @@ const GraphQLChatMessageCreateResultObjectType = t.objectType<
 });
 
 export const mutationFields = [
-  t.field("chatMessageCreate", {
+  t.field({
+    name: "chatMessageCreate",
     type: t.NonNull(GraphQLChatMessageCreateResultObjectType),
     args: {
       input: t.arg(t.NonNullInput(GraphQLChatMessageCreateInputType)),
@@ -508,7 +542,8 @@ export const mutationFields = [
       };
     },
   }),
-  t.field("shareResource", {
+  t.field({
+    name: "shareResource",
     type: t.Boolean,
     args: {
       input: t.arg(t.NonNullInput(GraphQLShareResourceInputType)),
@@ -528,7 +563,8 @@ export const mutationFields = [
       });
     },
   }),
-  t.field("shareImage", {
+  t.field({
+    name: "shareImage",
     type: t.Boolean,
     args: {
       input: t.arg(t.NonNullInput(GraphQLShareImageInputType)),
@@ -546,7 +582,8 @@ export const mutationFields = [
       });
     },
   }),
-  t.field("splashShareImage", {
+  t.field({
+    name: "splashShareImage",
     type: t.Boolean,
     args: {
       input: t.arg(t.NonNullInput(GraphQLSplashShareImageInputType)),

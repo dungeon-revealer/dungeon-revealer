@@ -5,11 +5,13 @@ import type { UserRecord, UserUpdate } from "../../user";
 export const GraphQLUserType = t.objectType<UserRecord>({
   name: "User",
   fields: () => [
-    t.field("id", {
+    t.field({
+      name: "id",
       type: t.NonNull(t.ID),
       resolve: (obj) => obj.id,
     }),
-    t.field("name", {
+    t.field({
+      name: "name",
       type: t.NonNull(t.String),
       resolve: (obj) => obj.name,
     }),
@@ -19,11 +21,13 @@ export const GraphQLUserType = t.objectType<UserRecord>({
 const GraphQLConnectedUserEdgeType = t.objectType<UserRecord>({
   name: "ConnectedUserEdge",
   fields: () => [
-    t.field("cursor", {
+    t.field({
+      name: "cursor",
       type: t.NonNull(t.String),
       resolve: (input) => input.id,
     }),
-    t.field("node", {
+    t.field({
+      name: "node",
       type: t.NonNull(GraphQLUserType),
       resolve: (input) => input,
     }),
@@ -33,11 +37,13 @@ const GraphQLConnectedUserEdgeType = t.objectType<UserRecord>({
 const GraphQLConnectedUserConnectionType = t.objectType<Array<UserRecord>>({
   name: "ConnectedUserConnection",
   fields: () => [
-    t.field("edges", {
+    t.field({
+      name: "edges",
       type: t.NonNull(t.List(t.NonNull(GraphQLConnectedUserEdgeType))),
       resolve: (input) => input,
     }),
-    t.field("pageInfo", {
+    t.field({
+      name: "pageInfo",
       type: t.NonNull(GraphQLPageInfoType),
       resolve: () => ({}),
     }),
@@ -59,7 +65,8 @@ const GraphQLLogInInputType = t.inputObjectType({
 const GraphQLLogInResultType = t.objectType<UserRecord>({
   name: "LogInResult",
   fields: () => [
-    t.field("user", {
+    t.field({
+      name: "user",
       type: t.NonNull(GraphQLUserType),
       resolve: (obj) => obj,
     }),
@@ -67,7 +74,8 @@ const GraphQLLogInResultType = t.objectType<UserRecord>({
 });
 
 export const queryFields = [
-  t.field("users", {
+  t.field({
+    name: "users",
     type: t.NonNull(GraphQLConnectedUserConnectionType),
     args: {
       first: t.arg(t.Int),
@@ -75,11 +83,13 @@ export const queryFields = [
     },
     resolve: (_, __, ctx) => ctx.user.getUsers(),
   }),
-  t.field("usersCount", {
+  t.field({
+    name: "usersCount",
     type: t.NonNull(t.Int),
     resolve: (_, __, ctx) => ctx.user.getUsers().length,
   }),
-  t.field("me", {
+  t.field({
+    name: "me",
     type: t.NonNull(GraphQLUserType),
     resolve: (_, __, ctx) => {
       const user = ctx.user.get(ctx.session.id);
@@ -124,7 +134,8 @@ const generateRandomName = (() => {
 const GraphQLChangeNameResultType = t.objectType<{ updatedUser: UserRecord }>({
   name: "ChangeNameResult",
   fields: () => [
-    t.field("me", {
+    t.field({
+      name: "me",
       type: t.NonNull(GraphQLUserType),
       resolve: (obj) => obj.updatedUser,
     }),
@@ -141,7 +152,8 @@ const GraphQLChangeNameInputType = t.inputObjectType({
 });
 
 export const mutationFields = [
-  t.field("logIn", {
+  t.field({
+    name: "logIn",
     type: t.NonNull(GraphQLLogInResultType),
     args: {
       input: t.arg(GraphQLLogInInputType),
@@ -174,7 +186,8 @@ export const mutationFields = [
       }
     },
   }),
-  t.field("changeName", {
+  t.field({
+    name: "changeName",
     type: t.NonNull(GraphQLChangeNameResultType),
     args: {
       input: t.arg(t.NonNullInput(GraphQLChangeNameInputType)),
@@ -200,7 +213,8 @@ const GraphQLUserAddUpdateType = t.objectType<
 >({
   name: "UserAddUpdate",
   fields: () => [
-    t.field("user", {
+    t.field({
+      name: "user",
       type: t.NonNull(GraphQLUserType),
       resolve: (obj, _, context) => {
         const user = context.user.get(obj.data.userId);
@@ -210,7 +224,8 @@ const GraphQLUserAddUpdateType = t.objectType<
         return user;
       },
     }),
-    t.field("usersCount", {
+    t.field({
+      name: "usersCount",
       type: t.NonNull(t.Int),
       resolve: (_, __, context) => context.user.getUsers().length,
     }),
@@ -222,7 +237,8 @@ const GraphQLUserChangeUpdateType = t.objectType<
 >({
   name: "UserChangeUpdate",
   fields: () => [
-    t.field("user", {
+    t.field({
+      name: "user",
       type: t.NonNull(GraphQLUserType),
       resolve: (obj, _, context) => {
         const user = context.user.get(obj.data.userId);
@@ -240,11 +256,13 @@ const GraphQLUserRemoveType = t.objectType<
 >({
   name: "UserRemoveUpdate",
   fields: () => [
-    t.field("userId", {
+    t.field({
+      name: "userId",
       type: t.NonNull(t.ID),
       resolve: (obj) => obj.data.userId,
     }),
-    t.field("usersCount", {
+    t.field({
+      name: "usersCount",
       type: t.NonNull(t.Int),
       resolve: (_, __, context) => context.user.getUsers().length,
     }),
@@ -267,9 +285,9 @@ const GraphQLUserUpdateSubscriptionType = t.unionType<UserUpdate>({
 });
 
 export const subscriptionFields = [
-  t.subscriptionField("userUpdate", {
+  t.subscriptionField({
+    name: "userUpdate",
     type: t.NonNull(GraphQLUserUpdateSubscriptionType),
     subscribe: (_, __, context) => context.user.subscribe.userUpdate(),
-    resolve: (obj) => obj as any,
   }),
 ];
