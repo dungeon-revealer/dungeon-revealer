@@ -6,6 +6,10 @@ import graphql from "babel-plugin-relay/macro";
 import { useMutation, useQuery } from "relay-hooks";
 import create from "zustand";
 import { persist } from "zustand/middleware";
+import * as Json from "fp-ts/Json";
+import { flow, identity } from "fp-ts/function";
+import * as E from "fp-ts/Either";
+import * as io from "io-ts";
 import { ThemedLevaPanel } from "./themed-leva-panel";
 import { ChatPositionContext } from "./authenticated-app-shell";
 import { useSelectedItems } from "./shared-token-state";
@@ -23,26 +27,55 @@ const firstMapValue = <TItemValue extends any>(
 const referenceIdSelector = (state: State): string | null =>
   (state.data["referenceId"] as any)?.value ?? null;
 
-type TokenMenuExpandedState = {
-  isTokenNoteDescriptionExpanded: boolean;
-  isTokenMenuExpanded: boolean;
+const TokenMenuExpandedStateModel = io.type({
+  isTokenNoteDescriptionExpanded: io.boolean,
+  isTokenMenuExpanded: io.boolean,
+});
+
+const PersistedValue = <TType extends io.Type<any>>(stateModel: TType) =>
+  io.type({
+    version: io.number,
+    state: stateModel,
+  });
+
+type TokenMenuExpandedStateModelType = io.TypeOf<
+  typeof TokenMenuExpandedStateModel
+>;
+
+type TokenMenuExpandedState = TokenMenuExpandedStateModelType & {
   setIsTokenNoteDescriptionExpanded: (isExpanded: boolean) => void;
   setIsTokenMenuExpanded: (isExpanded: boolean) => void;
 };
 
+const defaultTokenMenuExpandedStateModel: Readonly<TokenMenuExpandedStateModelType> =
+  {
+    isTokenNoteDescriptionExpanded: true,
+    isTokenMenuExpanded: true,
+  };
+
 const useTokenMenuExpandedState = create<TokenMenuExpandedState>(
   persist(
     (set) => ({
-      isTokenNoteDescriptionExpanded: true,
-      isTokenMenuExpanded: true,
+      ...defaultTokenMenuExpandedStateModel,
       setIsTokenNoteDescriptionExpanded: (isTokenNoteDescriptionExpanded) =>
         set({ isTokenNoteDescriptionExpanded }),
       setIsTokenMenuExpanded: (isTokenMenuExpanded) =>
         set({ isTokenMenuExpanded }),
     }),
     {
-      name: "TokenMenuExpandedState",
-      version: 0,
+      name: "tokenMenuExpandedState",
+      // we deserialize the value in a safe way :)
+      deserialize: flow(
+        Json.parse,
+        E.chain(PersistedValue(TokenMenuExpandedStateModel).decode),
+        E.fold(
+          () => ({
+            version: 0,
+            state: { ...defaultTokenMenuExpandedStateModel },
+          }),
+          identity
+        )
+      ),
     }
   )
 );
