@@ -29,7 +29,7 @@ FROM dependency-builder as production-dependency-builder
 RUN npm prune --production
 
 
-FROM node:16-alpine as final
+FROM node:16-alpine3.12 as final
 
 # Create app directory
 WORKDIR /usr/src/app
