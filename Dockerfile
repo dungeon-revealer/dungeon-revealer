@@ -1,12 +1,4 @@
-FROM node:16-alpine3.12 as base
-
-# add build tools for other architectures
-# subsequent builds should cache this layer
-RUN apk add make g++ python3
-RUN ln -s /usr/bin/python3 /usr/bin/python
-
-
-FROM base as dependency-builder
+FROM node:16 as dependency-builder
 
 WORKDIR /usr/src/build
 
@@ -29,7 +21,7 @@ FROM dependency-builder as production-dependency-builder
 RUN npm prune --production
 
 
-FROM node:16-alpine3.12 as final
+FROM node:16-slim as final
 
 # Create app directory
 WORKDIR /usr/src/app
