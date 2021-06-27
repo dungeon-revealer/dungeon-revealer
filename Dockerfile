@@ -1,4 +1,4 @@
-FROM node:16-alpine as base
+FROM node:16-alpine3.12 as base
 
 # add build tools for other architectures
 # subsequent builds should cache this layer
