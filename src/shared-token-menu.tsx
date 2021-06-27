@@ -4,6 +4,8 @@ import { Box } from "@chakra-ui/react";
 import { useControls, useCreateStore, LevaInputs } from "leva";
 import graphql from "babel-plugin-relay/macro";
 import { useMutation, useQuery } from "relay-hooks";
+import create from "zustand";
+import { persist } from "zustand/middleware";
 import { ThemedLevaPanel } from "./themed-leva-panel";
 import { ChatPositionContext } from "./authenticated-app-shell";
 import { useSelectedItems } from "./shared-token-state";
@@ -20,6 +22,43 @@ const firstMapValue = <TItemValue extends any>(
 
 const referenceIdSelector = (state: State): string | null =>
   (state.data["referenceId"] as any)?.value ?? null;
+
+type TokenMenuExpandedState = {
+  isTokenNoteDescriptionExpanded: boolean;
+  isTokenMenuExpanded: boolean;
+  setIsTokenNoteDescriptionExpanded: (isExpanded: boolean) => void;
+  setIsTokenMenuExpanded: (isExpanded: boolean) => void;
+};
+
+const useTokenMenuExpandedState = create<TokenMenuExpandedState>(
+  persist(
+    (set) => ({
+      isTokenNoteDescriptionExpanded: true,
+      isTokenMenuExpanded: true,
+      setIsTokenNoteDescriptionExpanded: (isTokenNoteDescriptionExpanded) =>
+        set({ isTokenNoteDescriptionExpanded }),
+      setIsTokenMenuExpanded: (isTokenMenuExpanded) =>
+        set({ isTokenMenuExpanded }),
+    }),
+    {
+      name: "TokenMenuExpandedState",
+      version: 0,
+    }
+  )
+);
+
+const tokenMenuStateSelector = (state: TokenMenuExpandedState) =>
+  [state.isTokenMenuExpanded, state.setIsTokenMenuExpanded] as const;
+const useTokenMenuState = () =>
+  useTokenMenuExpandedState(tokenMenuStateSelector);
+
+const tokenNoteDescriptionStateSelector = (state: TokenMenuExpandedState) =>
+  [
+    state.isTokenNoteDescriptionExpanded,
+    state.setIsTokenNoteDescriptionExpanded,
+  ] as const;
+const useTokenNoteDescriptionState = () =>
+  useTokenMenuExpandedState(tokenNoteDescriptionStateSelector);
 
 export const SharedTokenMenu = (props: { currentMapId: string }) => {
   const chatPosition = React.useContext(ChatPositionContext);
@@ -79,6 +118,8 @@ const TokenNotePreview = (props: {
     { store }
   );
 
+  const [show, setShow] = useTokenNoteDescriptionState();
+
   return (
     <Box marginBottom="3">
       <ThemedLevaPanel
@@ -89,6 +130,10 @@ const TokenNotePreview = (props: {
           filter: false,
           drag: false,
           title: props.title,
+        }}
+        collapsed={{
+          collapsed: !show,
+          onChange: (collapsed) => setShow(!collapsed),
         }}
       />
     </Box>
@@ -117,6 +162,8 @@ const NoteAsidePreview = (props: { noteId: string }) => {
 const SingleTokenPanels = (props: { store: StoreType }) => {
   const referenceId = props.store.useStore(referenceIdSelector);
 
+  const [show, setShow] = useTokenMenuState();
+
   return (
     <>
       {referenceId == null ? null : <NoteAsidePreview noteId={referenceId} />}
@@ -128,6 +175,10 @@ const SingleTokenPanels = (props: { store: StoreType }) => {
           filter: false,
           drag: false,
           title: "Token Properties",
+        }}
+        collapsed={{
+          collapsed: !show,
+          onChange: (collapsed) => setShow(!collapsed),
         }}
       />
     </>
@@ -288,6 +339,8 @@ const MultiTokenPanel = (props: { currentMapId: string }) => {
     set({ tokenImageId });
   }, [tokenImageId]);
 
+  const [show, setShow] = useTokenMenuState();
+
   return (
     <ThemedLevaPanel
       store={store}
@@ -297,6 +350,10 @@ const MultiTokenPanel = (props: { currentMapId: string }) => {
         filter: false,
         drag: false,
         title: `${selectedItems.size} Token selected`,
+      }}
+      collapsed={{
+        collapsed: !show,
+        onChange: (collapsed) => setShow(!collapsed),
       }}
     />
   );
