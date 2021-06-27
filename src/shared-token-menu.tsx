@@ -4,12 +4,18 @@ import { Box } from "@chakra-ui/react";
 import { useControls, useCreateStore, LevaInputs } from "leva";
 import graphql from "babel-plugin-relay/macro";
 import { useMutation, useQuery } from "relay-hooks";
+import create from "zustand";
+import { persist } from "zustand/middleware";
+import * as Json from "fp-ts/Json";
+import { flow, identity } from "fp-ts/function";
+import * as E from "fp-ts/Either";
+import * as io from "io-ts";
 import { ThemedLevaPanel } from "./themed-leva-panel";
 import { ChatPositionContext } from "./authenticated-app-shell";
 import { useSelectedItems } from "./shared-token-state";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
 import type { sharedTokenMenuUpdateManyMapTokenMutation } from "./__generated__/sharedTokenMenuUpdateManyMapTokenMutation.graphql";
-import type { sharedTokenMenuRererenceNoteQuery } from "./__generated__/sharedTokenMenuRererenceNoteQuery.graphql";
+import type { sharedTokenMenuReferenceNoteQuery } from "./__generated__/sharedTokenMenuReferenceNoteQuery.graphql";
 
 import { State, StoreType } from "leva/dist/declarations/src/types";
 import { levaPluginNotePreview } from "./leva-plugin/leva-plugin-note-preview";
@@ -20,6 +26,74 @@ const firstMapValue = <TItemValue extends any>(
 
 const referenceIdSelector = (state: State): string | null =>
   (state.data["referenceId"] as any)?.value ?? null;
+
+const TokenMenuExpandedStateModel = io.type({
+  isTokenNoteDescriptionExpanded: io.boolean,
+  isTokenMenuExpanded: io.boolean,
+});
+
+const PersistedValue = <TType extends io.Type<any>>(stateModel: TType) =>
+  io.type({
+    version: io.number,
+    state: stateModel,
+  });
+
+type TokenMenuExpandedStateModelType = io.TypeOf<
+  typeof TokenMenuExpandedStateModel
+>;
+
+type TokenMenuExpandedState = TokenMenuExpandedStateModelType & {
+  setIsTokenNoteDescriptionExpanded: (isExpanded: boolean) => void;
+  setIsTokenMenuExpanded: (isExpanded: boolean) => void;
+};
+
+const defaultTokenMenuExpandedStateModel: Readonly<TokenMenuExpandedStateModelType> =
+  {
+    isTokenNoteDescriptionExpanded: true,
+    isTokenMenuExpanded: true,
+  };
+
+const deserializeTokenMenuExpandedState = flow(
+  Json.parse,
+  E.chainW(PersistedValue(TokenMenuExpandedStateModel).decode),
+  E.fold(
+    () => ({
+      version: 0,
+      state: { ...defaultTokenMenuExpandedStateModel },
+    }),
+    identity
+  )
+);
+
+const useTokenMenuExpandedState = create<TokenMenuExpandedState>(
+  persist(
+    (set) => ({
+      ...defaultTokenMenuExpandedStateModel,
+      setIsTokenNoteDescriptionExpanded: (isTokenNoteDescriptionExpanded) =>
+        set({ isTokenNoteDescriptionExpanded }),
+      setIsTokenMenuExpanded: (isTokenMenuExpanded) =>
+        set({ isTokenMenuExpanded }),
+    }),
+    {
+      name: "tokenMenuExpandedState",
+      // we deserialize the value in a safe way :)
+      deserialize: deserializeTokenMenuExpandedState as any,
+    }
+  )
+);
+
+const tokenMenuStateSelector = (state: TokenMenuExpandedState) =>
+  [state.isTokenMenuExpanded, state.setIsTokenMenuExpanded] as const;
+const useTokenMenuState = () =>
+  useTokenMenuExpandedState(tokenMenuStateSelector);
+
+const tokenNoteDescriptionStateSelector = (state: TokenMenuExpandedState) =>
+  [
+    state.isTokenNoteDescriptionExpanded,
+    state.setIsTokenNoteDescriptionExpanded,
+  ] as const;
+const useTokenNoteDescriptionState = () =>
+  useTokenMenuExpandedState(tokenNoteDescriptionStateSelector);
 
 export const SharedTokenMenu = (props: { currentMapId: string }) => {
   const chatPosition = React.useContext(ChatPositionContext);
@@ -50,7 +124,7 @@ export const SharedTokenMenu = (props: { currentMapId: string }) => {
 };
 
 const SharedTokenMenuReferenceNoteQuery = graphql`
-  query sharedTokenMenuRererenceNoteQuery($noteId: ID!) {
+  query sharedTokenMenuReferenceNoteQuery($noteId: ID!) {
     note(documentId: $noteId) {
       id
       documentId
@@ -79,6 +153,8 @@ const TokenNotePreview = (props: {
     { store }
   );
 
+  const [show, setShow] = useTokenNoteDescriptionState();
+
   return (
     <Box marginBottom="3">
       <ThemedLevaPanel
@@ -90,13 +166,17 @@ const TokenNotePreview = (props: {
           drag: false,
           title: props.title,
         }}
+        collapsed={{
+          collapsed: !show,
+          onChange: (collapsed) => setShow(!collapsed),
+        }}
       />
     </Box>
   );
 };
 
 const NoteAsidePreview = (props: { noteId: string }) => {
-  const noteProps = useQuery<sharedTokenMenuRererenceNoteQuery>(
+  const noteProps = useQuery<sharedTokenMenuReferenceNoteQuery>(
     SharedTokenMenuReferenceNoteQuery,
     { noteId: props.noteId }
   );
@@ -117,6 +197,8 @@ const NoteAsidePreview = (props: { noteId: string }) => {
 const SingleTokenPanels = (props: { store: StoreType }) => {
   const referenceId = props.store.useStore(referenceIdSelector);
 
+  const [show, setShow] = useTokenMenuState();
+
   return (
     <>
       {referenceId == null ? null : <NoteAsidePreview noteId={referenceId} />}
@@ -128,6 +210,10 @@ const SingleTokenPanels = (props: { store: StoreType }) => {
           filter: false,
           drag: false,
           title: "Token Properties",
+        }}
+        collapsed={{
+          collapsed: !show,
+          onChange: (collapsed) => setShow(!collapsed),
         }}
       />
     </>
@@ -288,6 +374,8 @@ const MultiTokenPanel = (props: { currentMapId: string }) => {
     set({ tokenImageId });
   }, [tokenImageId]);
 
+  const [show, setShow] = useTokenMenuState();
+
   return (
     <ThemedLevaPanel
       store={store}
@@ -297,6 +385,10 @@ const MultiTokenPanel = (props: { currentMapId: string }) => {
         filter: false,
         drag: false,
         title: `${selectedItems.size} Token selected`,
+      }}
+      collapsed={{
+        collapsed: !show,
+        onChange: (collapsed) => setShow(!collapsed),
       }}
     />
   );
