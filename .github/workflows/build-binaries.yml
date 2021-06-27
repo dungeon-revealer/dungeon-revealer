@@ -96,7 +96,7 @@ jobs:
 
       - name: Build ${{ matrix.arch }}
         run: |
-          CMD='cp -r /caxa /caxa2 && cd /caxa2 && mkdir compile && cp -r build server-build node_modules package.json package-lock.json compile/ && echo "unsafe-perm = true" > .npmrc && npm ci && npm run build && npx caxa -i compile -o /caxa/${{ matrix.output }} -- "{{caxa}}/node_modules/.bin/node" "{{caxa}}/server-build/index.js" "--caxa"'
+          CMD='cp -r /caxa /caxa2 && cd /caxa2 && echo "unsafe-perm = true" > .npmrc && npm ci && npm run build && mkdir compile && cp -r build server-build node_modules package.json package-lock.json compile/ && npx caxa -i compile -o /caxa/${{ matrix.output }} -- "{{caxa}}/node_modules/.bin/node" "{{caxa}}/server-build/index.js" "--caxa"'
           docker run --rm --platform ${{ matrix.docker_platform }} -v $PWD:/caxa ${{ matrix.docker_image }} sh -c "$CMD"
 
       - name: Upload artifacts
