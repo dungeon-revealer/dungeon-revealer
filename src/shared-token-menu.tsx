@@ -15,7 +15,7 @@ import { ChatPositionContext } from "./authenticated-app-shell";
 import { useSelectedItems } from "./shared-token-state";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
 import type { sharedTokenMenuUpdateManyMapTokenMutation } from "./__generated__/sharedTokenMenuUpdateManyMapTokenMutation.graphql";
-import type { sharedTokenMenuRererenceNoteQuery } from "./__generated__/sharedTokenMenuRererenceNoteQuery.graphql";
+import type { sharedTokenMenuReferenceNoteQuery } from "./__generated__/sharedTokenMenuReferenceNoteQuery.graphql";
 
 import { State, StoreType } from "leva/dist/declarations/src/types";
 import { levaPluginNotePreview } from "./leva-plugin/leva-plugin-note-preview";
@@ -53,6 +53,18 @@ const defaultTokenMenuExpandedStateModel: Readonly<TokenMenuExpandedStateModelTy
     isTokenMenuExpanded: true,
   };
 
+const deserializeTokenMenuExpandedState = flow(
+  Json.parse,
+  E.chainW(PersistedValue(TokenMenuExpandedStateModel).decode),
+  E.fold(
+    () => ({
+      version: 0,
+      state: { ...defaultTokenMenuExpandedStateModel },
+    }),
+    identity
+  )
+);
+
 const useTokenMenuExpandedState = create<TokenMenuExpandedState>(
   persist(
     (set) => ({
@@ -65,17 +77,7 @@ const useTokenMenuExpandedState = create<TokenMenuExpandedState>(
     {
       name: "tokenMenuExpandedState",
       // we deserialize the value in a safe way :)
-      deserialize: flow(
-        Json.parse,
-        E.chain(PersistedValue(TokenMenuExpandedStateModel).decode),
-        E.fold(
-          () => ({
-            version: 0,
-            state: { ...defaultTokenMenuExpandedStateModel },
-          }),
-          identity
-        )
-      ),
+      deserialize: deserializeTokenMenuExpandedState as any,
     }
   )
 );
@@ -122,7 +124,7 @@ export const SharedTokenMenu = (props: { currentMapId: string }) => {
 };
 
 const SharedTokenMenuReferenceNoteQuery = graphql`
-  query sharedTokenMenuRererenceNoteQuery($noteId: ID!) {
+  query sharedTokenMenuReferenceNoteQuery($noteId: ID!) {
     note(documentId: $noteId) {
       id
       documentId
@@ -174,7 +176,7 @@ const TokenNotePreview = (props: {
 };
 
 const NoteAsidePreview = (props: { noteId: string }) => {
-  const noteProps = useQuery<sharedTokenMenuRererenceNoteQuery>(
+  const noteProps = useQuery<sharedTokenMenuReferenceNoteQuery>(
     SharedTokenMenuReferenceNoteQuery,
     { noteId: props.noteId }
   );
