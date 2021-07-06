@@ -145,7 +145,7 @@
     "ts-node-dev": "1.1.8",
     "typescript": "4.3.5",
     "use-sound": "3.0.1",
-    "vite": "2.4.0",
+    "vite": "2.4.1",
     "vite-plugin-babel-macros": "1.0.5",
     "zustand": "3.5.5"
   }
