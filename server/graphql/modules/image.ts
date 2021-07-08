@@ -45,15 +45,18 @@ export const GraphQLImageType = t.objectType<ImageModelType>({
   interfaces: [Relay.GraphQLNodeInterface],
   isTypeOf: isTypeOfImage,
   fields: () => [
-    t.field("id", {
+    t.field({
+      name: "id",
       type: t.NonNull(t.ID),
       resolve: ({ id }) => encodeImageId(id),
     }),
-    t.field("imageId", {
+    t.field({
+      name: "imageId",
       type: t.NonNull(t.ID),
       resolve: ({ id }) => id,
     }),
-    t.field("url", {
+    t.field({
+      name: "url",
       type: t.NonNull(t.String),
       resolve: (record) => record.url,
     }),

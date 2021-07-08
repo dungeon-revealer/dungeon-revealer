@@ -40,7 +40,8 @@ import { pipe } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
 import * as RT from "fp-ts/lib/ReaderTask";
 
-const nodeField = t.field("node", {
+const nodeField = t.field( {
+  name: "node",
   type: RelaySpecModule.GraphQLNodeInterface,
   args: {
     id: t.arg(t.NonNullInput(t.ID)),
@@ -69,7 +70,7 @@ const nodeField = t.field("node", {
 });
 
 const Query = t.queryType({
-  fields: [
+  fields: () => [
     ...DiceRollerChatModule.queryFields,
     ...UserModule.queryFields,
     ...NotesModule.queryFields,
@@ -80,7 +81,7 @@ const Query = t.queryType({
 });
 
 const Subscription = t.subscriptionType({
-  fields: [
+  fields: () => [
     ...UserModule.subscriptionFields,
     ...DiceRollerChatModule.subscriptionFields,
     ...NotesModule.subscriptionFields,

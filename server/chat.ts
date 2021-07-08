@@ -86,7 +86,7 @@ const processVariables = (
 const diceRollSymbol = Symbol("DiceRoll");
 const generateIdSymbol = Symbol("GenerateId");
 
-type NewMessagesPayload = {
+export type NewMessagesPayload = {
   messages: Array<ApplicationRecordSchema>;
 };
 

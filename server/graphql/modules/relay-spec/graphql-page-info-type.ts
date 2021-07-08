@@ -8,19 +8,23 @@ export const GraphQLPageInfoType = t.objectType<{
 }>({
   name: "PageInfo",
   fields: () => [
-    t.field("hasNextPage", {
+    t.field({
+      name: "hasNextPage",
       type: t.NonNull(t.Boolean),
       resolve: (obj) => obj.hasNextPage ?? false,
     }),
-    t.field("hasPreviousPage", {
+    t.field({
+      name: "hasPreviousPage",
       type: t.NonNull(t.Boolean),
       resolve: (obj) => obj.hasPreviousPage ?? false,
     }),
-    t.field("startCursor", {
+    t.field({
+      name: "startCursor",
       type: t.NonNull(t.String),
       resolve: (obj) => obj.startCursor ?? "",
     }),
-    t.field("endCursor", {
+    t.field({
+      name: "endCursor",
       type: t.NonNull(t.String),
       resolve: (obj) => obj.endCursor ?? "",
     }),
@@ -29,5 +33,5 @@ export const GraphQLPageInfoType = t.objectType<{
 
 export const GraphQLNodeInterface = t.interfaceType({
   name: "Node",
-  fields: () => [t.abstractField("id", t.NonNull(t.ID))],
+  fields: () => [t.abstractField({ name: "id", type: t.NonNull(t.ID) })],
 });
