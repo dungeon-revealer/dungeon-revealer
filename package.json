@@ -70,8 +70,8 @@
     "unzipper": "0.10.11"
   },
   "devDependencies": {
-    "@babel/core": "7.14.6",
-    "@babel/preset-env": "7.14.7",
+    "@babel/core": "7.14.8",
+    "@babel/preset-env": "7.14.8",
     "@babel/preset-typescript": "7.14.5",
     "@chakra-ui/react": "1.6.5",
     "@emotion/react": "11.4.0",
