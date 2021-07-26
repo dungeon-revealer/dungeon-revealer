@@ -52,7 +52,7 @@
     "body-parser": "1.19.0",
     "connect-busboy": "0.0.2",
     "express": "4.17.1",
-    "fp-ts": "2.10.5",
+    "fp-ts": "2.11.0",
     "fs-extra": "9.1.0",
     "gqtx": "^0.8.1-e6f907e5.0",
     "graphql": "15.5.1",
