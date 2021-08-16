@@ -73,7 +73,7 @@
     "@babel/core": "7.14.8",
     "@babel/preset-env": "7.14.9",
     "@babel/preset-typescript": "7.14.5",
-    "@chakra-ui/react": "1.6.5",
+    "@chakra-ui/react": "1.6.6",
     "@emotion/react": "11.4.1",
     "@emotion/styled": "11.3.0",
     "@monaco-editor/react": "4.2.1",
