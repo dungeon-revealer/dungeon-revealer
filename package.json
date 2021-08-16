@@ -147,6 +147,6 @@
     "use-sound": "3.0.1",
     "vite": "2.5.0",
     "vite-plugin-babel-macros": "1.0.5",
-    "zustand": "3.5.7"
+    "zustand": "3.5.8"
   }
 }
