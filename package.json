@@ -85,7 +85,7 @@
     "@types/express": "4.17.13",
     "@types/fs-extra": "9.0.12",
     "@types/howler": "2.2.3",
-    "@types/jest": "26.0.24",
+    "@types/jest": "27.0.1",
     "@types/lodash": "4.14.172",
     "@types/node": "14.17.9",
     "@types/react": "17.0.18",
