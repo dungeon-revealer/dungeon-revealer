@@ -15,6 +15,7 @@ server-build
 __generated__
 dist
 public/monaco-editor
+server/version.ts
 
 # Runtime Data/ Persisted Data #
 ################################

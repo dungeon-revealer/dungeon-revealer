@@ -26,7 +26,7 @@ const getListeningAddresses = () => {
 
 bootstrapServer(env).then(({ httpServer }) => {
   const server = httpServer.listen(env.PORT, env.HOST, () => {
-    console.log(`\nStarting dungeon-revealer.
+    console.log(`\nStarting dungeon-revealer@${env.DR_VERSION} 
 
 Configuration:
 - HOST: ${env.HOST} 
