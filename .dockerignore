@@ -1,4 +1,4 @@
-.git
+#.git
 node_modules
 npm-debug.log
 data/
