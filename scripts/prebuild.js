@@ -1,11 +1,9 @@
 const fse = require('fs-extra')
+const package = require('../package.json');
 const { spawnSync } = require('child_process');
-var exec = spawnSync("git",
-    ["describe", "--tags"],
-);
 
-let myenv = {
-    'appversion': '',
+let version = {
+    'appversion': package.version,
     'status': 'unknown',
     'tag': '',
     'commit': '',
@@ -13,50 +11,32 @@ let myenv = {
     'obj': ''
 };
 
-const package = require('../package.json');
-
-myenv.appversion = package.version;
-
+var exec = spawnSync("git", ["describe", "--tags"]);
 
 if (exec.status != 0) {
-    env.status = 'unknown'
+    version.status = 'unknown';
 } else {
     let git_desc = exec.stdout.toString().replace('\n', '');
-    let gd_array = git_desc.split('-')
-    myenv.tag = gd_array[0];
-    if (git_desc == myenv.appversion) {
-        myenv.status = 'release';
+    let gd_array = git_desc.split('-');
+    version.tag = gd_array[0];
+    if (git_desc.slice(1) == version.appversion) {
+        version.status = 'release';
     } else {
-        myenv.status = 'development';
-        myenv.commit = spawnSync("git",
-            ["rev-parse", "--short", "HEAD"],
-        ).stdout.toString().replace('\n', '');
-        myenv.commits_ahead = gd_array[1];
-        myenv.obj = gd_array[2]
+        version.status = 'development';
+        version.commit = spawnSync("git", ["rev-parse", "--short", "HEAD"]).stdout.toString().replace('\n', '');
+        version.commits_ahead = gd_array[1];
+        version.obj = gd_array[2];
     }
 }
 
-// console.log(myenv)
-
-outstr = '';
-
-let entries = Object.entries(myenv)
-
-
-
-for (const x of entries) {
-    outstr += `export const ${x[0]} = '${x[1]}';\n`
+let entries = Object.entries(version)
+ts_out = '';
+for (const entry of entries) {
+    ts_out += `export const ${entry[0]} = '${entry[1]}';\n`
 }
 
-// console.log(outstr)
-
-
-fse.outputFileSync('server/version.ts', outstr, (err) => {
-    if (err)
+fse.outputFileSync('server/version.ts', ts_out, (err) => {
+    if (err) {
         console.log(err);
-    else {
-        console.log("File written successfully\n");
-        console.log("The written has the following contents:");
-        console.log(fs.readFileSync("version.ts", "utf8"));
     }
 })

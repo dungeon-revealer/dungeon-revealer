@@ -9,8 +9,6 @@ const { getEnv } = require("./env");
 
 const env = getEnv(process.env);
 
-console.log(env.VERSION)
-
 const getPublicInterfaces = () => {
   const ifaces = os.networkInterfaces();
   return flatMap(Object.values(ifaces))
@@ -34,10 +32,8 @@ bootstrapServer(env).then(({ httpServer }) => {
       version_string = env.VERSION.appversion;
     } else if (env.VERSION.status == 'development') {
       version_string = `${env.VERSION.commit}\nThis development version is ${env.VERSION.commits_ahead} commits ahead of ${env.VERSION.tag}!\n`;
-    } else if (env.VERSION.status == 'unknown') {
-      version_string = `${env.VERSION.appversion}\nI couldn't verify the git commit of this version! I think it is based on ${env.VERSION.appversion}.\n`;
     } else {
-      console.log(`version: ${env.VERSION}`)
+      version_string = `${env.VERSION.appversion}\nI couldn't verify the git commit of this version, but I think it's based on ${env.VERSION.appversion}.\n`;
     }
 
     console.log(`\nStarting dungeon-revealer@${version_string} 
