@@ -14,6 +14,7 @@
   "main": "app.js",
   "bin": "bin/dungeon-revealer",
   "scripts": {
+    "prebuild": "node scripts/prebuild.js",
     "build:frontend": "node scripts/copy-monaco-editor-files.js && npm run relay-compiler && vite build --base=./",
     "build:backend": "tsc --project server/tsconfig.json",
     "build": "npm run build:frontend && npm run build:backend",

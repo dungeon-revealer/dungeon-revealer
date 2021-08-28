@@ -1,5 +1,6 @@
 import path from "path";
 import { getDefaultDataDirectory } from "./util";
+import * as VERSION from "./version";
 
 export const getEnv = (env: NodeJS.ProcessEnv) => {
   const PUBLIC_PATH = path.resolve(__dirname, "..", "build");
@@ -18,5 +19,6 @@ export const getEnv = (env: NodeJS.ProcessEnv) => {
     HOST,
     PC_PASSWORD,
     DM_PASSWORD,
+    VERSION
   };
 };

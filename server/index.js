@@ -26,7 +26,17 @@ const getListeningAddresses = () => {
 
 bootstrapServer(env).then(({ httpServer }) => {
   const server = httpServer.listen(env.PORT, env.HOST, () => {
-    console.log(`\nStarting dungeon-revealer.
+
+    let versionString;
+    if (env.VERSION.status === 'release') {
+      versionString = env.VERSION.appversion;
+    } else if (env.VERSION.status === 'development') {
+      versionString = `${env.VERSION.commit}\nThis development version is ${env.VERSION.commits_ahead} commits ahead of ${env.VERSION.tag}!\n`;
+    } else {
+      versionString = `${env.VERSION.appversion}\nI couldn't verify the git commit of this version, but I think it's based on ${env.VERSION.appversion}.\n`;
+    }
+
+    console.log(`\nStarting dungeon-revealer@${versionString} 
 
 Configuration:
 - HOST: ${env.HOST} 
