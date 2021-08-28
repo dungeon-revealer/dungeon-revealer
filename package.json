@@ -87,7 +87,7 @@
     "@types/howler": "2.2.3",
     "@types/jest": "27.0.1",
     "@types/lodash": "4.14.172",
-    "@types/node": "14.17.10",
+    "@types/node": "14.17.12",
     "@types/react": "17.0.18",
     "@types/react-dom": "17.0.9",
     "@types/react-relay": "7.0.19",
