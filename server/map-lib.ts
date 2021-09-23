@@ -193,7 +193,8 @@ export const createMapImageUploadUrl = (params: {
   extension: string;
 }) =>
   pipe(
-    RT.ask<MapImageUploadRegisterDependency>(),
+    auth.requireAdmin(),
+    RT.chainW(() => RT.ask<MapImageUploadRegisterDependency>()),
     RT.chain((deps) => () => async () => {
       let record = deps.mapImageUploadRegister.get(params.sha256);
 
@@ -237,7 +238,10 @@ export const mapCreate = (params: {
   title: string;
 }) =>
   pipe(
-    RT.ask<MapImageUploadRegisterDependency & MapsDependency>(),
+    auth.requireAdmin(),
+    RT.chainW(() =>
+      RT.ask<MapImageUploadRegisterDependency & MapsDependency>()
+    ),
     RT.chain((deps) => () => async (): Promise<MapCreateResult> => {
       const record = deps.mapImageUploadRegister.get(params.mapImageUploadId);
       if (record === undefined) {
