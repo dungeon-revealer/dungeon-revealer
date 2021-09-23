@@ -259,29 +259,6 @@ const Content = ({
     };
   }, [socket, loadedMapId, setData]);
 
-  const createMap = React.useCallback(
-    async ({ file, title }) => {
-      const formData = new FormData();
-
-      formData.append("file", file);
-      formData.append("title", title);
-
-      const response = await localFetch(`/map`, {
-        method: "POST",
-        body: formData,
-      }).then((res) => res.json());
-      setData((data) =>
-        data
-          ? {
-              ...data,
-              maps: [...data.maps, response.data.map],
-            }
-          : data
-      );
-    },
-    [localFetch]
-  );
-
   const updateMap = React.useCallback(
     async (mapId, data) => {
       const res = await localFetch(`/map/${mapId}`, {
@@ -504,7 +481,6 @@ const Content = ({
             setMode({ title: "EDIT_MAP" });
             setLoadedMapId(loadedMapId);
           }}
-          updateMap={updateMap}
           dmPassword={dmPassword}
         />
       ) : null}
@@ -686,7 +662,6 @@ const Content = ({
         <ImportFileModal
           file={importModalFile}
           close={() => setImportModalFile(null)}
-          createMap={createMap}
         />
       ) : null}
     </FetchContext.Provider>

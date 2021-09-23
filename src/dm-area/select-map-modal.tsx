@@ -11,7 +11,7 @@ import { buildApiUrl } from "../public-url";
 import { generateSHA256FileHash } from "../crypto";
 import { useSelectFileDialog } from "../hooks/use-select-file-dialog";
 import { selectMapModal_MapsQuery } from "./__generated__/selectMapModal_MapsQuery.graphql";
-import { selectMapModal_CreateMapMutation } from "./__generated__/selectMapModal_CreateMapMutation.graphql";
+import { selectMapModal_MapCreateMutation } from "./__generated__/selectMapModal_MapCreateMutation.graphql";
 import { selectMapModal_MapImageRequestUploadMutation } from "./__generated__/selectMapModal_MapImageRequestUploadMutation.graphql";
 import { selectMapModal_MapDeleteMutation } from "./__generated__/selectMapModal_MapDeleteMutation.graphql";
 import { selectMapModal_MapUpdateTitleMutation } from "./__generated__/selectMapModal_MapUpdateTitleMutation.graphql";
@@ -70,12 +70,6 @@ type SelectMapModalProps = {
   setLoadedMapId: (id: string) => void;
   liveMapId: null | string;
   loadedMapId: null | string;
-  updateMap: (
-    mapId: string,
-    data: {
-      title: string;
-    }
-  ) => void;
   canClose: boolean;
   dmPassword: string;
 };
@@ -115,8 +109,8 @@ const SelectMapModal_MapImageRequestUploadMutation = graphql`
   }
 `;
 
-const SelectMapModal_CreateMapMutation = graphql`
-  mutation selectMapModal_CreateMapMutation($input: MapCreateInput!) {
+const SelectMapModal_MapCreateMutation = graphql`
+  mutation selectMapModal_MapCreateMutation($input: MapCreateInput!) {
     mapCreate(input: $input) {
       ... on MapCreateSuccess {
         __typename
@@ -157,7 +151,6 @@ export const SelectMapModal = ({
   setLoadedMapId,
   liveMapId,
   loadedMapId,
-  updateMap,
   canClose,
   dmPassword,
 }: SelectMapModalProps) => {
@@ -170,8 +163,8 @@ export const SelectMapModal = ({
     useMutation<selectMapModal_MapImageRequestUploadMutation>(
       SelectMapModal_MapImageRequestUploadMutation
     );
-  const [mapCreate] = useMutation<selectMapModal_CreateMapMutation>(
-    SelectMapModal_CreateMapMutation
+  const [mapCreate] = useMutation<selectMapModal_MapCreateMutation>(
+    SelectMapModal_MapCreateMutation
   );
   const [mapDelete] = useMutation<selectMapModal_MapDeleteMutation>(
     SelectMapModal_MapDeleteMutation

@@ -1,5 +1,7 @@
 import * as React from "react";
 import styled from "@emotion/styled/macro";
+import graphql from "babel-plugin-relay/macro";
+import { useMutation } from "relay-hooks";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import * as Button from "../button";
 import { Modal } from "../modal";
@@ -9,6 +11,9 @@ import { buildApiUrl } from "../public-url";
 import { useAccessToken } from "../hooks/use-access-token";
 import { LoadingSpinner } from "../loading-spinner";
 import { AnimatedDotDotDot } from "../animated-dot-dot-dot";
+import { generateSHA256FileHash } from "../crypto";
+import { importFileModal_MapImageRequestUploadMutation } from "./__generated__/importFileModal_MapImageRequestUploadMutation.graphql";
+import { importFileModal_MapCreateMutation } from "./__generated__/importFileModal_MapCreateMutation.graphql";
 
 const OrSeperator = styled.span`
   padding-left: 18px;
@@ -43,15 +48,51 @@ const extractDefaultTitleFromFileName = (fileName: string) => {
 const validImageFileTypes = ["image/png", "image/jpeg"];
 const validNoteImportFileTypes = ["application/zip", "text/markdown"];
 
-type CreateMapFunction = (opts: { file: File; title: string }) => Promise<void>;
+const ImportFileModal_MapImageRequestUploadMutation = graphql`
+  mutation importFileModal_MapImageRequestUploadMutation(
+    $input: MapImageRequestUploadInput!
+  ) {
+    mapImageRequestUpload(input: $input) {
+      id
+      uploadUrl
+    }
+  }
+`;
+
+const ImportFileModal_MapCreateMutation = graphql`
+  mutation importFileModal_MapCreateMutation($input: MapCreateInput!) {
+    mapCreate(input: $input) {
+      ... on MapCreateSuccess {
+        __typename
+        createdMap {
+          ...selectMapModal_mapFragment
+          id
+          title
+          mapImageUrl
+        }
+      }
+      ... on MapCreateError {
+        __typename
+        reason
+      }
+    }
+  }
+`;
 
 const ImageImportModal: React.FC<{
   file: File;
   close: () => void;
-  createMap: CreateMapFunction;
-}> = ({ file, close, createMap }) => {
+}> = ({ file, close }) => {
   const [objectUrl, setObjectUrl] = React.useState<string | null>(null);
   const accessToken = useAccessToken();
+
+  const [mapImageRequestUpload] =
+    useMutation<importFileModal_MapImageRequestUploadMutation>(
+      ImportFileModal_MapImageRequestUploadMutation
+    );
+  const [mapCreate] = useMutation<importFileModal_MapCreateMutation>(
+    ImportFileModal_MapCreateMutation
+  );
 
   React.useEffect(() => {
     const objectUrl = URL.createObjectURL(file);
@@ -70,11 +111,48 @@ const ImageImportModal: React.FC<{
 
   const [isCreatingMap, onClickCreateMap] = useAsyncTask(
     React.useCallback(async () => {
-      await createMap({
-        file,
-        title: fileTitleWithoutExtension,
+      const hash = await generateSHA256FileHash(file);
+      // 1. request file upload
+      const result = await mapImageRequestUpload({
+        variables: {
+          input: {
+            sha256: hash,
+            extension: file.name.split(".").pop() ?? "",
+          },
+        },
       });
-      close();
+
+      // 2. upload file
+      const uploadResponse = await fetch(
+        result.mapImageRequestUpload.uploadUrl,
+        {
+          method: "PUT",
+          body: file,
+        }
+      );
+
+      if (uploadResponse.status !== 200) {
+        const body = await uploadResponse.text();
+        throw new Error(
+          "Received invalid response code: " +
+            uploadResponse.status +
+            "\n\n" +
+            body
+        );
+      }
+
+      // 3. create map
+      await mapCreate({
+        variables: {
+          input: {
+            title: file.name,
+            mapImageUploadId: result.mapImageRequestUpload.id,
+          },
+        },
+        onCompleted: () => {
+          close();
+        },
+      });
     }, [file, fileTitleWithoutExtension, close])
   );
 
@@ -215,8 +293,9 @@ const NoteImportLogRenderer = (props: {
 const NoteImportModal: React.FC<{ file: File; close: () => void }> = (
   props
 ) => {
-  const [state, setState] =
-    React.useState<"notStarted" | "inProgress" | "finished">("notStarted");
+  const [state, setState] = React.useState<
+    "notStarted" | "inProgress" | "finished"
+  >("notStarted");
   const [logs, setLogs] = React.useState([] as ImportFileLogRecord[]);
   const [importedFilesCount, setImportedFilesCount] = React.useState(0);
   const [failedFilesCount, setFailedFilesCount] = React.useState(0);
@@ -414,10 +493,9 @@ const NoteImportModal: React.FC<{ file: File; close: () => void }> = (
 export const ImportFileModal: React.FC<{
   file: File;
   close: () => void;
-  createMap: CreateMapFunction;
-}> = ({ file, close, createMap }) => {
+}> = ({ file, close }) => {
   if (validImageFileTypes.includes(file.type)) {
-    return <ImageImportModal file={file} close={close} createMap={createMap} />;
+    return <ImageImportModal file={file} close={close} />;
   } else if (validNoteImportFileTypes) {
     return <NoteImportModal file={file} close={close} />;
   } else {

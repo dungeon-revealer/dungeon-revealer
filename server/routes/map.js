@@ -191,25 +191,6 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
     });
   });
 
-  router.delete("/map/:id", roleMiddleware.dm, (req, res) => {
-    const map = maps.get(req.params.id);
-    if (!map) {
-      return res.send(404);
-    }
-
-    maps
-      .deleteMap(map.id)
-      .then(() => {
-        res.status(200).json({
-          error: null,
-          data: {
-            deletedMapId: map.id,
-          },
-        });
-      })
-      .catch(handleUnexpectedError(res));
-  });
-
   router.get("/map", roleMiddleware.pc, (req, res) => {
     res.json({
       error: null,
@@ -217,41 +198,6 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         currentMapId: settings.get("currentMapId"),
         maps: maps.getAll().map(mapMap),
       },
-    });
-  });
-
-  router.post("/map", roleMiddleware.dm, (req, res) => {
-    const tmpFile = getTmpFile();
-    let writeStream = null;
-    let mapTitle = "New Map";
-    let fileExtension = null;
-
-    req.pipe(req.busboy);
-
-    req.busboy.once("file", (fieldname, file, filename) => {
-      fileExtension = parseFileExtension(filename);
-      writeStream = fs.createWriteStream(tmpFile);
-      file.pipe(writeStream);
-    });
-
-    req.busboy.on("field", (fieldname, value) => {
-      if (fieldname === "title") {
-        mapTitle = String(value);
-      }
-    });
-
-    req.once("end", () => {
-      if (writeStream !== null) return;
-      res.status(422).json({ data: null, error: "No file was sent." });
-    });
-
-    req.busboy.once("finish", () => {
-      maps
-        .createMap({ title: mapTitle, filePath: tmpFile, fileExtension })
-        .then((map) => {
-          res.status(200).json({ error: null, data: { map: mapMap(map) } });
-        })
-        .catch(handleUnexpectedError(res));
     });
   });
 
