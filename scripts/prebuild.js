@@ -32,10 +32,9 @@ if (exec.status !== 0) {
   }
 }
 
-const entries = Object.entries(version);
 let tsOut = "";
-for (const entry of entries) {
-  tsOut += `export const ${entry[0]} = '${entry[1]}';\n`;
+for (const entry of Object.entries(version)) {
+  tsOut += `export const ${entry[0]}: string = '${entry[1]}';\n`;
 }
 
 fse.outputFileSync("server/version.ts", tsOut, (err) => {

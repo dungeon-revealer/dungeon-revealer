@@ -30,11 +30,11 @@ bootstrapServer(env).then(({ httpServer }) => {
   const server = httpServer.listen(env.PORT, env.HOST, () => {
     let versionString;
     if (env.VERSION.status === "release") {
-      versionString = env.VERSION.appversion;
+      versionString = env.VERSION.appVersion;
     } else if (env.VERSION.status === "development") {
-      versionString = `${env.VERSION.commit}\nThis development version is ${env.VERSION.commits_ahead} commits ahead of ${env.VERSION.tag}!\n`;
+      versionString = `${env.VERSION.commit}\nThis development version is ${env.VERSION.commitsAhead} commits ahead of ${env.VERSION.tag}!\n`;
     } else {
-      versionString = `${env.VERSION.appversion}\nI couldn't verify the git commit of this version, but I think it's based on ${env.VERSION.appversion}.\n`;
+      versionString = `${env.VERSION.appVersion}\nI couldn't verify the git commit of this version, but I think it's based on ${env.VERSION.appVersion}.\n`;
     }
 
     console.log(`\nStarting dungeon-revealer@${versionString} 
