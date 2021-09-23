@@ -284,3 +284,18 @@ export const mapDelete = (params: { mapId: string }) =>
     RT.chainW(() => RT.ask<MapsDependency>()),
     RT.chain((deps) => () => () => deps.maps.deleteMap(params.mapId))
   );
+
+export type MapUpdateTitleResult = {
+  updatedMap: MapEntity;
+};
+
+export const mapUpdateTitle = (params: { mapId: string; newTitle: string }) =>
+  pipe(
+    auth.requireAdmin(),
+    RT.chainW(() => RT.ask<MapsDependency>()),
+    RT.chain(
+      (deps) => () => () =>
+        deps.maps.updateMapSettings(params.mapId, { title: params.newTitle })
+    ),
+    RT.map((updatedMap): MapUpdateTitleResult => ({ updatedMap }))
+  );

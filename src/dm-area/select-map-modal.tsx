@@ -14,6 +14,7 @@ import { selectMapModal_MapsQuery } from "./__generated__/selectMapModal_MapsQue
 import { selectMapModal_CreateMapMutation } from "./__generated__/selectMapModal_CreateMapMutation.graphql";
 import { selectMapModal_MapImageRequestUploadMutation } from "./__generated__/selectMapModal_MapImageRequestUploadMutation.graphql";
 import { selectMapModal_MapDeleteMutation } from "./__generated__/selectMapModal_MapDeleteMutation.graphql";
+import { selectMapModal_MapUpdateTitleMutation } from "./__generated__/selectMapModal_MapUpdateTitleMutation.graphql";
 
 type CreateNewMapButtonProps = {
   children: React.ReactChild;
@@ -140,6 +141,17 @@ const SelectMapModal_MapDeleteMutation = graphql`
   }
 `;
 
+const SelectMapModal_MapUpdateTitleMutation = graphql`
+  mutation selectMapModal_MapUpdateTitleMutation($input: MapUpdateTitleInput!) {
+    mapUpdateTitle(input: $input) {
+      updatedMap {
+        id
+        title
+      }
+    }
+  }
+`;
+
 export const SelectMapModal = ({
   closeModal,
   setLoadedMapId,
@@ -163,6 +175,9 @@ export const SelectMapModal = ({
   );
   const [mapDelete] = useMutation<selectMapModal_MapDeleteMutation>(
     SelectMapModal_MapDeleteMutation
+  );
+  const [mapUpdateTitle] = useMutation<selectMapModal_MapUpdateTitleMutation>(
+    SelectMapModal_MapUpdateTitleMutation
   );
 
   const onChangeFilter = React.useCallback(
@@ -410,7 +425,16 @@ export const SelectMapModal = ({
         modalState.type === ModalType.EDIT_TITLE ? (
           <ChangeMapTitleModal
             closeModal={() => setModalState(null)}
-            updateMap={(...args) => updateMap(modalState.data.mapId, ...args)}
+            updateMap={({ title }) =>
+              mapUpdateTitle({
+                variables: {
+                  input: {
+                    mapId: modalState.data.mapId,
+                    newTitle: title,
+                  },
+                },
+              })
+            }
           />
         ) : modalState.type === ModalType.DELETE_MAP ? (
           <DeleteMapModal

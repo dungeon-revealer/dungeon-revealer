@@ -192,6 +192,28 @@ const GraphQLMapDeleteInput = t.inputObjectType({
   }),
 });
 
+const GraphQLMapUpdateTitleResultType = t.objectType<lib.MapUpdateTitleResult>({
+  name: "MapUpdateTitleResult",
+  fields: () => [
+    t.field({
+      name: "updatedMap",
+      type: t.NonNull(GraphQLMapType),
+    }),
+  ],
+});
+
+const GraphQLMapUpdateTitleInputType = t.inputObjectType({
+  name: "MapUpdateTitleInput",
+  fields: () => ({
+    mapId: {
+      type: t.NonNullInput(t.ID),
+    },
+    newTitle: {
+      type: t.NonNullInput(t.String),
+    },
+  }),
+});
+
 export const mutationFields = [
   t.field({
     name: "mapTokenUpdateMany",
@@ -282,6 +304,16 @@ export const mutationFields = [
         ),
         context
       ),
+  }),
+  t.field({
+    name: "mapUpdateTitle",
+    description: "Update the title of a map.",
+    type: t.NonNull(GraphQLMapUpdateTitleResultType),
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapUpdateTitleInputType)),
+    },
+    resolve: (_, { input }, context) =>
+      RT.run(lib.mapUpdateTitle(input), context),
   }),
 ];
 

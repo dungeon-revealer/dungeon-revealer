@@ -215,7 +215,7 @@ export class Maps {
   }
 
   async updateMapSettings(id: string, data: Partial<MapEntity>) {
-    return await this._processTask(`map:${id}`, async () => {
+    return await this._processTask<MapEntity>(`map:${id}`, async () => {
       const map = this._maps.find((map) => map.id === id);
       if (!map) {
         throw new Error(`Map with id "${id}" not found.`);

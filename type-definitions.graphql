@@ -334,6 +334,11 @@ type Mutation {
   Delete a map.
   """
   mapDelete(input: MapDeleteInput!): Boolean!
+
+  """
+  Update the title of a map.
+  """
+  mapUpdateTitle(input: MapUpdateTitleInput!): MapUpdateTitleResult!
 }
 
 type LogInResult {
@@ -610,6 +615,15 @@ input MapDeleteInput {
   The id of the map that should be deleted.
   """
   mapId: String!
+}
+
+type MapUpdateTitleResult {
+  updatedMap: Map!
+}
+
+input MapUpdateTitleInput {
+  mapId: ID!
+  newTitle: String!
 }
 
 type Subscription {
