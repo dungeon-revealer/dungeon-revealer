@@ -1,20 +1,23 @@
-"use strict";
+import * as path from "path";
+import * as fs from "fs-extra";
 
-const path = require("path");
-const fs = require("fs");
+type SettingsEntity = {
+  currentMapId: string | null;
+};
 
-const defaultSettings = {
+const defaultSettings: Readonly<SettingsEntity> = {
   currentMapId: null,
 };
 
-class Settings {
-  constructor({ dataDirectory }) {
+export class Settings {
+  private _settingsPath: string;
+  private settings: SettingsEntity;
+  constructor({ dataDirectory }: { dataDirectory: string }) {
     this._settingsPath = path.join(dataDirectory, "settings.json");
     let settings = {};
     try {
-      const settingsRaw = fs.readFileSync(this._settingsPath);
+      const settingsRaw = fs.readFileSync(this._settingsPath, "utf8");
       settings = JSON.parse(settingsRaw);
-      // eslint-disable-next-line no-empty
     } catch (err) {
       fs.writeFileSync(
         this._settingsPath,
@@ -25,11 +28,14 @@ class Settings {
     this.settings = Object.assign({}, defaultSettings, settings);
   }
 
-  get(name) {
+  get(name: keyof SettingsEntity) {
     return this.settings[name];
   }
 
-  set(name, value) {
+  set<TKey extends keyof SettingsEntity>(
+    name: TKey,
+    value: SettingsEntity[TKey]
+  ) {
     this.settings[name] = value;
     fs.writeFileSync(
       this._settingsPath,
@@ -37,5 +43,3 @@ class Settings {
     );
   }
 }
-
-module.exports = { Settings };
