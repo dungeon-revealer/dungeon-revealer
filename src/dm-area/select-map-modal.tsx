@@ -1,14 +1,17 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
-import { useQuery } from "relay-hooks";
+import { useMutation, useQuery } from "relay-hooks";
 import { Modal, ModalDialogSize } from "../modal";
 import * as Icons from "../feather-icons";
 import { Input, InputGroup } from "../input";
 import * as Button from "../button";
 import * as ScrollableList from "./components/scrollable-list";
 import { buildApiUrl } from "../public-url";
+import { generateSHA256FileHash } from "../crypto";
 import { useSelectFileDialog } from "../hooks/use-select-file-dialog";
 import { selectMapModal_MapsQuery } from "./__generated__/selectMapModal_MapsQuery.graphql";
+import { selectMapModal_CreateMapMutation } from "./__generated__/selectMapModal_CreateMapMutation.graphql";
+import { selectMapModal_MapImageRequestUploadMutation } from "./__generated__/selectMapModal_MapImageRequestUploadMutation.graphql";
 
 const CreateNewMapButton: React.FC<
   {
@@ -66,7 +69,6 @@ type SelectMapModalProps = {
       title: string;
     }
   ) => void;
-  createMap: (opts: { file: File; title: string }) => void;
   canClose: boolean;
   dmPassword: string;
 };
@@ -85,6 +87,36 @@ const SelectMapModal_MapsQuery = graphql`
   }
 `;
 
+const SelectMapModal_MapImageRequestUploadMutation = graphql`
+  mutation selectMapModal_MapImageRequestUploadMutation(
+    $input: MapImageRequestUploadInput!
+  ) {
+    mapImageRequestUpload(input: $input) {
+      id
+      uploadUrl
+    }
+  }
+`;
+
+const SelectMapModal_CreateMapMutation = graphql`
+  mutation selectMapModal_CreateMapMutation($input: MapCreateInput!) {
+    mapCreate(input: $input) {
+      ... on MapCreateSuccess {
+        __typename
+        createdMap {
+          id
+          title
+          mapImageUrl
+        }
+      }
+      ... on MapCreateError {
+        __typename
+        reason
+      }
+    }
+  }
+`;
+
 export const SelectMapModal = ({
   closeModal,
   setLoadedMapId,
@@ -92,7 +124,6 @@ export const SelectMapModal = ({
   loadedMapId,
   deleteMap,
   updateMap,
-  createMap,
   canClose,
   dmPassword,
 }: SelectMapModalProps) => {
@@ -101,6 +132,13 @@ export const SelectMapModal = ({
   const [filter, setFilterValue] = React.useState("");
 
   const response = useQuery<selectMapModal_MapsQuery>(SelectMapModal_MapsQuery);
+  const [mapImageRequestUpload] =
+    useMutation<selectMapModal_MapImageRequestUploadMutation>(
+      SelectMapModal_MapImageRequestUploadMutation
+    );
+  const [mapCreate] = useMutation<selectMapModal_CreateMapMutation>(
+    SelectMapModal_CreateMapMutation
+  );
 
   const onChangeFilter = React.useCallback(
     (ev) => {
@@ -356,9 +394,49 @@ export const SelectMapModal = ({
               setModalState(null);
             }}
             file={modalState.data.file}
-            createMap={(title) =>
-              createMap({ file: modalState.data.file, title })
-            }
+            createMap={async (title) => {
+              const hash = await generateSHA256FileHash(modalState.data.file);
+              // 1. request file upload
+              const result = await mapImageRequestUpload({
+                variables: {
+                  input: {
+                    sha256: hash,
+                    extension: modalState.data.file.name.split(".").pop() ?? "",
+                  },
+                },
+              });
+
+              // 2. upload file
+              const uploadResponse = await fetch(
+                result.mapImageRequestUpload.uploadUrl,
+                {
+                  method: "PUT",
+                  body: modalState.data.file,
+                }
+              );
+
+              if (uploadResponse.status !== 200) {
+                const body = await uploadResponse.text();
+                throw new Error(
+                  "Received invalid response code: " +
+                    uploadResponse.status +
+                    "\n\n" +
+                    body
+                );
+              }
+
+              // 3. create map
+              await mapCreate({
+                variables: {
+                  input: {
+                    title,
+                    mapImageUploadId: result.mapImageRequestUpload.id,
+                  },
+                },
+              });
+
+              setModalState(null);
+            }}
           />
         ) : null
       ) : null}
@@ -373,11 +451,15 @@ const extractDefaultTitleFromFileName = (fileName: string) => {
   return parts.join(".");
 };
 
-const CreateNewMapModal: React.FC<{
+const CreateNewMapModal = ({
+  closeModal,
+  file,
+  createMap,
+}: {
   closeModal: () => void;
   file: File;
   createMap: (title: string) => void;
-}> = ({ closeModal, file, createMap }) => {
+}) => {
   const [inputValue, setInputValue] = React.useState(() =>
     extractDefaultTitleFromFileName(file.name)
   );

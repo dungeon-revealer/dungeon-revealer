@@ -239,7 +239,7 @@ const GraphQLTokenImageCreateInput = t.inputObjectType({
     sha256: {
       type: t.NonNullInput(t.String),
       description:
-        "The SHA256 of the file that is going to be uploaded in hexadecimal form.",
+        "The SHA256 of the file that has been uploaded in hexadecimal form.",
     },
     sourceSha256: {
       type: t.String,

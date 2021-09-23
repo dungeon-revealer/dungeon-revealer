@@ -21,6 +21,7 @@ import { createTokenImageUploadRegister } from "../token-image-lib";
 import * as AsyncIteratorUtil from "../util/async-iterator";
 import { isAsyncIterable } from "@n1ru4l/push-pull-async-iterable-iterator";
 import type { Maps } from "../maps";
+import { createMapImageUploadRegister } from "../map-lib";
 
 type MaybePromise<T> = Promise<T> | T;
 
@@ -65,6 +66,7 @@ export default ({
 
   const notesUpdates = createPubSub<NotesUpdatesPayload>();
   const tokenImageUploadRegister = createTokenImageUploadRegister();
+  const mapImageUploadRegister = createMapImageUploadRegister();
 
   const graphQLErrorLogger = (result: ExecutionResult): ExecutionResult => {
     if (result.errors) {
@@ -106,32 +108,36 @@ export default ({
   const socketIOGraphQLServer = registerSocketIOGraphQLServer({
     socketServer,
     isLazy: true,
-    getParameter: ({ socket }) => ({
-      execute,
-      // @ts-ignore
-      subscribe,
-      graphQLExecutionParameter: {
-        schema,
-        contextValue: {
-          chat,
-          user,
-          db,
-          session: getSession(socket),
-          liveQueryStore,
-          splashImageState,
-          socket,
-          socketServer,
-          notesUpdates,
-          fileStoragePath,
-          tokenImageUploadRegister,
-          publicUrl,
-          maps,
-        } as GraphQLContextType,
-      },
-    }),
+    getParameter: ({ socket }) => {
+      const contextValue: GraphQLContextType = {
+        chat,
+        user,
+        db,
+        session: getSession(socket),
+        liveQueryStore,
+        splashImageState,
+        socket,
+        socketServer,
+        notesUpdates,
+        fileStoragePath,
+        tokenImageUploadRegister,
+        publicUrl,
+        maps,
+        mapImageUploadRegister,
+      };
+
+      return {
+        execute,
+        subscribe: subscribe as any,
+        graphQLExecutionParameter: {
+          schema,
+          contextValue: contextValue,
+        },
+      };
+    },
   });
 
-  // TODO: this should definetly be moved somewhere else
+  // TODO: this should definitely be moved somewhere else
   router.put("/files/(*)", (req, res) => {
     const filePath = req.params["0"];
     if (filePath.includes("..")) {
@@ -140,6 +146,20 @@ export default ({
     if (filePath.startsWith("token-image/")) {
       const id = filePath.replace("token-image/", "").split(".")[0];
       if (tokenImageUploadRegister.has(id)) {
+        const targetPath = path.join(fileStoragePath, filePath);
+        fs.mkdirpSync(path.dirname(targetPath));
+        const writeStream = fs.createWriteStream(
+          path.join(fileStoragePath, filePath)
+        );
+        req.pipe(writeStream);
+        writeStream.on("close", () => {
+          res.send("Done.");
+        });
+        return;
+      }
+    } else if (filePath.startsWith("map-image/")) {
+      const id = filePath.replace("map-image/", "").split(".")[0];
+      if (mapImageUploadRegister.has(id)) {
         const targetPath = path.join(fileStoragePath, filePath);
         fs.mkdirpSync(path.dirname(targetPath));
         const writeStream = fs.createWriteStream(

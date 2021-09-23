@@ -4,6 +4,7 @@ import type { createChat } from "../chat";
 import type { createUser } from "../user";
 import type { NotesUpdates } from "../notes-lib";
 import type { TokenImageUploadRegister } from "../token-image-lib";
+import type { MapImageUploadRegister } from "../map-lib";
 
 import type { SocketSessionRecord } from "../socket-session-store";
 import type { Database } from "sqlite";
@@ -24,6 +25,7 @@ export type GraphQLContextType = {
   notesUpdates: NotesUpdates;
   publicUrl: string;
   tokenImageUploadRegister: TokenImageUploadRegister;
+  mapImageUploadRegister: MapImageUploadRegister;
   fileStoragePath: string;
   maps: Maps;
 };
@@ -40,7 +42,7 @@ import { pipe } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
 import * as RT from "fp-ts/lib/ReaderTask";
 
-const nodeField = t.field( {
+const nodeField = t.field({
   name: "node",
   type: RelaySpecModule.GraphQLNodeInterface,
   args: {

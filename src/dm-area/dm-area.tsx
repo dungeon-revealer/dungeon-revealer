@@ -512,7 +512,6 @@ const Content = ({
       {data && mode.title === "SHOW_MAP_LIBRARY" ? (
         <SelectMapModal
           canClose={loadedMap !== null}
-          maps={data.maps}
           loadedMapId={loadedMapId}
           liveMapId={liveMapId}
           closeModal={() => {
@@ -524,7 +523,6 @@ const Content = ({
           }}
           updateMap={updateMap}
           deleteMap={deleteMap}
-          createMap={createMap}
           dmPassword={dmPassword}
         />
       ) : null}

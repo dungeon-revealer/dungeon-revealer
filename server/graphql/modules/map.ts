@@ -105,6 +105,83 @@ const GraphQLMapTokenAddManyInput = t.inputObjectType({
   }),
 });
 
+const GraphQLMapCreateInput = t.inputObjectType({
+  name: "MapCreateInput",
+  fields: () => ({
+    mapImageUploadId: t.arg(
+      t.NonNullInput(t.ID),
+      "The id of the map upload request received via 'Mutation.mapImageRequestUpload'."
+    ),
+    title: t.arg(t.NonNullInput(t.String)),
+  }),
+});
+
+const GraphQLMapImageRequestUploadInputType = t.inputObjectType({
+  name: "MapImageRequestUploadInput",
+  fields: () => ({
+    sha256: {
+      type: t.NonNullInput(t.String),
+      description:
+        "The SHA256 of the file that is going to be uploaded in hexadecimal form.",
+    },
+    extension: {
+      type: t.NonNullInput(t.String),
+      description: "The extension of the file thats is going to be uploaded.",
+    },
+  }),
+});
+
+const GraphQLMapImageRequestUploadResultType =
+  t.objectType<lib.MapImageUploadRequestResult>({
+    name: "MapImageRequestUploadResult",
+    fields: () => [
+      t.field({
+        name: "id",
+        description: "The id of the map image upload request.",
+        type: t.NonNull(t.ID),
+      }),
+      t.field({
+        name: "uploadUrl",
+        description: "The URL that should be used for uploading the image",
+        type: t.NonNull(t.String),
+      }),
+    ],
+  });
+
+const GraphQLMapCreateErrorType = t.objectType<lib.MapCreateError>({
+  name: "MapCreateError",
+  fields: () => [
+    t.field({
+      name: "reason",
+      type: t.String,
+      description: "The reason on why the map creation failed.",
+    }),
+  ],
+});
+
+const GraphQLMapCreateSuccess = t.objectType<lib.MapCreateSuccess>({
+  name: "MapCreateSuccess",
+  fields: () => [
+    t.field({
+      name: "createdMap",
+      type: t.NonNull(GraphQLMapType),
+    }),
+  ],
+});
+
+const GraphQLMapCreateResult = t.unionType<lib.MapCreateResult>({
+  name: "MapCreateResult",
+  types: [GraphQLMapCreateErrorType, GraphQLMapCreateSuccess],
+  resolveType: (source) => {
+    switch (source.type) {
+      case "error":
+        return GraphQLMapCreateErrorType;
+      case "success":
+        return GraphQLMapCreateSuccess;
+    }
+  },
+});
+
 export const mutationFields = [
   t.field({
     name: "mapTokenUpdateMany",
@@ -147,6 +224,7 @@ export const mutationFields = [
   }),
   t.field({
     name: "mapTokenAddMany",
+    description: "Add token to a map",
     type: t.Boolean,
     args: {
       input: t.arg(t.NonNullInput(GraphQLMapTokenAddManyInput)),
@@ -159,6 +237,25 @@ export const mutationFields = [
         }),
         context
       ),
+  }),
+  t.field({
+    name: "mapImageRequestUpload",
+    description: "Request the upload of a token image.",
+    type: t.NonNull(GraphQLMapImageRequestUploadResultType),
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapImageRequestUploadInputType)),
+    },
+    resolve: (_, { input }, context) =>
+      RT.run(lib.createMapImageUploadUrl(input), context),
+  }),
+  t.field({
+    name: "mapCreate",
+    description: "Create a new map",
+    type: t.NonNull(GraphQLMapCreateResult),
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapCreateInput)),
+    },
+    resolve: (_, { input }, context) => RT.run(lib.mapCreate(input), context),
   }),
 ];
 
@@ -228,8 +325,8 @@ const GraphQLMapEdgeType = t.objectType<MapEdgeType>({
   ],
 });
 
-const GraphQLMapConnectionType = t.objectType<NoteConnectionType>({
-  name: "MapConnection",
+const GraphQLMapsConnectionType = t.objectType<NoteConnectionType>({
+  name: "MapsConnection",
   description: "A connection of maps.",
   fields: () => [
     t.field({
@@ -312,7 +409,7 @@ export const queryFields = [
   t.field({
     name: "maps",
     description: "A connection of all available maps within the library",
-    type: t.NonNull(GraphQLMapConnectionType),
+    type: t.NonNull(GraphQLMapsConnectionType),
     args: {
       first: t.arg(t.Int, "The amount of items to fetch."),
       after: t.arg(t.String, "Cursor after which items should be fetched."),

@@ -1,7 +1,10 @@
 import { pipe } from "fp-ts/lib/function";
 import * as RT from "fp-ts/lib/ReaderTask";
+import { randomUUID } from "crypto";
+import * as path from "path";
+import * as fs from "fs-extra";
 import type { Server as IOServer } from "socket.io";
-import type { Maps } from "./maps";
+import type { MapEntity, Maps } from "./maps";
 import * as auth from "./auth";
 
 type MapsDependency = {
@@ -162,4 +165,111 @@ export const getPaginatedMaps = (_params: {
     auth.requireAdmin(),
     RT.chainW(() => RT.ask<MapsDependency>()),
     RT.chainW((deps) => () => async () => deps.maps.getAll())
+  );
+
+type MapImageUploadRegisterRecord = {
+  id: string;
+  fileExtension: string;
+};
+
+export type MapImageUploadRegister = Map<string, MapImageUploadRegisterRecord>;
+
+type MapImageUploadRegisterDependency = {
+  mapImageUploadRegister: MapImageUploadRegister;
+  publicUrl: string;
+  fileStoragePath: string;
+};
+
+export const createMapImageUploadRegister = (): MapImageUploadRegister =>
+  new Map();
+
+export type MapImageUploadRequestResult = {
+  id: string;
+  uploadUrl: string;
+};
+
+export const createMapImageUploadUrl = (params: {
+  sha256: string;
+  extension: string;
+}) =>
+  pipe(
+    RT.ask<MapImageUploadRegisterDependency>(),
+    RT.chain((deps) => () => async () => {
+      let record = deps.mapImageUploadRegister.get(params.sha256);
+
+      const uuid = randomUUID();
+
+      const key = `${params.sha256}_${uuid}`;
+
+      if (!record) {
+        record = {
+          id: key,
+          fileExtension: params.extension,
+        };
+      }
+
+      deps.mapImageUploadRegister.set(key, record);
+
+      return {
+        uploadUrl: `${deps.publicUrl}/files/map-image/${key}.${params.extension}`,
+        id: key,
+      };
+    })
+  );
+
+export type MapCreateError = {
+  type: "error";
+  reason: string;
+};
+
+export type MapCreateSuccess = {
+  type: "success";
+  createdMap: MapEntity;
+};
+
+export type MapCreateResult = MapCreateError | MapCreateSuccess;
+
+const buildMapImagePath = (fileStoragePath: string) =>
+  path.join(fileStoragePath, "map-image");
+
+export const mapCreate = (params: {
+  mapImageUploadId: string;
+  title: string;
+}) =>
+  pipe(
+    RT.ask<MapImageUploadRegisterDependency & MapsDependency>(),
+    RT.chain((deps) => () => async (): Promise<MapCreateResult> => {
+      const record = deps.mapImageUploadRegister.get(params.mapImageUploadId);
+      if (record === undefined) {
+        return {
+          type: "error",
+          reason: "Image upload does not exists.",
+        };
+      }
+
+      const filePath = path.join(
+        buildMapImagePath(deps.fileStoragePath),
+        `${record.id}.${record.fileExtension}`
+      );
+
+      if (false === (await fs.pathExists(filePath))) {
+        return {
+          type: "error",
+          reason: "Image has not been uploaded yet.",
+        };
+      }
+
+      deps.mapImageUploadRegister.delete(params.mapImageUploadId);
+
+      const createdMap = await deps.maps.createMap({
+        title: params.title,
+        fileExtension: record.fileExtension,
+        filePath: filePath,
+      });
+
+      return {
+        type: "success",
+        createdMap,
+      };
+    })
   );
