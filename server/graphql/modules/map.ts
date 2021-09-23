@@ -182,6 +182,16 @@ const GraphQLMapCreateResult = t.unionType<lib.MapCreateResult>({
   },
 });
 
+const GraphQLMapDeleteInput = t.inputObjectType({
+  name: "MapDeleteInput",
+  fields: () => ({
+    mapId: {
+      type: t.NonNullInput(t.String),
+      description: "The id of the map that should be deleted.",
+    },
+  }),
+});
+
 export const mutationFields = [
   t.field({
     name: "mapTokenUpdateMany",
@@ -250,12 +260,28 @@ export const mutationFields = [
   }),
   t.field({
     name: "mapCreate",
-    description: "Create a new map",
+    description: "Create a new map.",
     type: t.NonNull(GraphQLMapCreateResult),
     args: {
       input: t.arg(t.NonNullInput(GraphQLMapCreateInput)),
     },
     resolve: (_, { input }, context) => RT.run(lib.mapCreate(input), context),
+  }),
+  t.field({
+    name: "mapDelete",
+    description: "Delete a map.",
+    type: t.NonNull(t.Boolean),
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapDeleteInput)),
+    },
+    resolve: (_, { input }, context) =>
+      RT.run(
+        pipe(
+          lib.mapDelete(input),
+          RT.chain(() => RT.of(true))
+        ),
+        context
+      ),
   }),
 ];
 

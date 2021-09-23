@@ -13,6 +13,7 @@ import { useSelectFileDialog } from "../hooks/use-select-file-dialog";
 import { selectMapModal_MapsQuery } from "./__generated__/selectMapModal_MapsQuery.graphql";
 import { selectMapModal_CreateMapMutation } from "./__generated__/selectMapModal_CreateMapMutation.graphql";
 import { selectMapModal_MapImageRequestUploadMutation } from "./__generated__/selectMapModal_MapImageRequestUploadMutation.graphql";
+import { selectMapModal_MapDeleteMutation } from "./__generated__/selectMapModal_MapDeleteMutation.graphql";
 
 type CreateNewMapButtonProps = {
   children: React.ReactChild;
@@ -68,7 +69,6 @@ type SelectMapModalProps = {
   setLoadedMapId: (id: string) => void;
   liveMapId: null | string;
   loadedMapId: null | string;
-  deleteMap: (mapId: string) => void;
   updateMap: (
     mapId: string,
     data: {
@@ -134,12 +134,17 @@ const SelectMapModal_CreateMapMutation = graphql`
   }
 `;
 
+const SelectMapModal_MapDeleteMutation = graphql`
+  mutation selectMapModal_MapDeleteMutation($input: MapDeleteInput!) {
+    mapDelete(input: $input)
+  }
+`;
+
 export const SelectMapModal = ({
   closeModal,
   setLoadedMapId,
   liveMapId,
   loadedMapId,
-  deleteMap,
   updateMap,
   canClose,
   dmPassword,
@@ -155,6 +160,9 @@ export const SelectMapModal = ({
     );
   const [mapCreate] = useMutation<selectMapModal_CreateMapMutation>(
     SelectMapModal_CreateMapMutation
+  );
+  const [mapDelete] = useMutation<selectMapModal_MapDeleteMutation>(
+    SelectMapModal_MapDeleteMutation
   );
 
   const onChangeFilter = React.useCallback(
@@ -259,8 +267,10 @@ export const SelectMapModal = ({
                       beforeCreateMap(file);
                     }}
                   >
-                    <Icons.PlusIcon height={20} width={20} />{" "}
-                    <span>Create New Map</span>
+                    <>
+                      <Icons.PlusIcon height={20} width={20} />{" "}
+                      <span>Create New Map</span>
+                    </>
                   </CreateNewMapButton>
                 </Modal.Footer>
               </Modal.Aside>
@@ -384,8 +394,10 @@ export const SelectMapModal = ({
                         beforeCreateMap(file);
                       }}
                     >
-                      <Icons.MapIcon size={24} />
-                      <span>Create a new Map</span>
+                      <>
+                        <Icons.MapIcon size={24} />
+                        <span>Create a new Map</span>
+                      </>
                     </CreateNewMapButton>
                   </>
                 )}
@@ -403,7 +415,28 @@ export const SelectMapModal = ({
         ) : modalState.type === ModalType.DELETE_MAP ? (
           <DeleteMapModal
             closeModal={() => setModalState(null)}
-            deleteMap={() => deleteMap(modalState.data.mapId)}
+            deleteMap={() =>
+              mapDelete({
+                variables: {
+                  input: {
+                    mapId: modalState.data.mapId,
+                  },
+                },
+                updater: (store) => {
+                  const mapsConnection = store.get(response.data!.maps.__id);
+                  if (mapsConnection == null) {
+                    return;
+                  }
+                  ConnectionHandler.deleteNode(
+                    mapsConnection,
+                    modalState.data.mapId
+                  );
+                },
+                onCompleted: () => {
+                  setModalState(null);
+                },
+              })
+            }
           />
         ) : modalState.type === ModalType.CREATE_MAP ? (
           <CreateNewMapModal
@@ -646,7 +679,6 @@ const DeleteMapModal: React.FC<{
                   type="button"
                   onClick={() => {
                     deleteMap();
-                    closeModal();
                   }}
                 >
                   Delete

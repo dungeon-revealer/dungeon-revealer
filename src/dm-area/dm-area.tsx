@@ -313,23 +313,6 @@ const Content = ({
     [localFetch]
   );
 
-  const deleteMap = React.useCallback(
-    async (mapId) => {
-      await localFetch(`/map/${mapId}`, {
-        method: "DELETE",
-      });
-      setData((data) =>
-        data
-          ? {
-              ...data,
-              maps: data.maps.filter((map) => map.id !== mapId),
-            }
-          : null
-      );
-    },
-    [localFetch]
-  );
-
   const updateToken = React.useCallback(
     (id: string, updates: TokenPartial) => {
       localFetch(`/map/${loadedMapId}/token/${id}`, {
@@ -522,7 +505,6 @@ const Content = ({
             setLoadedMapId(loadedMapId);
           }}
           updateMap={updateMap}
-          deleteMap={deleteMap}
           dmPassword={dmPassword}
         />
       ) : null}

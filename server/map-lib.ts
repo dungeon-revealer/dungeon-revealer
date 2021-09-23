@@ -277,3 +277,10 @@ export const mapCreate = (params: {
       };
     })
   );
+
+export const mapDelete = (params: { mapId: string }) =>
+  pipe(
+    auth.requireAdmin(),
+    RT.chainW(() => RT.ask<MapsDependency>()),
+    RT.chain((deps) => () => () => deps.maps.deleteMap(params.mapId))
+  );

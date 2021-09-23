@@ -326,9 +326,14 @@ type Mutation {
   ): MapImageRequestUploadResult!
 
   """
-  Create a new map
+  Create a new map.
   """
   mapCreate(input: MapCreateInput!): MapCreateResult!
+
+  """
+  Delete a map.
+  """
+  mapDelete(input: MapDeleteInput!): Boolean!
 }
 
 type LogInResult {
@@ -598,6 +603,13 @@ input MapCreateInput {
   """
   mapImageUploadId: ID!
   title: String!
+}
+
+input MapDeleteInput {
+  """
+  The id of the map that should be deleted.
+  """
+  mapId: String!
 }
 
 type Subscription {
