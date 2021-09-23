@@ -1,5 +1,7 @@
 "use strict";
+
 const fse = require("fs-extra");
+const path = require("path");
 const pkg = require("../package.json");
 const { spawnSync } = require("child_process");
 
@@ -37,8 +39,4 @@ for (const entry of Object.entries(version)) {
   tsOut += `export const ${entry[0]}: string = '${entry[1]}';\n`;
 }
 
-fse.outputFileSync("server/version.ts", tsOut, (err) => {
-  if (err) {
-    console.log(err);
-  }
-});
+fse.outputFileSync(path.join("server", "version.ts"), tsOut);
