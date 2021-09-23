@@ -34,7 +34,7 @@ const prepareToken = (token: { [key: string]: unknown }) => {
   return token;
 };
 
-type MapGridEntity = {
+export type MapGridEntity = {
   color: string;
   offsetX: number;
   offsetY: number;

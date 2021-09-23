@@ -459,8 +459,8 @@ const TokenRenderer = (props: {
     MapTokenImageQuery,
     values.tokenImageId
       ? {
-        id: values.tokenImageId,
-      }
+          id: values.tokenImageId,
+        }
       : undefined,
     { skip: values.tokenImageId === null }
   );
@@ -717,8 +717,8 @@ const TokenRenderer = (props: {
           </mesh>
         ) : null}
         {values.tokenImageId &&
-          cachedQueryResult?.data?.tokenImage &&
-          cachedQueryResult.data.tokenImage.__typename === "TokenImage" ? (
+        cachedQueryResult?.data?.tokenImage &&
+        cachedQueryResult.data.tokenImage.__typename === "TokenImage" ? (
           <TokenAttachment
             url={cachedQueryResult.data.tokenImage.url}
             initialRadius={initialRadius}
@@ -897,7 +897,7 @@ const TextureElement = (props: {
       rotation={props.rotation.to<[number, number, number]>((value) => [
         0,
         0,
-        -value * Math.PI / 180, // Convert degrees to radians
+        (-value * Math.PI) / 180, // Convert degrees to radians
       ])}
       {...props.dragProps()}
     >

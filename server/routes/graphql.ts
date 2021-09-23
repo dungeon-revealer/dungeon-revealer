@@ -1,6 +1,7 @@
 import { Router, static as expressStatic } from "express";
 import path from "path";
 import fs from "fs-extra";
+import { EventEmitter } from "events";
 import type { Server as IOServer, Socket as IOSocket } from "socket.io";
 import { flow } from "fp-ts/lib/function";
 import { schema, GraphQLContextType } from "../graphql";
@@ -22,6 +23,7 @@ import * as AsyncIteratorUtil from "../util/async-iterator";
 import { isAsyncIterable } from "@n1ru4l/push-pull-async-iterable-iterator";
 import type { Maps } from "../maps";
 import { createMapImageUploadRegister } from "../map-lib";
+import type { Settings } from "../settings";
 
 type MaybePromise<T> = Promise<T> | T;
 
@@ -33,6 +35,8 @@ type Dependencies = {
   fileStoragePath: string;
   publicUrl: string;
   maps: Maps;
+  settings: Settings;
+  emitter: EventEmitter;
 };
 
 export default ({
@@ -42,6 +46,8 @@ export default ({
   fileStoragePath,
   publicUrl,
   maps,
+  settings,
+  emitter,
 }: Dependencies) => {
   const chat = createChat();
   const user = createUser({
@@ -63,6 +69,10 @@ export default ({
   };
 
   const liveQueryStore = new InMemoryLiveQueryStore();
+
+  emitter.on("invalidate", (ev) => {
+    liveQueryStore.invalidate(ev);
+  });
 
   const notesUpdates = createPubSub<NotesUpdatesPayload>();
   const tokenImageUploadRegister = createTokenImageUploadRegister();
@@ -124,6 +134,7 @@ export default ({
         publicUrl,
         maps,
         mapImageUploadRegister,
+        settings,
       };
 
       return {

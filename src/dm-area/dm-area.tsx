@@ -5,7 +5,7 @@ import useAsyncEffect from "@n1ru4l/use-async-effect";
 import styled from "@emotion/styled/macro";
 import { Box, Center } from "@chakra-ui/react";
 import { commitMutation } from "relay-runtime";
-import { useRelayEnvironment } from "relay-hooks";
+import { useQuery, useRelayEnvironment } from "relay-hooks";
 import graphql from "babel-plugin-relay/macro";
 import { SelectMapModal } from "./select-map-modal";
 import { ImportFileModal } from "./import-file-modal";
@@ -27,6 +27,7 @@ import { useNoteWindowActions } from "./token-info-aside";
 import { MapControlInterface } from "../map-view";
 import { useTokenImageUpload } from "./token-image-upload";
 import { dmAreaTokenAddManyMutation } from "./__generated__/dmAreaTokenAddManyMutation.graphql";
+import { dmArea_ActiveMapQuery } from "./__generated__/dmArea_ActiveMapQuery.graphql";
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -125,6 +126,14 @@ const DmAreaTokenAddManyMutation = graphql`
   }
 `;
 
+const DmArea_ActiveMapQuery = graphql`
+  query dmArea_ActiveMapQuery @live {
+    activeMap {
+      id
+    }
+  }
+`;
+
 const Content = ({
   socket,
   password: dmPassword,
@@ -132,18 +141,14 @@ const Content = ({
   socket: Socket;
   password: string;
 }): React.ReactElement => {
-  const [data, setData] = React.useState<null | MapData>(null);
+  const activeMapResponse = useQuery<dmArea_ActiveMapQuery>(
+    DmArea_ActiveMapQuery
+  );
   const [loadedMapId, setLoadedMapId] = useLoadedMapId();
-  const loadedMapIdRef = React.useRef(loadedMapId);
-  const [liveMapId, setLiveMapId] = React.useState<null | string>(null);
   // EDIT_MAP, SHOW_MAP_LIBRARY
   const [mode, setMode] = React.useState<Mode>(createInitialMode);
 
-  const loadedMap = React.useMemo(
-    () =>
-      data ? data.maps.find((map) => map.id === loadedMapId) || null : null,
-    [data, loadedMapId]
-  );
+  const [loadedMap, setLoadedMap] = React.useState<null | MapEntity>(null);
 
   const localFetch = React.useCallback(
     (input, init = {}) => {
@@ -167,31 +172,21 @@ const Content = ({
   // load initial state
   useAsyncEffect(
     function* (_, c) {
-      const { data }: { data: MapData } = yield* c(
-        localFetch("/map").then((res) => res.json())
+      setLoadedMap(null);
+      const { data }: { data: MapEntity | null } = yield* c(
+        localFetch(`/map/${loadedMapId}`).then((res) => res.json())
       );
-      setData(data);
-      const isLoadedMapAvailable = Boolean(
-        data.maps.find((map) => map.id === loadedMapIdRef.current)
-      );
+      const isLoadedMapAvailable = !!data;
 
-      const isLiveMapAvailable = Boolean(
-        data.maps.find((map) => map.id === data.currentMapId)
-      );
-
-      if (!isLiveMapAvailable && !isLoadedMapAvailable) {
+      if (isLoadedMapAvailable === true) {
+        setLoadedMap(data ?? null);
+        setMode({ title: "EDIT_MAP" });
+      } else {
+        setLoadedMap(null);
         setMode({ title: "SHOW_MAP_LIBRARY" });
-        setLoadedMapId(null);
-        return;
       }
-
-      setLiveMapId(isLiveMapAvailable ? data.currentMapId : null);
-      setLoadedMapId(
-        isLoadedMapAvailable ? loadedMapIdRef.current : data.currentMapId
-      );
-      setMode({ title: "EDIT_MAP" });
     },
-    [setLoadedMapId, localFetch, dmPassword, socket]
+    [setLoadedMap, localFetch, dmPassword, socket, loadedMapId]
   );
 
   // token add/remove/update event handlers
@@ -201,53 +196,44 @@ const Content = ({
     socket.on(eventName, (ev: SocketTokenEvent) => {
       if (ev.type === "add") {
         const data = ev.data;
-        setData(
-          produce((appData: MapData | null) => {
-            if (appData) {
-              const map = appData.maps.find((map) => map.id === loadedMapId);
-              if (map) {
-                map.tokens.push(...data.tokens);
-              }
+        setLoadedMap(
+          produce((map: MapEntity | null) => {
+            if (map) {
+              map.tokens.push(...data.tokens);
             }
           })
         );
       } else if (ev.type === "update") {
         const data = ev.data;
-        setData(
-          produce((appData: null | MapData) => {
-            if (appData) {
-              const map = appData.maps.find((map) => map.id === loadedMapId);
-              if (map) {
-                const updatedTokens = new Map<string, any>();
-                for (const token of data.tokens) {
-                  updatedTokens.set(token.id, token);
-                }
-                map.tokens = map.tokens.map((token) => {
-                  const updatedToken = updatedTokens.get(token.id);
-                  if (!updatedToken) {
-                    return token;
-                  }
-                  return {
-                    ...token,
-                    ...updatedToken,
-                  };
-                });
+        setLoadedMap(
+          produce((map: null | MapEntity) => {
+            if (map) {
+              const updatedTokens = new Map<string, any>();
+              for (const token of data.tokens) {
+                updatedTokens.set(token.id, token);
               }
+              map.tokens = map.tokens.map((token) => {
+                const updatedToken = updatedTokens.get(token.id);
+                if (!updatedToken) {
+                  return token;
+                }
+                return {
+                  ...token,
+                  ...updatedToken,
+                };
+              });
             }
           })
         );
       } else if (ev.type === "remove") {
         const data = ev.data;
-        setData(
-          produce((appData: null | MapData) => {
-            if (appData) {
-              const map = appData.maps.find((map) => map.id === loadedMapId);
-              if (map) {
-                const tokenIds = new Set(data.tokenIds);
-                map.tokens = map.tokens.filter(
-                  (token) => tokenIds.has(token.id) === false
-                );
-              }
+        setLoadedMap(
+          produce((map: null | MapEntity) => {
+            if (map) {
+              const tokenIds = new Set(data.tokenIds);
+              map.tokens = map.tokens.filter(
+                (token) => tokenIds.has(token.id) === false
+              );
             }
           })
         );
@@ -257,10 +243,10 @@ const Content = ({
     return () => {
       socket.off(eventName);
     };
-  }, [socket, loadedMapId, setData]);
+  }, [socket, loadedMapId, setLoadedMap]);
 
   const updateMap = React.useCallback(
-    async (mapId, data) => {
+    async (mapId: string, data: Partial<MapEntity>) => {
       const res = await localFetch(`/map/${mapId}`, {
         method: "PATCH",
         headers: {
@@ -273,17 +259,12 @@ const Content = ({
         return;
       }
 
-      setData(
-        produce((data: null | MapData) => {
-          if (data) {
-            data.maps = data.maps.map((map) => {
-              if (map.id !== res.data.map.id) {
-                return map;
-              } else {
-                return { ...map, ...res.data.map };
-              }
-            });
+      setLoadedMap(
+        produce((map) => {
+          if (map) {
+            return { ...map, ...(res.data.map as MapEntity) };
           }
+          return map;
         })
       );
     },
@@ -347,7 +328,6 @@ const Content = ({
       if (result.type !== "success") {
         return;
       }
-      setLiveMapId(loadedMapId);
     },
     [loadedMap?.id, dmPassword]
   );
@@ -392,7 +372,6 @@ const Content = ({
       if (result.type !== "success") {
         return;
       }
-      setLiveMapId(loadedMapId);
     },
     [loadedMap?.id, dmPassword]
   );
@@ -407,7 +386,6 @@ const Content = ({
         "Content-Type": "application/json",
       },
     });
-    setLiveMapId(null);
   }, [localFetch]);
 
   const showMapModal = React.useCallback(() => {
@@ -469,11 +447,11 @@ const Content = ({
   const relayEnvironment = useRelayEnvironment();
   return (
     <FetchContext.Provider value={localFetch}>
-      {data && mode.title === "SHOW_MAP_LIBRARY" ? (
+      {mode.title === "SHOW_MAP_LIBRARY" ? (
         <SelectMapModal
           canClose={loadedMap !== null}
           loadedMapId={loadedMapId}
-          liveMapId={liveMapId}
+          liveMapId={activeMapResponse.data?.activeMap?.id ?? null}
           closeModal={() => {
             setMode({ title: "EDIT_MAP" });
           }}
@@ -632,7 +610,7 @@ const Content = ({
               controlRef={controlRef}
               password={dmPassword}
               map={loadedMap}
-              liveMapId={liveMapId}
+              liveMapId={activeMapResponse.data?.activeMap?.id ?? null}
               sendLiveMap={sendLiveMap}
               saveFogProgress={saveFogProgress}
               hideMap={hideMap}

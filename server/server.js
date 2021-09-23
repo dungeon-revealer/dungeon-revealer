@@ -21,6 +21,7 @@ const { FileStorage } = require("./file-storage");
 const { createResourceTaskProcessor } = require("./util");
 const database = require("./database");
 const { createSocketSessionStore } = require("./socket-session-store");
+const { EventEmitter } = require("events");
 
 const bootstrapServer = async (env) => {
   fs.mkdirpSync(env.DATA_DIRECTORY);
@@ -128,6 +129,8 @@ const bootstrapServer = async (env) => {
 
   app.use(authorizationMiddleware);
 
+  const emitter = new EventEmitter();
+
   apiRouter.get("/auth", (req, res) => {
     return res.status(200).json({
       data: {
@@ -164,6 +167,7 @@ const bootstrapServer = async (env) => {
     }
 
     settings.set("currentMapId", mapId);
+    emitter.emit("invalidate", "Query.activeMap");
 
     io.emit("map update", {
       map: null,
@@ -182,6 +186,7 @@ const bootstrapServer = async (env) => {
     maps,
     settings,
     io,
+    emitter,
   });
   const { router: fileRouter } = createFilesRouter({
     roleMiddleware,
@@ -198,6 +203,8 @@ const bootstrapServer = async (env) => {
     fileStoragePath: path.join(env.DATA_DIRECTORY, "files"),
     publicUrl: env.PUBLIC_URL,
     maps,
+    settings,
+    emitter,
   });
   const notesImportRouter = createNotesRouter({ db, roleMiddleware });
 

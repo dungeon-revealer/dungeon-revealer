@@ -6,9 +6,14 @@ import * as fs from "fs-extra";
 import type { Server as IOServer } from "socket.io";
 import type { MapEntity, Maps } from "./maps";
 import * as auth from "./auth";
+import type { Settings } from "./settings";
 
 type MapsDependency = {
   maps: Maps;
+};
+
+type SettingsDependency = {
+  settings: Settings;
 };
 
 type SocketDependency = {
@@ -298,4 +303,35 @@ export const mapUpdateTitle = (params: { mapId: string; newTitle: string }) =>
         deps.maps.updateMapSettings(params.mapId, { title: params.newTitle })
     ),
     RT.map((updatedMap): MapUpdateTitleResult => ({ updatedMap }))
+  );
+
+export const getActiveMap = () =>
+  pipe(
+    auth.requireAuth(),
+    RT.chainW(() => RT.ask<SettingsDependency & MapsDependency>()),
+    RT.chainW((deps) => () => async () => {
+      const currentMapId = deps.settings.get("currentMapId");
+      if (currentMapId) {
+        return deps.maps.get(currentMapId);
+      }
+      return null;
+    })
+  );
+
+export const getMapById = (params: { mapId: string }) =>
+  pipe(
+    auth.requireAdmin(),
+    RT.chainW(() => RT.ask<MapsDependency>()),
+    RT.chain((deps) => () => async () => deps.maps.get(params.mapId))
+  );
+
+export const setActiveMap = (params: { activeMapId: string }) =>
+  pipe(
+    auth.requireAdmin(),
+    RT.chainW(() => RT.ask<SettingsDependency>()),
+    RT.chain(
+      (deps) => () => async () =>
+        deps.settings.set("currentMapId", params.activeMapId)
+    ),
+    RT.map(() => true)
   );

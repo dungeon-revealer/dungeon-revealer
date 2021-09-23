@@ -12,6 +12,7 @@ import type { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store"
 import { GraphQLLiveDirective } from "@n1ru4l/graphql-live-query";
 import type { SplashImageState } from "../splash-image-state";
 import type { Maps } from "../maps";
+import type { Settings } from "../settings";
 
 export type GraphQLContextType = {
   chat: ReturnType<typeof createChat>;
@@ -28,6 +29,7 @@ export type GraphQLContextType = {
   mapImageUploadRegister: MapImageUploadRegister;
   fileStoragePath: string;
   maps: Maps;
+  settings: Settings;
 };
 
 export const t = createTypesFactory<GraphQLContextType>();

@@ -154,6 +154,16 @@ type Query {
     """
     after: String
   ): MapsConnection!
+
+  """
+  The active map that is shared with the players.
+  """
+  activeMap: Map
+
+  """
+  Get a map by id.
+  """
+  map(id: ID!): Map
   node(id: ID!): Node
 }
 
@@ -291,6 +301,19 @@ type Map {
   The URL of the fog live image, that is shown to players.
   """
   fogLiveUrl: String
+
+  """
+  The grid of the map. Is 'null' if no grid has been configured.
+  """
+  grid: MapGrid
+}
+
+type MapGrid {
+  color: String!
+  offsetX: Float!
+  offsetY: Float!
+  columnWidth: Float!
+  columnHeight: Float!
 }
 
 type Mutation {

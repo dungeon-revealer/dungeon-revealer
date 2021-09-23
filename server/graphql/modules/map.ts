@@ -5,7 +5,7 @@ import * as io from "io-ts";
 import * as Relay from "./relay-spec";
 import { t } from "..";
 import * as lib from "../../map-lib";
-import { MapEntity } from "../../maps";
+import { MapEntity, MapGridEntity } from "../../maps";
 import { IntegerFromString } from "../../io-types/integer-from-string";
 import { applyDecoder } from "../../apply-decoder";
 
@@ -214,6 +214,15 @@ const GraphQLMapUpdateTitleInputType = t.inputObjectType({
   }),
 });
 
+const GraphQLActiveMapSetInputType = t.inputObjectType({
+  name: "ActiveMapSetInput",
+  fields: () => ({
+    activeMapId: {
+      type: t.NonNullInput(t.ID),
+    },
+  }),
+});
+
 export const mutationFields = [
   t.field({
     name: "mapTokenUpdateMany",
@@ -315,7 +324,43 @@ export const mutationFields = [
     resolve: (_, { input }, context) =>
       RT.run(lib.mapUpdateTitle(input), context),
   }),
+  t.field({
+    name: "activeMapSet",
+    description: "Sets the active map.",
+    type: t.Boolean,
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLActiveMapSetInputType)),
+    },
+    resolve: (_, { input }, context) =>
+      RT.run(lib.setActiveMap({ activeMapId: input.activeMapId }), context),
+  }),
 ];
+
+const GraphQLMapGridType = t.objectType<MapGridEntity>({
+  name: "MapGrid",
+  fields: () => [
+    t.field({
+      name: "color",
+      type: t.NonNull(t.String),
+    }),
+    t.field({
+      name: "offsetX",
+      type: t.NonNull(t.Float),
+    }),
+    t.field({
+      name: "offsetY",
+      type: t.NonNull(t.Float),
+    }),
+    t.field({
+      name: "columnWidth",
+      type: t.NonNull(t.Float),
+    }),
+    t.field({
+      name: "columnHeight",
+      type: t.NonNull(t.Float),
+    }),
+  ],
+});
 
 const GraphQLMapType = t.objectType<MapEntity>({
   name: "Map",
@@ -348,6 +393,12 @@ const GraphQLMapType = t.objectType<MapEntity>({
       description: "The URL of the fog live image, that is shown to players.",
       type: t.String,
       resolve: (source) => source.fogLivePath,
+    }),
+    t.field({
+      name: "grid",
+      description:
+        "The grid of the map. Is 'null' if no grid has been configured.",
+      type: GraphQLMapGridType,
     }),
   ],
 });
@@ -488,6 +539,22 @@ export const queryFields = [
         ),
         context
       ),
+  }),
+  t.field({
+    name: "activeMap",
+    description: "The active map that is shared with the players.",
+    type: GraphQLMapType,
+    resolve: (_, __, context) => RT.run(lib.getActiveMap(), context),
+  }),
+  t.field({
+    name: "map",
+    description: "Get a map by id.",
+    type: GraphQLMapType,
+    args: {
+      id: t.arg(t.NonNullInput(t.ID)),
+    },
+    resolve: (_, args, context) =>
+      RT.run(lib.getMapById({ mapId: args.id }), context),
   }),
 ];
 

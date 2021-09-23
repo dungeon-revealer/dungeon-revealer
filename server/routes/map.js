@@ -32,7 +32,7 @@ const mapMap = (map) => {
   };
 };
 
-module.exports = ({ roleMiddleware, maps, settings, io }) => {
+module.exports = ({ roleMiddleware, maps, settings, io, emitter }) => {
   const router = express.Router();
 
   router.get("/map/:id/map", roleMiddleware.pc, (req, res) => {
@@ -167,7 +167,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
 
     req.pipe(req.busboy);
 
-    req.busboy.once("file", (fieldname, file, filename) => {
+    req.busboy.once("file", (_, file) => {
       writeStream = fs.createWriteStream(tmpFile);
       file.pipe(writeStream);
     });
@@ -182,6 +182,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         .updateFogLiveImage(req.params.id, tmpFile)
         .then((map) => {
           settings.set("currentMapId", map.id);
+          emitter.emit("invalidate", "Query.activeMap");
           res.json({ error: null, data: mapMap(map) });
           io.emit("map update", {
             map: mapMap(map),
@@ -198,6 +199,23 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         currentMapId: settings.get("currentMapId"),
         maps: maps.getAll().map(mapMap),
       },
+    });
+  });
+
+  router.get("/map/:id", roleMiddleware.dm, async (req, res) => {
+    const map = maps.get(req.params.id);
+    if (!map) {
+      return res.status(404).json({
+        data: null,
+        error: {
+          message: `Map with id '${req.params.id}' does not exist.`,
+          code: "ERR_MAP_DOES_NOT_EXIST",
+        },
+      });
+    }
+
+    return res.status(200).json({
+      data: map,
     });
   });
 
