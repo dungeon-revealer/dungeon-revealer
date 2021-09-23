@@ -81,7 +81,7 @@ type LegacyMapEntity = {
   };
 };
 
-type MapEntity = {
+export type MapEntity = {
   id: string;
   title: string;
   fogProgressPath: string | null;
@@ -171,10 +171,10 @@ export class Maps {
   }: {
     title: string;
     filePath: string;
-    fileExtension: string;
+    fileExtension: string | null;
   }) {
     const id = randomUUID();
-    return this._processTask(`map:${id}`, async () => {
+    return this._processTask<MapEntity>(`map:${id}`, async () => {
       fs.mkdirp(this._buildMapFolderPath(id));
       const mapPath = `map${fileExtension ? `.${fileExtension}` : ``}`;
       const map: MapEntity = {
@@ -225,7 +225,7 @@ export class Maps {
   }
 
   async updateFogProgressImage(id: string, filePath: string) {
-    return await this._processTask(`map:${id}`, async () => {
+    return await this._processTask<MapEntity>(`map:${id}`, async () => {
       const map = this._maps.find((map) => map.id === id);
       if (!map) {
         throw new Error(`Map with id "${id}" not found.`);
@@ -251,7 +251,7 @@ export class Maps {
   }
 
   async updateFogLiveImage(id: string, filePath: string) {
-    return await this._processTask(`map:${id}`, async () => {
+    return await this._processTask<MapEntity>(`map:${id}`, async () => {
       const map = this._maps.find((map) => map.id === id);
       if (!map) {
         throw new Error(`Map with id "${id}" not found.`);
@@ -292,9 +292,12 @@ export class Maps {
 
   async updateMapImage(
     id: string,
-    { filePath, fileExtension }: { filePath: string; fileExtension: string }
+    {
+      filePath,
+      fileExtension,
+    }: { filePath: string; fileExtension: string | null }
   ) {
-    return await this._processTask(`map:${id}`, async () => {
+    return await this._processTask<MapEntity>(`map:${id}`, async () => {
       const map = this._maps.find((map) => map.id === id);
       if (!map) {
         throw new Error(`Map with id "${id}" not found.`);
@@ -409,78 +412,81 @@ export class Maps {
       rotation?: number;
     }
   ) {
-    return await this._processTask(`map:${mapId}`, async () => {
-      const map = this.get(mapId);
-      if (!map) {
-        throw new Error(`Map with id "${mapId}" not found.`);
-      }
-      const token = (map.tokens || []).find((token) => token.id === tokenId);
-
-      if (!token) {
-        throw new Error(
-          `Token with id "${tokenId}" does not exist on map with id "${mapId}".`
-        );
-      }
-
-      if (type !== undefined) {
-        token.type = type;
-      }
-      if (isLocked !== undefined) {
-        token.isLocked = isLocked;
-      }
-      if (title !== undefined) {
-        token.title = title;
-      }
-      if (description !== undefined) {
-        token.description = description;
-      }
-      if (x !== undefined) {
-        token.x = x;
-      }
-      if (y !== undefined) {
-        token.y = y;
-      }
-      if (radius !== undefined) {
-        token.radius = radius;
-      }
-      if (color !== undefined) {
-        token.color = color;
-      }
-      if (label !== undefined) {
-        token.label = label;
-      }
-      if (isVisibleForPlayers !== undefined) {
-        token.isVisibleForPlayers = isVisibleForPlayers;
-      }
-      if (isMovableByPlayers !== undefined) {
-        token.isMovableByPlayers = isMovableByPlayers;
-      }
-      if (reference !== undefined) {
-        if (reference === null) {
-          token.reference = null;
-        } else {
-          token.reference = reference = {
-            type: reference.type,
-            id: reference.id,
-          };
+    return await this._processTask<{ map: MapEntity; token: unknown }>(
+      `map:${mapId}`,
+      async () => {
+        const map = this.get(mapId);
+        if (!map) {
+          throw new Error(`Map with id "${mapId}" not found.`);
         }
-      }
-      if (tokenImageId !== undefined) {
-        token.tokenImageId = tokenImageId;
-      }
-      if (rotation !== undefined) {
-        token.rotation = rotation;
-      }
+        const token = (map.tokens || []).find((token) => token.id === tokenId);
 
-      const updatedMap = await this._updateMapSettings(map, {
-        tokens: map.tokens,
-      });
+        if (!token) {
+          throw new Error(
+            `Token with id "${tokenId}" does not exist on map with id "${mapId}".`
+          );
+        }
 
-      return {
-        map: updatedMap,
-        token,
-      };
-    });
+        if (type !== undefined) {
+          token.type = type;
+        }
+        if (isLocked !== undefined) {
+          token.isLocked = isLocked;
+        }
+        if (title !== undefined) {
+          token.title = title;
+        }
+        if (description !== undefined) {
+          token.description = description;
+        }
+        if (x !== undefined) {
+          token.x = x;
+        }
+        if (y !== undefined) {
+          token.y = y;
+        }
+        if (radius !== undefined) {
+          token.radius = radius;
+        }
+        if (color !== undefined) {
+          token.color = color;
+        }
+        if (label !== undefined) {
+          token.label = label;
+        }
+        if (isVisibleForPlayers !== undefined) {
+          token.isVisibleForPlayers = isVisibleForPlayers;
+        }
+        if (isMovableByPlayers !== undefined) {
+          token.isMovableByPlayers = isMovableByPlayers;
+        }
+        if (reference !== undefined) {
+          if (reference === null) {
+            token.reference = null;
+          } else {
+            token.reference = reference = {
+              type: reference.type,
+              id: reference.id,
+            };
+          }
+        }
+        if (tokenImageId !== undefined) {
+          token.tokenImageId = tokenImageId;
+        }
+        if (rotation !== undefined) {
+          token.rotation = rotation;
+        }
+
+        const updatedMap = await this._updateMapSettings(map, {
+          tokens: map.tokens,
+        });
+
+        return {
+          map: updatedMap,
+          token,
+        };
+      }
+    );
   }
 
   async updateManyTokens(

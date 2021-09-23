@@ -1,36 +1,37 @@
-"use strict";
-
-require("debug")("dungeon-revealer");
-const once = require("lodash/once");
-const flatMap = require("lodash/flatMap");
-const { bootstrapServer } = require("./server");
-const os = require("os");
-const { getEnv } = require("./env");
+import once from "lodash/once";
+import flatMap from "lodash/flatMap";
+import * as os from "os";
+import { bootstrapServer } from "./server";
+import { getEnv } from "./env";
+import type { Socket } from "net";
 
 const env = getEnv(process.env);
 
 const getPublicInterfaces = () => {
   const ifaces = os.networkInterfaces();
-  return flatMap(Object.values(ifaces))
-    .filter((iface) => iface.family === "IPv4")
-    .map((iface) => `http://${iface.address}:${env.PORT}`);
+  const publicInterfaces: Array<string> = [];
+  for (const iface of flatMap(Object.values(ifaces))) {
+    if (iface == null || iface.family !== "IPv4") {
+      continue;
+    }
+    publicInterfaces.push(`http://${iface.address}:${env.PORT}`);
+  }
+  return publicInterfaces;
 };
 
 const getListeningAddresses = () => {
   if (env.HOST === "0.0.0.0") {
     return getPublicInterfaces();
-  } else {
-    return [`http://${env.HOST}:${env.PORT}`];
   }
+  return [`http://${env.HOST}:${env.PORT}`];
 };
 
 bootstrapServer(env).then(({ httpServer }) => {
   const server = httpServer.listen(env.PORT, env.HOST, () => {
-
     let versionString;
-    if (env.VERSION.status === 'release') {
+    if (env.VERSION.status === "release") {
       versionString = env.VERSION.appversion;
-    } else if (env.VERSION.status === 'development') {
+    } else if (env.VERSION.status === "development") {
       versionString = `${env.VERSION.commit}\nThis development version is ${env.VERSION.commits_ahead} commits ahead of ${env.VERSION.tag}!\n`;
     } else {
       versionString = `${env.VERSION.appversion}\nI couldn't verify the git commit of this version, but I think it's based on ${env.VERSION.appversion}.\n`;
@@ -59,7 +60,7 @@ DM Section: ${addresses[0]}/dm`);
     console.log(`\n-------------------\n`);
   });
 
-  const connections = new Set();
+  const connections = new Set<Socket>();
   server.on("connection", (connection) => {
     connections.add(connection);
     connection.on("close", () => {
