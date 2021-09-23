@@ -1,6 +1,7 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
 import { useMutation, useQuery } from "relay-hooks";
+import { ConnectionHandler } from "relay-runtime";
 import { Modal, ModalDialogSize } from "../modal";
 import * as Icons from "../feather-icons";
 import { Input, InputGroup } from "../input";
@@ -13,14 +14,19 @@ import { selectMapModal_MapsQuery } from "./__generated__/selectMapModal_MapsQue
 import { selectMapModal_CreateMapMutation } from "./__generated__/selectMapModal_CreateMapMutation.graphql";
 import { selectMapModal_MapImageRequestUploadMutation } from "./__generated__/selectMapModal_MapImageRequestUploadMutation.graphql";
 
-const CreateNewMapButton: React.FC<
-  {
-    onSelectFile: (file: File) => void;
-  } & Pick<
-    React.ComponentProps<typeof Button.Primary>,
-    "tabIndex" | "fullWidth" | "big"
-  >
-> = ({ onSelectFile, children, ...props }) => {
+type CreateNewMapButtonProps = {
+  children: React.ReactChild;
+  onSelectFile: (file: File) => void;
+} & Pick<
+  React.ComponentProps<typeof Button.Primary>,
+  "tabIndex" | "fullWidth" | "big"
+>;
+
+const CreateNewMapButton = ({
+  onSelectFile,
+  children,
+  ...props
+}: CreateNewMapButtonProps) => {
   const [reactTreeNode, showFileDialog] = useSelectFileDialog(onSelectFile);
   return (
     <>
@@ -73,11 +79,21 @@ type SelectMapModalProps = {
   dmPassword: string;
 };
 
+const _SelectMapModal_MapFragment = graphql`
+  fragment selectMapModal_mapFragment on Map {
+    id
+    title
+    mapImageUrl
+  }
+`;
+
 const SelectMapModal_MapsQuery = graphql`
   query selectMapModal_MapsQuery {
     maps {
+      __id
       edges {
         node {
+          ...selectMapModal_mapFragment
           id
           title
           mapImageUrl
@@ -104,6 +120,7 @@ const SelectMapModal_CreateMapMutation = graphql`
       ... on MapCreateSuccess {
         __typename
         createdMap {
+          ...selectMapModal_mapFragment
           id
           title
           mapImageUrl
@@ -432,6 +449,36 @@ export const SelectMapModal = ({
                     title,
                     mapImageUploadId: result.mapImageRequestUpload.id,
                   },
+                },
+                updater: (store, result) => {
+                  if (result.mapCreate.__typename !== "MapCreateSuccess") {
+                    return;
+                  }
+
+                  const mapsConnection = store.get(response.data!.maps.__id);
+                  if (mapsConnection == null) {
+                    return;
+                  }
+
+                  const createdMap = store.get(result.mapCreate.createdMap.id);
+
+                  if (createdMap == null) {
+                    return;
+                  }
+
+                  const edge = ConnectionHandler.createEdge(
+                    store,
+                    mapsConnection,
+                    createdMap,
+                    "Map"
+                  );
+
+                  ConnectionHandler.insertEdgeAfter(mapsConnection, edge);
+                },
+                onCompleted: (response) => {
+                  if (response.mapCreate.__typename === "MapCreateSuccess") {
+                    setActiveMapId(response.mapCreate.createdMap.id);
+                  }
                 },
               });
 
