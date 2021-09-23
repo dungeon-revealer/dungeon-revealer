@@ -20,4 +20,9 @@ export default defineConfig({
   build: {
     outDir: "build",
   },
+  resolve: {
+    alias: {
+      "socket.io-client": "socket.io-client/dist/socket.io.js",
+    },
+  },
 });

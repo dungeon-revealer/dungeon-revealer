@@ -24,7 +24,7 @@
     "start": "node ./bin/dungeon-revealer",
     "test": "jest --passWithNoTests",
     "start:frontend:dev": "vite",
-    "start:server:dev": "ts-node-dev --project server/tsconfig.json --no-deps server/index.js",
+    "start:server:dev": "ts-node-dev --project server/tsconfig.json --no-deps server/index.ts",
     "relay-compiler": "relay-compiler",
     "write-schema": "ts-node --project ./server/tsconfig.json  ./scripts/write-graphql-schema.ts",
     "patch-package": "patch-package",
