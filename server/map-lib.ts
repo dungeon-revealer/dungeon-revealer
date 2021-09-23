@@ -146,3 +146,20 @@ export const addManyMapToken = (params: {
     ),
     RT.map(() => null)
   );
+
+export const getPaginatedMaps = (_params: {
+  /* amount of items to fetch */
+  first: number;
+  /* cursor which can be used to fetch more. */
+  cursor: null | {
+    /* createdAt date of the item after which items should be fetched */
+    lastCreatedAt: number;
+    /* id of the item after which items should be fetched */
+    lastId: string;
+  };
+}) =>
+  pipe(
+    auth.requireAdmin(),
+    RT.chainW(() => RT.ask<MapsDependency>()),
+    RT.chainW((deps) => () => async () => deps.maps.getAll())
+  );

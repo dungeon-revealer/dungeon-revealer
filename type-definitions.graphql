@@ -8,6 +8,11 @@ directive @live(
   Whether the query should be live or not.
   """
   if: Boolean = true
+
+  """
+  Propose a desired throttle interval ot the server in order to receive updates to at most once per "throttle" milliseconds. The server must not accept this value.
+  """
+  throttle: Int
 ) on QUERY
 
 type DiceRollOperatorNode implements DiceRollDetail {
@@ -50,6 +55,9 @@ type DiceRollCloseParenNode implements DiceRollDetail {
   content: String!
 }
 
+"""
+A chat message
+"""
 type UserChatMessage implements ChatMessage & TextChatMessage {
   id: ID!
   authorName: String!
@@ -131,6 +139,21 @@ type Query {
     sourceImageSha256: String
     titleFilter: String
   ): TokenImageConnection
+
+  """
+  A connection of all available maps within the library
+  """
+  maps(
+    """
+    The amount of items to fetch.
+    """
+    first: Int
+
+    """
+    Cursor after which items should be fetched.
+    """
+    after: String
+  ): MapConnection!
   node(id: ID!): Node
 }
 
@@ -218,10 +241,56 @@ type TokenImageEdge {
   node: TokenImage!
 }
 
+"""
+A entity that can be attached to an image.
+"""
 type TokenImage implements Node {
   id: ID!
   title: String!
   url: String!
+}
+
+"""
+A connection of maps.
+"""
+type MapConnection {
+  edges: [MapEdge!]!
+  pageInfo: PageInfo!
+}
+
+type MapEdge {
+  cursor: String!
+  node: Map!
+}
+
+"""
+A map entity.
+"""
+type Map {
+  """
+  The unique ID of a map.
+  """
+  id: ID!
+
+  """
+  The title of the map.
+  """
+  title: String!
+
+  """
+  The URL of the map image.
+  """
+  mapImageUrl: String!
+
+  """
+  The URL of the fog progress image.
+  """
+  fogProgressUrl: String
+
+  """
+  The URL of the fog live image, that is shown to players.
+  """
+  fogLiveUrl: String
 }
 
 type Mutation {
@@ -340,6 +409,9 @@ union RequestImageTokenUploadResult =
     RequestTokenImageUploadDuplicate
   | RequestTokenImageUploadUrl
 
+"""
+A image with the given SHA-256 does already exist.
+"""
 type RequestTokenImageUploadDuplicate {
   """
   The TokenImage that already exists for the given hash.
@@ -407,6 +479,9 @@ input MapTokenUpdateManyInput {
   properties: MapTokenUpdateManyPropertiesInput!
 }
 
+"""
+The properties on the tokens that should be updated. Properties that are not provided will remain untouched.
+"""
 input MapTokenUpdateManyPropertiesInput {
   """
   Color to be updated. Will not be updated if null is provided.
@@ -497,6 +572,9 @@ type ChatMessagesAddedSubscription {
   messages: [ChatMessage!]!
 }
 
+"""
+Describes update instructions for the NoteConnection type.
+"""
 type NotesUpdates {
   """
   A node that was added to the connection.
@@ -514,6 +592,9 @@ type NotesUpdates {
   removedNoteId: ID
 }
 
+"""
+Describes where a edge should be inserted inside a NotesConnection.
+"""
 type NotesConnectionEdgeInsertionUpdate {
   """
   The cursor of the item before which the node should be inserted.

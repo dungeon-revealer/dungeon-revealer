@@ -1,4 +1,6 @@
 import * as React from "react";
+import graphql from "babel-plugin-relay/macro";
+import { useQuery } from "relay-hooks";
 import { Modal, ModalDialogSize } from "../modal";
 import * as Icons from "../feather-icons";
 import { Input, InputGroup } from "../input";
@@ -6,6 +8,7 @@ import * as Button from "../button";
 import * as ScrollableList from "./components/scrollable-list";
 import { buildApiUrl } from "../public-url";
 import { useSelectFileDialog } from "../hooks/use-select-file-dialog";
+import { selectMapModal_MapsQuery } from "./__generated__/selectMapModal_MapsQuery.graphql";
 
 const CreateNewMapButton: React.FC<
   {
@@ -54,7 +57,6 @@ type ModalStates =
 type SelectMapModalProps = {
   closeModal: () => void;
   setLoadedMapId: (id: string) => void;
-  maps: any[];
   liveMapId: null | string;
   loadedMapId: null | string;
   deleteMap: (mapId: string) => void;
@@ -69,10 +71,23 @@ type SelectMapModalProps = {
   dmPassword: string;
 };
 
-export const SelectMapModal: React.FC<SelectMapModalProps> = ({
+const SelectMapModal_MapsQuery = graphql`
+  query selectMapModal_MapsQuery {
+    maps {
+      edges {
+        node {
+          id
+          title
+          mapImageUrl
+        }
+      }
+    }
+  }
+`;
+
+export const SelectMapModal = ({
   closeModal,
   setLoadedMapId,
-  maps,
   liveMapId,
   loadedMapId,
   deleteMap,
@@ -80,10 +95,12 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
   createMap,
   canClose,
   dmPassword,
-}) => {
+}: SelectMapModalProps) => {
   const [activeMapId, setActiveMapId] = React.useState(loadedMapId);
   const [modalState, setModalState] = React.useState<ModalStates | null>(null);
   const [filter, setFilterValue] = React.useState("");
+
+  const response = useQuery<selectMapModal_MapsQuery>(SelectMapModal_MapsQuery);
 
   const onChangeFilter = React.useCallback(
     (ev) => {
@@ -92,9 +109,13 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
     [setFilterValue]
   );
 
+  const maps = response.data?.maps.edges ?? [];
+
   const activeMap = React.useMemo(
     () =>
-      activeMapId ? maps.find((map) => map.id === activeMapId) || null : null,
+      activeMapId
+        ? maps.find((map) => map.node.id === activeMapId) || null
+        : null,
     [activeMapId, maps]
   );
 
@@ -158,18 +179,19 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                     .filter(
                       (item) =>
                         filter === "" ||
-                        item.title.toLowerCase().includes(filter)
+                        item.node.title.toLowerCase().includes(filter)
                     )
                     .map((item) => (
-                      <ScrollableList.ListItem key={item.id}>
+                      <ScrollableList.ListItem key={item.node.id}>
                         <ScrollableList.ListItemButton
                           tabIndex={1}
-                          isActive={item.id === activeMapId}
+                          isActive={item.node.id === activeMapId}
                           onClick={() => {
-                            setActiveMapId(item.id);
+                            setActiveMapId(item.node.id);
                           }}
                         >
-                          {item.title} {item.id === liveMapId ? "(live)" : null}
+                          {item.node.title}{" "}
+                          {item.node.id === liveMapId ? "(live)" : null}
                         </ScrollableList.ListItemButton>
                       </ScrollableList.ListItem>
                     ))}
@@ -208,7 +230,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {activeMap.title}
+                    {activeMap.node.title}
                   </h3>
                   <Button.Tertiary
                     iconOnly
@@ -216,7 +238,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                     onClick={() => {
                       setModalState({
                         type: ModalType.EDIT_TITLE,
-                        data: { mapId: activeMap.id },
+                        data: { mapId: activeMap.node.id },
                       });
                     }}
                   >
@@ -234,7 +256,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                   <img
                     src={buildApiUrl(
                       // prettier-ignore
-                      `/map/${activeMap.id}/map?authorization=${encodeURIComponent(dmPassword)}`
+                      `/map/${activeMap.node.id}/map?authorization=${encodeURIComponent(dmPassword)}`
                     )}
                     style={{ width: "100%" }}
                   />
@@ -254,7 +276,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                       onClick={() => {
                         setModalState({
                           type: ModalType.DELETE_MAP,
-                          data: { mapId: activeMap.id },
+                          data: { mapId: activeMap.node.id },
                         });
                       }}
                     >
@@ -266,7 +288,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                     <Button.Primary
                       tabIndex={1}
                       onClick={() => {
-                        setLoadedMapId(activeMap.id);
+                        setLoadedMapId(activeMap.node.id);
                       }}
                     >
                       <Icons.CheckIcon height={20} width={20} />
