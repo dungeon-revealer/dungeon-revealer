@@ -3,7 +3,6 @@ import * as RT from "fp-ts/lib/ReaderTask";
 import { randomUUID } from "crypto";
 import * as path from "path";
 import * as fs from "fs-extra";
-import type { Server as IOServer } from "socket.io";
 import type { MapEntity, MapGridEntity, Maps } from "./maps";
 import * as auth from "./auth";
 import type { Settings } from "./settings";
@@ -17,62 +16,6 @@ type MapsDependency = {
 type SettingsDependency = {
   settings: Settings;
 };
-
-type SocketDependency = {
-  socketServer: IOServer;
-};
-
-const emitLegacyTokenUpdate = (params: {
-  mapId: string;
-  tokenIds: Set<string>;
-}) =>
-  pipe(
-    RT.ask<MapsDependency>(),
-    RT.chain(
-      (deps) => () => () => Promise.resolve(deps.maps.get(params.mapId))
-    ),
-    RT.map((map) =>
-      map?.tokens.filter((token) => params.tokenIds.has(token.id))
-    ),
-    RT.chainW((tokens) =>
-      tokens
-        ? pipe(
-            RT.ask<SocketDependency>(),
-            RT.chain((deps) => () => async () => {
-              deps.socketServer.emit(`token:mapId:${params.mapId}`, {
-                type: "update",
-                data: { tokens },
-              });
-            })
-          )
-        : RT.of(undefined)
-    )
-  );
-
-const emitLegacyTokenRemove = (params: {
-  mapId: string;
-  tokenIds: Set<string>;
-}) =>
-  pipe(
-    RT.ask<SocketDependency>(),
-    RT.chain((deps) => () => async () => {
-      deps.socketServer.emit(`token:mapId:${params.mapId}`, {
-        type: "remove",
-        data: { tokenIds: Array.from(params.tokenIds) },
-      });
-    })
-  );
-
-const emitLegacyTokenAdd = (params: { mapId: string; tokens: Array<any> }) =>
-  pipe(
-    RT.ask<SocketDependency>(),
-    RT.chain((deps) => () => async () => {
-      deps.socketServer.emit(`token:mapId:${params.mapId}`, {
-        type: "add",
-        data: { tokens: Array.from(params.tokens) },
-      });
-    })
-  );
 
 export const updateManyMapToken = (params: {
   mapId: string;
@@ -98,12 +41,7 @@ export const updateManyMapToken = (params: {
           rotation: params.props.rotation,
         })
     ),
-    RT.chainW(() =>
-      emitLegacyTokenUpdate({
-        mapId: params.mapId,
-        tokenIds: params.tokenIds,
-      })
-    ),
+    RT.chainW(() => invalidateResourcesRT([`Map:${params.mapId}`])),
     RT.map(() => null)
   );
 
@@ -118,12 +56,7 @@ export const removeManyMapToken = (params: {
       (deps) => () => () =>
         deps.maps.removeTokensById(params.mapId, params.tokenIds)
     ),
-    RT.chainW((tokenIds) =>
-      emitLegacyTokenRemove({
-        mapId: params.mapId,
-        tokenIds,
-      })
-    ),
+    RT.chainW(() => invalidateResourcesRT([`Map:${params.mapId}`])),
     RT.map(() => null)
   );
 
@@ -148,12 +81,7 @@ export const addManyMapToken = (params: {
     RT.chainW(
       (deps) => () => () => deps.maps.addTokens(params.mapId, params.tokenProps)
     ),
-    RT.chainW(({ tokens }) =>
-      emitLegacyTokenAdd({
-        mapId: params.mapId,
-        tokens,
-      })
-    ),
+    RT.chainW(() => invalidateResourcesRT([`Map:${params.mapId}`])),
     RT.map(() => null)
   );
 
