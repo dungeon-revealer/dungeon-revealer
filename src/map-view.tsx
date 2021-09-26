@@ -45,6 +45,7 @@ import { mapView_TokenListRendererFragment$key } from "./__generated__/mapView_T
 import { mapView_MapViewRendererFragment$key } from "./__generated__/mapView_MapViewRendererFragment.graphql";
 import { mapView_MapRendererFragment$key } from "./__generated__/mapView_MapRendererFragment.graphql";
 import { mapView_GridRendererFragment$key } from "./__generated__/mapView_GridRendererFragment.graphql";
+import { useResetState } from "./hooks/use-reset-state";
 
 type Vector2D = [number, number];
 
@@ -1607,8 +1608,12 @@ export const MapView = (props: {
 
   const map = useFragment(MapFragment, props.map);
 
-  const [mapImage, setMapImage] = React.useState<HTMLImageElement | null>(null);
-  const [fogImage, setFogImage] = React.useState<HTMLImageElement | null>(null);
+  const [mapImage, setMapImage] = useResetState<HTMLImageElement | null>(null, [
+    map.id,
+  ]);
+  const [fogImage, setFogImage] = useResetState<HTMLImageElement | null>(null, [
+    map.id,
+  ]);
 
   const cleanupMapImage = React.useRef<() => void>(() => {});
   const cleanupFogImage = React.useRef<() => void>(() => {});
@@ -1694,8 +1699,8 @@ export const MapView = (props: {
         <ambientLight intensity={1} />
         <ContextBridge>
           <MapViewRenderer
-            isAdmin={props.isAdmin}
             key={map.id}
+            isAdmin={props.isAdmin}
             map={map}
             activeTool={props.activeTool}
             mapImage={mapImage}

@@ -34,6 +34,7 @@ export type GraphQLContextType = {
 
 export const t = createTypesFactory<GraphQLContextType>();
 
+import { specifiedDirectives } from "graphql";
 import * as RelaySpecModule from "./modules/relay-spec";
 import * as DiceRollerChatModule from "./modules/dice-roller-chat";
 import * as UserModule from "./modules/user";
@@ -109,5 +110,5 @@ export const schema = buildGraphQLSchema({
   subscription: Subscription,
   mutation: Mutation,
   types: [...DiceRollerChatModule.objectTypesNotDirectlyExposedOnFields],
-  directives: [GraphQLLiveDirective],
+  directives: [...specifiedDirectives, GraphQLLiveDirective],
 });

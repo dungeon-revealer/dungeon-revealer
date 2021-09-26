@@ -109,6 +109,8 @@ export type MapEntity = {
   showGridToPlayers: boolean;
   grid: null | MapGridEntity;
   tokens: Array<any>;
+  fogLiveRevision: string;
+  fogProgressRevision: string;
 };
 
 export class Maps {
@@ -165,7 +167,16 @@ export class Maps {
           "gridColor" in rawMap ? rawMap.gridColor : null
         ),
         tokens: "tokens" in rawMap ? rawMap.tokens.map(prepareToken) : [],
+        fogProgressRevision:
+          "fogProgressRevision" in rawMap
+            ? rawMap.fogProgressRevision
+            : randomUUID(),
+        fogLiveRevision:
+          "fogLiveRevision" in rawMap
+            ? rawMap.fogProgressRevision
+            : randomUUID(),
       };
+
       return map;
     });
   }
@@ -207,6 +218,8 @@ export class Maps {
         showGrid: false,
         showGridToPlayers: false,
         tokens: [],
+        fogProgressRevision: randomUUID(),
+        fogLiveRevision: randomUUID(),
       };
 
       await fs.move(filePath, path.join(this._buildMapFolderPath(id), mapPath));
@@ -257,6 +270,7 @@ export class Maps {
 
       const newMapData = {
         fogProgressPath: "fog.progress.png",
+        fogProgressRevision: randomUUID(),
       };
 
       const fileDestination = path.join(
@@ -278,6 +292,7 @@ export class Maps {
       const newMapData = {
         fogLivePath: "fog.live.png",
         fogProgressPath: "fog.progress.png",
+        fogLiveRevision: randomUUID(),
       };
 
       if (map.fogProgressPath) {

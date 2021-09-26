@@ -127,8 +127,8 @@ const DmAreaTokenAddManyMutation = graphql`
 `;
 
 const DmArea_MapQuery = graphql`
-  query dmArea_MapQuery($loadedMapId: ID!) @live {
-    map(id: $loadedMapId) {
+  query dmArea_MapQuery($loadedMapId: ID!, $noMap: Boolean!) @live {
+    map(id: $loadedMapId) @skip(if: $noMap) {
       id
       ...dmMap_DMMapFragment
     }
@@ -151,12 +151,11 @@ const Content = ({
     DmArea_MapQuery,
     {
       loadedMapId: loadedMapId ?? "",
+      noMap: loadedMapId === null,
     },
-    {
-      skip: loadedMapId === null,
-    }
+    {}
   );
-
+  console.log(dmAreaResponse, loadedMapId);
   // EDIT_MAP, SHOW_MAP_LIBRARY
   const [mode, setMode] = React.useState<Mode>(createInitialMode);
 
@@ -355,7 +354,8 @@ const Content = ({
   const relayEnvironment = useRelayEnvironment();
   return (
     <FetchContext.Provider value={localFetch}>
-      {mode.title === "SHOW_MAP_LIBRARY" ? (
+      {(dmAreaResponse.isLoading === false && !dmAreaResponse.data?.map) ||
+      mode.title === "SHOW_MAP_LIBRARY" ? (
         <SelectMapModal
           canClose={dmAreaResponse.data?.map !== null}
           loadedMapId={loadedMapId}

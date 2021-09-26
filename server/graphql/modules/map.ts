@@ -531,20 +531,20 @@ const GraphQLMapType = t.objectType<MapEntity>({
             : context.session.role === "user"
             ? process.env["PC_PASSWORD"]
             : null) ?? ""
-        )}&cache_buster=${randomUUID()}`,
+        )}&cache_buster=${source.fogProgressRevision}`,
     }),
     t.field({
       name: "fogLiveImageUrl",
       description: "The URL of the fog live image, that is shown to players.",
       type: t.String,
       resolve: (source, _, context) =>
-        `/api/map/${source.id}/fog?authorization=${encodeURIComponent(
+        `/api/map/${source.id}/fog-live?authorization=${encodeURIComponent(
           (context.session.role === "admin"
             ? process.env["DM_PASSWORD"]
             : context.session.role === "user"
             ? process.env["PC_PASSWORD"]
             : null) ?? ""
-        )}&cache_buster=${randomUUID()}`,
+        )}&cache_buster=${source.fogLiveRevision}`,
     }),
     t.field({
       name: "grid",
@@ -563,6 +563,10 @@ const GraphQLMapType = t.objectType<MapEntity>({
     t.field({
       name: "tokens",
       type: t.NonNull(t.List(t.NonNull(GraphQLMapTokenType))),
+      resolve: (source, _, context) =>
+        context.session.role === "admin"
+          ? source.tokens
+          : source.tokens.filter((token) => token.isVisibleForPlayers),
     }),
   ],
 });
