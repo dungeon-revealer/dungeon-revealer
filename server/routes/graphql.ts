@@ -15,6 +15,7 @@ import type {
 import { ExecutionResult, subscribe as originalSubscribe } from "graphql";
 import { registerSocketIOGraphQLServer } from "@n1ru4l/socket-io-graphql-server";
 import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
+import { applyLiveQueryJSONDiffPatchGenerator } from "@n1ru4l/graphql-live-query-patch-jsondiffpatch";
 import { createSplashImageState } from "../splash-image-state";
 import { createPubSub } from "../pubsub";
 import { NotesUpdatesPayload } from "../notes-lib";
@@ -108,7 +109,8 @@ export default ({
 
   const execute = flow(
     liveQueryStore.execute,
-    applyExecuteMiddleware(graphQLErrorLogger)
+    applyExecuteMiddleware(graphQLErrorLogger),
+    applyLiveQueryJSONDiffPatchGenerator
   );
 
   const subscribe = flow(

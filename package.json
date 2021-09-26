@@ -48,6 +48,7 @@
   "dependencies": {
     "@airjp73/dice-notation": "2.2.2",
     "@n1ru4l/graphql-live-query": "0.8.1",
+    "@n1ru4l/graphql-live-query-patch-jsondiffpatch": "0.6.1",
     "@n1ru4l/in-memory-live-query-store": "0.7.1",
     "@n1ru4l/socket-io-graphql-server": "0.10.0",
     "body-parser": "1.19.0",
