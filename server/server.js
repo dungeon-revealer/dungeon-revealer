@@ -168,10 +168,6 @@ const bootstrapServer = async (env) => {
     settings.set("currentMapId", mapId);
     emitter.emit("invalidate", "Query.activeMap");
 
-    io.emit("map update", {
-      map: null,
-    });
-
     res.json({
       error: null,
       data: {
@@ -184,7 +180,6 @@ const bootstrapServer = async (env) => {
     roleMiddleware,
     maps,
     settings,
-    io,
     emitter,
   });
   const { router: fileRouter } = createFilesRouter({

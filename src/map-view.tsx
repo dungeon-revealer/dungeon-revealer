@@ -460,7 +460,7 @@ const TokenRenderer = (props: {
       isMovableByPlayers: token.isMovableByPlayers,
       isVisibleForPlayers: token.isVisibleForPlayers,
       referenceId: token.referenceId,
-      tokenImageId: token.tokenImage?.id,
+      tokenImageId: token.tokenImage?.id ?? null,
     };
 
     if (editingStateRef.radius === 0) {

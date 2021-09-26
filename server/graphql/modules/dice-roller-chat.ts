@@ -409,7 +409,7 @@ export const queryFields = [
   t.field({
     name: "sharedSplashImage",
     type: ImageModule.GraphQLImageType,
-    resolve: (_, args, context) => {
+    resolve: (_, __, context) => {
       const id = context.splashImageState.get();
 
       if (id === null) {

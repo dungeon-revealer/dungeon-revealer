@@ -32,7 +32,7 @@ const mapMap = (map) => {
   };
 };
 
-module.exports = ({ roleMiddleware, maps, settings, io, emitter }) => {
+module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
   const router = express.Router();
 
   router.get("/map/:id/map", roleMiddleware.pc, (req, res) => {
@@ -184,9 +184,6 @@ module.exports = ({ roleMiddleware, maps, settings, io, emitter }) => {
           settings.set("currentMapId", map.id);
           emitter.emit("invalidate", "Query.activeMap");
           res.json({ error: null, data: mapMap(map) });
-          io.emit("map update", {
-            map: mapMap(map),
-          });
         })
         .catch(handleUnexpectedError(res));
     });
@@ -319,16 +316,12 @@ module.exports = ({ roleMiddleware, maps, settings, io, emitter }) => {
 
     maps
       .updateToken(map.id, req.params.tokenId, updates)
-      .then(({ token, map }) => {
+      .then(({ map }) => {
         res.json({
           error: null,
           data: {
             map: mapMap(map),
           },
-        });
-        io.emit(`token:mapId:${map.id}`, {
-          type: "update",
-          data: { tokens: [mapToken(token)] },
         });
         emitter.emit("invalidate", `Map:${map.id}`);
       })
