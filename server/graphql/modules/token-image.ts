@@ -268,7 +268,7 @@ const GraphQLTokenImageCreateErrorType = t.objectType({
     t.field({
       name: "reason",
       type: t.NonNull(t.String),
-      resolve: () => "A unexpected error occured.",
+      resolve: () => "A unexpected error occurred.",
     }),
   ],
 });
