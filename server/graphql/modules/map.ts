@@ -11,7 +11,6 @@ import { IntegerFromString } from "../../io-types/integer-from-string";
 import { applyDecoder } from "../../apply-decoder";
 import { decodeImageId, GraphQLTokenImageType } from "./token-image";
 import { getTokenImageById } from "../../token-image-lib";
-import { randomUUID } from "crypto";
 
 const sequenceRT = sequenceT(RT.readerTask);
 
