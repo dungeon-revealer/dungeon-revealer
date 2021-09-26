@@ -19,6 +19,7 @@
     "build:backend": "tsc --project server/tsconfig.json",
     "build": "npm run build:frontend && npm run build:backend",
     "compile": "npx caxa -i . --exclude '*' '.*' '!server-build' '!build' '!package.json' '!package-lock.json' '!node_modules' -o bin/dungeon-revealer-bin -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/server-build/index.js\" \"--caxa\"",
+    "compile:win": "npx caxa -i . --exclude '*' '.*' '!server-build' '!build' '!package.json' '!package-lock.json' '!node_modules' -o bin/dungeon-revealer-bin.exe -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/server-build/index.js\" \"--caxa\"",
     "eslint": "eslint --ignore-path .gitignore --max-warnings 0 \"**/*.js\" \"bin/dungeon-revealer\"",
     "postinstall": "patch-package",
     "start": "node ./bin/dungeon-revealer",
