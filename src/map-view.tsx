@@ -25,11 +25,11 @@ import type {
   SharedMapToolState,
 } from "./map-tools/map-tool";
 import { useContextBridge } from "./hooks/use-context-bridge";
-import { MapGridEntity, MapTokenEntity, MarkedAreaEntity } from "./map-typings";
+import { MapGridEntity, MapTokenEntity } from "./map-typings";
 import { useIsKeyPressed } from "./hooks/use-is-key-pressed";
 import { TextureLoader } from "three";
 import { ReactEventHandlers } from "react-use-gesture/dist/types";
-import { useFragment } from "relay-hooks";
+import { useFragment, useSubscription } from "relay-hooks";
 import { buttonGroup, useControls, useCreateStore, LevaInputs } from "leva";
 import { levaPluginNoteReference } from "./leva-plugin/leva-plugin-note-reference";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
@@ -39,13 +39,15 @@ import {
   useClearTokenSelection,
   useTokenSelection,
 } from "./shared-token-state";
+import { useResetState } from "./hooks/use-reset-state";
 import { mapView_MapFragment$key } from "./__generated__/mapView_MapFragment.graphql";
 import { mapView_TokenRendererMapTokenFragment$key } from "./__generated__/mapView_TokenRendererMapTokenFragment.graphql";
 import { mapView_TokenListRendererFragment$key } from "./__generated__/mapView_TokenListRendererFragment.graphql";
 import { mapView_MapViewRendererFragment$key } from "./__generated__/mapView_MapViewRendererFragment.graphql";
 import { mapView_MapRendererFragment$key } from "./__generated__/mapView_MapRendererFragment.graphql";
 import { mapView_GridRendererFragment$key } from "./__generated__/mapView_GridRendererFragment.graphql";
-import { useResetState } from "./hooks/use-reset-state";
+import { mapView_MapPingRenderer_MapFragment$key } from "./__generated__/mapView_MapPingRenderer_MapFragment.graphql";
+import { mapView_MapPingSubscription } from "./__generated__/mapView_MapPingSubscription.graphql";
 
 type Vector2D = [number, number];
 
@@ -1158,9 +1160,77 @@ const GridRenderer = (props: {
   );
 };
 
+const MapPingSubscription = graphql`
+  subscription mapView_MapPingSubscription($mapId: ID!) {
+    mapPing(mapId: $mapId) {
+      id
+      x
+      y
+    }
+  }
+`;
+
+const MapPingRenderer_MapFragment = graphql`
+  fragment mapView_MapPingRenderer_MapFragment on Map {
+    id
+  }
+`;
+
+const MapPingRenderer = (props: {
+  map: mapView_MapPingRenderer_MapFragment$key;
+  factor: number;
+  dimensions: Dimensions;
+  markerRadius: number;
+}) => {
+  const map = useFragment(MapPingRenderer_MapFragment, props.map);
+  const [markedAreas, setMarkedAreas] = React.useState<
+    Array<{
+      id: string;
+      x: number;
+      y: number;
+    }>
+  >([]);
+
+  useSubscription<mapView_MapPingSubscription>(
+    React.useMemo(
+      () => ({
+        subscription: MapPingSubscription,
+        variables: { mapId: map.id },
+        onNext: (data) => {
+          if (data) {
+            setMarkedAreas((areas) => [...areas, data.mapPing]);
+          }
+        },
+      }),
+      [map.id]
+    )
+  );
+
+  return (
+    <group renderOrder={LayerRenderOrder.marker}>
+      {markedAreas.map((markedArea) => (
+        <MarkedAreaRenderer
+          key={markedArea.id}
+          x={markedArea.x}
+          y={markedArea.y}
+          factor={props.factor}
+          dimensions={props.dimensions}
+          remove={() =>
+            setMarkedAreas((areas) =>
+              areas.filter((area) => area.id !== markedArea.id)
+            )
+          }
+          radius={props.markerRadius}
+        />
+      ))}
+    </group>
+  );
+};
+
 const MapRendererFragment = graphql`
   fragment mapView_MapRendererFragment on Map {
     ...mapView_TokenListRendererFragment
+    ...mapView_MapPingRenderer_MapFragment
     grid {
       ...mapView_GridRendererFragment
     }
@@ -1176,8 +1246,6 @@ const MapRenderer = (props: {
   mapImageTexture: THREE.Texture;
   fogTexture: THREE.Texture;
   viewport: ViewportData;
-  markedAreas: MarkedAreaEntity[];
-  removeMarkedArea: (id: string) => void;
   scale: SpringValue<[number, number, number]>;
   factor: number;
   dimensions: Dimensions;
@@ -1218,19 +1286,12 @@ const MapRenderer = (props: {
         </mesh>
       </group>
       <TokenListRenderer map={map} />
-      <group renderOrder={LayerRenderOrder.marker}>
-        {props.markedAreas.map((markedArea) => (
-          <MarkedAreaRenderer
-            key={markedArea.id}
-            x={markedArea.x}
-            y={markedArea.y}
-            factor={props.factor}
-            dimensions={props.dimensions}
-            remove={() => props.removeMarkedArea(markedArea.id)}
-            radius={props.markerRadius}
-          />
-        ))}
-      </group>
+      <MapPingRenderer
+        map={map}
+        dimensions={props.dimensions}
+        factor={props.factor}
+        markerRadius={props.markerRadius}
+      />
     </>
   );
 };
@@ -1256,8 +1317,6 @@ const MapViewRenderer = (props: {
   mapImage: HTMLImageElement;
   fogImage: HTMLImageElement | null;
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
-  markedAreas: MarkedAreaEntity[];
-  removeMarkedArea: (id: string) => void;
   activeTool: MapTool | null;
   fogOpacity: number;
 }): React.ReactElement => {
@@ -1556,8 +1615,6 @@ const MapViewRenderer = (props: {
           fogTexture={fogTexture}
           viewport={viewport}
           markerRadius={20}
-          markedAreas={props.markedAreas}
-          removeMarkedArea={props.removeMarkedArea}
           scale={spring.scale}
           dimensions={dimensions}
           factor={
@@ -1596,8 +1653,6 @@ const MapFragment = graphql`
 export const MapView = (props: {
   map: mapView_MapFragment$key;
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
-  markedAreas: MarkedAreaEntity[];
-  removeMarkedArea: (id: string) => void;
   activeTool: MapTool | null;
   /* List of contexts that need to be proxied into R3F */
   sharedContexts: Array<React.Context<any>>;
@@ -1706,8 +1761,6 @@ export const MapView = (props: {
             mapImage={mapImage}
             fogImage={fogImage}
             controlRef={props.controlRef}
-            markedAreas={props.markedAreas}
-            removeMarkedArea={props.removeMarkedArea}
             fogOpacity={props.fogOpacity}
           />
         </ContextBridge>

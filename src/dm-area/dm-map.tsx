@@ -98,6 +98,7 @@ import { dmMap_ShowGridSettingsPopupGridFragment$key } from "./__generated__/dmM
 import { dmMap_GridSettingButton_MapFragment$key } from "./__generated__/dmMap_GridSettingButton_MapFragment.graphql";
 import { dmMap_mapUpdateGridMutation } from "./__generated__/dmMap_mapUpdateGridMutation.graphql";
 import { dmMap_GridConfigurator_MapFragment$key } from "./__generated__/dmMap_GridConfigurator_MapFragment.graphql";
+import { dmMap_MapPingMutation } from "./__generated__/dmMap_MapPingMutation.graphql";
 
 type ToolMapRecord = {
   name: string;
@@ -587,8 +588,11 @@ const activeDmMapToolIdModel: PersistedStateModel<
     ),
 };
 
-const createCacheBusterString = () =>
-  encodeURIComponent(`${Date.now()}_${randomHash()}`);
+const MapPingMutation = graphql`
+  mutation dmMap_MapPingMutation($input: MapPingInput!) {
+    mapPing(input: $input)
+  }
+`;
 
 const DMMapFragment = graphql`
   fragment dmMap_DMMapFragment on Map {
@@ -616,9 +620,6 @@ export const DmMap = (props: {
   openMediaLibrary: () => void;
   sendLiveMap: (image: HTMLCanvasElement) => void;
   saveFogProgress: (image: HTMLCanvasElement) => void;
-  markArea: (point: [number, number]) => void;
-  markedAreas: Array<MarkedAreaEntity>;
-  removeMarkedArea: (id: string) => void;
   updateToken: (
     id: string,
     changes: Omit<Partial<MapTokenEntity>, "id">
@@ -626,7 +627,7 @@ export const DmMap = (props: {
   controlRef: React.MutableRefObject<MapControlInterface | null>;
 }): React.ReactElement => {
   const map = useFragment(DMMapFragment, props.map);
-
+  const [mapPing] = useMutation<dmMap_MapPingMutation>(MapPingMutation);
   const controlRef = props.controlRef;
 
   const [activeToolId, setActiveToolId] = usePersistedState(
@@ -748,7 +749,21 @@ export const DmMap = (props: {
         >,
         [
           MarkAreaToolContext.Provider,
-          { value: { onMarkArea: props.markArea } },
+          {
+            value: {
+              onMarkArea: ([x, y]) => {
+                mapPing({
+                  variables: {
+                    input: {
+                      mapId: map.id,
+                      x,
+                      y,
+                    },
+                  },
+                });
+              },
+            },
+          },
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof MarkAreaToolContext.Provider>
         >,
@@ -800,8 +815,6 @@ export const DmMap = (props: {
         map={map}
         activeTool={activeTool}
         controlRef={controlRef}
-        markedAreas={props.markedAreas}
-        removeMarkedArea={props.removeMarkedArea}
         sharedContexts={[
           MarkAreaToolContext,
           BrushToolContext,

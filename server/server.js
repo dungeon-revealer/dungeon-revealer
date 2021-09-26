@@ -5,7 +5,6 @@ const path = require("path");
 const favicon = require("serve-favicon");
 const logger = require("morgan");
 const bodyParser = require("body-parser");
-const { randomUUID } = require("crypto");
 const fs = require("fs-extra");
 const http = require("http");
 const { Server: SocketIOServer } = require("socket.io");
@@ -304,23 +303,6 @@ const bootstrapServer = async (env) => {
       socketIOGraphQLServer.registerSocket(socket);
 
       socket.emit("authenticated");
-
-      socket.on("mark area", (data) => {
-        Array.from(authenticatedSockets).forEach((socket) => {
-          socket.emit("mark area", {
-            id: randomUUID(),
-            ...data,
-          });
-        });
-      });
-
-      if (role !== "DM") return;
-
-      socket.on("remove token", (message) => {
-        Array.from(authenticatedSockets).forEach((socket) => {
-          socket.emit("remove token", message);
-        });
-      });
     });
 
     socket.once("disconnect", function () {

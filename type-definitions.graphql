@@ -390,9 +390,9 @@ type Mutation {
   mapUpdateGrid(input: MapUpdateGridInput!): MapUpdateGridResult!
 
   """
-  Sets the active map.
+  Ping a point on the map.
   """
-  activeMapSet(input: ActiveMapSetInput!): Boolean
+  mapPing(input: MapPingInput!): Boolean
 }
 
 type LogInResult {
@@ -699,8 +699,10 @@ input GridInput {
   columnHeight: Float!
 }
 
-input ActiveMapSetInput {
-  activeMapId: ID!
+input MapPingInput {
+  mapId: ID!
+  x: Float!
+  y: Float!
 }
 
 type Subscription {
@@ -711,6 +713,7 @@ type Subscription {
     endCursor: String!
     hasNextPage: Boolean!
   ): NotesUpdates!
+  mapPing(mapId: ID!): MapPing!
 }
 
 union UserUpdateSubscription =
@@ -769,4 +772,10 @@ type NotesConnectionEdgeInsertionUpdate {
   The edge that should be inserted.
   """
   edge: NoteEdge
+}
+
+type MapPing {
+  id: ID!
+  x: Float!
+  y: Float!
 }

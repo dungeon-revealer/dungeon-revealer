@@ -8,6 +8,7 @@ import type { MapEntity, MapGridEntity, Maps } from "./maps";
 import * as auth from "./auth";
 import type { Settings } from "./settings";
 import { invalidateResourcesRT } from "./live-query-store";
+import { createChannelPubSub } from "./pubsub";
 
 type MapsDependency = {
   maps: Maps;
@@ -372,3 +373,17 @@ export const setActiveMap = (params: { activeMapId: string }) =>
     ),
     RT.map(() => true)
   );
+
+export type MapPing = {
+  id: string;
+  x: number;
+  y: number;
+};
+
+type MapPubSub = {
+  mapPing: [id: string, mapPing: MapPing];
+};
+
+export const createMapPubSub = () => createChannelPubSub<MapPubSub>();
+
+export type MapPub = ReturnType<typeof createMapPubSub>;

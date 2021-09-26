@@ -22,7 +22,7 @@ import { createTokenImageUploadRegister } from "../token-image-lib";
 import * as AsyncIteratorUtil from "../util/async-iterator";
 import { isAsyncIterable } from "@n1ru4l/push-pull-async-iterable-iterator";
 import type { Maps } from "../maps";
-import { createMapImageUploadRegister } from "../map-lib";
+import { createMapImageUploadRegister, createMapPubSub } from "../map-lib";
 import type { Settings } from "../settings";
 
 type MaybePromise<T> = Promise<T> | T;
@@ -57,6 +57,7 @@ export default ({
       chat.addOperationalMessage({ content: `**${name}** disconnected.` }),
   });
   const splashImageState = createSplashImageState();
+  const mapPubSub = createMapPubSub();
 
   const router = Router();
 
@@ -135,6 +136,7 @@ export default ({
         maps,
         mapImageUploadRegister,
         settings,
+        mapPubSub,
       };
 
       return {

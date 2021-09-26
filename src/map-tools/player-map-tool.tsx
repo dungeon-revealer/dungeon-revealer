@@ -1,8 +1,8 @@
 import * as React from "react";
+import { useGesture } from "react-use-gesture";
 import { MapTool } from "./map-tool";
 import { MarkAreaToolContext } from "./mark-area-map-tool";
 import { usePinchWheelZoom } from "./drag-pan-zoom-map-tool";
-import { useGesture } from "react-use-gesture";
 
 export const useMarkArea = () => {
   const markAreaContext = React.useContext(MarkAreaToolContext);

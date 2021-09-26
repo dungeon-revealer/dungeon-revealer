@@ -21,7 +21,7 @@ import { AccessTokenProvider } from "../hooks/use-access-token";
 import { usePersistedState } from "../hooks/use-persisted-state";
 import { DmMap } from "./dm-map";
 import { Socket } from "socket.io-client";
-import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
+import { MapEntity, MapTokenEntity } from "../map-typings";
 import { isFileDrag } from "../hooks/use-drop-zone";
 import { useNoteWindowActions } from "./token-info-aside";
 import { MapControlInterface } from "../map-view";
@@ -303,40 +303,6 @@ const Content = ({
     null
   );
 
-  const [markedAreas, setMarkedAreas] = React.useState<MarkedAreaEntity[]>(
-    () => []
-  );
-
-  const onMarkArea = ([x, y]: [number, number]) => {
-    socket.emit("mark area", {
-      x,
-      y,
-    });
-  };
-
-  React.useEffect(() => {
-    socket.on(
-      "mark area",
-      async (data: { id: string; x: number; y: number }) => {
-        if (window.document.visibilityState === "hidden") {
-          return;
-        }
-        setMarkedAreas((markedAreas) => [
-          ...markedAreas,
-          {
-            id: data.id,
-            x: data.x,
-            y: data.y,
-          },
-        ]);
-      }
-    );
-
-    return () => {
-      socket.off("mark area");
-    };
-  }, [socket]);
-
   const actions = useNoteWindowActions();
   const controlRef = React.useRef<MapControlInterface | null>(null);
 
@@ -354,7 +320,7 @@ const Content = ({
   const relayEnvironment = useRelayEnvironment();
   return (
     <FetchContext.Provider value={localFetch}>
-      {(dmAreaResponse.isLoading === false && !dmAreaResponse.data?.map) ||
+      {(dmAreaResponse.error === null && !dmAreaResponse.data?.map) ||
       mode.title === "SHOW_MAP_LIBRARY" ? (
         <SelectMapModal
           canClose={dmAreaResponse.data?.map !== null}
@@ -528,13 +494,6 @@ const Content = ({
               }}
               openMediaLibrary={() => {
                 setMode({ title: "MEDIA_LIBRARY" });
-              }}
-              markedAreas={markedAreas}
-              markArea={onMarkArea}
-              removeMarkedArea={(id) => {
-                setMarkedAreas((areas) =>
-                  areas.filter((area) => area.id !== id)
-                );
               }}
               updateToken={updateToken}
             />

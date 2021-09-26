@@ -1,6 +1,6 @@
 import * as React from "react";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
-import { ReactRelayContext, useQuery } from "relay-hooks";
+import { ReactRelayContext, useMutation, useQuery } from "relay-hooks";
 import graphql from "babel-plugin-relay/macro";
 import styled from "@emotion/styled/macro";
 import { Toolbar } from "./toolbar";
@@ -17,7 +17,6 @@ import { randomHash } from "./utilities/random-hash";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
 import { usePersistedState } from "./hooks/use-persisted-state";
 import { PlayerMapTool } from "./map-tools/player-map-tool";
-import { MapEntity } from "./map-typings";
 import {
   ComponentWithPropsTuple,
   FlatContextProvider,
@@ -28,6 +27,7 @@ import {
   useNoteWindowActions,
 } from "./dm-area/token-info-aside";
 import { playerArea_PlayerMap_ActiveMapQuery } from "./__generated__/playerArea_PlayerMap_ActiveMapQuery.graphql";
+import { playerArea_MapPingMutation } from "./__generated__/playerArea_MapPingMutation.graphql";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -65,6 +65,12 @@ const PlayerMap_ActiveMapQuery = graphql`
   }
 `;
 
+const MapPingMutation = graphql`
+  mutation playerArea_MapPingMutation($input: MapPingInput!) {
+    mapPing(input: $input)
+  }
+`;
+
 const PlayerMap = ({
   fetch,
   socket,
@@ -77,33 +83,13 @@ const PlayerMap = ({
   const currentMap = useQuery<playerArea_PlayerMap_ActiveMapQuery>(
     PlayerMap_ActiveMapQuery
   );
+  const [mapPing] = useMutation<playerArea_MapPingMutation>(MapPingMutation);
 
   const mapId = currentMap?.data?.activeMap?.id ?? null;
   const showSplashScreen = mapId === null;
 
   const controlRef = React.useRef<MapControlInterface | null>(null);
   const [markedAreas, setMarkedAreas] = React.useState<MarkedArea[]>(() => []);
-
-  // React.useEffect(() => {
-  //   socket.on("map update", onReceiveMap);
-  //   socket.on("mark area", (data: { id: string; x: number; y: number }) => {
-  //     if (window.document.visibilityState === "hidden") {
-  //       return;
-  //     }
-  //     setMarkedAreas((markedAreas) => [
-  //       ...markedAreas,
-  //       {
-  //         id: data.id,
-  //         x: data.x,
-  //         y: data.y,
-  //       },
-  //     ]);
-  //   });
-  //   return () => {
-  //     socket.off("map update");
-  //     socket.off("mark area");
-  //   };
-  // }, [socket]);
 
   React.useEffect(() => {
     const contextmenuListener = (ev: Event) => {
@@ -216,7 +202,17 @@ const PlayerMap = ({
               {
                 value: {
                   onMarkArea: ([x, y]) => {
-                    socket.emit("mark area", { x, y });
+                    if (currentMap.data?.activeMap) {
+                      mapPing({
+                        variables: {
+                          input: {
+                            mapId: currentMap.data.activeMap.id,
+                            x,
+                            y,
+                          },
+                        },
+                      });
+                    }
                   },
                 },
               },
@@ -239,12 +235,6 @@ const PlayerMap = ({
               map={currentMap.data.activeMap}
               activeTool={PlayerMapTool}
               controlRef={controlRef}
-              markedAreas={markedAreas}
-              removeMarkedArea={(id) => {
-                setMarkedAreas((markedAreas) =>
-                  markedAreas.filter((area) => area.id !== id)
-                );
-              }}
               sharedContexts={[
                 MarkAreaToolContext,
                 NoteWindowActionsContext,

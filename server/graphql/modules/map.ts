@@ -11,6 +11,7 @@ import { IntegerFromString } from "../../io-types/integer-from-string";
 import { applyDecoder } from "../../apply-decoder";
 import { decodeImageId, GraphQLTokenImageType } from "./token-image";
 import { getTokenImageById } from "../../token-image-lib";
+import { randomUUID } from "crypto";
 
 const sequenceRT = sequenceT(RT.readerTask);
 
@@ -217,15 +218,6 @@ const GraphQLMapUpdateTitleInputType = t.inputObjectType({
   }),
 });
 
-const GraphQLActiveMapSetInputType = t.inputObjectType({
-  name: "ActiveMapSetInput",
-  fields: () => ({
-    activeMapId: {
-      type: t.NonNullInput(t.ID),
-    },
-  }),
-});
-
 const GraphQLMapUpdateGridResultType = t.objectType<lib.MapUpdateGridResult>({
   name: "MapUpdateGridResult",
   fields: () => [
@@ -263,6 +255,21 @@ const GraphQLMapUpdateGridInputType = t.inputObjectType({
     },
     showGridToPlayers: {
       type: t.NonNullInput(t.Boolean),
+    },
+  }),
+});
+
+const GraphQLMapPingInputType = t.inputObjectType({
+  name: "MapPingInput",
+  fields: () => ({
+    mapId: {
+      type: t.NonNullInput(t.ID),
+    },
+    x: {
+      type: t.NonNullInput(t.Float),
+    },
+    y: {
+      type: t.NonNullInput(t.Float),
     },
   }),
 });
@@ -379,14 +386,20 @@ export const mutationFields = [
       RT.run(lib.mapUpdateGrid(input), context),
   }),
   t.field({
-    name: "activeMapSet",
-    description: "Sets the active map.",
+    name: "mapPing",
+    description: "Ping a point on the map.",
     type: t.Boolean,
     args: {
-      input: t.arg(t.NonNullInput(GraphQLActiveMapSetInputType)),
+      input: t.arg(t.NonNullInput(GraphQLMapPingInputType)),
     },
-    resolve: (_, { input }, context) =>
-      RT.run(lib.setActiveMap({ activeMapId: input.activeMapId }), context),
+    resolve: (_, args, context) => {
+      context.mapPubSub.publish("mapPing", args.input.mapId, {
+        x: args.input.x,
+        y: args.input.y,
+        id: randomUUID(),
+      });
+      return null;
+    },
   }),
 ];
 
@@ -725,4 +738,32 @@ export const queryFields = [
   }),
 ];
 
-export const subscriptionFields = [];
+const GraphQLMapPingType = t.objectType<lib.MapPing>({
+  name: "MapPing",
+  fields: () => [
+    t.field({
+      name: "id",
+      type: t.NonNull(t.ID),
+    }),
+    t.field({
+      name: "x",
+      type: t.NonNull(t.Float),
+    }),
+    t.field({
+      name: "y",
+      type: t.NonNull(t.Float),
+    }),
+  ],
+});
+
+export const subscriptionFields = [
+  t.subscriptionField({
+    name: "mapPing",
+    type: t.NonNull(GraphQLMapPingType),
+    args: {
+      mapId: t.arg(t.NonNullInput(t.ID)),
+    },
+    subscribe: (_, args, context) =>
+      context.mapPubSub.subscribe("mapPing", args.mapId),
+  }),
+];

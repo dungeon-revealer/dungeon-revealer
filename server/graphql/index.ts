@@ -4,7 +4,7 @@ import type { createChat } from "../chat";
 import type { createUser } from "../user";
 import type { NotesUpdates } from "../notes-lib";
 import type { TokenImageUploadRegister } from "../token-image-lib";
-import type { MapImageUploadRegister } from "../map-lib";
+import type { MapImageUploadRegister, MapPub } from "../map-lib";
 
 import type { SocketSessionRecord } from "../socket-session-store";
 import type { Database } from "sqlite";
@@ -30,6 +30,7 @@ export type GraphQLContextType = {
   fileStoragePath: string;
   maps: Maps;
   settings: Settings;
+  mapPubSub: MapPub;
 };
 
 export const t = createTypesFactory<GraphQLContextType>();
