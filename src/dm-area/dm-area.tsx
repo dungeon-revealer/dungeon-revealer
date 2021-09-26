@@ -27,7 +27,7 @@ import { useNoteWindowActions } from "./token-info-aside";
 import { MapControlInterface } from "../map-view";
 import { useTokenImageUpload } from "./token-image-upload";
 import { dmAreaTokenAddManyMutation } from "./__generated__/dmAreaTokenAddManyMutation.graphql";
-import { dmArea_ActiveMapQuery } from "./__generated__/dmArea_ActiveMapQuery.graphql";
+import { dmArea_MapQuery } from "./__generated__/dmArea_MapQuery.graphql";
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -126,8 +126,12 @@ const DmAreaTokenAddManyMutation = graphql`
   }
 `;
 
-const DmArea_ActiveMapQuery = graphql`
-  query dmArea_ActiveMapQuery @live {
+const DmArea_MapQuery = graphql`
+  query dmArea_MapQuery($loadedMapId: ID!) @live {
+    map(id: $loadedMapId) {
+      id
+      ...dmMap_DMMapFragment
+    }
     activeMap {
       id
     }
@@ -141,14 +145,20 @@ const Content = ({
   socket: Socket;
   password: string;
 }): React.ReactElement => {
-  const activeMapResponse = useQuery<dmArea_ActiveMapQuery>(
-    DmArea_ActiveMapQuery
-  );
   const [loadedMapId, setLoadedMapId] = useLoadedMapId();
+
+  const dmAreaResponse = useQuery<dmArea_MapQuery>(
+    DmArea_MapQuery,
+    {
+      loadedMapId: loadedMapId ?? "",
+    },
+    {
+      skip: loadedMapId === null,
+    }
+  );
+
   // EDIT_MAP, SHOW_MAP_LIBRARY
   const [mode, setMode] = React.useState<Mode>(createInitialMode);
-
-  const [loadedMap, setLoadedMap] = React.useState<null | MapEntity>(null);
 
   const localFetch = React.useCallback(
     (input, init = {}) => {
@@ -167,108 +177,6 @@ const Content = ({
       });
     },
     [dmPassword]
-  );
-
-  // load initial state
-  useAsyncEffect(
-    function* (_, c) {
-      setLoadedMap(null);
-      const { data }: { data: MapEntity | null } = yield* c(
-        localFetch(`/map/${loadedMapId}`).then((res) => res.json())
-      );
-      const isLoadedMapAvailable = !!data;
-
-      if (isLoadedMapAvailable === true) {
-        setLoadedMap(data ?? null);
-        setMode({ title: "EDIT_MAP" });
-      } else {
-        setLoadedMap(null);
-        setMode({ title: "SHOW_MAP_LIBRARY" });
-      }
-    },
-    [setLoadedMap, localFetch, dmPassword, socket, loadedMapId]
-  );
-
-  // token add/remove/update event handlers
-  React.useEffect(() => {
-    if (!loadedMapId) return;
-    const eventName = `token:mapId:${loadedMapId}`;
-    socket.on(eventName, (ev: SocketTokenEvent) => {
-      if (ev.type === "add") {
-        const data = ev.data;
-        setLoadedMap(
-          produce((map: MapEntity | null) => {
-            if (map) {
-              map.tokens.push(...data.tokens);
-            }
-          })
-        );
-      } else if (ev.type === "update") {
-        const data = ev.data;
-        setLoadedMap(
-          produce((map: null | MapEntity) => {
-            if (map) {
-              const updatedTokens = new Map<string, any>();
-              for (const token of data.tokens) {
-                updatedTokens.set(token.id, token);
-              }
-              map.tokens = map.tokens.map((token) => {
-                const updatedToken = updatedTokens.get(token.id);
-                if (!updatedToken) {
-                  return token;
-                }
-                return {
-                  ...token,
-                  ...updatedToken,
-                };
-              });
-            }
-          })
-        );
-      } else if (ev.type === "remove") {
-        const data = ev.data;
-        setLoadedMap(
-          produce((map: null | MapEntity) => {
-            if (map) {
-              const tokenIds = new Set(data.tokenIds);
-              map.tokens = map.tokens.filter(
-                (token) => tokenIds.has(token.id) === false
-              );
-            }
-          })
-        );
-      }
-    });
-
-    return () => {
-      socket.off(eventName);
-    };
-  }, [socket, loadedMapId, setLoadedMap]);
-
-  const updateMap = React.useCallback(
-    async (mapId: string, data: Partial<MapEntity>) => {
-      const res = await localFetch(`/map/${mapId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      }).then((res) => res.json());
-
-      if (!res.data.map) {
-        return;
-      }
-
-      setLoadedMap(
-        produce((map) => {
-          if (map) {
-            return { ...map, ...(res.data.map as MapEntity) };
-          }
-          return map;
-        })
-      );
-    },
-    [localFetch]
   );
 
   const updateToken = React.useCallback(
@@ -293,7 +201,7 @@ const Content = ({
   const sendLiveMapTaskRef = React.useRef<null | ISendRequestTask>(null);
   const sendLiveMap = React.useCallback(
     async (canvas: HTMLCanvasElement) => {
-      const loadedMapId = loadedMap?.id;
+      const loadedMapId = dmAreaResponse.data?.map?.id;
 
       if (!loadedMapId) {
         return;
@@ -329,13 +237,13 @@ const Content = ({
         return;
       }
     },
-    [loadedMap?.id, dmPassword]
+    [dmAreaResponse.data?.map?.id, dmPassword]
   );
 
   const sendProgressFogTaskRef = React.useRef<null | ISendRequestTask>(null);
   const saveFogProgress = React.useCallback(
     async (canvas: HTMLCanvasElement) => {
-      const loadedMapId = loadedMap?.id;
+      const loadedMapId = dmAreaResponse.data?.map?.id;
 
       if (!loadedMapId) {
         return;
@@ -373,7 +281,7 @@ const Content = ({
         return;
       }
     },
-    [loadedMap?.id, dmPassword]
+    [dmAreaResponse.data?.map?.id, dmPassword]
   );
 
   const hideMap = React.useCallback(async () => {
@@ -449,9 +357,9 @@ const Content = ({
     <FetchContext.Provider value={localFetch}>
       {mode.title === "SHOW_MAP_LIBRARY" ? (
         <SelectMapModal
-          canClose={loadedMap !== null}
+          canClose={dmAreaResponse.data?.map !== null}
           loadedMapId={loadedMapId}
-          liveMapId={activeMapResponse.data?.activeMap?.id ?? null}
+          liveMapId={dmAreaResponse.data?.map?.id ?? null}
           closeModal={() => {
             setMode({ title: "EDIT_MAP" });
           }}
@@ -469,7 +377,7 @@ const Content = ({
           }}
         />
       ) : null}
-      {loadedMap ? (
+      {dmAreaResponse.data?.map != null ? (
         <LoadedMapDiv
           onDragEnter={(ev) => {
             if (isFileDrag(ev) === false) {
@@ -522,7 +430,7 @@ const Content = ({
                 mutation: DmAreaTokenAddManyMutation,
                 variables: {
                   input: {
-                    mapId: loadedMap.id,
+                    mapId: dmAreaResponse.data!.map!.id,
                     tokens: [
                       {
                         color: "red",
@@ -609,8 +517,8 @@ const Content = ({
             <DmMap
               controlRef={controlRef}
               password={dmPassword}
-              map={loadedMap}
-              liveMapId={activeMapResponse.data?.activeMap?.id ?? null}
+              map={dmAreaResponse.data.map}
+              liveMapId={dmAreaResponse.data?.activeMap?.id ?? null}
               sendLiveMap={sendLiveMap}
               saveFogProgress={saveFogProgress}
               hideMap={hideMap}
@@ -629,9 +537,6 @@ const Content = ({
                 );
               }}
               updateToken={updateToken}
-              updateMap={(map) => {
-                updateMap(loadedMap.id, map);
-              }}
             />
           </div>
         </LoadedMapDiv>

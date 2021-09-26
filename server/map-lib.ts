@@ -4,9 +4,10 @@ import { randomUUID } from "crypto";
 import * as path from "path";
 import * as fs from "fs-extra";
 import type { Server as IOServer } from "socket.io";
-import type { MapEntity, Maps } from "./maps";
+import type { MapEntity, MapGridEntity, Maps } from "./maps";
 import * as auth from "./auth";
 import type { Settings } from "./settings";
+import { invalidateResourcesRT } from "./live-query-store";
 
 type MapsDependency = {
   maps: Maps;
@@ -301,6 +302,42 @@ export const mapUpdateTitle = (params: { mapId: string; newTitle: string }) =>
     RT.chain(
       (deps) => () => () =>
         deps.maps.updateMapSettings(params.mapId, { title: params.newTitle })
+    ),
+    RT.chainW((map) =>
+      pipe(
+        invalidateResourcesRT([`Map:${map.id}`]),
+        RT.map(() => map)
+      )
+    ),
+    RT.map((updatedMap): MapUpdateTitleResult => ({ updatedMap }))
+  );
+
+export type MapUpdateGridResult = {
+  updatedMap: MapEntity;
+};
+
+export const mapUpdateGrid = (params: {
+  mapId: string;
+  grid: MapGridEntity | null;
+  showGrid: boolean;
+  showGridToPlayers: boolean;
+}) =>
+  pipe(
+    auth.requireAdmin(),
+    RT.chainW(() => RT.ask<MapsDependency>()),
+    RT.chain(
+      (deps) => () => () =>
+        deps.maps.updateMapSettings(params.mapId, {
+          grid: params.grid ? params.grid : null,
+          showGrid: params.showGrid,
+          showGridToPlayers: params.showGridToPlayers,
+        })
+    ),
+    RT.chainW((map) =>
+      pipe(
+        invalidateResourcesRT([`Map:${map.id}`]),
+        RT.map(() => map)
+      )
     ),
     RT.map((updatedMap): MapUpdateTitleResult => ({ updatedMap }))
   );

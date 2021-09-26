@@ -1,9 +1,8 @@
 import * as React from "react";
-import produce from "immer";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
-import { ReactRelayContext } from "relay-hooks";
+import { ReactRelayContext, useQuery } from "relay-hooks";
+import graphql from "babel-plugin-relay/macro";
 import styled from "@emotion/styled/macro";
-import { loadImage, LoadImageTask } from "./util";
 import { Toolbar } from "./toolbar";
 import * as Icons from "./feather-icons";
 import { SplashScreen } from "./splash-screen";
@@ -28,6 +27,7 @@ import {
   NoteWindowActionsContext,
   useNoteWindowActions,
 } from "./dm-area/token-info-aside";
+import { playerArea_PlayerMap_ActiveMapQuery } from "./__generated__/playerArea_PlayerMap_ActiveMapQuery.graphql";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -56,162 +56,54 @@ type MarkedArea = {
 const createCacheBusterString = () =>
   encodeURIComponent(`${Date.now()}_${randomHash()}`);
 
-const PlayerMap: React.FC<{
-  fetch: typeof fetch;
-  pcPassword: string;
+const PlayerMap_ActiveMapQuery = graphql`
+  query playerArea_PlayerMap_ActiveMapQuery @live {
+    activeMap {
+      id
+      ...mapView_MapFragment
+    }
+  }
+`;
+
+const PlayerMap = ({
+  fetch,
+  socket,
+  isMapOnly,
+}: {
+  fetch: typeof window.fetch;
   socket: ReturnType<typeof useSocket>;
   isMapOnly: boolean;
-}> = ({ fetch, pcPassword, socket, isMapOnly }) => {
-  const [currentMap, setCurrentMap] = React.useState<null | MapEntity>(null);
-  const currentMapRef = React.useRef(currentMap);
+}) => {
+  const currentMap = useQuery<playerArea_PlayerMap_ActiveMapQuery>(
+    PlayerMap_ActiveMapQuery
+  );
 
-  const [mapImage, setMapImage] = React.useState<HTMLImageElement | null>(null);
-  const [fogImage, setFogImage] = React.useState<HTMLImageElement | null>(null);
-
-  const mapId = currentMap ? currentMap.id : null;
+  const mapId = currentMap?.data?.activeMap?.id ?? null;
   const showSplashScreen = mapId === null;
 
   const controlRef = React.useRef<MapControlInterface | null>(null);
-  /**
-   * used for canceling pending requests in case there is a new update incoming.
-   * should be either null or an array of tasks returned by loadImage
-   */
-  const pendingMapImageLoad = React.useRef<LoadImageTask | null>(null);
-  const pendingFogImageLoad = React.useRef<LoadImageTask | null>(null);
   const [markedAreas, setMarkedAreas] = React.useState<MarkedArea[]>(() => []);
 
-  const [refetchTrigger, setRefetchTrigger] = React.useState(0);
-
-  const onReceiveMap = React.useCallback((data: { map: MapEntity }) => {
-    if (!data) {
-      return;
-    }
-
-    if (window.document.visibilityState === "hidden") {
-      return;
-    }
-
-    if (pendingFogImageLoad.current) {
-      pendingFogImageLoad.current?.cancel();
-      pendingFogImageLoad.current = null;
-    }
-
-    /**
-     * Hide map (show splashscreen)
-     */
-    if (!data.map) {
-      pendingMapImageLoad.current?.cancel();
-      currentMapRef.current = null;
-      setCurrentMap(null);
-      setFogImage(null);
-      setMapImage(null);
-      return;
-    }
-
-    /**
-     * Fog has updated
-     */
-    if (
-      currentMapRef.current &&
-      currentMapRef.current.id === data.map.id &&
-      pendingMapImageLoad.current
-    ) {
-      const fogImageUrl = buildApiUrl(
-        // prettier-ignore
-        `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
-      );
-
-      const task = loadImage(fogImageUrl);
-      pendingFogImageLoad.current = task;
-    } else {
-      // Load new map
-      pendingMapImageLoad.current?.cancel();
-      currentMapRef.current = data.map;
-
-      const mapImageUrl = buildApiUrl(
-        // prettier-ignore
-        `/map/${data.map.id}/map?authorization=${encodeURIComponent(pcPassword)}`
-      );
-
-      const fogImageUrl = buildApiUrl(
-        // prettier-ignore
-        `/map/${data.map.id}/fog-live?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(pcPassword)}`
-      );
-
-      const loadMapImageTask = loadImage(mapImageUrl);
-      const loadFogImageTask = loadImage(fogImageUrl);
-
-      pendingMapImageLoad.current = loadMapImageTask;
-      pendingFogImageLoad.current = loadFogImageTask;
-
-      setCurrentMap(data.map);
-      setMapImage(null);
-      setFogImage(null);
-    }
-
-    Promise.all([
-      pendingMapImageLoad.current.promise,
-      pendingFogImageLoad.current.promise,
-    ])
-      .then(([mapImage, fogImage]) => {
-        setMapImage(mapImage);
-        setFogImage(fogImage);
-      })
-      .catch(() => {
-        console.log("Cancel loading image.");
-      });
-  }, []);
-
-  React.useEffect(
-    () => () => {
-      // cleanup in case the component unmounts
-      pendingMapImageLoad.current?.cancel();
-      pendingFogImageLoad.current?.cancel();
-    },
-    []
-  );
-
-  useAsyncEffect(
-    function* (_, cast) {
-      const result = yield* cast(
-        fetch("/active-map").then((res) => res.json())
-      );
-      const activeMap = result.data.activeMap;
-
-      if (activeMap) {
-        onReceiveMap({ map: activeMap });
-      }
-
-      return () => {
-        if (pendingFogImageLoad.current) {
-          pendingFogImageLoad.current.cancel();
-          pendingFogImageLoad.current = null;
-        }
-      };
-    },
-    [socket, pcPassword, refetchTrigger]
-  );
-
-  React.useEffect(() => {
-    socket.on("map update", onReceiveMap);
-    socket.on("mark area", (data: { id: string; x: number; y: number }) => {
-      if (window.document.visibilityState === "hidden") {
-        return;
-      }
-      setMarkedAreas((markedAreas) => [
-        ...markedAreas,
-        {
-          id: data.id,
-          x: data.x,
-          y: data.y,
-        },
-      ]);
-    });
-    return () => {
-      socket.off("map update");
-      socket.off("mark area");
-    };
-  }, [socket]);
+  // React.useEffect(() => {
+  //   socket.on("map update", onReceiveMap);
+  //   socket.on("mark area", (data: { id: string; x: number; y: number }) => {
+  //     if (window.document.visibilityState === "hidden") {
+  //       return;
+  //     }
+  //     setMarkedAreas((markedAreas) => [
+  //       ...markedAreas,
+  //       {
+  //         id: data.id,
+  //         x: data.x,
+  //         y: data.y,
+  //       },
+  //     ]);
+  //   });
+  //   return () => {
+  //     socket.off("map update");
+  //     socket.off("mark area");
+  //   };
+  // }, [socket]);
 
   React.useEffect(() => {
     const contextmenuListener = (ev: Event) => {
@@ -224,63 +116,9 @@ const PlayerMap: React.FC<{
   }, []);
 
   React.useEffect(() => {
-    if (!mapId) return;
-    const eventName = `token:mapId:${mapId}`;
-
-    socket.on(eventName, ({ type, data }: { type: string; data: any }) => {
-      if (type === "add") {
-        setCurrentMap(
-          produce((map) => {
-            if (map) {
-              map.tokens.push(...data.tokens);
-            }
-          })
-        );
-      } else if (type === "update") {
-        const updatedTokens = new Map<string, any>();
-        for (const token of data.tokens) {
-          updatedTokens.set(token.id, token);
-        }
-
-        setCurrentMap(
-          produce((map) => {
-            if (map) {
-              map.tokens = map.tokens.map((token) => {
-                const updatedToken = updatedTokens.get(token.id);
-                if (!updatedToken) {
-                  return token;
-                }
-                return {
-                  ...token,
-                  ...updatedToken,
-                };
-              });
-            }
-          })
-        );
-      } else if (type === "remove") {
-        setCurrentMap(
-          produce((map) => {
-            if (map) {
-              const removedTokenIds = new Set<string>(data.tokenIds);
-              map.tokens = map.tokens = map.tokens.filter(
-                (token) => removedTokenIds.has(token.id) === false
-              );
-            }
-          })
-        );
-      }
-    });
-
-    return () => {
-      socket.off(eventName);
-    };
-  }, [socket, mapId]);
-
-  React.useEffect(() => {
     const listener = () => {
       if (document.hidden === false) {
-        setRefetchTrigger((i) => i + 1);
+        currentMap.retry();
       }
     };
 
@@ -292,8 +130,8 @@ const PlayerMap: React.FC<{
 
   const updateToken = React.useCallback(
     ({ id, ...updates }) => {
-      if (currentMap) {
-        fetch(`/map/${currentMap.id}/token/${id}`, {
+      if (currentMap.data?.activeMap) {
+        fetch(`/map/${currentMap.data.activeMap.id}/token/${id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -395,23 +233,18 @@ const PlayerMap: React.FC<{
             >,
           ]}
         >
-          {currentMap && mapImage ? (
+          {currentMap.data?.activeMap ? (
             <MapView
+              isAdmin={false}
+              map={currentMap.data.activeMap}
               activeTool={PlayerMapTool}
-              mapImage={mapImage}
-              fogImage={fogImage}
               controlRef={controlRef}
-              tokens={currentMap.tokens.filter(
-                (token) => token.isVisibleForPlayers === true
-              )}
               markedAreas={markedAreas}
               removeMarkedArea={(id) => {
                 setMarkedAreas((markedAreas) =>
                   markedAreas.filter((area) => area.id !== id)
                 );
               }}
-              grid={currentMap.grid}
-              isGridVisible={currentMap.showGridToPlayers}
               sharedContexts={[
                 MarkAreaToolContext,
                 NoteWindowActionsContext,
@@ -549,7 +382,6 @@ const AuthenticatedContent: React.FC<{
     >
       <PlayerMap
         fetch={props.localFetch}
-        pcPassword={props.pcPassword}
         socket={socket}
         isMapOnly={props.isMapOnly}
       />

@@ -15,7 +15,7 @@ import { useGesture } from "react-use-gesture";
 import styled from "@emotion/styled/macro";
 import { darken, lighten } from "polished";
 import debounce from "lodash/debounce";
-import { getOptimalDimensions } from "./util";
+import { getOptimalDimensions, loadImage } from "./util";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { buildUrl } from "./public-url";
 import { CanvasText, CanvasTextRef } from "./canvas-text";
@@ -29,18 +29,22 @@ import { MapGridEntity, MapTokenEntity, MarkedAreaEntity } from "./map-typings";
 import { useIsKeyPressed } from "./hooks/use-is-key-pressed";
 import { TextureLoader } from "three";
 import { ReactEventHandlers } from "react-use-gesture/dist/types";
-import { useQuery } from "relay-hooks";
-import { mapView_TokenImageQuery } from "./__generated__/mapView_TokenImageQuery.graphql";
+import { useFragment } from "relay-hooks";
 import { buttonGroup, useControls, useCreateStore, LevaInputs } from "leva";
 import { levaPluginNoteReference } from "./leva-plugin/leva-plugin-note-reference";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
-import { useCurrent } from "./hooks/use-current";
 import { useMarkArea } from "./map-tools/player-map-tool";
 import { ContextMenuState, useShowContextMenu } from "./map-context-menu";
 import {
   useClearTokenSelection,
   useTokenSelection,
 } from "./shared-token-state";
+import { mapView_MapFragment$key } from "./__generated__/mapView_MapFragment.graphql";
+import { mapView_TokenRendererMapTokenFragment$key } from "./__generated__/mapView_TokenRendererMapTokenFragment.graphql";
+import { mapView_TokenListRendererFragment$key } from "./__generated__/mapView_TokenListRendererFragment.graphql";
+import { mapView_MapViewRendererFragment$key } from "./__generated__/mapView_MapViewRendererFragment.graphql";
+import { mapView_MapRendererFragment$key } from "./__generated__/mapView_MapRendererFragment.graphql";
+import { mapView_GridRendererFragment$key } from "./__generated__/mapView_GridRendererFragment.graphql";
 
 type Vector2D = [number, number];
 
@@ -126,18 +130,6 @@ const Plane = React.forwardRef(
   }
 );
 
-const MapTokenImageQuery = graphql`
-  query mapView_TokenImageQuery($id: ID!) {
-    tokenImage: node(id: $id) {
-      __typename
-      ... on TokenImage {
-        id
-        url
-      }
-    }
-  }
-`;
-
 export const UpdateTokenContext = React.createContext<
   (id: string, props: Omit<Partial<MapTokenEntity>, "id">) => void
 >(() => undefined);
@@ -148,21 +140,63 @@ export const IsDungeonMasterContext = React.createContext(false);
 
 type TokenPartialChanges = Omit<Partial<MapTokenEntity>, "id">;
 
+const TokenListRendererFragment = graphql`
+  fragment mapView_TokenListRendererFragment on Map {
+    tokens {
+      id
+      ...mapView_TokenRendererMapTokenFragment
+    }
+    grid {
+      columnWidth
+    }
+  }
+`;
+
+const TokenListRenderer = (props: {
+  map: mapView_TokenListRendererFragment$key;
+}) => {
+  const map = useFragment(TokenListRendererFragment, props.map);
+  return (
+    <group renderOrder={LayerRenderOrder.token}>
+      {map.tokens.map((token) => (
+        <TokenRenderer
+          id={token.id}
+          key={token.id}
+          token={token}
+          columnWidth={map.grid?.columnWidth ?? null}
+        />
+      ))}
+    </group>
+  );
+};
+
+const TokenRendererMapTokenFragment = graphql`
+  fragment mapView_TokenRendererMapTokenFragment on MapToken {
+    id
+    x
+    y
+    color
+    radius
+    label
+    rotation
+    isLocked
+    isMovableByPlayers
+    isVisibleForPlayers
+    tokenImage {
+      id
+      title
+      url
+    }
+    referenceId
+  }
+`;
+
 const TokenRenderer = (props: {
   id: string;
-  x: number;
-  y: number;
-  color: string;
-  radius: number;
-  rotation: number;
-  textLabel: string;
-  isLocked: boolean;
-  isMovableByPlayers: boolean;
-  isVisibleForPlayers: boolean;
-  referenceId: null | string;
-  tokenImageId: string | null;
+  token: mapView_TokenRendererMapTokenFragment$key;
   columnWidth: number | null;
 }) => {
+  const token = useFragment(TokenRendererMapTokenFragment, props.token);
   const sharedMapState = React.useContext(SharedMapState);
   const updateToken = React.useContext(UpdateTokenContext);
   const pendingChangesRef = React.useRef<TokenPartialChanges>({});
@@ -195,7 +229,7 @@ const TokenRenderer = (props: {
       position: {
         type: LevaInputs.VECTOR2D,
         label: "Position",
-        value: [props.x, props.y],
+        value: [token.x, token.y],
         step: 1,
         onChange: (value: [number, number], _, { initial, fromPanel }) => {
           if (initial) {
@@ -229,7 +263,7 @@ const TokenRenderer = (props: {
       radius: {
         type: LevaInputs.NUMBER,
         label: "Size",
-        value: props.radius,
+        value: token.radius,
         step: 1,
         min: 1,
         onChange: (value: number, _, { initial, fromPanel }) => {
@@ -277,7 +311,7 @@ const TokenRenderer = (props: {
         min: 0,
         max: 360,
         step: 1,
-        value: props.rotation,
+        value: token.rotation,
         onChange: (rotation: number, _, { initial, fromPanel }) => {
           if (initial) {
             return;
@@ -305,7 +339,7 @@ const TokenRenderer = (props: {
       isLocked: {
         type: LevaInputs.BOOLEAN,
         label: "Position locked",
-        value: props.isLocked,
+        value: token.isLocked,
         onChange: (isLocked: boolean, _, { initial, fromPanel }) => {
           if (initial || !fromPanel) {
             return;
@@ -319,7 +353,7 @@ const TokenRenderer = (props: {
       text: {
         type: LevaInputs.STRING,
         label: "Title",
-        value: typeof props.textLabel === "string" ? props.textLabel : "",
+        value: typeof token.label === "string" ? token.label : "",
         onChange: (label: string, _, { initial, fromPanel }) => {
           if (initial || !fromPanel) {
             return;
@@ -333,7 +367,7 @@ const TokenRenderer = (props: {
       color: {
         type: LevaInputs.COLOR,
         label: "Color",
-        value: props.color ?? "rgb(255, 255, 255)",
+        value: token.color ?? "rgb(255, 255, 255)",
         onChange: (color: string, _, { initial, fromPanel }) => {
           if (initial || !fromPanel) {
             return;
@@ -354,7 +388,7 @@ const TokenRenderer = (props: {
       isVisibleForPlayers: {
         type: LevaInputs.BOOLEAN,
         label: "Visible to players",
-        value: props.isVisibleForPlayers,
+        value: token.isVisibleForPlayers,
         onChange: (isVisibleForPlayers: boolean, _, { initial, fromPanel }) => {
           if (initial || !fromPanel) {
             return;
@@ -368,7 +402,7 @@ const TokenRenderer = (props: {
       isMovableByPlayers: {
         type: LevaInputs.BOOLEAN,
         label: "Movable by players",
-        value: props.isMovableByPlayers,
+        value: token.isMovableByPlayers,
         onChange: (isMovableByPlayers: boolean, _, { initial, fromPanel }) => {
           if (initial || !fromPanel) {
             return;
@@ -380,7 +414,7 @@ const TokenRenderer = (props: {
         transient: false,
       },
       referenceId: levaPluginNoteReference({
-        value: props.referenceId ?? null,
+        value: token.referenceId ?? null,
         onChange: (referenceId: string | null, _, { initial, fromPanel }) => {
           if (initial || !fromPanel) {
             return;
@@ -392,7 +426,7 @@ const TokenRenderer = (props: {
         transient: false,
       }),
       tokenImageId: levaPluginTokenImage({
-        value: props.tokenImageId ?? null,
+        value: token.tokenImage?.id ?? null,
         onChange: (tokenImageId: null | string, _, { initial, fromPanel }) => {
           if (initial || !fromPanel) {
             return;
@@ -418,60 +452,45 @@ const TokenRenderer = (props: {
 
   React.useEffect(() => {
     const values: Record<string, any> = {
-      text: props.textLabel,
-      isLocked: props.isLocked,
-      isMovableByPlayers: props.isMovableByPlayers,
-      isVisibleForPlayers: props.isVisibleForPlayers,
-      referenceId: props.referenceId,
-      tokenImageId: props.tokenImageId,
+      text: token.label,
+      isLocked: token.isLocked,
+      isMovableByPlayers: token.isMovableByPlayers,
+      isVisibleForPlayers: token.isVisibleForPlayers,
+      referenceId: token.referenceId,
+      tokenImageId: token.tokenImage?.id,
     };
 
     if (editingStateRef.radius === 0) {
-      values["radius"] = props.radius;
+      values["radius"] = token.radius;
     }
     if (editingStateRef.position === 0) {
-      values["position"] = [props.x, props.y];
+      values["position"] = [token.x, token.y];
     }
     if (editingStateRef.color === 0) {
-      values["color"] = props.color;
+      values["color"] = token.color;
     }
     if (editingStateRef.rotation === 0) {
-      values["rotation"] = props.rotation;
+      values["rotation"] = token.rotation;
     }
 
     setValues(values);
   }, [
     setValues,
-    props.x,
-    props.y,
-    props.radius,
-    props.textLabel,
-    props.isLocked,
-    props.color,
-    props.isMovableByPlayers,
-    props.isVisibleForPlayers,
-    props.referenceId,
-    props.tokenImageId,
-    props.rotation,
+    token.x,
+    token.y,
+    token.radius,
+    token.label,
+    token.isLocked,
+    token.color,
+    token.isMovableByPlayers,
+    token.isVisibleForPlayers,
+    token.referenceId,
+    token.tokenImage?.id,
+    token.rotation,
   ]);
 
-  const query = useQuery<mapView_TokenImageQuery>(
-    MapTokenImageQuery,
-    values.tokenImageId
-      ? {
-          id: values.tokenImageId,
-        }
-      : undefined,
-    { skip: values.tokenImageId === null }
-  );
-  const [, cachedQueryResult] = useCurrent(
-    query,
-    !query.error && !query.data,
-    0
-  );
-
   const initialRadius = useStaticRef(() =>
-    sharedMapState.helper.size.fromImageToThree(Math.max(1, props.radius))
+    sharedMapState.helper.size.fromImageToThree(Math.max(1, token.radius))
   );
 
   const isDungeonMaster = React.useContext(IsDungeonMasterContext);
@@ -484,11 +503,11 @@ const TokenRenderer = (props: {
 
   const [animatedProps, setAnimatedProps] = useSpring(() => ({
     position: [
-      ...sharedMapState.helper.imageCoordinatesToThreePoint([props.x, props.y]),
+      ...sharedMapState.helper.imageCoordinatesToThreePoint([token.x, token.y]),
       0,
     ] as [number, number, number],
     circleScale: [1, 1, 1] as [number, number, number],
-    rotation: props.rotation,
+    rotation: token.rotation,
   }));
 
   React.useEffect(() => {
@@ -675,7 +694,7 @@ const TokenRenderer = (props: {
         scale={animatedProps.circleScale}
         renderOrder={LayerRenderOrder.token}
       >
-        {values.tokenImageId && cachedQueryResult?.data?.tokenImage ? null : (
+        {values.tokenImageId && token.tokenImage ? null : (
           <>
             <mesh>
               <circleBufferGeometry
@@ -716,11 +735,9 @@ const TokenRenderer = (props: {
             />
           </mesh>
         ) : null}
-        {values.tokenImageId &&
-        cachedQueryResult?.data?.tokenImage &&
-        cachedQueryResult.data.tokenImage.__typename === "TokenImage" ? (
+        {token.tokenImage ? (
           <TokenAttachment
-            url={cachedQueryResult.data.tokenImage.url}
+            url={token.tokenImage.url}
             initialRadius={initialRadius}
             dragProps={dragProps}
             isHover={isHover}
@@ -728,7 +745,7 @@ const TokenRenderer = (props: {
             rotation={animatedProps.rotation}
           />
         ) : null}
-        {values.tokenImageId && cachedQueryResult?.data?.tokenImage ? null : (
+        {values.tokenImageId && token.tokenImage ? null : (
           <mesh {...dragProps()} renderOrder={LayerRenderOrder.tokenGesture}>
             {/* This one is for attaching the gesture handlers */}
             <circleBufferGeometry
@@ -750,7 +767,7 @@ const TokenRenderer = (props: {
           position={to(
             [animatedProps.circleScale, animatedProps.position],
             ([scale], [x, y, z]) =>
-              query.data?.tokenImage
+              token.tokenImage
                 ? [x, y - 0.04 - initialRadius * scale, z]
                 : [x, y, z]
           )}
@@ -759,7 +776,7 @@ const TokenRenderer = (props: {
           <TokenLabel
             text={textLabel}
             position={undefined}
-            backgroundColor={query.data?.tokenImage ? "#ffffff" : null}
+            backgroundColor={token.tokenImage ? "#ffffff" : null}
             fontSize={(columnWidth * sharedMapState.ratio) / 930}
           />
         </animated.group>
@@ -893,7 +910,7 @@ const TextureElement = (props: {
   return (
     <animated.mesh
       renderOrder={LayerRenderOrder.tokenGesture}
-      // ts-expect-error:
+      // @ts-expect-error:
       rotation={props.rotation.to<[number, number, number]>((value) => [
         0,
         0,
@@ -1072,13 +1089,25 @@ const drawGridToContext = (
   }
 };
 
+const GridRendererFragment = graphql`
+  fragment mapView_GridRendererFragment on MapGrid {
+    color
+    offsetX
+    offsetY
+    columnWidth
+    columnHeight
+  }
+`;
+
 const GridRenderer = (props: {
-  grid: MapGridEntity;
+  grid: mapView_GridRendererFragment$key;
   dimensions: Dimensions;
   factor: number;
   imageHeight: number;
   imageWidth: number;
 }): React.ReactElement => {
+  const grid = useFragment(GridRendererFragment, props.grid);
+
   const three = useThree();
   const maximumTextureSize = three.gl.capabilities.maxTextureSize;
   const [gridCanvas] = React.useState(() =>
@@ -1102,7 +1131,7 @@ const GridRenderer = (props: {
     );
     gridCanvas.width = width;
     gridCanvas.height = height;
-    drawGridToContext(props.grid, ratio, gridCanvas);
+    drawGridToContext(grid, ratio, gridCanvas);
     gridTexture.needsUpdate = true;
   }, [
     gridCanvas,
@@ -1110,7 +1139,7 @@ const GridRenderer = (props: {
     props.factor,
     props.imageWidth,
     props.imageHeight,
-    props.grid,
+    grid,
   ]);
 
   return (
@@ -1128,22 +1157,33 @@ const GridRenderer = (props: {
   );
 };
 
-const MapRenderer: React.FC<{
+const MapRendererFragment = graphql`
+  fragment mapView_MapRendererFragment on Map {
+    ...mapView_TokenListRendererFragment
+    grid {
+      ...mapView_GridRendererFragment
+    }
+    showGrid
+    showGridToPlayers
+  }
+`;
+
+const MapRenderer = (props: {
+  isAdmin: boolean;
+  map: mapView_MapRendererFragment$key;
   mapImage: HTMLImageElement;
   mapImageTexture: THREE.Texture;
   fogTexture: THREE.Texture;
   viewport: ViewportData;
-  tokens: MapTokenEntity[];
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
-  grid: MapGridEntity | null;
-  isGridVisible: boolean;
   scale: SpringValue<[number, number, number]>;
   factor: number;
   dimensions: Dimensions;
   fogOpacity: number;
   markerRadius: number;
-}> = (props) => {
+}) => {
+  const map = useFragment(MapRendererFragment, props.map);
   return (
     <>
       <group renderOrder={LayerRenderOrder.map}>
@@ -1154,9 +1194,9 @@ const MapRenderer: React.FC<{
           />
           <meshStandardMaterial attach="material" map={props.mapImageTexture} />
         </mesh>
-        {props.grid && props.isGridVisible ? (
+        {map.grid && (props.isAdmin ? map.showGrid : map.showGridToPlayers) ? (
           <GridRenderer
-            grid={props.grid}
+            grid={map.grid}
             dimensions={props.dimensions}
             factor={props.factor}
             imageHeight={props.mapImage.naturalHeight}
@@ -1176,26 +1216,7 @@ const MapRenderer: React.FC<{
           />
         </mesh>
       </group>
-      <group renderOrder={LayerRenderOrder.token}>
-        {props.tokens.map((token) => (
-          <TokenRenderer
-            id={token.id}
-            key={token.id}
-            x={token.x}
-            y={token.y}
-            color={token.color}
-            textLabel={token.label}
-            isLocked={token.isLocked}
-            isMovableByPlayers={token.isMovableByPlayers}
-            isVisibleForPlayers={token.isVisibleForPlayers}
-            radius={token.radius}
-            rotation={token.rotation}
-            referenceId={token.reference?.id ?? null}
-            tokenImageId={token.tokenImageId ?? null}
-            columnWidth={props.grid?.columnWidth ?? null}
-          />
-        ))}
-      </group>
+      <TokenListRenderer map={map} />
       <group renderOrder={LayerRenderOrder.marker}>
         {props.markedAreas.map((markedArea) => (
           <MarkedAreaRenderer
@@ -1222,18 +1243,24 @@ export type MapControlInterface = {
   getContext: () => SharedMapToolState;
 };
 
+const MapViewRendererFragment = graphql`
+  fragment mapView_MapViewRendererFragment on Map {
+    ...mapView_MapRendererFragment
+  }
+`;
+
 const MapViewRenderer = (props: {
+  isAdmin: boolean;
+  map: mapView_MapViewRendererFragment$key;
   mapImage: HTMLImageElement;
   fogImage: HTMLImageElement | null;
-  tokens: MapTokenEntity[];
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
-  grid: MapGridEntity | null;
-  isGridVisible: boolean;
   activeTool: MapTool | null;
   fogOpacity: number;
 }): React.ReactElement => {
+  const map = useFragment(MapViewRendererFragment, props.map);
   const three = useThree();
   const viewport = three.viewport;
   const maximumTextureSize = three.gl.capabilities.maxTextureSize;
@@ -1521,16 +1548,15 @@ const MapViewRenderer = (props: {
         ref={planeRef}
       >
         <MapRenderer
+          isAdmin={props.isAdmin}
+          map={map}
           mapImage={props.mapImage}
           mapImageTexture={mapTexture}
           fogTexture={fogTexture}
           viewport={viewport}
-          tokens={props.tokens}
           markerRadius={20}
           markedAreas={props.markedAreas}
           removeMarkedArea={props.removeMarkedArea}
-          grid={props.grid}
-          isGridVisible={props.isGridVisible}
           scale={spring.scale}
           dimensions={dimensions}
           factor={
@@ -1556,23 +1582,83 @@ const MapCanvasContainer = styled.div`
   touch-action: manipulation;
 `;
 
+const MapFragment = graphql`
+  fragment mapView_MapFragment on Map {
+    id
+    mapImageUrl
+    fogProgressImageUrl
+    fogLiveImageUrl
+    ...mapView_MapViewRendererFragment
+  }
+`;
+
 export const MapView = (props: {
-  mapImage: HTMLImageElement;
-  fogImage: HTMLImageElement | null;
-  tokens: MapTokenEntity[];
+  map: mapView_MapFragment$key;
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
   markedAreas: MarkedAreaEntity[];
   removeMarkedArea: (id: string) => void;
-  grid: MapGridEntity | null;
-  isGridVisible: boolean;
   activeTool: MapTool | null;
   /* List of contexts that need to be proxied into R3F */
   sharedContexts: Array<React.Context<any>>;
   fogOpacity: number;
-}): React.ReactElement => {
+  isAdmin: boolean;
+}): React.ReactElement | null => {
   const ContextBridge = useContextBridge(...props.sharedContexts);
 
-  return (
+  const map = useFragment(MapFragment, props.map);
+
+  const [mapImage, setMapImage] = React.useState<HTMLImageElement | null>(null);
+  const [fogImage, setFogImage] = React.useState<HTMLImageElement | null>(null);
+
+  const cleanupMapImage = React.useRef<() => void>(() => {});
+  const cleanupFogImage = React.useRef<() => void>(() => {});
+
+  React.useEffect(() => {
+    const mapImageTask = loadImage(map.mapImageUrl);
+
+    cleanupMapImage.current = () => {
+      mapImageTask.cancel();
+    };
+
+    mapImageTask.promise
+      .then((mapImage) => {
+        setMapImage(mapImage);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+
+    return () => cleanupMapImage.current();
+  }, [map.mapImageUrl, props.isAdmin]);
+
+  React.useEffect(() => {
+    const fogImageTask =
+      props.isAdmin && map.fogProgressImageUrl != null
+        ? loadImage(map.fogProgressImageUrl)
+        : map.fogLiveImageUrl != null
+        ? loadImage(map.fogLiveImageUrl)
+        : null;
+
+    if (fogImageTask === null) {
+      return;
+    }
+
+    cleanupFogImage.current = () => {
+      fogImageTask?.cancel();
+    };
+
+    fogImageTask.promise
+      .then((fogImage) => {
+        setFogImage(fogImage ?? null);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+
+    return () => cleanupFogImage.current();
+  }, [map.fogLiveImageUrl, map.fogProgressImageUrl, props.isAdmin]);
+
+  return mapImage ? (
     <MapCanvasContainer>
       <Canvas
         camera={{ position: [0, 0, 5] }}
@@ -1608,22 +1694,21 @@ export const MapView = (props: {
         <ambientLight intensity={1} />
         <ContextBridge>
           <MapViewRenderer
-            key={props.mapImage.id}
+            isAdmin={props.isAdmin}
+            key={map.id}
+            map={map}
             activeTool={props.activeTool}
-            mapImage={props.mapImage}
-            fogImage={props.fogImage}
-            tokens={props.tokens}
+            mapImage={mapImage}
+            fogImage={fogImage}
             controlRef={props.controlRef}
             markedAreas={props.markedAreas}
             removeMarkedArea={props.removeMarkedArea}
-            grid={props.grid}
-            isGridVisible={props.isGridVisible}
             fogOpacity={props.fogOpacity}
           />
         </ContextBridge>
       </Canvas>
     </MapCanvasContainer>
-  );
+  ) : null;
 };
 
 const MapToolRenderer = <

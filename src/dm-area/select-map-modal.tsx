@@ -74,21 +74,12 @@ type SelectMapModalProps = {
   dmPassword: string;
 };
 
-const _SelectMapModal_MapFragment = graphql`
-  fragment selectMapModal_mapFragment on Map {
-    id
-    title
-    mapImageUrl
-  }
-`;
-
 const SelectMapModal_MapsQuery = graphql`
   query selectMapModal_MapsQuery {
     maps {
       __id
       edges {
         node {
-          ...selectMapModal_mapFragment
           id
           title
           mapImageUrl
@@ -115,7 +106,6 @@ const SelectMapModal_MapCreateMutation = graphql`
       ... on MapCreateSuccess {
         __typename
         createdMap {
-          ...selectMapModal_mapFragment
           id
           title
           mapImageUrl
@@ -418,12 +408,12 @@ export const SelectMapModal = ({
         modalState.type === ModalType.EDIT_TITLE ? (
           <ChangeMapTitleModal
             closeModal={() => setModalState(null)}
-            updateMap={({ title }) =>
+            updateMapTitle={(newTitle) =>
               mapUpdateTitle({
                 variables: {
                   input: {
                     mapId: modalState.data.mapId,
-                    newTitle: title,
+                    newTitle,
                   },
                 },
               })
@@ -618,8 +608,8 @@ const CreateNewMapModal = ({
 
 const ChangeMapTitleModal: React.FC<{
   closeModal: () => void;
-  updateMap: (opts: { title: string }) => void;
-}> = ({ closeModal, updateMap }) => {
+  updateMapTitle: (newTitle: string) => void;
+}> = ({ closeModal, updateMapTitle: updateMap }) => {
   const [inputValue, setInputValue] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const onChangeInputValue = React.useCallback(
@@ -633,7 +623,7 @@ const ChangeMapTitleModal: React.FC<{
       setError("Please enter a map name.");
       return;
     }
-    updateMap({ title: inputValue });
+    updateMap(inputValue);
     closeModal();
   }, [inputValue, closeModal, updateMap, setError]);
 

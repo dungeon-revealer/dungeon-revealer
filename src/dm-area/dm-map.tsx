@@ -21,7 +21,8 @@ import {
   NumberDecrementStepper,
   useToast,
 } from "@chakra-ui/react";
-import { ReactRelayContext } from "relay-hooks";
+import graphql from "babel-plugin-relay/macro";
+import { ReactRelayContext, useFragment, useMutation } from "relay-hooks";
 import * as Icons from "../feather-icons";
 import { Toolbar } from "../toolbar";
 import type { MapTool } from "../map-tools/map-tool";
@@ -46,7 +47,6 @@ import {
   UpdateTokenContext,
   IsDungeonMasterContext,
 } from "../map-view";
-import { buildApiUrl } from "../public-url";
 import { ConditionalWrap, loadImage } from "../util";
 import { BrushShape, FogMode } from "../canvas-draw-utilities";
 import {
@@ -92,6 +92,12 @@ import {
 } from "../shared-token-state";
 import { SharedTokenMenu } from "../shared-token-menu";
 import { randomHash } from "../utilities/random-hash";
+import { dmMap_DMMapFragment$key } from "./__generated__/dmMap_DMMapFragment.graphql";
+import { dmMap_ShowGridSettingsPopupMapFragment$key } from "./__generated__/dmMap_ShowGridSettingsPopupMapFragment.graphql";
+import { dmMap_ShowGridSettingsPopupGridFragment$key } from "./__generated__/dmMap_ShowGridSettingsPopupGridFragment.graphql";
+import { dmMap_GridSettingButton_MapFragment$key } from "./__generated__/dmMap_GridSettingButton_MapFragment.graphql";
+import { dmMap_mapUpdateGridMutation } from "./__generated__/dmMap_mapUpdateGridMutation.graphql";
+import { dmMap_GridConfigurator_MapFragment$key } from "./__generated__/dmMap_GridConfigurator_MapFragment.graphql";
 
 type ToolMapRecord = {
   name: string;
@@ -230,28 +236,63 @@ const ShroudRevealSettings = (): React.ReactElement => {
   );
 };
 
+const ShowGridSettingsPopupMapFragment = graphql`
+  fragment dmMap_ShowGridSettingsPopupMapFragment on Map {
+    id
+    showGrid
+    showGridToPlayers
+  }
+`;
+
+const ShowGridSettingsPopupGridFragment = graphql`
+  fragment dmMap_ShowGridSettingsPopupGridFragment on MapGrid {
+    offsetX
+    offsetY
+    columnWidth
+    columnHeight
+    color
+  }
+`;
+
+const MapUpdateGridMutation = graphql`
+  mutation dmMap_mapUpdateGridMutation($input: MapUpdateGridInput!) {
+    mapUpdateGrid(input: $input) {
+      __typename
+    }
+  }
+`;
+
 const ShowGridSettingsPopup = React.memo(
   (props: {
-    grid: MapGridEntity;
-    showGrid: boolean;
-    showGridToPlayers: boolean;
-    updateMap: (params: Partial<MapEntity>) => void;
+    map: dmMap_ShowGridSettingsPopupMapFragment$key;
+    grid: dmMap_ShowGridSettingsPopupGridFragment$key;
     enterConfigureGridMode: () => void;
   }) => {
-    const [gridColor, setGridColor] = useResetState(() => props.grid.color, []);
-    const [showGrid, setShowGrid] = useResetState(props.showGrid, []);
+    const [mapUpdateGrid] = useMutation<dmMap_mapUpdateGridMutation>(
+      MapUpdateGridMutation
+    );
+    const map = useFragment(ShowGridSettingsPopupMapFragment, props.map);
+    const grid = useFragment(ShowGridSettingsPopupGridFragment, props.grid);
+
+    const [gridColor, setGridColor] = useResetState(() => grid.color, []);
+    const [showGrid, setShowGrid] = useResetState(map.showGrid, []);
     const [showGridToPlayers, setShowGridToPlayers] = useResetState(
-      props.showGridToPlayers,
+      map.showGridToPlayers,
       []
     );
 
     const syncState = useDebounceCallback(() => {
-      props.updateMap({
-        showGrid,
-        showGridToPlayers,
-        grid: {
-          ...props.grid,
-          color: gridColor,
+      mapUpdateGrid({
+        variables: {
+          input: {
+            mapId: map.id,
+            grid: {
+              ...grid,
+              color: gridColor,
+            },
+            showGrid,
+            showGridToPlayers,
+          },
         },
       });
     }, 300);
@@ -322,11 +363,20 @@ const ShowGridSettingsPopup = React.memo(
   }
 );
 
+const GridSettingButtonMapFragment = graphql`
+  fragment dmMap_GridSettingButton_MapFragment on Map {
+    ...dmMap_ShowGridSettingsPopupMapFragment
+    grid {
+      ...dmMap_ShowGridSettingsPopupGridFragment
+    }
+  }
+`;
+
 const GridSettingButton = (props: {
   enterConfigureGridMode: () => void;
-  map: MapEntity;
-  updateMap: (params: Partial<MapEntity>) => void;
+  map: dmMap_GridSettingButton_MapFragment$key;
 }): React.ReactElement => {
+  const map = useFragment(GridSettingButtonMapFragment, props.map);
   const [showMenu, setShowMenu] = React.useState(false);
   const ref = React.useRef<null | HTMLLIElement>(null);
   useOnClickOutside<HTMLLIElement>(ref, () => {
@@ -336,10 +386,10 @@ const GridSettingButton = (props: {
   const [dialogNode, showDialog] = useConfirmationDialog();
 
   return (
-    <Toolbar.Item isActive={props.map.grid != null} ref={ref}>
+    <Toolbar.Item isActive={map.grid != null} ref={ref}>
       <Toolbar.Button
         onClick={() => {
-          if (!props.map.grid) {
+          if (!map.grid) {
             showDialog({
               header: "Configure Grid",
               body: "This map currently has no grid data. Do you wanna add a new grid using the grid configurator?",
@@ -354,12 +404,10 @@ const GridSettingButton = (props: {
         <Icons.GridIcon size={20} />
         <Icons.Label>Grid</Icons.Label>
       </Toolbar.Button>
-      {showMenu && props.map.grid ? (
+      {showMenu && map.grid ? (
         <ShowGridSettingsPopup
-          grid={props.map.grid}
-          showGrid={props.map.showGrid}
-          showGridToPlayers={props.map.showGridToPlayers}
-          updateMap={props.updateMap}
+          map={map}
+          grid={map.grid}
           enterConfigureGridMode={props.enterConfigureGridMode}
         />
       ) : null}
@@ -542,9 +590,25 @@ const activeDmMapToolIdModel: PersistedStateModel<
 const createCacheBusterString = () =>
   encodeURIComponent(`${Date.now()}_${randomHash()}`);
 
+const DMMapFragment = graphql`
+  fragment dmMap_DMMapFragment on Map {
+    id
+    grid {
+      offsetX
+      offsetY
+      columnWidth
+      columnHeight
+    }
+    ...mapView_MapFragment
+    ...mapContextMenuRenderer_MapFragment
+    ...dmMap_GridSettingButton_MapFragment
+    ...dmMap_GridConfigurator_MapFragment
+  }
+`;
+
 export const DmMap = (props: {
+  map: dmMap_DMMapFragment$key;
   password: string;
-  map: MapEntity;
   liveMapId: string | null;
   hideMap: () => void;
   showMapModal: () => void;
@@ -559,68 +623,11 @@ export const DmMap = (props: {
     id: string,
     changes: Omit<Partial<MapTokenEntity>, "id">
   ) => void;
-  updateMap: (params: Partial<MapEntity>) => void;
   controlRef: React.MutableRefObject<MapControlInterface | null>;
 }): React.ReactElement => {
-  const currentMapRef = React.useRef(props.map);
+  const map = useFragment(DMMapFragment, props.map);
 
-  const [mapImage, setMapImage] = React.useState<HTMLImageElement | null>(null);
-  const [fogImage, setFogImage] = React.useState<HTMLImageElement | null>(null);
   const controlRef = props.controlRef;
-  /**
-   * used for canceling pending requests in case there is a new update incoming.
-   * should be either null or an array of tasks returned by loadImage
-   */
-  const pendingFogImageLoad = React.useRef<(() => void) | null>(null);
-
-  const onReceiveMap = React.useCallback((data: { map: MapEntity }) => {
-    /**
-     * Load new map
-     */
-    currentMapRef.current = data.map;
-
-    const mapImageUrl = buildApiUrl(
-      // prettier-ignore
-      `/map/${data.map.id}/map?authorization=${encodeURIComponent(props.password)}`
-    );
-
-    const fogImageUrl = buildApiUrl(
-      // prettier-ignore
-      `/map/${data.map.id}/fog?cache_buster=${createCacheBusterString()}&authorization=${encodeURIComponent(props.password)}`
-    );
-
-    const loadMapImageTask = loadImage(mapImageUrl);
-    const loadFogImageTask = loadImage(fogImageUrl);
-
-    pendingFogImageLoad.current = () => {
-      loadMapImageTask.cancel();
-      loadFogImageTask.cancel();
-    };
-
-    Promise.all([
-      loadMapImageTask.promise,
-      loadFogImageTask.promise.catch(() => null),
-    ])
-      .then(([mapImage, fogImage]) => {
-        mapImage.id = createCacheBusterString();
-        setMapImage(mapImage);
-        setFogImage(fogImage);
-      })
-      .catch(() => {
-        console.log("Cancel loading image.");
-      });
-  }, []);
-
-  React.useEffect(() => {
-    onReceiveMap({ map: props.map });
-
-    return () => {
-      if (pendingFogImageLoad.current) {
-        pendingFogImageLoad.current?.();
-        pendingFogImageLoad.current = null;
-      }
-    };
-  }, [props.password, props.map.id]);
 
   const [activeToolId, setActiveToolId] = usePersistedState(
     "activeDmTool",
@@ -635,8 +642,7 @@ export const DmMap = (props: {
   const [toolOverride, setToolOverride] = React.useState<null | MapTool>(null);
   const activeTool = toolOverride ?? userSelectedTool;
 
-  const isCurrentMapLive =
-    props.map.id !== null && props.map.id === props.liveMapId;
+  const isCurrentMapLive = map.id !== null && map.id === props.liveMapId;
   const isOtherMapLive = props.liveMapId !== null;
 
   const showToast = useToast();
@@ -723,12 +729,12 @@ export const DmMap = (props: {
   const [configureGridMapToolState, setConfigureGridMapToolState] =
     useResetState<ConfigureMapToolState>(
       () => ({
-        offsetX: props.map.grid?.offsetX ?? 0,
-        offsetY: props.map.grid?.offsetY ?? 0,
-        columnWidth: props.map.grid?.columnWidth ?? 50,
-        columnHeight: props.map.grid?.columnHeight ?? 50,
+        offsetX: map.grid?.offsetX ?? 0,
+        offsetY: map.grid?.offsetY ?? 0,
+        columnWidth: map.grid?.columnWidth ?? 50,
+        columnHeight: map.grid?.columnHeight ?? 50,
       }),
-      [props.map.grid]
+      [map.grid]
     );
 
   return (
@@ -771,7 +777,7 @@ export const DmMap = (props: {
         [AreaSelectContextProvider, {}],
         [
           TokenMarkerContextProvider,
-          { currentMapId: props.map.id },
+          { currentMapId: map.id },
         ] as ComponentWithPropsTuple<
           React.ComponentProps<typeof TokenMarkerContextProvider>
         >,
@@ -789,37 +795,28 @@ export const DmMap = (props: {
         >,
       ]}
     >
-      {mapImage ? (
-        <MapView
-          activeTool={activeTool}
-          mapImage={mapImage}
-          fogImage={fogImage}
-          controlRef={controlRef}
-          tokens={props.map.tokens}
-          markedAreas={props.markedAreas}
-          removeMarkedArea={props.removeMarkedArea}
-          grid={
-            props.map.grid && activeTool !== ConfigureGridMapTool
-              ? props.map.grid
-              : null
-          }
-          isGridVisible={props.map.showGrid}
-          sharedContexts={[
-            MarkAreaToolContext,
-            BrushToolContext,
-            ConfigureGridMapToolContext,
-            AreaSelectContext,
-            TokenMarkerContext,
-            NoteWindowActionsContext,
-            ReactRelayContext,
-            UpdateTokenContext,
-            IsDungeonMasterContext,
-            ContextMenuStoreContext,
-            SharedTokenStateStoreContext,
-          ]}
-          fogOpacity={0.5}
-        />
-      ) : null}
+      <MapView
+        isAdmin={true}
+        map={map}
+        activeTool={activeTool}
+        controlRef={controlRef}
+        markedAreas={props.markedAreas}
+        removeMarkedArea={props.removeMarkedArea}
+        sharedContexts={[
+          MarkAreaToolContext,
+          BrushToolContext,
+          ConfigureGridMapToolContext,
+          AreaSelectContext,
+          TokenMarkerContext,
+          NoteWindowActionsContext,
+          ReactRelayContext,
+          UpdateTokenContext,
+          IsDungeonMasterContext,
+          ContextMenuStoreContext,
+          SharedTokenStateStoreContext,
+        ]}
+        fogOpacity={0.5}
+      />
 
       {toolOverride !== ConfigureGridMapTool ? (
         <>
@@ -907,11 +904,10 @@ export const DmMap = (props: {
             <Toolbar horizontal>
               <Toolbar.Group>
                 <GridSettingButton
+                  map={map}
                   enterConfigureGridMode={() => {
                     setToolOverride(ConfigureGridMapTool);
                   }}
-                  map={props.map}
-                  updateMap={props.updateMap}
                 />
                 <Toolbar.Item isActive>
                   <Toolbar.Button
@@ -1022,32 +1018,18 @@ export const DmMap = (props: {
         </>
       ) : (
         <GridConfigurator
+          map={map}
           onAbort={() => {
             setToolOverride(null);
           }}
-          onConfirm={(grid) => {
-            props.updateMap({ grid });
+          onConfirm={() => {
             setToolOverride(null);
           }}
         />
       )}
       {confirmDialogNode}
-      <SharedTokenMenu currentMapId={props.map.id} />
-      <ContextMenuRenderer
-        currentMapId={props.map.id}
-        getTokens={React.useCallback(
-          (tokenIds) => {
-            const hits = new Map<string, MapTokenEntity>();
-            for (const token of props.map.tokens) {
-              if (tokenIds.has(token.id)) {
-                hits.set(token.id, token);
-              }
-            }
-            return hits;
-          },
-          [props.map.tokens]
-        )}
-      />
+      <SharedTokenMenu currentMapId={map.id} />
+      <ContextMenuRenderer map={map} />
     </FlatContextProvider>
   );
 };
@@ -1114,10 +1096,24 @@ const MenuItemRenderer = (props: {
   );
 };
 
+const GridConfigurator_MapFragment = graphql`
+  fragment dmMap_GridConfigurator_MapFragment on Map {
+    id
+    showGrid
+    showGridToPlayers
+  }
+`;
+
 const GridConfigurator = (props: {
+  map: dmMap_GridConfigurator_MapFragment$key;
   onAbort: () => void;
-  onConfirm: (grid: MapGridEntity) => void;
+  onConfirm: () => void;
 }): React.ReactElement => {
+  const map = useFragment(GridConfigurator_MapFragment, props.map);
+  const [mapUpdateGrid] = useMutation<dmMap_mapUpdateGridMutation>(
+    MapUpdateGridMutation
+  );
+
   const { state, setState } = React.useContext(ConfigureGridMapToolContext);
 
   return (
@@ -1255,12 +1251,23 @@ const GridConfigurator = (props: {
           <Button.Primary
             small
             onClick={() => {
-              props.onConfirm({
-                color: "rgba(0, 0, 0, 0.08)",
-                columnWidth: state.columnWidth,
-                columnHeight: state.columnHeight,
-                offsetX: state.offsetX,
-                offsetY: state.offsetY,
+              mapUpdateGrid({
+                variables: {
+                  input: {
+                    mapId: map.id,
+                    grid: {
+                      color: "rgba(0, 0, 0, 0.08)",
+                      columnWidth: state.columnWidth,
+                      columnHeight: state.columnHeight,
+                      offsetX: state.offsetX,
+                      offsetY: state.offsetY,
+                    },
+                    showGrid: map.showGrid,
+                    showGridToPlayers: map.showGridToPlayers,
+                  },
+                },
+              }).finally(() => {
+                props.onConfirm();
               });
             }}
           >

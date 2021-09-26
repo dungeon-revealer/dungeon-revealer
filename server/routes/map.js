@@ -330,6 +330,7 @@ module.exports = ({ roleMiddleware, maps, settings, io, emitter }) => {
           type: "update",
           data: { tokens: [mapToken(token)] },
         });
+        emitter.emit("invalidate", `Map:${map.id}`);
       })
       .catch(handleUnexpectedError(res));
   });

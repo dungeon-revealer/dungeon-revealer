@@ -20,12 +20,12 @@ export const decodeImageId = flow(
   Relay.decodeId,
   E.chainW(([, type, id]) =>
     type === TOKEN_IMAGE_URI
-      ? E.right(id)
+      ? E.right(parseInt(id, 10))
       : E.left(new Error(`Invalid type '${type}'.`))
   )
 );
 
-const GraphQLTokenImageType = t.objectType<lib.TokenImageType>({
+export const GraphQLTokenImageType = t.objectType<lib.TokenImageType>({
   name: "TokenImage",
   description: "A entity that can be attached to an image.",
   fields: () => [

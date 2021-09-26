@@ -1,13 +1,17 @@
 import * as RT from "fp-ts/lib/ReaderTask";
 import { sequenceT } from "fp-ts/lib/Apply";
 import { pipe } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
 import * as io from "io-ts";
 import * as Relay from "./relay-spec";
 import { t } from "..";
 import * as lib from "../../map-lib";
-import { MapEntity, MapGridEntity } from "../../maps";
+import { MapEntity, MapGridEntity, MapTokenEntity } from "../../maps";
 import { IntegerFromString } from "../../io-types/integer-from-string";
 import { applyDecoder } from "../../apply-decoder";
+import { decodeImageId, GraphQLTokenImageType } from "./token-image";
+import { getTokenImageById } from "../../token-image-lib";
+import { randomUUID } from "crypto";
 
 const sequenceRT = sequenceT(RT.readerTask);
 
@@ -223,6 +227,47 @@ const GraphQLActiveMapSetInputType = t.inputObjectType({
   }),
 });
 
+const GraphQLMapUpdateGridResultType = t.objectType<lib.MapUpdateGridResult>({
+  name: "MapUpdateGridResult",
+  fields: () => [
+    t.field({
+      name: "updatedMap",
+      type: t.NonNull(GraphQLMapType),
+    }),
+  ],
+});
+
+const GraphQLGridInputType = t.inputObjectType({
+  name: "GridInput",
+  fields: () => ({
+    color: {
+      type: t.NonNullInput(t.String),
+    },
+    offsetX: { type: t.NonNullInput(t.Float) },
+    offsetY: { type: t.NonNullInput(t.Float) },
+    columnWidth: { type: t.NonNullInput(t.Float) },
+    columnHeight: { type: t.NonNullInput(t.Float) },
+  }),
+});
+
+const GraphQLMapUpdateGridInputType = t.inputObjectType({
+  name: "MapUpdateGridInput",
+  fields: () => ({
+    mapId: {
+      type: t.NonNullInput(t.ID),
+    },
+    grid: {
+      type: t.NonNullInput(GraphQLGridInputType),
+    },
+    showGrid: {
+      type: t.NonNullInput(t.Boolean),
+    },
+    showGridToPlayers: {
+      type: t.NonNullInput(t.Boolean),
+    },
+  }),
+});
+
 export const mutationFields = [
   t.field({
     name: "mapTokenUpdateMany",
@@ -325,6 +370,16 @@ export const mutationFields = [
       RT.run(lib.mapUpdateTitle(input), context),
   }),
   t.field({
+    name: "mapUpdateGrid",
+    description: "Update the grid of a map.",
+    type: t.NonNull(GraphQLMapUpdateGridResultType),
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapUpdateGridInputType)),
+    },
+    resolve: (_, { input }, context) =>
+      RT.run(lib.mapUpdateGrid(input), context),
+  }),
+  t.field({
     name: "activeMapSet",
     description: "Sets the active map.",
     type: t.Boolean,
@@ -362,6 +417,81 @@ const GraphQLMapGridType = t.objectType<MapGridEntity>({
   ],
 });
 
+const GraphQLMapTokenType = t.objectType<MapTokenEntity>({
+  name: "MapToken",
+  description: "A token on the map.",
+  fields: () => [
+    t.field({
+      name: "id",
+      type: t.NonNull(t.ID),
+    }),
+    t.field({
+      name: "x",
+      type: t.NonNull(t.Float),
+    }),
+    t.field({
+      name: "y",
+      type: t.NonNull(t.Float),
+    }),
+    t.field({
+      name: "rotation",
+      type: t.NonNull(t.Float),
+    }),
+    t.field({
+      name: "radius",
+      type: t.NonNull(t.Float),
+    }),
+    t.field({
+      name: "color",
+      type: t.NonNull(t.String),
+    }),
+    t.field({
+      name: "label",
+      type: t.NonNull(t.String),
+    }),
+    t.field({
+      name: "isVisibleForPlayers",
+      type: t.NonNull(t.Boolean),
+    }),
+    t.field({
+      name: "isMovableByPlayers",
+      type: t.NonNull(t.Boolean),
+    }),
+    t.field({
+      name: "isLocked",
+      type: t.NonNull(t.Boolean),
+    }),
+    t.field({
+      name: "tokenImage",
+      type: GraphQLTokenImageType,
+      resolve: (source, _, context) =>
+        source.tokenImageId
+          ? RT.run(
+              pipe(
+                decodeImageId(source.tokenImageId),
+                E.fold(
+                  () =>
+                    (() => () =>
+                      Promise.reject(
+                        new Error(
+                          "TODO: This should be a better error message :)"
+                        )
+                      )) as ReturnType<typeof getTokenImageById>,
+                  getTokenImageById
+                )
+              ),
+              context
+            )
+          : null,
+    }),
+    t.field({
+      name: "referenceId",
+      type: t.ID,
+      resolve: (source) => source.reference?.id ?? null,
+    }),
+  ],
+});
+
 const GraphQLMapType = t.objectType<MapEntity>({
   name: "Map",
   description: "A map entity.",
@@ -380,25 +510,59 @@ const GraphQLMapType = t.objectType<MapEntity>({
       name: "mapImageUrl",
       description: "The URL of the map image.",
       type: t.NonNull(t.String),
-      resolve: (source) => source.mapPath,
+      resolve: (source, _, context) =>
+        `/api/map/${source.id}/map?authorization=${encodeURIComponent(
+          (context.session.role === "admin"
+            ? process.env["DM_PASSWORD"]
+            : context.session.role === "user"
+            ? process.env["PC_PASSWORD"]
+            : null) ?? ""
+        )}`,
     }),
     t.field({
-      name: "fogProgressUrl",
-      description: "The URL of the fog progress image.",
+      name: "fogProgressImageUrl",
+      description:
+        "The URL of the fog progress image that is only accessible to the DM.",
       type: t.String,
-      resolve: (source) => source.fogProgressPath,
+      resolve: (source, _, context) =>
+        `/api/map/${source.id}/fog?authorization=${encodeURIComponent(
+          (context.session.role === "admin"
+            ? process.env["DM_PASSWORD"]
+            : context.session.role === "user"
+            ? process.env["PC_PASSWORD"]
+            : null) ?? ""
+        )}&cache_buster=${randomUUID()}`,
     }),
     t.field({
-      name: "fogLiveUrl",
+      name: "fogLiveImageUrl",
       description: "The URL of the fog live image, that is shown to players.",
       type: t.String,
-      resolve: (source) => source.fogLivePath,
+      resolve: (source, _, context) =>
+        `/api/map/${source.id}/fog?authorization=${encodeURIComponent(
+          (context.session.role === "admin"
+            ? process.env["DM_PASSWORD"]
+            : context.session.role === "user"
+            ? process.env["PC_PASSWORD"]
+            : null) ?? ""
+        )}&cache_buster=${randomUUID()}`,
     }),
     t.field({
       name: "grid",
       description:
         "The grid of the map. Is 'null' if no grid has been configured.",
       type: GraphQLMapGridType,
+    }),
+    t.field({
+      name: "showGrid",
+      type: t.NonNull(t.Boolean),
+    }),
+    t.field({
+      name: "showGridToPlayers",
+      type: t.NonNull(t.Boolean),
+    }),
+    t.field({
+      name: "tokens",
+      type: t.NonNull(t.List(t.NonNull(GraphQLMapTokenType))),
     }),
   ],
 });

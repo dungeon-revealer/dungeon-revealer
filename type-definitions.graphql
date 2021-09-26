@@ -293,19 +293,22 @@ type Map {
   mapImageUrl: String!
 
   """
-  The URL of the fog progress image.
+  The URL of the fog progress image that is only accessible to the DM.
   """
-  fogProgressUrl: String
+  fogProgressImageUrl: String
 
   """
   The URL of the fog live image, that is shown to players.
   """
-  fogLiveUrl: String
+  fogLiveImageUrl: String
 
   """
   The grid of the map. Is 'null' if no grid has been configured.
   """
   grid: MapGrid
+  showGrid: Boolean!
+  showGridToPlayers: Boolean!
+  tokens: [MapToken!]!
 }
 
 type MapGrid {
@@ -314,6 +317,24 @@ type MapGrid {
   offsetY: Float!
   columnWidth: Float!
   columnHeight: Float!
+}
+
+"""
+A token on the map.
+"""
+type MapToken {
+  id: ID!
+  x: Float!
+  y: Float!
+  rotation: Float!
+  radius: Float!
+  color: String!
+  label: String!
+  isVisibleForPlayers: Boolean!
+  isMovableByPlayers: Boolean!
+  isLocked: Boolean!
+  tokenImage: TokenImage
+  referenceId: ID
 }
 
 type Mutation {
@@ -362,6 +383,16 @@ type Mutation {
   Update the title of a map.
   """
   mapUpdateTitle(input: MapUpdateTitleInput!): MapUpdateTitleResult!
+
+  """
+  Update the grid of a map.
+  """
+  mapUpdateGrid(input: MapUpdateGridInput!): MapUpdateGridResult!
+
+  """
+  Sets the active map.
+  """
+  activeMapSet(input: ActiveMapSetInput!): Boolean
 }
 
 type LogInResult {
@@ -647,6 +678,29 @@ type MapUpdateTitleResult {
 input MapUpdateTitleInput {
   mapId: ID!
   newTitle: String!
+}
+
+type MapUpdateGridResult {
+  updatedMap: Map!
+}
+
+input MapUpdateGridInput {
+  mapId: ID!
+  grid: GridInput!
+  showGrid: Boolean!
+  showGridToPlayers: Boolean!
+}
+
+input GridInput {
+  color: String!
+  offsetX: Float!
+  offsetY: Float!
+  columnWidth: Float!
+  columnHeight: Float!
+}
+
+input ActiveMapSetInput {
+  activeMapId: ID!
 }
 
 type Subscription {

@@ -65,7 +65,6 @@ const ImportFileModal_MapCreateMutation = graphql`
       ... on MapCreateSuccess {
         __typename
         createdMap {
-          ...selectMapModal_mapFragment
           id
           title
           mapImageUrl

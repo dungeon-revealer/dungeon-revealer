@@ -42,6 +42,24 @@ export type MapGridEntity = {
   columnHeight: number;
 };
 
+export type MapTokenEntity = {
+  id: string;
+  radius: number;
+  rotation: number;
+  color: string;
+  label: string;
+  x: number;
+  y: number;
+  isVisibleForPlayers: boolean;
+  isMovableByPlayers: boolean;
+  isLocked: boolean;
+  reference: null | {
+    type: "note";
+    id: string;
+  };
+  tokenImageId: string | null;
+};
+
 const prepareGrid = (
   grid: null | undefined | { [key: string]: unknown },
   gridColor: string | null | undefined
