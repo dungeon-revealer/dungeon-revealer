@@ -1,20 +1,34 @@
 import * as React from "react";
+import graphql from "babel-plugin-relay/macro";
+import { useMutation, useQuery } from "relay-hooks";
+import { ConnectionHandler } from "relay-runtime";
 import { Modal, ModalDialogSize } from "../modal";
 import * as Icons from "../feather-icons";
 import { Input, InputGroup } from "../input";
 import * as Button from "../button";
 import * as ScrollableList from "./components/scrollable-list";
 import { buildApiUrl } from "../public-url";
+import { generateSHA256FileHash } from "../crypto";
 import { useSelectFileDialog } from "../hooks/use-select-file-dialog";
+import { selectMapModal_MapsQuery } from "./__generated__/selectMapModal_MapsQuery.graphql";
+import { selectMapModal_MapCreateMutation } from "./__generated__/selectMapModal_MapCreateMutation.graphql";
+import { selectMapModal_MapImageRequestUploadMutation } from "./__generated__/selectMapModal_MapImageRequestUploadMutation.graphql";
+import { selectMapModal_MapDeleteMutation } from "./__generated__/selectMapModal_MapDeleteMutation.graphql";
+import { selectMapModal_MapUpdateTitleMutation } from "./__generated__/selectMapModal_MapUpdateTitleMutation.graphql";
 
-const CreateNewMapButton: React.FC<
-  {
-    onSelectFile: (file: File) => void;
-  } & Pick<
-    React.ComponentProps<typeof Button.Primary>,
-    "tabIndex" | "fullWidth" | "big"
-  >
-> = ({ onSelectFile, children, ...props }) => {
+type CreateNewMapButtonProps = {
+  children: React.ReactChild;
+  onSelectFile: (file: File) => void;
+} & Pick<
+  React.ComponentProps<typeof Button.Primary>,
+  "tabIndex" | "fullWidth" | "big"
+>;
+
+const CreateNewMapButton = ({
+  onSelectFile,
+  children,
+  ...props
+}: CreateNewMapButtonProps) => {
   const [reactTreeNode, showFileDialog] = useSelectFileDialog(onSelectFile);
   return (
     <>
@@ -54,36 +68,100 @@ type ModalStates =
 type SelectMapModalProps = {
   closeModal: () => void;
   setLoadedMapId: (id: string) => void;
-  maps: any[];
   liveMapId: null | string;
   loadedMapId: null | string;
-  deleteMap: (mapId: string) => void;
-  updateMap: (
-    mapId: string,
-    data: {
-      title: string;
-    }
-  ) => void;
-  createMap: (opts: { file: File; title: string }) => void;
   canClose: boolean;
   dmPassword: string;
 };
 
-export const SelectMapModal: React.FC<SelectMapModalProps> = ({
+const SelectMapModal_MapsQuery = graphql`
+  query selectMapModal_MapsQuery {
+    maps {
+      __id
+      edges {
+        node {
+          id
+          title
+          mapImageUrl
+        }
+      }
+    }
+  }
+`;
+
+const SelectMapModal_MapImageRequestUploadMutation = graphql`
+  mutation selectMapModal_MapImageRequestUploadMutation(
+    $input: MapImageRequestUploadInput!
+  ) {
+    mapImageRequestUpload(input: $input) {
+      id
+      uploadUrl
+    }
+  }
+`;
+
+const SelectMapModal_MapCreateMutation = graphql`
+  mutation selectMapModal_MapCreateMutation($input: MapCreateInput!) {
+    mapCreate(input: $input) {
+      ... on MapCreateSuccess {
+        __typename
+        createdMap {
+          id
+          title
+          mapImageUrl
+        }
+      }
+      ... on MapCreateError {
+        __typename
+        reason
+      }
+    }
+  }
+`;
+
+const SelectMapModal_MapDeleteMutation = graphql`
+  mutation selectMapModal_MapDeleteMutation($input: MapDeleteInput!) {
+    mapDelete(input: $input)
+  }
+`;
+
+const SelectMapModal_MapUpdateTitleMutation = graphql`
+  mutation selectMapModal_MapUpdateTitleMutation($input: MapUpdateTitleInput!) {
+    mapUpdateTitle(input: $input) {
+      updatedMap {
+        id
+        title
+      }
+    }
+  }
+`;
+
+export const SelectMapModal = ({
   closeModal,
   setLoadedMapId,
-  maps,
   liveMapId,
   loadedMapId,
-  deleteMap,
-  updateMap,
-  createMap,
   canClose,
   dmPassword,
-}) => {
+}: SelectMapModalProps) => {
   const [activeMapId, setActiveMapId] = React.useState(loadedMapId);
   const [modalState, setModalState] = React.useState<ModalStates | null>(null);
   const [filter, setFilterValue] = React.useState("");
+
+  const response = useQuery<selectMapModal_MapsQuery>(SelectMapModal_MapsQuery);
+  const [mapImageRequestUpload] =
+    useMutation<selectMapModal_MapImageRequestUploadMutation>(
+      SelectMapModal_MapImageRequestUploadMutation
+    );
+  const [mapCreate] = useMutation<selectMapModal_MapCreateMutation>(
+    SelectMapModal_MapCreateMutation
+  );
+  const [mapDelete] = useMutation<selectMapModal_MapDeleteMutation>(
+    SelectMapModal_MapDeleteMutation
+  );
+  const [mapUpdateTitle] = useMutation<selectMapModal_MapUpdateTitleMutation>(
+    SelectMapModal_MapUpdateTitleMutation
+  );
 
   const onChangeFilter = React.useCallback(
     (ev) => {
@@ -92,9 +170,13 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
     [setFilterValue]
   );
 
+  const maps = response.data?.maps.edges ?? [];
+
   const activeMap = React.useMemo(
     () =>
-      activeMapId ? maps.find((map) => map.id === activeMapId) || null : null,
+      activeMapId
+        ? maps.find((map) => map.node.id === activeMapId) || null
+        : null,
     [activeMapId, maps]
   );
 
@@ -158,18 +240,19 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                     .filter(
                       (item) =>
                         filter === "" ||
-                        item.title.toLowerCase().includes(filter)
+                        item.node.title.toLowerCase().includes(filter)
                     )
                     .map((item) => (
-                      <ScrollableList.ListItem key={item.id}>
+                      <ScrollableList.ListItem key={item.node.id}>
                         <ScrollableList.ListItemButton
                           tabIndex={1}
-                          isActive={item.id === activeMapId}
+                          isActive={item.node.id === activeMapId}
                           onClick={() => {
-                            setActiveMapId(item.id);
+                            setActiveMapId(item.node.id);
                           }}
                         >
-                          {item.title} {item.id === liveMapId ? "(live)" : null}
+                          {item.node.title}{" "}
+                          {item.node.id === liveMapId ? "(live)" : null}
                         </ScrollableList.ListItemButton>
                       </ScrollableList.ListItem>
                     ))}
@@ -182,8 +265,10 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                       beforeCreateMap(file);
                     }}
                   >
-                    <Icons.PlusIcon height={20} width={20} />{" "}
-                    <span>Create New Map</span>
+                    <>
+                      <Icons.PlusIcon height={20} width={20} />{" "}
+                      <span>Create New Map</span>
+                    </>
                   </CreateNewMapButton>
                 </Modal.Footer>
               </Modal.Aside>
@@ -208,7 +293,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {activeMap.title}
+                    {activeMap.node.title}
                   </h3>
                   <Button.Tertiary
                     iconOnly
@@ -216,7 +301,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                     onClick={() => {
                       setModalState({
                         type: ModalType.EDIT_TITLE,
-                        data: { mapId: activeMap.id },
+                        data: { mapId: activeMap.node.id },
                       });
                     }}
                   >
@@ -234,7 +319,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                   <img
                     src={buildApiUrl(
                       // prettier-ignore
-                      `/map/${activeMap.id}/map?authorization=${encodeURIComponent(dmPassword)}`
+                      `/map/${activeMap.node.id}/map?authorization=${encodeURIComponent(dmPassword)}`
                     )}
                     style={{ width: "100%" }}
                   />
@@ -254,7 +339,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                       onClick={() => {
                         setModalState({
                           type: ModalType.DELETE_MAP,
-                          data: { mapId: activeMap.id },
+                          data: { mapId: activeMap.node.id },
                         });
                       }}
                     >
@@ -266,7 +351,7 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                     <Button.Primary
                       tabIndex={1}
                       onClick={() => {
-                        setLoadedMapId(activeMap.id);
+                        setLoadedMapId(activeMap.node.id);
                       }}
                     >
                       <Icons.CheckIcon height={20} width={20} />
@@ -307,8 +392,10 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
                         beforeCreateMap(file);
                       }}
                     >
-                      <Icons.MapIcon size={24} />
-                      <span>Create a new Map</span>
+                      <>
+                        <Icons.MapIcon size={24} />
+                        <span>Create a new Map</span>
+                      </>
                     </CreateNewMapButton>
                   </>
                 )}
@@ -321,12 +408,42 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
         modalState.type === ModalType.EDIT_TITLE ? (
           <ChangeMapTitleModal
             closeModal={() => setModalState(null)}
-            updateMap={(...args) => updateMap(modalState.data.mapId, ...args)}
+            updateMapTitle={(newTitle) =>
+              mapUpdateTitle({
+                variables: {
+                  input: {
+                    mapId: modalState.data.mapId,
+                    newTitle,
+                  },
+                },
+              })
+            }
           />
         ) : modalState.type === ModalType.DELETE_MAP ? (
           <DeleteMapModal
             closeModal={() => setModalState(null)}
-            deleteMap={() => deleteMap(modalState.data.mapId)}
+            deleteMap={() =>
+              mapDelete({
+                variables: {
+                  input: {
+                    mapId: modalState.data.mapId,
+                  },
+                },
+                updater: (store) => {
+                  const mapsConnection = store.get(response.data!.maps.__id);
+                  if (mapsConnection == null) {
+                    return;
+                  }
+                  ConnectionHandler.deleteNode(
+                    mapsConnection,
+                    modalState.data.mapId
+                  );
+                },
+                onCompleted: () => {
+                  setModalState(null);
+                },
+              })
+            }
           />
         ) : modalState.type === ModalType.CREATE_MAP ? (
           <CreateNewMapModal
@@ -334,9 +451,79 @@ export const SelectMapModal: React.FC<SelectMapModalProps> = ({
               setModalState(null);
             }}
             file={modalState.data.file}
-            createMap={(title) =>
-              createMap({ file: modalState.data.file, title })
-            }
+            createMap={async (title) => {
+              const hash = await generateSHA256FileHash(modalState.data.file);
+              // 1. request file upload
+              const result = await mapImageRequestUpload({
+                variables: {
+                  input: {
+                    sha256: hash,
+                    extension: modalState.data.file.name.split(".").pop() ?? "",
+                  },
+                },
+              });
+
+              // 2. upload file
+              const uploadResponse = await fetch(
+                result.mapImageRequestUpload.uploadUrl,
+                {
+                  method: "PUT",
+                  body: modalState.data.file,
+                }
+              );
+
+              if (uploadResponse.status !== 200) {
+                const body = await uploadResponse.text();
+                throw new Error(
+                  "Received invalid response code: " +
+                    uploadResponse.status +
+                    "\n\n" +
+                    body
+                );
+              }
+
+              // 3. create map
+              await mapCreate({
+                variables: {
+                  input: {
+                    title,
+                    mapImageUploadId: result.mapImageRequestUpload.id,
+                  },
+                },
+                updater: (store, result) => {
+                  if (result.mapCreate.__typename !== "MapCreateSuccess") {
+                    return;
+                  }
+
+                  const mapsConnection = store.get(response.data!.maps.__id);
+                  if (mapsConnection == null) {
+                    return;
+                  }
+
+                  const createdMap = store.get(result.mapCreate.createdMap.id);
+
+                  if (createdMap == null) {
+                    return;
+                  }
+
+                  const edge = ConnectionHandler.createEdge(
+                    store,
+                    mapsConnection,
+                    createdMap,
+                    "Map"
+                  );
+
+                  ConnectionHandler.insertEdgeAfter(mapsConnection, edge);
+                },
+                onCompleted: (response) => {
+                  if (response.mapCreate.__typename === "MapCreateSuccess") {
+                    setActiveMapId(response.mapCreate.createdMap.id);
+                  }
+                },
+              });
+
+              setModalState(null);
+            }}
           />
         ) : null
       ) : null}
@@ -351,11 +538,15 @@ const extractDefaultTitleFromFileName = (fileName: string) => {
   return parts.join(".");
 };
 
-const CreateNewMapModal: React.FC<{
+const CreateNewMapModal = ({
+  closeModal,
+  file,
+  createMap,
+}: {
   closeModal: () => void;
   file: File;
   createMap: (title: string) => void;
-}> = ({ closeModal, file, createMap }) => {
+}) => {
   const [inputValue, setInputValue] = React.useState(() =>
     extractDefaultTitleFromFileName(file.name)
   );
@@ -417,8 +608,8 @@ const CreateNewMapModal: React.FC<{
 
 const ChangeMapTitleModal: React.FC<{
   closeModal: () => void;
-  updateMap: (opts: { title: string }) => void;
-}> = ({ closeModal, updateMap }) => {
+  updateMapTitle: (newTitle: string) => void;
+}> = ({ closeModal, updateMapTitle: updateMap }) => {
   const [inputValue, setInputValue] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const onChangeInputValue = React.useCallback(
@@ -432,7 +623,7 @@ const ChangeMapTitleModal: React.FC<{
       setError("Please enter a map name.");
       return;
     }
-    updateMap({ title: inputValue });
+    updateMap(inputValue);
     closeModal();
   }, [inputValue, closeModal, updateMap, setError]);
 
@@ -495,7 +686,6 @@ const DeleteMapModal: React.FC<{
                   type="button"
                   onClick={() => {
                     deleteMap();
-                    closeModal();
                   }}
                 >
                   Delete

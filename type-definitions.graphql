@@ -8,6 +8,11 @@ directive @live(
   Whether the query should be live or not.
   """
   if: Boolean = true
+
+  """
+  Propose a desired throttle interval ot the server in order to receive updates to at most once per "throttle" milliseconds. The server must not accept this value.
+  """
+  throttle: Int
 ) on QUERY
 
 type DiceRollOperatorNode implements DiceRollDetail {
@@ -50,6 +55,9 @@ type DiceRollCloseParenNode implements DiceRollDetail {
   content: String!
 }
 
+"""
+A chat message
+"""
 type UserChatMessage implements ChatMessage & TextChatMessage {
   id: ID!
   authorName: String!
@@ -131,6 +139,31 @@ type Query {
     sourceImageSha256: String
     titleFilter: String
   ): TokenImageConnection
+
+  """
+  A connection of all available maps within the library
+  """
+  maps(
+    """
+    The amount of items to fetch.
+    """
+    first: Int
+
+    """
+    Cursor after which items should be fetched.
+    """
+    after: String
+  ): MapsConnection!
+
+  """
+  The active map that is shared with the players.
+  """
+  activeMap: Map
+
+  """
+  Get a map by id.
+  """
+  map(id: ID!): Map
   node(id: ID!): Node
 }
 
@@ -218,10 +251,90 @@ type TokenImageEdge {
   node: TokenImage!
 }
 
+"""
+A entity that can be attached to an image.
+"""
 type TokenImage implements Node {
   id: ID!
   title: String!
   url: String!
+}
+
+"""
+A connection of maps.
+"""
+type MapsConnection {
+  edges: [MapEdge!]!
+  pageInfo: PageInfo!
+}
+
+type MapEdge {
+  cursor: String!
+  node: Map!
+}
+
+"""
+A map entity.
+"""
+type Map {
+  """
+  The unique ID of a map.
+  """
+  id: ID!
+
+  """
+  The title of the map.
+  """
+  title: String!
+
+  """
+  The URL of the map image.
+  """
+  mapImageUrl: String!
+
+  """
+  The URL of the fog progress image that is only accessible to the DM.
+  """
+  fogProgressImageUrl: String
+
+  """
+  The URL of the fog live image, that is shown to players.
+  """
+  fogLiveImageUrl: String
+
+  """
+  The grid of the map. Is 'null' if no grid has been configured.
+  """
+  grid: MapGrid
+  showGrid: Boolean!
+  showGridToPlayers: Boolean!
+  tokens: [MapToken!]!
+}
+
+type MapGrid {
+  color: String!
+  offsetX: Float!
+  offsetY: Float!
+  columnWidth: Float!
+  columnHeight: Float!
+}
+
+"""
+A token on the map.
+"""
+type MapToken {
+  id: ID!
+  x: Float!
+  y: Float!
+  rotation: Float!
+  radius: Float!
+  color: String!
+  label: String!
+  isVisibleForPlayers: Boolean!
+  isMovableByPlayers: Boolean!
+  isLocked: Boolean!
+  tokenImage: TokenImage
+  referenceId: ID
 }
 
 type Mutation {
@@ -243,7 +356,43 @@ type Mutation {
   tokenImageCreate(input: TokenImageCreateInput!): TokenImageCreateResult!
   mapTokenUpdateMany(input: MapTokenUpdateManyInput!): Boolean
   mapTokenRemoveMany(input: MapTokenRemoveManyInput!): Boolean
+
+  """
+  Add token to a map
+  """
   mapTokenAddMany(input: MapTokenAddManyInput!): Boolean
+
+  """
+  Request the upload of a token image.
+  """
+  mapImageRequestUpload(
+    input: MapImageRequestUploadInput!
+  ): MapImageRequestUploadResult!
+
+  """
+  Create a new map.
+  """
+  mapCreate(input: MapCreateInput!): MapCreateResult!
+
+  """
+  Delete a map.
+  """
+  mapDelete(input: MapDeleteInput!): Boolean!
+
+  """
+  Update the title of a map.
+  """
+  mapUpdateTitle(input: MapUpdateTitleInput!): MapUpdateTitleResult!
+
+  """
+  Update the grid of a map.
+  """
+  mapUpdateGrid(input: MapUpdateGridInput!): MapUpdateGridResult!
+
+  """
+  Ping a point on the map.
+  """
+  mapPing(input: MapPingInput!): Boolean
 }
 
 type LogInResult {
@@ -340,6 +489,9 @@ union RequestImageTokenUploadResult =
     RequestTokenImageUploadDuplicate
   | RequestTokenImageUploadUrl
 
+"""
+A image with the given SHA-256 does already exist.
+"""
 type RequestTokenImageUploadDuplicate {
   """
   The TokenImage that already exists for the given hash.
@@ -380,7 +532,7 @@ input TokenImageCreateInput {
   title: String!
 
   """
-  The SHA256 of the file that is going to be uploaded in hexadecimal form.
+  The SHA256 of the file that has been uploaded in hexadecimal form.
   """
   sha256: String!
 
@@ -407,6 +559,9 @@ input MapTokenUpdateManyInput {
   properties: MapTokenUpdateManyPropertiesInput!
 }
 
+"""
+The properties on the tokens that should be updated. Properties that are not provided will remain untouched.
+"""
 input MapTokenUpdateManyPropertiesInput {
   """
   Color to be updated. Will not be updated if null is provided.
@@ -464,6 +619,92 @@ input MapTokenAddManyTokenInput {
   tokenImageId: ID
 }
 
+type MapImageRequestUploadResult {
+  """
+  The id of the map image upload request.
+  """
+  id: ID!
+
+  """
+  The URL that should be used for uploading the image
+  """
+  uploadUrl: String!
+}
+
+input MapImageRequestUploadInput {
+  """
+  The SHA256 of the file that is going to be uploaded in hexadecimal form.
+  """
+  sha256: String!
+
+  """
+  The extension of the file thats is going to be uploaded.
+  """
+  extension: String!
+}
+
+union MapCreateResult = MapCreateError | MapCreateSuccess
+
+type MapCreateError {
+  """
+  The reason on why the map creation failed.
+  """
+  reason: String
+}
+
+type MapCreateSuccess {
+  createdMap: Map!
+}
+
+input MapCreateInput {
+  """
+  The id of the map upload request received via 'Mutation.mapImageRequestUpload'.
+  """
+  mapImageUploadId: ID!
+  title: String!
+}
+
+input MapDeleteInput {
+  """
+  The id of the map that should be deleted.
+  """
+  mapId: String!
+}
+
+type MapUpdateTitleResult {
+  updatedMap: Map!
+}
+
+input MapUpdateTitleInput {
+  mapId: ID!
+  newTitle: String!
+}
+
+type MapUpdateGridResult {
+  updatedMap: Map!
+}
+
+input MapUpdateGridInput {
+  mapId: ID!
+  grid: GridInput!
+  showGrid: Boolean!
+  showGridToPlayers: Boolean!
+}
+
+input GridInput {
+  color: String!
+  offsetX: Float!
+  offsetY: Float!
+  columnWidth: Float!
+  columnHeight: Float!
+}
+
+input MapPingInput {
+  mapId: ID!
+  x: Float!
+  y: Float!
+}
+
 type Subscription {
   userUpdate: UserUpdateSubscription!
   chatMessagesAdded: ChatMessagesAddedSubscription!
@@ -472,6 +713,7 @@ type Subscription {
     endCursor: String!
     hasNextPage: Boolean!
   ): NotesUpdates!
+  mapPing(mapId: ID!): MapPing!
 }
 
 union UserUpdateSubscription =
@@ -497,6 +739,9 @@ type ChatMessagesAddedSubscription {
   messages: [ChatMessage!]!
 }
 
+"""
+Describes update instructions for the NoteConnection type.
+"""
 type NotesUpdates {
   """
   A node that was added to the connection.
@@ -514,6 +759,9 @@ type NotesUpdates {
   removedNoteId: ID
 }
 
+"""
+Describes where a edge should be inserted inside a NotesConnection.
+"""
 type NotesConnectionEdgeInsertionUpdate {
   """
   The cursor of the item before which the node should be inserted.
@@ -524,4 +772,10 @@ type NotesConnectionEdgeInsertionUpdate {
   The edge that should be inserted.
   """
   edge: NoteEdge
+}
+
+type MapPing {
+  id: ID!
+  x: Float!
+  y: Float!
 }

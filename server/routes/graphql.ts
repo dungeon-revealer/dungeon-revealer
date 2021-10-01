@@ -1,6 +1,7 @@
 import { Router, static as expressStatic } from "express";
 import path from "path";
 import fs from "fs-extra";
+import { EventEmitter } from "events";
 import type { Server as IOServer, Socket as IOSocket } from "socket.io";
 import { flow } from "fp-ts/lib/function";
 import { schema, GraphQLContextType } from "../graphql";
@@ -14,6 +15,7 @@ import type {
 import { ExecutionResult, subscribe as originalSubscribe } from "graphql";
 import { registerSocketIOGraphQLServer } from "@n1ru4l/socket-io-graphql-server";
 import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
+import { applyLiveQueryJSONDiffPatchGenerator } from "@n1ru4l/graphql-live-query-patch-jsondiffpatch";
 import { createSplashImageState } from "../splash-image-state";
 import { createPubSub } from "../pubsub";
 import { NotesUpdatesPayload } from "../notes-lib";
@@ -21,6 +23,8 @@ import { createTokenImageUploadRegister } from "../token-image-lib";
 import * as AsyncIteratorUtil from "../util/async-iterator";
 import { isAsyncIterable } from "@n1ru4l/push-pull-async-iterable-iterator";
 import type { Maps } from "../maps";
+import { createMapImageUploadRegister, createMapPubSub } from "../map-lib";
+import type { Settings } from "../settings";
 
 type MaybePromise<T> = Promise<T> | T;
 
@@ -32,6 +36,8 @@ type Dependencies = {
   fileStoragePath: string;
   publicUrl: string;
   maps: Maps;
+  settings: Settings;
+  emitter: EventEmitter;
 };
 
 export default ({
@@ -41,6 +47,8 @@ export default ({
   fileStoragePath,
   publicUrl,
   maps,
+  settings,
+  emitter,
 }: Dependencies) => {
   const chat = createChat();
   const user = createUser({
@@ -50,6 +58,7 @@ export default ({
       chat.addOperationalMessage({ content: `**${name}** disconnected.` }),
   });
   const splashImageState = createSplashImageState();
+  const mapPubSub = createMapPubSub();
 
   const router = Router();
 
@@ -63,8 +72,13 @@ export default ({
 
   const liveQueryStore = new InMemoryLiveQueryStore();
 
+  emitter.on("invalidate", (ev) => {
+    liveQueryStore.invalidate(ev);
+  });
+
   const notesUpdates = createPubSub<NotesUpdatesPayload>();
   const tokenImageUploadRegister = createTokenImageUploadRegister();
+  const mapImageUploadRegister = createMapImageUploadRegister();
 
   const graphQLErrorLogger = (result: ExecutionResult): ExecutionResult => {
     if (result.errors) {
@@ -95,7 +109,8 @@ export default ({
 
   const execute = flow(
     liveQueryStore.execute,
-    applyExecuteMiddleware(graphQLErrorLogger)
+    applyExecuteMiddleware(graphQLErrorLogger),
+    applyLiveQueryJSONDiffPatchGenerator
   );
 
   const subscribe = flow(
@@ -106,32 +121,38 @@ export default ({
   const socketIOGraphQLServer = registerSocketIOGraphQLServer({
     socketServer,
     isLazy: true,
-    getParameter: ({ socket }) => ({
-      execute,
-      // @ts-ignore
-      subscribe,
-      graphQLExecutionParameter: {
-        schema,
-        contextValue: {
-          chat,
-          user,
-          db,
-          session: getSession(socket),
-          liveQueryStore,
-          splashImageState,
-          socket,
-          socketServer,
-          notesUpdates,
-          fileStoragePath,
-          tokenImageUploadRegister,
-          publicUrl,
-          maps,
-        } as GraphQLContextType,
-      },
-    }),
+    getParameter: ({ socket }) => {
+      const contextValue: GraphQLContextType = {
+        chat,
+        user,
+        db,
+        session: getSession(socket),
+        liveQueryStore,
+        splashImageState,
+        socket,
+        socketServer,
+        notesUpdates,
+        fileStoragePath,
+        tokenImageUploadRegister,
+        publicUrl,
+        maps,
+        mapImageUploadRegister,
+        settings,
+        mapPubSub,
+      };
+
+      return {
+        execute,
+        subscribe: subscribe as any,
+        graphQLExecutionParameter: {
+          schema,
+          contextValue: contextValue,
+        },
+      };
+    },
   });
 
-  // TODO: this should definetly be moved somewhere else
+  // TODO: this should definitely be moved somewhere else
   router.put("/files/(*)", (req, res) => {
     const filePath = req.params["0"];
     if (filePath.includes("..")) {
@@ -140,6 +161,20 @@ export default ({
     if (filePath.startsWith("token-image/")) {
       const id = filePath.replace("token-image/", "").split(".")[0];
       if (tokenImageUploadRegister.has(id)) {
+        const targetPath = path.join(fileStoragePath, filePath);
+        fs.mkdirpSync(path.dirname(targetPath));
+        const writeStream = fs.createWriteStream(
+          path.join(fileStoragePath, filePath)
+        );
+        req.pipe(writeStream);
+        writeStream.on("close", () => {
+          res.send("Done.");
+        });
+        return;
+      }
+    } else if (filePath.startsWith("map-image/")) {
+      const id = filePath.replace("map-image/", "").split(".")[0];
+      if (mapImageUploadRegister.has(id)) {
         const targetPath = path.join(fileStoragePath, filePath);
         fs.mkdirpSync(path.dirname(targetPath));
         const writeStream = fs.createWriteStream(

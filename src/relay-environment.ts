@@ -10,6 +10,7 @@ import {
 import { Socket as IOSocket } from "socket.io-client";
 import { createSocketIOGraphQLClient } from "@n1ru4l/socket-io-graphql-client";
 import { applyAsyncIterableIteratorToSink } from "@n1ru4l/push-pull-async-iterable-iterator";
+import { applyLiveQueryJSONDiffPatch } from "@n1ru4l/graphql-live-query-patch-jsondiffpatch";
 import { Variables } from "react-relay";
 
 export const createEnvironment = (socket: IOSocket) => {
@@ -24,11 +25,13 @@ export const createEnvironment = (socket: IOSocket) => {
 
     return Observable.create((sink) =>
       applyAsyncIterableIteratorToSink(
-        networkInterface.execute({
-          operation,
-          variables,
-          operationName: name,
-        }),
+        applyLiveQueryJSONDiffPatch(
+          networkInterface.execute({
+            operation,
+            variables,
+            operationName: name,
+          })
+        ),
         sink
       )
     );

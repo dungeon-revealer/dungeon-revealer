@@ -20,12 +20,12 @@ export const decodeImageId = flow(
   Relay.decodeId,
   E.chainW(([, type, id]) =>
     type === TOKEN_IMAGE_URI
-      ? E.right(id)
+      ? E.right(parseInt(id, 10))
       : E.left(new Error(`Invalid type '${type}'.`))
   )
 );
 
-const GraphQLTokenImageType = t.objectType<lib.TokenImageType>({
+export const GraphQLTokenImageType = t.objectType<lib.TokenImageType>({
   name: "TokenImage",
   description: "A entity that can be attached to an image.",
   fields: () => [
@@ -239,7 +239,7 @@ const GraphQLTokenImageCreateInput = t.inputObjectType({
     sha256: {
       type: t.NonNullInput(t.String),
       description:
-        "The SHA256 of the file that is going to be uploaded in hexadecimal form.",
+        "The SHA256 of the file that has been uploaded in hexadecimal form.",
     },
     sourceSha256: {
       type: t.String,
@@ -268,7 +268,7 @@ const GraphQLTokenImageCreateErrorType = t.objectType({
     t.field({
       name: "reason",
       type: t.NonNull(t.String),
-      resolve: () => "A unexpected error occured.",
+      resolve: () => "A unexpected error occurred.",
     }),
   ],
 });

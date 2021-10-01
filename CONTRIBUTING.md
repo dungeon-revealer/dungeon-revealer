@@ -1,5 +1,7 @@
 # Contributing
 
+This document will help you setting up this project on your machine for development. If you just want to use dungeon-revealer we recommend using the docker images or prebuilt binaries. [See the release section for more information](https://github.com/dungeon-revealer/dungeon-revealer/releases).
+
 ## Required Software
 
 Make sure you have the following software installed:
@@ -9,27 +11,59 @@ Make sure you have the following software installed:
 
 ## Setting up the project
 
-Install dependencies:
+These are the most important commands for getting the dev server up and running.
 
-- `npm install`
+### Install dependencies
 
-Build the backend & frontend:
+```bash
+npm install
+```
 
-- `npm run build`
+### Build backend and frontend
+
+```bash
+npm run build
+```
+
+### Run built application
+
+```bash
+npm run start
+```
+
+### Run application in dev mode
+
+The server and frontend will be reloaded/restarted once the code has been modified.
+
+Run the backend server:
+
+```bash
+npm run start:server:dev
+```
 
 Run the react development server:
 
-- `npm run start:frontend:dev` (visit `localhost:3001`)
+```bash
+npm run start:frontend:dev
+```
 
-Run the backend:
+visit `http://localhost:4000`
 
-- `npm run start:server:dev` (available on `localhost:3000`)
+## Compile executables for distribution
 
-Compile executables:
+We use caxa for bundling the built project as a binary. The built binaries can be found in the `bin` folder.
 
-- `npm run compile:x64` for x64 machines (most computers).
-- `npm run compile:armv7` for armv7 machines (Raspberry Pi and other single board computers).
-- `npm run compile:arm64` for armv64 machines
+### Unix and darwin
+
+```bash
+npm run compile
+```
+
+### Windows
+
+```bash
+npm run compile:win
+```
 
 The executables are located in the bin folder.
 

@@ -1,6 +1,6 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
-import { useMutation } from "relay-hooks";
+import { useFragment, useMutation } from "relay-hooks";
 import { Box, Menu, MenuItem, MenuList } from "@chakra-ui/react";
 import { MapTokenEntity } from "./map-typings";
 import { useContextMenu } from "./map-context-menu";
@@ -10,6 +10,7 @@ import {
   mapContextMenuRendererMapTokenAddManyMutation,
   MapTokenAddManyTokenInput,
 } from "./__generated__/mapContextMenuRendererMapTokenAddManyMutation.graphql";
+import { mapContextMenuRenderer_MapFragment$key } from "./__generated__/mapContextMenuRenderer_MapFragment.graphql";
 
 const MapContextMenuRendererMapTokenRemoveManyMutation = graphql`
   mutation mapContextMenuRendererMapTokenRemoveManyMutation(
@@ -27,10 +28,55 @@ const MapContextMenuRendererMapTokenAddManyMutation = graphql`
   }
 `;
 
+const MapFragment = graphql`
+  fragment mapContextMenuRenderer_MapFragment on Map {
+    id
+    tokens {
+      id
+      x
+      y
+      rotation
+      color
+      label
+      radius
+      isVisibleForPlayers
+      isMovableByPlayers
+      isLocked
+      tokenImage {
+        id
+      }
+      referenceId
+    }
+  }
+`;
+
 export const ContextMenuRenderer = (props: {
-  currentMapId: string;
-  getTokens: (tokenIds: Set<string>) => Map<string, MapTokenEntity>;
+  map: mapContextMenuRenderer_MapFragment$key;
 }) => {
+  const map = useFragment(MapFragment, props.map);
+
+  const getTokens = React.useCallback(
+    (tokenIds: Set<string>) => {
+      const hits = new Map<string, MapTokenEntity>();
+      for (const token of map.tokens) {
+        if (tokenIds.has(token.id)) {
+          hits.set(token.id, {
+            ...token,
+            tokenImageId: token.tokenImage?.id ?? null,
+            reference: token.referenceId
+              ? {
+                  id: token.referenceId,
+                  type: "note",
+                }
+              : null,
+          });
+        }
+      }
+      return hits;
+    },
+    [map.tokens]
+  );
+
   const { state, copyContent, showContextMenu, setCopyContent } =
     useContextMenu();
   const [selectedItems, clearSelectedItems] = useSelectedItems();
@@ -81,7 +127,7 @@ export const ContextMenuRenderer = (props: {
         mapTokenAddMany({
           variables: {
             input: {
-              mapId: props.currentMapId,
+              mapId: map.id,
               tokens,
             },
           },
@@ -108,7 +154,7 @@ export const ContextMenuRenderer = (props: {
               <MenuItem
                 onClick={() => {
                   const tokenIds = new Set(selectedItems.keys());
-                  const tokens = props.getTokens(tokenIds);
+                  const tokens = getTokens(tokenIds);
                   setCopyContent(new Set(tokens.values()));
                 }}
                 isDisabled={selectedItems.size == 0}
@@ -121,7 +167,7 @@ export const ContextMenuRenderer = (props: {
                   mapTokenDeleteMany({
                     variables: {
                       input: {
-                        mapId: props.currentMapId,
+                        mapId: map.id,
                         tokenIds: Array.from(selectedItems.keys()),
                       },
                     },
@@ -137,7 +183,7 @@ export const ContextMenuRenderer = (props: {
               <MenuItem
                 onClick={() => {
                   if (state.target?.id) {
-                    const tokens = props.getTokens(new Set([state.target.id]));
+                    const tokens = getTokens(new Set([state.target.id]));
                     setCopyContent(new Set(tokens.values()));
                   }
                 }}
@@ -151,7 +197,7 @@ export const ContextMenuRenderer = (props: {
                     mapTokenDeleteMany({
                       variables: {
                         input: {
-                          mapId: props.currentMapId,
+                          mapId: map.id,
                           tokenIds: [state.target.id],
                         },
                       },

@@ -205,11 +205,10 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
   );
 };
 
-export const ChatPositionContext =
-  React.createContext<{
-    width: number;
-    x: SpringValue<number>;
-  } | null>(null);
+export const ChatPositionContext = React.createContext<{
+  width: number;
+  x: SpringValue<number>;
+} | null>(null);
 
 const DiceRollNotes = React.lazy(() =>
   import("./chat/dice-roll-notes").then((mod) => ({

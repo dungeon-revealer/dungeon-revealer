@@ -4,6 +4,7 @@ import type { createChat } from "../chat";
 import type { createUser } from "../user";
 import type { NotesUpdates } from "../notes-lib";
 import type { TokenImageUploadRegister } from "../token-image-lib";
+import type { MapImageUploadRegister, MapPub } from "../map-lib";
 
 import type { SocketSessionRecord } from "../socket-session-store";
 import type { Database } from "sqlite";
@@ -11,6 +12,7 @@ import type { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store"
 import { GraphQLLiveDirective } from "@n1ru4l/graphql-live-query";
 import type { SplashImageState } from "../splash-image-state";
 import type { Maps } from "../maps";
+import type { Settings } from "../settings";
 
 export type GraphQLContextType = {
   chat: ReturnType<typeof createChat>;
@@ -24,12 +26,16 @@ export type GraphQLContextType = {
   notesUpdates: NotesUpdates;
   publicUrl: string;
   tokenImageUploadRegister: TokenImageUploadRegister;
+  mapImageUploadRegister: MapImageUploadRegister;
   fileStoragePath: string;
   maps: Maps;
+  settings: Settings;
+  mapPubSub: MapPub;
 };
 
 export const t = createTypesFactory<GraphQLContextType>();
 
+import { specifiedDirectives } from "graphql";
 import * as RelaySpecModule from "./modules/relay-spec";
 import * as DiceRollerChatModule from "./modules/dice-roller-chat";
 import * as UserModule from "./modules/user";
@@ -40,7 +46,7 @@ import { pipe } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
 import * as RT from "fp-ts/lib/ReaderTask";
 
-const nodeField = t.field( {
+const nodeField = t.field({
   name: "node",
   type: RelaySpecModule.GraphQLNodeInterface,
   args: {
@@ -105,5 +111,5 @@ export const schema = buildGraphQLSchema({
   subscription: Subscription,
   mutation: Mutation,
   types: [...DiceRollerChatModule.objectTypesNotDirectlyExposedOnFields],
-  directives: [GraphQLLiveDirective],
+  directives: [...specifiedDirectives, GraphQLLiveDirective],
 });

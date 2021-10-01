@@ -32,7 +32,7 @@ const mapMap = (map) => {
   };
 };
 
-module.exports = ({ roleMiddleware, maps, settings, io }) => {
+module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
   const router = express.Router();
 
   router.get("/map/:id/map", roleMiddleware.pc, (req, res) => {
@@ -152,6 +152,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
       maps
         .updateFogProgressImage(req.params.id, tmpFile)
         .then((map) => {
+          emitter.emit("invalidate", `Map:${map.id}`);
           res.status(200).json({
             error: null,
             data: mapMap(map),
@@ -167,7 +168,7 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
 
     req.pipe(req.busboy);
 
-    req.busboy.once("file", (fieldname, file, filename) => {
+    req.busboy.once("file", (_, file) => {
       writeStream = fs.createWriteStream(tmpFile);
       file.pipe(writeStream);
     });
@@ -182,32 +183,11 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
         .updateFogLiveImage(req.params.id, tmpFile)
         .then((map) => {
           settings.set("currentMapId", map.id);
+          emitter.emit("invalidate", "Query.activeMap");
           res.json({ error: null, data: mapMap(map) });
-          io.emit("map update", {
-            map: mapMap(map),
-          });
         })
         .catch(handleUnexpectedError(res));
     });
-  });
-
-  router.delete("/map/:id", roleMiddleware.dm, (req, res) => {
-    const map = maps.get(req.params.id);
-    if (!map) {
-      return res.send(404);
-    }
-
-    maps
-      .deleteMap(map.id)
-      .then(() => {
-        res.status(200).json({
-          error: null,
-          data: {
-            deletedMapId: map.id,
-          },
-        });
-      })
-      .catch(handleUnexpectedError(res));
   });
 
   router.get("/map", roleMiddleware.pc, (req, res) => {
@@ -220,38 +200,20 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
     });
   });
 
-  router.post("/map", roleMiddleware.dm, (req, res) => {
-    const tmpFile = getTmpFile();
-    let writeStream = null;
-    let mapTitle = "New Map";
-    let fileExtension = null;
+  router.get("/map/:id", roleMiddleware.dm, async (req, res) => {
+    const map = maps.get(req.params.id);
+    if (!map) {
+      return res.status(404).json({
+        data: null,
+        error: {
+          message: `Map with id '${req.params.id}' does not exist.`,
+          code: "ERR_MAP_DOES_NOT_EXIST",
+        },
+      });
+    }
 
-    req.pipe(req.busboy);
-
-    req.busboy.once("file", (fieldname, file, filename) => {
-      fileExtension = parseFileExtension(filename);
-      writeStream = fs.createWriteStream(tmpFile);
-      file.pipe(writeStream);
-    });
-
-    req.busboy.on("field", (fieldname, value) => {
-      if (fieldname === "title") {
-        mapTitle = String(value);
-      }
-    });
-
-    req.once("end", () => {
-      if (writeStream !== null) return;
-      res.status(422).json({ data: null, error: "No file was sent." });
-    });
-
-    req.busboy.once("finish", () => {
-      maps
-        .createMap({ title: mapTitle, filePath: tmpFile, fileExtension })
-        .then((map) => {
-          res.status(200).json({ error: null, data: { map: mapMap(map) } });
-        })
-        .catch(handleUnexpectedError(res));
+    return res.status(200).json({
+      data: map,
     });
   });
 
@@ -355,17 +317,14 @@ module.exports = ({ roleMiddleware, maps, settings, io }) => {
 
     maps
       .updateToken(map.id, req.params.tokenId, updates)
-      .then(({ token, map }) => {
+      .then(({ map }) => {
         res.json({
           error: null,
           data: {
             map: mapMap(map),
           },
         });
-        io.emit(`token:mapId:${map.id}`, {
-          type: "update",
-          data: { tokens: [mapToken(token)] },
-        });
+        emitter.emit("invalidate", `Map:${map.id}`);
       })
       .catch(handleUnexpectedError(res));
   });
