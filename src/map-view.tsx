@@ -1708,13 +1708,22 @@ export const MapView = (props: {
     return () => cleanupMapImage.current();
   }, [map.mapImageUrl]);
 
+  const initialFog = React.useRef<boolean>(false);
+
   React.useEffect(() => {
-    const fogImageTask =
-      isDungeonMaster && map.fogProgressImageUrl != null
-        ? loadImage(map.fogProgressImageUrl)
-        : map.fogLiveImageUrl != null
-        ? loadImage(map.fogLiveImageUrl)
-        : null;
+    let fogImageTask: ReturnType<typeof loadImage> | null = null;
+    if (isDungeonMaster) {
+      if (initialFog.current === true) {
+        return;
+      }
+      const url = map.fogProgressImageUrl ?? map.fogLiveImageUrl;
+      if (url) {
+        fogImageTask = loadImage(url);
+      }
+      initialFog.current = true;
+    } else if (map.fogLiveImageUrl) {
+      fogImageTask = loadImage(map.fogLiveImageUrl);
+    }
 
     if (fogImageTask === null) {
       return;
