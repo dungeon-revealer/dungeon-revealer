@@ -47,7 +47,7 @@ import {
   UpdateTokenContext,
   IsDungeonMasterContext,
 } from "../map-view";
-import { ConditionalWrap, loadImage } from "../util";
+import { ConditionalWrap } from "../util";
 import { BrushShape, FogMode } from "../canvas-draw-utilities";
 import {
   AreaSelectContext,
@@ -56,10 +56,9 @@ import {
 } from "../map-tools/area-select-map-tool";
 import { useOnClickOutside } from "../hooks/use-on-click-outside";
 import { useAsyncClipboardApi } from "../hooks/use-async-clipboard-api";
-import { MapEntity, MapTokenEntity, MarkedAreaEntity } from "../map-typings";
+import { MapTokenEntity } from "../map-typings";
 import { useConfirmationDialog } from "../hooks/use-confirmation-dialog";
 import { applyFogRectangle } from "../canvas-draw-utilities";
-import { MapGridEntity } from "../map-typings";
 import { useResetState } from "../hooks/use-reset-state";
 import * as Button from "../button";
 import { useDebounceCallback } from "../hooks/use-debounce-callback";
@@ -91,7 +90,6 @@ import {
   SharedTokenStateStoreContext,
 } from "../shared-token-state";
 import { SharedTokenMenu } from "../shared-token-menu";
-import { randomHash } from "../utilities/random-hash";
 import { dmMap_DMMapFragment$key } from "./__generated__/dmMap_DMMapFragment.graphql";
 import { dmMap_ShowGridSettingsPopupMapFragment$key } from "./__generated__/dmMap_ShowGridSettingsPopupMapFragment.graphql";
 import { dmMap_ShowGridSettingsPopupGridFragment$key } from "./__generated__/dmMap_ShowGridSettingsPopupGridFragment.graphql";

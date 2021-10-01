@@ -114,6 +114,7 @@ type TokenPartial = Omit<Partial<MapTokenEntity>, "id">;
 const LoadedMapDiv = styled.div`
   display: flex;
   height: 100vh;
+  background-color: black;
   /* Mobile Chrome 100vh issue with address bar */
   @media screen and (max-width: 580px) and (-webkit-min-device-pixel-ratio: 0) {
     height: calc(100vh - 56px);
@@ -318,9 +319,15 @@ const Content = ({
   );
   const [cropperNode, selectFile] = useTokenImageUpload();
   const relayEnvironment = useRelayEnvironment();
+
   return (
     <FetchContext.Provider value={localFetch}>
-      {(dmAreaResponse.error === null && !dmAreaResponse.data?.map) ||
+      {(dmAreaResponse.error === null &&
+        // because it is a live query isLoading is always true
+        // thanks relay :D
+        // so we wanna show the map library if the data is loaded aka data is not undefined but data.map is undefined :D
+        dmAreaResponse.data &&
+        !dmAreaResponse.data.map) ||
       mode.title === "SHOW_MAP_LIBRARY" ? (
         <SelectMapModal
           canClose={dmAreaResponse.data?.map !== null}
