@@ -11,7 +11,7 @@ import { buildApiUrl } from "./public-url";
 import { AuthenticatedAppShell } from "./authenticated-app-shell";
 import { useSocket } from "./socket";
 import { animated, useSpring, to } from "react-spring";
-import { MapView, MapControlInterface, UpdateTokenContext } from "./map-view";
+import { MapView, MapControlInterface } from "./map-view";
 import { useGesture } from "react-use-gesture";
 import { randomHash } from "./utilities/random-hash";
 import { useWindowDimensions } from "./hooks/use-window-dimensions";
@@ -28,6 +28,8 @@ import {
 } from "./dm-area/token-info-aside";
 import { playerArea_PlayerMap_ActiveMapQuery } from "./__generated__/playerArea_PlayerMap_ActiveMapQuery.graphql";
 import { playerArea_MapPingMutation } from "./__generated__/playerArea_MapPingMutation.graphql";
+import { UpdateTokenContext } from "./update-token-context";
+import { LazyLoadedMapView } from "./lazy-loaded-map-view";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -230,19 +232,20 @@ const PlayerMap = ({
           ]}
         >
           {currentMap.data?.activeMap ? (
-            <MapView
-              isAdmin={false}
-              map={currentMap.data.activeMap}
-              activeTool={PlayerMapTool}
-              controlRef={controlRef}
-              sharedContexts={[
-                MarkAreaToolContext,
-                NoteWindowActionsContext,
-                ReactRelayContext,
-                UpdateTokenContext,
-              ]}
-              fogOpacity={1}
-            />
+            <React.Suspense fallback={null}>
+              <LazyLoadedMapView
+                map={currentMap.data.activeMap}
+                activeTool={PlayerMapTool}
+                controlRef={controlRef}
+                sharedContexts={[
+                  MarkAreaToolContext,
+                  NoteWindowActionsContext,
+                  ReactRelayContext,
+                  UpdateTokenContext,
+                ]}
+                fogOpacity={1}
+              />
+            </React.Suspense>
           ) : null}
         </FlatContextProvider>
       </div>

@@ -41,12 +41,7 @@ import {
   ConfigureGridMapToolContext,
   ConfigureMapToolState,
 } from "../map-tools/configure-grid-map-tool";
-import {
-  MapView,
-  MapControlInterface,
-  UpdateTokenContext,
-  IsDungeonMasterContext,
-} from "../map-view";
+import { MapControlInterface } from "../map-view";
 import { ConditionalWrap } from "../util";
 import { BrushShape, FogMode } from "../canvas-draw-utilities";
 import {
@@ -97,6 +92,9 @@ import { dmMap_GridSettingButton_MapFragment$key } from "./__generated__/dmMap_G
 import { dmMap_mapUpdateGridMutation } from "./__generated__/dmMap_mapUpdateGridMutation.graphql";
 import { dmMap_GridConfigurator_MapFragment$key } from "./__generated__/dmMap_GridConfigurator_MapFragment.graphql";
 import { dmMap_MapPingMutation } from "./__generated__/dmMap_MapPingMutation.graphql";
+import { UpdateTokenContext } from "../update-token-context";
+import { IsDungeonMasterContext } from "../is-dungeon-master-context";
+import { LazyLoadedMapView } from "../lazy-loaded-map-view";
 
 type ToolMapRecord = {
   name: string;
@@ -808,26 +806,27 @@ export const DmMap = (props: {
         >,
       ]}
     >
-      <MapView
-        isAdmin={true}
-        map={map}
-        activeTool={activeTool}
-        controlRef={controlRef}
-        sharedContexts={[
-          MarkAreaToolContext,
-          BrushToolContext,
-          ConfigureGridMapToolContext,
-          AreaSelectContext,
-          TokenMarkerContext,
-          NoteWindowActionsContext,
-          ReactRelayContext,
-          UpdateTokenContext,
-          IsDungeonMasterContext,
-          ContextMenuStoreContext,
-          SharedTokenStateStoreContext,
-        ]}
-        fogOpacity={0.5}
-      />
+      <React.Suspense fallback={null}>
+        <LazyLoadedMapView
+          map={map}
+          activeTool={activeTool}
+          controlRef={controlRef}
+          sharedContexts={[
+            MarkAreaToolContext,
+            BrushToolContext,
+            ConfigureGridMapToolContext,
+            AreaSelectContext,
+            TokenMarkerContext,
+            NoteWindowActionsContext,
+            ReactRelayContext,
+            UpdateTokenContext,
+            IsDungeonMasterContext,
+            ContextMenuStoreContext,
+            SharedTokenStateStoreContext,
+          ]}
+          fogOpacity={0.5}
+        />
+      </React.Suspense>
 
       {toolOverride !== ConfigureGridMapTool ? (
         <>

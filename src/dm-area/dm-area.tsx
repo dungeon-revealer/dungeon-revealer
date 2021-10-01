@@ -155,7 +155,13 @@ const Content = ({
     },
     {}
   );
-  console.log(dmAreaResponse, loadedMapId);
+
+  React.useEffect(() => {
+    if (loadedMapId === null && dmAreaResponse.data?.activeMap) {
+      setLoadedMapId(dmAreaResponse.data.activeMap.id);
+    }
+  }, [dmAreaResponse.data?.activeMap?.id, loadedMapId]);
+
   // EDIT_MAP, SHOW_MAP_LIBRARY
   const [mode, setMode] = React.useState<Mode>(createInitialMode);
 

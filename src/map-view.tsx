@@ -48,6 +48,8 @@ import { mapView_MapRendererFragment$key } from "./__generated__/mapView_MapRend
 import { mapView_GridRendererFragment$key } from "./__generated__/mapView_GridRendererFragment.graphql";
 import { mapView_MapPingRenderer_MapFragment$key } from "./__generated__/mapView_MapPingRenderer_MapFragment.graphql";
 import { mapView_MapPingSubscription } from "./__generated__/mapView_MapPingSubscription.graphql";
+import { UpdateTokenContext } from "./update-token-context";
+import { IsDungeonMasterContext } from "./is-dungeon-master-context";
 
 type Vector2D = [number, number];
 
@@ -133,13 +135,9 @@ const Plane = React.forwardRef(
   }
 );
 
-export const UpdateTokenContext = React.createContext<
-  (id: string, props: Omit<Partial<MapTokenEntity>, "id">) => void
->(() => undefined);
 const SharedMapState = React.createContext<SharedMapToolState>(
   undefined as any
 );
-export const IsDungeonMasterContext = React.createContext(false);
 
 type TokenPartialChanges = Omit<Partial<MapTokenEntity>, "id">;
 
@@ -1240,7 +1238,6 @@ const MapRendererFragment = graphql`
 `;
 
 const MapRenderer = (props: {
-  isAdmin: boolean;
   map: mapView_MapRendererFragment$key;
   mapImage: HTMLImageElement;
   mapImageTexture: THREE.Texture;
@@ -1253,6 +1250,7 @@ const MapRenderer = (props: {
   markerRadius: number;
 }) => {
   const map = useFragment(MapRendererFragment, props.map);
+  const isDungeonMaster = React.useContext(IsDungeonMasterContext);
   return (
     <>
       <group renderOrder={LayerRenderOrder.map}>
@@ -1263,7 +1261,8 @@ const MapRenderer = (props: {
           />
           <meshStandardMaterial attach="material" map={props.mapImageTexture} />
         </mesh>
-        {map.grid && (props.isAdmin ? map.showGrid : map.showGridToPlayers) ? (
+        {map.grid &&
+        (isDungeonMaster ? map.showGrid : map.showGridToPlayers) ? (
           <GridRenderer
             grid={map.grid}
             dimensions={props.dimensions}
@@ -1312,7 +1311,6 @@ const MapViewRendererFragment = graphql`
 `;
 
 const MapViewRenderer = (props: {
-  isAdmin: boolean;
   map: mapView_MapViewRendererFragment$key;
   mapImage: HTMLImageElement;
   fogImage: HTMLImageElement | null;
@@ -1608,7 +1606,6 @@ const MapViewRenderer = (props: {
         ref={planeRef}
       >
         <MapRenderer
-          isAdmin={props.isAdmin}
           map={map}
           mapImage={props.mapImage}
           mapImageTexture={mapTexture}
@@ -1657,7 +1654,6 @@ export const MapView = (props: {
   /* List of contexts that need to be proxied into R3F */
   sharedContexts: Array<React.Context<any>>;
   fogOpacity: number;
-  isAdmin: boolean;
 }): React.ReactElement | null => {
   const ContextBridge = useContextBridge(...props.sharedContexts);
 
@@ -1672,6 +1668,8 @@ export const MapView = (props: {
 
   const cleanupMapImage = React.useRef<() => void>(() => {});
   const cleanupFogImage = React.useRef<() => void>(() => {});
+
+  const isDungeonMaster = React.useState(IsDungeonMasterContext);
 
   React.useEffect(() => {
     const mapImageTask = loadImage(map.mapImageUrl);
@@ -1689,11 +1687,11 @@ export const MapView = (props: {
       });
 
     return () => cleanupMapImage.current();
-  }, [map.mapImageUrl, props.isAdmin]);
+  }, [map.mapImageUrl]);
 
   React.useEffect(() => {
     const fogImageTask =
-      props.isAdmin && map.fogProgressImageUrl != null
+      isDungeonMaster && map.fogProgressImageUrl != null
         ? loadImage(map.fogProgressImageUrl)
         : map.fogLiveImageUrl != null
         ? loadImage(map.fogLiveImageUrl)
@@ -1716,7 +1714,7 @@ export const MapView = (props: {
       });
 
     return () => cleanupFogImage.current();
-  }, [map.fogLiveImageUrl, map.fogProgressImageUrl, props.isAdmin]);
+  }, [map.fogLiveImageUrl, map.fogProgressImageUrl, isDungeonMaster]);
 
   return mapImage ? (
     <MapCanvasContainer>
@@ -1755,7 +1753,6 @@ export const MapView = (props: {
         <ContextBridge>
           <MapViewRenderer
             key={map.id}
-            isAdmin={props.isAdmin}
             map={map}
             activeTool={props.activeTool}
             mapImage={mapImage}
