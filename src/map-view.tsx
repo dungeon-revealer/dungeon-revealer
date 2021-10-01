@@ -1237,6 +1237,30 @@ const MapRendererFragment = graphql`
   }
 `;
 
+const FogRenderer = React.memo(
+  (props: {
+    width: number;
+    height: number;
+    fogOpacity: number;
+    fogTexture: THREE.Texture;
+  }) => {
+    return (
+      <mesh>
+        <planeBufferGeometry
+          attach="geometry"
+          args={[props.width, props.height]}
+        />
+        <meshBasicMaterial
+          attach="material"
+          map={props.fogTexture}
+          transparent={true}
+          opacity={props.fogOpacity}
+        />
+      </mesh>
+    );
+  }
+);
+
 const MapRenderer = (props: {
   map: mapView_MapRendererFragment$key;
   mapImage: HTMLImageElement;
@@ -1251,6 +1275,7 @@ const MapRenderer = (props: {
 }) => {
   const map = useFragment(MapRendererFragment, props.map);
   const isDungeonMaster = React.useContext(IsDungeonMasterContext);
+
   return (
     <>
       <group renderOrder={LayerRenderOrder.map}>
@@ -1271,18 +1296,12 @@ const MapRenderer = (props: {
             imageWidth={props.mapImage.naturalWidth}
           />
         ) : null}
-        <mesh>
-          <planeBufferGeometry
-            attach="geometry"
-            args={[props.dimensions.width, props.dimensions.height]}
-          />
-          <meshBasicMaterial
-            attach="material"
-            map={props.fogTexture}
-            transparent={true}
-            opacity={props.fogOpacity}
-          />
-        </mesh>
+        <FogRenderer
+          width={props.dimensions.width}
+          height={props.dimensions.height}
+          fogOpacity={props.fogOpacity}
+          fogTexture={props.fogTexture}
+        />
       </group>
       <TokenListRenderer map={map} />
       <MapPingRenderer
@@ -1669,7 +1688,7 @@ export const MapView = (props: {
   const cleanupMapImage = React.useRef<() => void>(() => {});
   const cleanupFogImage = React.useRef<() => void>(() => {});
 
-  const isDungeonMaster = React.useState(IsDungeonMasterContext);
+  const isDungeonMaster = React.useContext(IsDungeonMasterContext);
 
   React.useEffect(() => {
     const mapImageTask = loadImage(map.mapImageUrl);

@@ -20,7 +20,7 @@ import { AccessTokenProvider } from "../hooks/use-access-token";
 import { usePersistedState } from "../hooks/use-persisted-state";
 import { DmMap } from "./dm-map";
 import { Socket } from "socket.io-client";
-import { MapEntity, MapTokenEntity } from "../map-typings";
+import { MapTokenEntity } from "../map-typings";
 import { isFileDrag } from "../hooks/use-drop-zone";
 import { useNoteWindowActions } from "./token-info-aside";
 import { MapControlInterface } from "../map-view";
@@ -82,31 +82,6 @@ const createInitialMode = (): Mode => ({
   title: "LOADING",
   data: null,
 });
-
-type MapData = {
-  currentMapId: null | string;
-  maps: Array<MapEntity>;
-};
-
-type SocketTokenEvent =
-  | {
-      type: "add";
-      data: {
-        tokens: Array<MapTokenEntity>;
-      };
-    }
-  | {
-      type: "update";
-      data: {
-        tokens: Array<MapTokenEntity>;
-      };
-    }
-  | {
-      type: "remove";
-      data: {
-        tokenIds: Array<string>;
-      };
-    };
 
 type TokenPartial = Omit<Partial<MapTokenEntity>, "id">;
 
