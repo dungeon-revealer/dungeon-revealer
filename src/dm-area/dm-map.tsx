@@ -871,6 +871,7 @@ export const DmMap = (props: {
                             canvasContext
                           );
                           context.fogTexture.needsUpdate = true;
+                          props.saveFogProgress(context.fogCanvas);
                         },
                       })
                     }
@@ -900,6 +901,7 @@ export const DmMap = (props: {
                             canvasContext
                           );
                           context.fogTexture.needsUpdate = true;
+                          props.saveFogProgress(context.fogCanvas);
                         },
                       })
                     }

@@ -152,6 +152,7 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
       maps
         .updateFogProgressImage(req.params.id, tmpFile)
         .then((map) => {
+          emitter.emit("invalidate", `Map:${map.id}`);
           res.status(200).json({
             error: null,
             data: mapMap(map),
