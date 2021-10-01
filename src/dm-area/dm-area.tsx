@@ -1,6 +1,5 @@
 import "./offscreen-canvas-polyfill";
 import * as React from "react";
-import produce from "immer";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import styled from "@emotion/styled/macro";
 import { Box, Center } from "@chakra-ui/react";
