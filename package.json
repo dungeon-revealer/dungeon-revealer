@@ -77,7 +77,7 @@
     "@babel/preset-env": "7.15.8",
     "@babel/preset-typescript": "7.15.0",
     "@chakra-ui/react": "1.6.8",
-    "@emotion/react": "11.4.1",
+    "@emotion/react": "11.5.0",
     "@emotion/styled": "11.3.0",
     "@monaco-editor/react": "4.2.1",
     "@n1ru4l/push-pull-async-iterable-iterator": "3.0.0",
