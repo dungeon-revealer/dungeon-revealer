@@ -117,7 +117,7 @@
     "husky": "7.0.2",
     "jest": "27.3.1",
     "leva": "0.9.14",
-    "lint-staged": "11.1.2",
+    "lint-staged": "11.2.6",
     "monaco-editor": "0.25.2",
     "parse-color": "1.0.0",
     "patch-package": "6.4.7",
