@@ -17,6 +17,7 @@ import {
   ListIcon,
   Link,
   ChakraIcon,
+  QuoteIcon,
 } from "../../feather-icons";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
 import { useAccessToken } from "../../hooks/use-access-token";
@@ -52,6 +53,56 @@ const insertImageIntoEditor = (
       text: placeholderTemplate,
     },
   ]);
+};
+
+const toggleMarkdownList = (
+  monaco: Monaco,
+  editor: monacoEditor.editor.IStandaloneCodeEditor,
+  listType: "ordered" | "unordered" | "check"
+) => {
+  const model = editor.getModel();
+  const selection = editor.getSelection();
+  if (!model || !editor || !selection || !monaco) return;
+
+  let prefix = "- ";
+  let regexp = /^\s*\-\s*/;
+  if (listType === "ordered") {
+    prefix = "1. ";
+    regexp = /^\s*[0-9]+\.\s*/;
+  } else if (listType === "check") {
+    prefix = "- [x] ";
+    regexp = /^\s*\-\s+\[[\sx]{0,1}\]\s*/;
+  }
+
+  const applyList = !model
+    .getLineContent(selection.startLineNumber)
+    .startsWith(prefix);
+  for (
+    let index = selection.startLineNumber;
+    index <= selection.endLineNumber;
+    index++
+  ) {
+    let selectedText = model.getLineContent(index);
+    const lineIsListItem = selectedText.startsWith(prefix);
+    const length = selectedText.length;
+    if (applyList) {
+      if (!lineIsListItem) selectedText = prefix + selectedText.trimLeft();
+    } else {
+      selectedText = selectedText.replace(regexp, "");
+    }
+
+    editor.executeEdits("", [
+      {
+        range: new monaco.Range(index, 1, index, length + 1),
+        text: selectedText,
+      },
+    ]);
+  }
+
+  editor.setPosition(
+    new monaco.Position(selection.startLineNumber, length + 1 + 2)
+  );
+  editor.focus();
 };
 
 const useImageCommand: (opts: {
@@ -638,6 +689,7 @@ export const MarkdownEditor: React.FC<{
           <BoldIcon height={16} />
         </ToolBarButton>
         <ToolBarButton
+          title="Italicize"
           onClick={() => {
             const editor = ref.current;
             const model = editor?.getModel();
@@ -677,39 +729,85 @@ export const MarkdownEditor: React.FC<{
         >
           <ItalicIcon height={16} />
         </ToolBarButton>
+        <ToolBarButtonDropDown>
+          <ToolBarButton
+            title="Insert List"
+            onClick={() => {
+              if (monaco && ref.current)
+                toggleMarkdownList(monaco, ref.current, "unordered");
+            }}
+          >
+            <ListIcon height={16} />
+          </ToolBarButton>
+          <DropDownMenu data-menu>
+            <DropDownMenuInner>
+              <DropDownMenuItem
+                onClick={() => {
+                  if (monaco && ref.current)
+                    toggleMarkdownList(monaco, ref.current, "unordered");
+                }}
+              >
+                Unordered List
+              </DropDownMenuItem>
+              <DropDownMenuItem
+                onClick={() => {
+                  if (monaco && ref.current)
+                    toggleMarkdownList(monaco, ref.current, "ordered");
+                }}
+              >
+                Ordered List
+              </DropDownMenuItem>
+              <DropDownMenuItem
+                onClick={() => {
+                  if (monaco && ref.current)
+                    toggleMarkdownList(monaco, ref.current, "check");
+                }}
+              >
+                Check List
+              </DropDownMenuItem>
+            </DropDownMenuInner>
+          </DropDownMenu>
+        </ToolBarButtonDropDown>
         <ToolBarButton
-          title="Insert List"
+          title="Quote"
           onClick={() => {
             const editor = ref.current;
             const model = editor?.getModel();
             const selection = editor?.getSelection();
             if (!model || !editor || !selection || !monaco) return;
-            let selectedText = model.getLineContent(selection.startLineNumber);
-            const length = selectedText.length;
-            if (selectedText.startsWith("-")) {
-              selectedText = selectedText.replace(/- /, "");
-            } else {
-              selectedText = "- " + selectedText.trimLeft();
+            const regexp = /^\s*>\s*/;
+            const applyQuote = !model
+              .getLineContent(selection.startLineNumber)
+              .match(regexp);
+            for (
+              let index = selection.startLineNumber;
+              index <= selection.endLineNumber;
+              index++
+            ) {
+              let selectedText = model.getLineContent(index);
+              const lineIsQuote = selectedText.match(regexp);
+              const length = selectedText.length;
+              if (applyQuote) {
+                if (!lineIsQuote) selectedText = "> " + selectedText.trimLeft();
+              } else {
+                selectedText = selectedText.replace(regexp, "");
+              }
+
+              editor.executeEdits("", [
+                {
+                  range: new monaco.Range(index, 1, index, length + 1),
+                  text: selectedText,
+                },
+              ]);
             }
 
-            editor.executeEdits("", [
-              {
-                range: new monaco.Range(
-                  selection.startLineNumber,
-                  1,
-                  selection.startLineNumber,
-                  length + 1
-                ),
-                text: selectedText,
-              },
-            ]);
             editor.setPosition(
               new monaco.Position(selection.startLineNumber, length + 1 + 2)
             );
             editor.focus();
           }}
         >
-          <ListIcon height={16} />
+          <QuoteIcon height={16} />
         </ToolBarButton>
         <ToolBarButtonDropDown>
           <ToolBarButton title="Insert Image" onClick={onClickImageButton}>
