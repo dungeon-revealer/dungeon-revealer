@@ -858,9 +858,10 @@ export const MarkdownEditor: React.FC<{
             if (!model || !editor || !selection || !monaco) return;
 
             let message = model.getValueInRange(selection);
-            if (message === "")
+            if (message === "") {
               message =
                 "Chat message with dice rolls [1d20] makes [2d6] damage";
+            }
 
             editor.executeEdits("", [
               {
