@@ -18,6 +18,7 @@ import {
   Link,
   ChakraIcon,
   QuoteIcon,
+  DiceIcon,
 } from "../../feather-icons";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
 import { useAccessToken } from "../../hooks/use-access-token";
@@ -847,6 +848,35 @@ export const MarkdownEditor: React.FC<{
           }}
         >
           <Link height={16} />
+        </ToolBarButton>
+        <ToolBarButton
+          title="Dice macro"
+          onClick={() => {
+            const editor = ref.current;
+            const model = editor?.getModel();
+            const selection = editor?.getSelection();
+            if (!model || !editor || !selection || !monaco) return;
+
+            let message = model.getValueInRange(selection);
+            if (message === "")
+              message =
+                "Chat message with dice rolls [1d20] makes [2d6] damage";
+
+            editor.executeEdits("", [
+              {
+                range: new monaco.Range(
+                  selection.startLineNumber,
+                  selection.startColumn,
+                  selection.endLineNumber,
+                  selection.endColumn
+                ),
+                text: `<ChatMacro message="${message}">\n  Button Text\n</ChatMacro>`,
+              },
+            ]);
+            editor.focus();
+          }}
+        >
+          <DiceIcon height={16} />
         </ToolBarButton>
         <ToolBarButton
           style={{ marginLeft: "auto" }}
