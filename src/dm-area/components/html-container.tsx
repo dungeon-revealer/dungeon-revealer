@@ -17,6 +17,7 @@ import {
   Attribute,
 } from "../../utilities/attribute-parser";
 import { NoteLink } from "./note-link";
+import { TaskCheckbox } from "./markdown-task-checkbox";
 import { SharableImage } from "./sharable-image";
 import { ChatMessageButton } from "./chat-message-button";
 
@@ -42,6 +43,7 @@ const components = {
   ChatMessage: ChatMessageButton,
   ChatMacro: ChatMessageButton,
   Link: NoteLink,
+  TaskCheckbox: TaskCheckbox,
   h1: H1,
   h2: H2,
   h3: H3,
@@ -78,6 +80,7 @@ const allowedTags = [
   "li",
   "hr",
   "img",
+  "input",
   ...Object.keys(components),
 ];
 
@@ -132,14 +135,16 @@ const sanitizeHtml = (html: string) =>
       // alias for ChatMessage
       ChatMessage: ["message", "templateId", "var-*"],
       Link: ["id"],
+      TaskCheckbox: ["isReadOnly", "isChecked", "label"],
       div: ["style"],
       span: ["style"],
       a: ["target", "rel", "href", "id"],
       img: ["src", "title"],
+      input: [{ name: "type", values: ["checkbox"] }, "checked"],
     },
     allowedSchemes: ["http", "https"],
     allowedSchemesAppliedToAttributes: ["href"],
-    selfClosing: ["Image"],
+    selfClosing: ["Image", "input"],
     parser: {
       lowerCaseTags: false,
       lowerCaseAttributeNames: false,
@@ -161,6 +166,16 @@ const sanitizeHtml = (html: string) =>
           tagName: "Link",
           attribs: {
             id: attribs.href || "",
+          } as { [key: string]: string },
+        };
+      },
+      input: (name, attribs) => {
+        return {
+          tagName: "TaskCheckbox",
+          attribs: {
+            label: "",
+            isReadOnly: "true",
+            isChecked: attribs.checked !== undefined ? "true" : "",
           } as { [key: string]: string },
         };
       },
@@ -235,6 +250,7 @@ export const HtmlContainer: React.FC<{ markdown: string }> = React.memo(
             options={{
               simpleLineBreaks: true,
               tables: true,
+              tasklists: true,
             }}
           />
         </HtmlContainerStyled>
