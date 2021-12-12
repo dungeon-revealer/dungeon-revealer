@@ -80,7 +80,6 @@ const allowedTags = [
   "li",
   "hr",
   "img",
-  "input",
   ...Object.keys(components),
 ];
 
@@ -140,7 +139,6 @@ const sanitizeHtml = (html: string) =>
       span: ["style"],
       a: ["target", "rel", "href", "id"],
       img: ["src", "title"],
-      input: [{ name: "type", values: ["checkbox"] }, "checked"],
     },
     allowedSchemes: ["http", "https"],
     allowedSchemesAppliedToAttributes: ["href"],
@@ -170,14 +168,23 @@ const sanitizeHtml = (html: string) =>
         };
       },
       input: (name, attribs) => {
-        return {
-          tagName: "TaskCheckbox",
-          attribs: {
-            label: "",
-            isReadOnly: "true",
-            isChecked: attribs.checked !== undefined ? "true" : "",
-          } as { [key: string]: string },
-        };
+        if (attribs.type === "checkbox") {
+          return {
+            tagName: "TaskCheckbox",
+            attribs: {
+              label: "",
+              isReadOnly: "true",
+              isChecked: attribs.checked !== undefined ? "true" : "",
+            } as { [key: string]: string },
+          };
+        } else {
+          return {
+            tagName: "input",
+            attribs: {
+              ...attribs,
+            } as { [key: string]: string },
+          };
+        }
       },
     },
   });
