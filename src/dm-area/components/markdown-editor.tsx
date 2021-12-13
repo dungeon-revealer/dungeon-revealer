@@ -20,6 +20,7 @@ import {
   QuoteIcon,
   DiceIcon,
   CodeIcon,
+  GridIcon,
 } from "../../feather-icons";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
 import { useAccessToken } from "../../hooks/use-access-token";
@@ -57,10 +58,44 @@ const insertImageIntoEditor = (
   ]);
 };
 
+const wrapMarkdownSelection = (
+  editor: monacoEditor.editor.IStandaloneCodeEditor,
+  wrapper: { left: string; right: string },
+  replace: { regexp: RegExp; replace: string }
+) => {
+  const model = editor?.getModel();
+  const selection = editor?.getSelection();
+  if (!model || !editor || !selection) return;
+  const selectedText = model.getValueInRange(selection);
+  if (
+    selectedText.trim().startsWith(wrapper.left) &&
+    selectedText.trim().endsWith(wrapper.right)
+  ) {
+    editor.executeEdits("", [
+      {
+        range: selection,
+        text: model
+          .getValueInRange(selection)
+          .replace(replace.regexp, replace.replace),
+      },
+    ]);
+  } else {
+    editor.executeEdits("", [
+      {
+        range: selection,
+        text: `${wrapper.left}${model.getValueInRange(selection)}${
+          wrapper.right
+        }`,
+      },
+    ]);
+  }
+  editor.focus();
+};
+
 const toggleMarkdownList = (
   monaco: Monaco,
   editor: monacoEditor.editor.IStandaloneCodeEditor,
-  listType: "ordered" | "unordered" | "check"
+  listType: "ordered" | "unordered" | "check" | "quote"
 ) => {
   const model = editor.getModel();
   const selection = editor.getSelection();
@@ -74,6 +109,9 @@ const toggleMarkdownList = (
   } else if (listType === "check") {
     prefix = "- [x] ";
     regexp = /^\s*\-\s+\[[\sx]{0,1}\]\s*/;
+  } else if (listType === "quote") {
+    prefix = "> ";
+    regexp = /^\s*\>\s+/;
   }
 
   const applyList = !model
@@ -653,39 +691,13 @@ export const MarkdownEditor: React.FC<{
           title="Bold"
           onClick={() => {
             const editor = ref.current;
-            const model = editor?.getModel();
-            const selection = editor?.getSelection();
-            if (!model || !editor || !selection || !monaco) return;
-            const selectedText = model.getValueInRange(selection);
-            if (
-              selectedText.trim().startsWith("**") &&
-              selectedText.trim().endsWith("**")
-            ) {
-              editor.executeEdits("", [
-                {
-                  range: new monaco.Range(
-                    selection.startLineNumber,
-                    selection.startColumn,
-                    selection.endLineNumber,
-                    selection.endColumn
-                  ),
-                  text: model.getValueInRange(selection).replace(/\*\*/g, ""),
-                },
-              ]);
-            } else {
-              editor.executeEdits("", [
-                {
-                  range: new monaco.Range(
-                    selection.startLineNumber,
-                    selection.startColumn,
-                    selection.endLineNumber,
-                    selection.endColumn
-                  ),
-                  text: `**` + model.getValueInRange(selection) + `**`,
-                },
-              ]);
+            if (editor) {
+              wrapMarkdownSelection(
+                editor,
+                { left: "**", right: "**" },
+                { regexp: /\*\*/g, replace: "" }
+              );
             }
-            editor.focus();
           }}
         >
           <BoldIcon height={16} />
@@ -694,39 +706,13 @@ export const MarkdownEditor: React.FC<{
           title="Italicize"
           onClick={() => {
             const editor = ref.current;
-            const model = editor?.getModel();
-            const selection = editor?.getSelection();
-            if (!model || !editor || !selection || !monaco) return;
-            const selectedText = model.getValueInRange(selection);
-            if (
-              selectedText.trim().startsWith("*") &&
-              selectedText.trim().endsWith("*")
-            ) {
-              editor.executeEdits("", [
-                {
-                  range: new monaco.Range(
-                    selection.startLineNumber,
-                    selection.startColumn,
-                    selection.endLineNumber,
-                    selection.endColumn
-                  ),
-                  text: model.getValueInRange(selection).replace(/\*/g, ""),
-                },
-              ]);
-            } else {
-              editor.executeEdits("", [
-                {
-                  range: new monaco.Range(
-                    selection.startLineNumber,
-                    selection.startColumn,
-                    selection.endLineNumber,
-                    selection.endColumn
-                  ),
-                  text: `*` + model.getValueInRange(selection) + `*`,
-                },
-              ]);
+            if (editor) {
+              wrapMarkdownSelection(
+                editor,
+                { left: "_", right: "_" },
+                { regexp: /_/g, replace: "" }
+              );
             }
-            editor.focus();
           }}
         >
           <ItalicIcon height={16} />
@@ -738,28 +724,10 @@ export const MarkdownEditor: React.FC<{
             const model = editor?.getModel();
             let selection = editor?.getSelection();
             if (!model || !editor || !selection || !monaco) return;
-            const selectedText = model.getValueInRange(selection);
             let multiline =
               selection.startLineNumber !== selection.endLineNumber;
             if (multiline) {
               if (
-                selectedText.trim().startsWith("```") &&
-                selectedText.trim().endsWith("```")
-              ) {
-                editor.executeEdits("", [
-                  {
-                    range: new monaco.Range(
-                      selection.startLineNumber,
-                      selection.startColumn,
-                      selection.endLineNumber,
-                      selection.endColumn
-                    ),
-                    text: model
-                      .getValueInRange(selection)
-                      .replace(/\n{0,1}\`\`\`\n{0,1}/g, ""),
-                  },
-                ]);
-              } else if (
                 selection.startLineNumber > 1 &&
                 model.getLineContent(selection.startLineNumber - 1).trim() ===
                   "```" &&
@@ -773,58 +741,25 @@ export const MarkdownEditor: React.FC<{
                   model.getLineContent(selection.endLineNumber + 1).length + 1
                 );
                 editor.setSelection(newRange);
-                editor.executeEdits("", [
-                  {
-                    range: newRange,
-                    text: model
-                      .getValueInRange(newRange)
-                      .replace(/\n{0,1}\`\`\`\n{0,1}/g, ""),
-                  },
-                ]);
+                wrapMarkdownSelection(
+                  editor,
+                  { left: "```\n", right: "\n```" },
+                  { regexp: /\n{0,1}\`\`\`\n{0,1}/g, replace: "" }
+                );
               } else {
-                editor.executeEdits("", [
-                  {
-                    range: new monaco.Range(
-                      selection.startLineNumber,
-                      selection.startColumn,
-                      selection.endLineNumber,
-                      selection.endColumn
-                    ),
-                    text: "```\n" + model.getValueInRange(selection) + "\n```",
-                  },
-                ]);
+                wrapMarkdownSelection(
+                  editor,
+                  { left: "```\n", right: "\n```" },
+                  { regexp: /\n{0,1}\`\`\`\n{0,1}/g, replace: "" }
+                );
               }
             } else {
-              if (
-                selectedText.trim().startsWith("`") &&
-                selectedText.trim().endsWith("`")
-              ) {
-                editor.executeEdits("", [
-                  {
-                    range: new monaco.Range(
-                      selection.startLineNumber,
-                      selection.startColumn,
-                      selection.endLineNumber,
-                      selection.endColumn
-                    ),
-                    text: model.getValueInRange(selection).replace(/\`/g, ""),
-                  },
-                ]);
-              } else {
-                editor.executeEdits("", [
-                  {
-                    range: new monaco.Range(
-                      selection.startLineNumber,
-                      selection.startColumn,
-                      selection.endLineNumber,
-                      selection.endColumn
-                    ),
-                    text: "`" + model.getValueInRange(selection) + "`",
-                  },
-                ]);
-              }
+              wrapMarkdownSelection(
+                editor,
+                { left: "`", right: "`" },
+                { regexp: /\`/g, replace: "" }
+              );
             }
-            editor.focus();
           }}
         >
           <CodeIcon height={16} />
@@ -871,40 +806,8 @@ export const MarkdownEditor: React.FC<{
         <ToolBarButton
           title="Quote"
           onClick={() => {
-            const editor = ref.current;
-            const model = editor?.getModel();
-            const selection = editor?.getSelection();
-            if (!model || !editor || !selection || !monaco) return;
-            const regexp = /^\s*>\s*/;
-            const applyQuote = !model
-              .getLineContent(selection.startLineNumber)
-              .match(regexp);
-            for (
-              let index = selection.startLineNumber;
-              index <= selection.endLineNumber;
-              index++
-            ) {
-              let selectedText = model.getLineContent(index);
-              const lineIsQuote = selectedText.match(regexp);
-              const length = selectedText.length;
-              if (applyQuote) {
-                if (!lineIsQuote) selectedText = "> " + selectedText.trimLeft();
-              } else {
-                selectedText = selectedText.replace(regexp, "");
-              }
-
-              editor.executeEdits("", [
-                {
-                  range: new monaco.Range(index, 1, index, length + 1),
-                  text: selectedText,
-                },
-              ]);
-            }
-
-            editor.setPosition(
-              new monaco.Position(selection.startLineNumber, length + 1 + 2)
-            );
-            editor.focus();
+            if (monaco && ref.current)
+              toggleMarkdownList(monaco, ref.current, "quote");
           }}
         >
           <QuoteIcon height={16} />
@@ -928,22 +831,13 @@ export const MarkdownEditor: React.FC<{
           title="Insert Link"
           onClick={() => {
             const editor = ref.current;
-            const model = editor?.getModel();
-            const selection = editor?.getSelection();
-            if (!model || !editor || !selection || !monaco) return;
-
-            editor.executeEdits("", [
-              {
-                range: new monaco.Range(
-                  selection.startLineNumber,
-                  selection.startColumn,
-                  selection.endLineNumber,
-                  selection.endColumn
-                ),
-                text: `[` + model.getValueInRange(selection) + `]()`,
-              },
-            ]);
-            editor.focus();
+            if (editor) {
+              wrapMarkdownSelection(
+                editor,
+                { left: "[", right: "]()" },
+                { regexp: /\[(.*)\]\(.*\)/g, replace: "$1" }
+              );
+            }
           }}
         >
           <Link height={16} />
@@ -954,29 +848,48 @@ export const MarkdownEditor: React.FC<{
             const editor = ref.current;
             const model = editor?.getModel();
             const selection = editor?.getSelection();
-            if (!model || !editor || !selection || !monaco) return;
+            if (!model || !editor || !selection) return;
 
             let message = model.getValueInRange(selection);
-            if (message === "") {
-              message =
+            let wrapLeft = '<ChatMacro message="';
+            if (!message) {
+              wrapLeft +=
                 "Chat message with dice rolls [1d20] makes [2d6] damage";
             }
 
-            editor.executeEdits("", [
+            wrapMarkdownSelection(
+              editor,
+              { left: wrapLeft, right: '">\n  Button Text\n</ChatMacro>' },
               {
-                range: new monaco.Range(
-                  selection.startLineNumber,
-                  selection.startColumn,
-                  selection.endLineNumber,
-                  selection.endColumn
-                ),
-                text: `<ChatMacro message="${message}">\n  Button Text\n</ChatMacro>`,
-              },
-            ]);
-            editor.focus();
+                regexp: /\<ChatMacro.*message="(.*)".*\<\/ChatMacro\>/gs,
+                replace: "$1",
+              }
+            );
           }}
         >
           <DiceIcon height={16} />
+        </ToolBarButton>
+        <ToolBarButton
+          title="Insert Table"
+          onClick={() => {
+            const editor = ref.current;
+            const model = editor?.getModel();
+            const selection = editor?.getSelection();
+            if (!model || !editor || !selection) return;
+
+            if (model.getValueInRange(selection)) return;
+
+            const tableTemplate = `| Header 1 | Header 2 | Header 3 |\n| :------: | :------: | :------: |\n|  entry 1 |  entry 2 |  entry 3 |`;
+
+            editor.executeEdits("", [
+              {
+                range: selection,
+                text: tableTemplate,
+              },
+            ]);
+          }}
+        >
+          <GridIcon size={16} />
         </ToolBarButton>
         <ToolBarButton
           style={{ marginLeft: "auto" }}
