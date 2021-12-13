@@ -796,6 +796,25 @@ export const QuoteIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
   </svg>
 );
 
+export const CodeIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  fill = "currentColor",
+  ...props
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={fill}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    height={30}
+    {...props}
+  >
+    <polyline points="16 18 22 12 16 6" />
+    <polyline points="8 6 2 12 8 18" />
+  </svg>
+);
+
 export const ClipboardIcon: React.FC<{ color?: string; size?: number }> = ({
   color = "currentColor",
   size = 30,

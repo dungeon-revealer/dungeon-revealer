@@ -221,7 +221,8 @@ const HtmlContainerStyled = styled.div`
     max-width: 40em;
   }
 
-  pre {
+  pre,
+  code {
     border: 0.5px solid lightgray;
     border-radius: 2px;
     padding: 4px;
@@ -237,6 +238,13 @@ const HtmlContainerStyled = styled.div`
     border: 1px solid #999;
     padding: 0.5rem;
     text-align: left;
+  }
+
+  pre > code {
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    background: none;
   }
 `;
 

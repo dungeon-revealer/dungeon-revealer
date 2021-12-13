@@ -19,6 +19,7 @@ import {
   ChakraIcon,
   QuoteIcon,
   DiceIcon,
+  CodeIcon,
 } from "../../feather-icons";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
 import { useAccessToken } from "../../hooks/use-access-token";
@@ -729,6 +730,104 @@ export const MarkdownEditor: React.FC<{
           }}
         >
           <ItalicIcon height={16} />
+        </ToolBarButton>
+        <ToolBarButton
+          title="Code"
+          onClick={() => {
+            const editor = ref.current;
+            const model = editor?.getModel();
+            let selection = editor?.getSelection();
+            if (!model || !editor || !selection || !monaco) return;
+            const selectedText = model.getValueInRange(selection);
+            let multiline =
+              selection.startLineNumber !== selection.endLineNumber;
+            if (multiline) {
+              if (
+                selectedText.trim().startsWith("```") &&
+                selectedText.trim().endsWith("```")
+              ) {
+                editor.executeEdits("", [
+                  {
+                    range: new monaco.Range(
+                      selection.startLineNumber,
+                      selection.startColumn,
+                      selection.endLineNumber,
+                      selection.endColumn
+                    ),
+                    text: model
+                      .getValueInRange(selection)
+                      .replace(/\n{0,1}\`\`\`\n{0,1}/g, ""),
+                  },
+                ]);
+              } else if (
+                selection.startLineNumber > 1 &&
+                model.getLineContent(selection.startLineNumber - 1).trim() ===
+                  "```" &&
+                model.getLineContent(selection.endLineNumber + 1).trim() ===
+                  "```"
+              ) {
+                let newRange = new monaco.Range(
+                  selection.startLineNumber - 1,
+                  1,
+                  selection.endLineNumber + 1,
+                  model.getLineContent(selection.endLineNumber + 1).length + 1
+                );
+                editor.setSelection(newRange);
+                editor.executeEdits("", [
+                  {
+                    range: newRange,
+                    text: model
+                      .getValueInRange(newRange)
+                      .replace(/\n{0,1}\`\`\`\n{0,1}/g, ""),
+                  },
+                ]);
+              } else {
+                editor.executeEdits("", [
+                  {
+                    range: new monaco.Range(
+                      selection.startLineNumber,
+                      selection.startColumn,
+                      selection.endLineNumber,
+                      selection.endColumn
+                    ),
+                    text: "```\n" + model.getValueInRange(selection) + "\n```",
+                  },
+                ]);
+              }
+            } else {
+              if (
+                selectedText.trim().startsWith("`") &&
+                selectedText.trim().endsWith("`")
+              ) {
+                editor.executeEdits("", [
+                  {
+                    range: new monaco.Range(
+                      selection.startLineNumber,
+                      selection.startColumn,
+                      selection.endLineNumber,
+                      selection.endColumn
+                    ),
+                    text: model.getValueInRange(selection).replace(/\`/g, ""),
+                  },
+                ]);
+              } else {
+                editor.executeEdits("", [
+                  {
+                    range: new monaco.Range(
+                      selection.startLineNumber,
+                      selection.startColumn,
+                      selection.endLineNumber,
+                      selection.endColumn
+                    ),
+                    text: "`" + model.getValueInRange(selection) + "`",
+                  },
+                ]);
+              }
+            }
+            editor.focus();
+          }}
+        >
+          <CodeIcon height={16} />
         </ToolBarButton>
         <ToolBarButtonDropDown>
           <ToolBarButton
