@@ -250,7 +250,5 @@ export const createChat = ({
     subscribe: {
       newMessages: () => pubSub.subscribe("newMessage"),
     },
-    /** Clear all chat messages */
-    clear: () => {},
   };
 };
