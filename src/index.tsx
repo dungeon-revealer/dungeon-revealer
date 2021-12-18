@@ -9,7 +9,11 @@ import { globalStyles } from "./global-styles";
 import { Modal } from "./modal";
 import { registerSoundPlayback } from "./register-sound-playback";
 
-loader.config({ paths: { vs: buildUrl("/monaco-editor/vs") } });
+loader.config({
+  paths: {
+    vs: buildUrl(`/monaco-editor/${import.meta.env.VITE_MONACO_VERSION}/vs`),
+  },
+});
 
 const emotionCache = createCache({ key: "chache" });
 emotionCache.compat = true;
