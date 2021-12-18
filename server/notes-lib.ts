@@ -10,6 +10,7 @@ import type { SocketSessionRecord } from "./socket-session-store";
 import * as AsyncIterator from "./util/async-iterator";
 import { invalidateResources } from "./live-query-store";
 import * as auth from "./auth";
+import type { ChannelPubSub } from "./pubsub";
 
 export type NoteModelType = db.NoteModelType;
 export const decodeNote = db.decodeNote;
@@ -200,7 +201,10 @@ const publishNotesUpdate = (payload: NotesUpdatesPayload) =>
     RTE.ask<NotesUpdatesDependency>(),
     RTE.chainW((deps) =>
       pipe(
-        E.tryCatch(() => deps.notesUpdates.publish(payload), E.toError),
+        E.tryCatch(
+          () => deps.pubSub.publish("notesUpdates", payload),
+          E.toError
+        ),
         RTE.fromEither
       )
     )
@@ -368,13 +372,12 @@ export type NotesUpdatesPayload =
   | NotesDeletedNotePayload
   | NotesCreatedNotePayload;
 
-export interface NotesUpdates {
-  subscribe: () => AsyncIterableIterator<NotesUpdatesPayload>;
-  publish: (payload: NotesUpdatesPayload) => void;
-}
+export type NotesPubSubConfig = {
+  notesUpdates: [NotesUpdatesPayload];
+};
 
 interface NotesUpdatesDependency {
-  notesUpdates: NotesUpdates;
+  pubSub: ChannelPubSub<NotesPubSubConfig>;
 }
 
 interface NoteCursor {
@@ -414,7 +417,7 @@ export const subscribeToNotesUpdates = (params: {
     ),
     RTE.map((deps) =>
       pipe(
-        deps.notesUpdates.subscribe(),
+        deps.pubSub.subscribe("notesUpdates"),
         // skip all events that are after our last cursor
         // as those notes are not relevant for the client
         AsyncIterator.filter(

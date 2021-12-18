@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { roll } from "@airjp73/dice-notation";
 import { Liquid, LiquidError } from "liquidjs";
 import type { Json } from "fp-ts/lib/Json";
-import { createPubSub } from "./pubsub";
+import type { ChannelPubSub } from "./pubsub";
 import { DiceRollResult, isDiceRollResult, tryRoll } from "./roll-dice";
 
 type SharedResourceType =
@@ -155,10 +155,17 @@ const createTemplateEngine = () => {
   return templateEngine;
 };
 
-export const createChat = () => {
+export type ChatPubSubConfig = {
+  newMessage: [NewMessagesPayload];
+};
+
+export const createChat = ({
+  pubSub,
+}: {
+  pubSub: ChannelPubSub<ChatPubSubConfig>;
+}) => {
   const templateEngine = createTemplateEngine();
   let state: Array<ApplicationRecordSchema> = [];
-  const pubSub = createPubSub<NewMessagesPayload>();
 
   const addMessageToStack = (message: ApplicationRecordSchema) => {
     state.push(message);
@@ -166,7 +173,7 @@ export const createChat = () => {
       state.shift();
     }
 
-    pubSub.publish({
+    pubSub.publish("newMessage", {
       messages: [message],
     });
   };
@@ -241,7 +248,9 @@ export const createChat = () => {
     addOperationalMessage,
     getMessages: () => state,
     subscribe: {
-      newMessages: () => pubSub.subscribe(),
+      newMessages: () => pubSub.subscribe("newMessage"),
     },
+    /** Clear all chat messages */
+    clear: () => {},
   };
 };
