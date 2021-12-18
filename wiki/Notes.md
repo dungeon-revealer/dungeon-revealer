@@ -10,6 +10,28 @@ Notes are written in the popular [markdown syntax](https://guides.github.com/fea
 
 Notes can be used in many ways. You can save creature/player stats, room descriptions, or even system rules so you can quickly reference them.
 
+### Custom CSS within Notes
+
+It is possible to declare and use CSS styles within notes. CSS styles can be declared by using the html `style` tag.
+
+```html
+<style>
+  .red {
+    color: red;
+  }
+</style>
+
+My markdown file content. It can be <span class="red">red</span>.
+```
+
+The CSS styles are scoped to the note they are declared in. It is only possible to use a subset of all available CSS rules.
+
+Here is a complete list of all supported rules:
+
+`display`, `background-color`, `padding`, `padding-left`, `padding-right`, `padding-top`, `padding-bottom`, `margin`, `margin-left`, `margin-right`, `margin-bottom`, `margin-top`, `height`, `width`, `max-width`, `min-width`, `max-height`, `min-height`, `border`, `border-left`, `border-right`, `border-top`, `border-bottom`, `color`, `font-size`, `font-family`, `text-align`, `line-height`, `font-style`, `font-weight`,` text-transform`, `text-decoration`, `text-shadow`, `color`, `flex`, `flex-basis`, `flex-direction`, `flex-flow`, `flex-grow`, `flex-shrink`, `flex-wrap`, `order`, `justify-content`, `align-items`, `align-self`, `align-content`
+
+In case there is one missing, please feel free to reach out to us for adding it, either by creating a GitHub issue or via Discord.
+
 ## Searching Notes
 
 On the main page, click on the search icon in the top right corner. A search box will pop up and you can search for any term. Players can also search through any notes with public permissions.
