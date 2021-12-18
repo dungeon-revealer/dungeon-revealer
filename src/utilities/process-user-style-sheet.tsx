@@ -1,4 +1,4 @@
-import postcss, { Root, stringify, Plugin, AnyNode, rule } from "postcss";
+import postcss, { stringify, Plugin, AnyNode } from "postcss";
 
 const prefixRulesPlugin = (prefix: string): Plugin => ({
   postcssPlugin: "prefix-rules",
