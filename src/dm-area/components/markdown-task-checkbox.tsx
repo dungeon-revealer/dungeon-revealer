@@ -1,16 +1,15 @@
 import * as React from "react";
 
-export const TaskCheckbox: React.FC<{
+// TODO: let checkbox be togglable and update markdown note to reflect it
+export const TaskCheckbox = (props: {
   label: string;
   isChecked: boolean;
   isReadOnly: boolean;
-  onCheckboxChange: any;
-}> = ({ label, isChecked, isReadOnly, onCheckboxChange }) => (
+}) => (
   <input
     type="checkbox"
-    name={label}
-    checked={isChecked}
-    readOnly={isReadOnly}
-    onChange={onCheckboxChange}
+    name={props.label}
+    checked={props.isChecked}
+    readOnly={props.isReadOnly}
   />
 );
