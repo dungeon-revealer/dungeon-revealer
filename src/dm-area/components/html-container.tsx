@@ -9,6 +9,7 @@ import {
   ListItem,
   Text,
   Divider,
+  Checkbox,
 } from "@chakra-ui/react";
 import _sanitizeHtml from "sanitize-html";
 import { useStaticRef } from "../../hooks/use-static-ref";
@@ -17,7 +18,6 @@ import {
   Attribute,
 } from "../../utilities/attribute-parser";
 import { NoteLink } from "./note-link";
-import { TaskCheckbox } from "./markdown-task-checkbox";
 import { SharableImage } from "./sharable-image";
 import { ChatMessageButton } from "./chat-message-button";
 
@@ -43,7 +43,7 @@ const components = {
   ChatMessage: ChatMessageButton,
   ChatMacro: ChatMessageButton,
   Link: NoteLink,
-  TaskCheckbox: TaskCheckbox,
+  Checkbox: Checkbox,
   h1: H1,
   h2: H2,
   h3: H3,
@@ -134,7 +134,7 @@ const sanitizeHtml = (html: string) =>
       // alias for ChatMessage
       ChatMessage: ["message", "templateId", "var-*"],
       Link: ["id"],
-      TaskCheckbox: ["isReadOnly", "isChecked", "label"],
+      Checkbox: ["isReadOnly", "isChecked", "verticalAlign", "spacing"],
       div: ["style"],
       span: ["style"],
       a: ["target", "rel", "href", "id"],
@@ -170,9 +170,11 @@ const sanitizeHtml = (html: string) =>
       input: (name, attribs) => {
         if (attribs.type === "checkbox") {
           return {
-            tagName: "TaskCheckbox",
+            tagName: "Checkbox",
             attribs: {
-              label: "",
+              verticalAlign: "middle",
+              spacing: "0.2rem",
+              // TODO: remove read-only when the checkbox is togglable
               isReadOnly: "true",
               isChecked: attribs.checked !== undefined ? "true" : "",
             } as { [key: string]: string },
@@ -201,9 +203,9 @@ const HtmlContainerStyled = styled.div`
   }
 
   blockquote {
-    margin-left: 0;
-    border-left: gray 12px solid;
-    padding-left: 24px;
+    padding: 0 1em;
+    background-color: rgba(0, 0, 0, 0.04);
+    border-left: 7px solid #bcccdc;
   }
 
   img {
@@ -245,10 +247,6 @@ const HtmlContainerStyled = styled.div`
     border-radius: 0;
     padding: 0;
     background: none;
-  }
-
-  input {
-    vertical-align: middle;
   }
 `;
 
