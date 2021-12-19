@@ -246,6 +246,10 @@ const HtmlContainerStyled = styled.div`
     padding: 0;
     background: none;
   }
+
+  input {
+    vertical-align: middle;
+  }
 `;
 
 export const TemplateContext = React.createContext<TemplateMap>(new Map());
