@@ -15,6 +15,7 @@ const monacoFiles = [
   "vs/basic-languages/markdown/markdown.js",
   "vs/loader.js",
   "vs/base/worker/workerMain.js",
+  "vs/base/browser/ui/codicons/codicon/codicon.ttf",
 ];
 
 for (const file of monacoFiles) {
