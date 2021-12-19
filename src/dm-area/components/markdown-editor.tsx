@@ -17,9 +17,7 @@ import {
   ListIcon,
   Link,
   ChakraIcon,
-  QuoteIcon,
   DiceIcon,
-  CodeIcon,
   GridIcon,
 } from "../../feather-icons";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
@@ -762,7 +760,7 @@ export const MarkdownEditor: React.FC<{
             }
           }}
         >
-          <CodeIcon height={16} />
+          <ChakraIcon.Code />
         </ToolBarButton>
         <ToolBarButtonDropDown>
           <ToolBarButton
@@ -810,7 +808,7 @@ export const MarkdownEditor: React.FC<{
               toggleMarkdownList(monaco, ref.current, "quote");
           }}
         >
-          <QuoteIcon height={16} />
+          <ChakraIcon.Quote />
         </ToolBarButton>
         <ToolBarButtonDropDown>
           <ToolBarButton title="Insert Image" onClick={onClickImageButton}>

@@ -1063,6 +1063,40 @@ export const ChakraIcon = {
       </>
     ),
   }),
+  Quote: createIcon({
+    displayName: "Quote",
+    viewBox: "0 0 24 24",
+    defaultProps: {
+      fill: "none",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    path: (
+      <>
+        <path
+          d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+          stroke="currentColor"
+        />
+      </>
+    ),
+  }),
+  Code: createIcon({
+    displayName: "Code",
+    viewBox: "0 0 24 24",
+    defaultProps: {
+      fill: "none",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    path: (
+      <>
+        <polyline points="16 18 22 12 16 6" stroke="currentColor" />
+        <polyline points="8 6 2 12 8 18" stroke="currentColor" />
+      </>
+    ),
+  }),
   Columns: createIcon({
     displayName: "Columns",
     viewBox: "0 0 24 24",
