@@ -1036,6 +1036,17 @@ export const ChakraIcon = {
     },
     path: <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" />,
   }),
+  Heading: createIcon({
+    displayName: "Heading",
+    viewBox: "0 0 24 24",
+    defaultProps: {
+      fill: "none",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    path: <path d="M5.5 20V4M18.5 20V4M5.5 12h13" stroke="currentColor" />,
+  }),
   Right: createIcon({
     displayName: "Right",
     viewBox: "0 0 24 24",

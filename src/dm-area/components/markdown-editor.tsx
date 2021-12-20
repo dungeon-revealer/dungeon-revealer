@@ -4,7 +4,7 @@ import styled from "@emotion/styled/macro";
 import { parseDocument } from "htmlparser2";
 import MonacoEditor, { useMonaco, Monaco } from "@monaco-editor/react";
 import type * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import { Flex, Box } from "@chakra-ui/react";
+import { Flex, Box, Text } from "@chakra-ui/react";
 import * as Button from "../../button";
 import { sendRequest, ISendRequestTask } from "../../http-request";
 import { buildApiUrl } from "../../public-url";
@@ -685,6 +685,42 @@ export const MarkdownEditor: React.FC<{
   return (
     <Container>
       <TextToolBar>
+        <ToolBarButton
+          title="Heading"
+          onClick={() => {
+            const editor = ref.current;
+            const model = editor?.getModel();
+            const selection = editor?.getSelection();
+            if (
+              !model ||
+              !editor ||
+              !selection ||
+              !monaco ||
+              selection.startLineNumber !== selection.endLineNumber
+            )
+              return;
+            let selectedText = model.getLineContent(selection.startLineNumber);
+            let result = selectedText.match(/^(#+)(.*)$/);
+            let newText = `# ${selectedText.trimLeft()}`;
+            if (result) {
+              let headerLevel = (result[1].length + 1) % 5;
+              newText = `${"#".repeat(headerLevel)}${result[2]}`;
+            }
+            editor.executeEdits("", [
+              {
+                range: new monaco.Range(
+                  selection.startLineNumber,
+                  1,
+                  selection.startLineNumber,
+                  selectedText.length + 1
+                ),
+                text: newText,
+              },
+            ]);
+          }}
+        >
+          <ChakraIcon.Heading />
+        </ToolBarButton>
         <ToolBarButton
           title="Bold"
           onClick={() => {
