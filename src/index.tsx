@@ -7,9 +7,14 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { getUrlPrefix, buildUrl } from "./public-url";
 import { globalStyles } from "./global-styles";
 import { Modal } from "./modal";
+import * as UserStyleSheetOrchestrator from "./user-style-sheet-orchestrator";
 import { registerSoundPlayback } from "./register-sound-playback";
 
-loader.config({ paths: { vs: buildUrl("/monaco-editor/vs") } });
+loader.config({
+  paths: {
+    vs: buildUrl(`/monaco-editor/${import.meta.env.VITE_MONACO_VERSION}/vs`),
+  },
+});
 
 const emotionCache = createCache({ key: "chache" });
 emotionCache.compat = true;
@@ -50,10 +55,12 @@ const main = async () => {
     render(
       <CacheProvider value={emotionCache}>
         <ChakraProvider>
-          <Modal.Provider>
-            <Global styles={globalStyles}></Global>
-            {component}
-          </Modal.Provider>
+          <UserStyleSheetOrchestrator.Provider>
+            <Modal.Provider>
+              <Global styles={globalStyles} />
+              {component}
+            </Modal.Provider>
+          </UserStyleSheetOrchestrator.Provider>
         </ChakraProvider>
       </CacheProvider>,
       element
