@@ -63,6 +63,7 @@ const allowedTags = [
   "span",
   "em",
   "strong",
+  "del",
   "pre",
   "code",
   "h1",
@@ -268,6 +269,7 @@ export const HtmlContainer: React.FC<{ markdown: string }> = React.memo(
               simpleLineBreaks: true,
               tables: true,
               tasklists: true,
+              strikethrough: true,
             }}
           />
         </HtmlContainerStyled>

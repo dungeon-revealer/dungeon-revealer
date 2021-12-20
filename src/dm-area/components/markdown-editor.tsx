@@ -752,6 +752,21 @@ export const MarkdownEditor: React.FC<{
           <ItalicIcon height={16} />
         </ToolBarButton>
         <ToolBarButton
+          title="Strikethrough"
+          onClick={() => {
+            const editor = ref.current;
+            if (editor) {
+              wrapMarkdownSelection(
+                editor,
+                { left: "~~", right: "~~" },
+                { regexp: /~~/g, replace: "" }
+              );
+            }
+          }}
+        >
+          <ChakraIcon.Strikethrough />
+        </ToolBarButton>
+        <ToolBarButton
           title="Code"
           onClick={() => {
             const editor = ref.current;

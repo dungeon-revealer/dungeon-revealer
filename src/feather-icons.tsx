@@ -1047,6 +1047,22 @@ export const ChakraIcon = {
     },
     path: <path d="M5.5 20V4M18.5 20V4M5.5 12h13" stroke="currentColor" />,
   }),
+  Strikethrough: createIcon({
+    displayName: "Strikethrough",
+    viewBox: "0 0 24 24",
+    defaultProps: {
+      fill: "none",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    path: (
+      <>
+        <path d="M16 8a4 4 0 1 0-4 4 4 4 0 1 1-4 4" stroke="currentColor" />
+        <path d="M5.5 12h13" stroke="currentColor" />
+      </>
+    ),
+  }),
   Right: createIcon({
     displayName: "Right",
     viewBox: "0 0 24 24",
