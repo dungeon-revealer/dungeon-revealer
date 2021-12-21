@@ -31,6 +31,7 @@ import { useWindowContext } from "../token-info-aside/token-info-aside";
 import { useCurrent } from "../../hooks/use-current";
 import { useShowSelectNoteModal } from "../select-note-modal";
 import { HtmlContainer } from "./html-container";
+import { string } from "fp-ts";
 
 const insertImageIntoEditor = (
   monaco: Monaco,
@@ -90,57 +91,116 @@ const wrapMarkdownSelection = (
   editor.focus();
 };
 
+type MdList = { prefix: string; regexp: RegExp };
+
+const listKinds: { [listKind: string]: MdList } = {
+  check: {
+    prefix: "- [x] ",
+    regexp: /^(\s*)(\-\s+\[[\sx]{0,1}\]\s)(.*)$/,
+  },
+  unordered: {
+    prefix: "- ",
+    // (whitespace)(prefix)(content)
+    regexp: /^(\s*)(\-\s)(.*)$/,
+  },
+  ordered: {
+    prefix: "1. ",
+    regexp: /^(\s*)([0-9]+\.\s)(.*)$/,
+  },
+  quote: {
+    prefix: "> ",
+    regexp: /^(\s*)(\>\s)(.*)$/,
+  },
+};
+
 const toggleMarkdownList = (
   monaco: Monaco,
   editor: monacoEditor.editor.IStandaloneCodeEditor,
-  listType: "ordered" | "unordered" | "check" | "quote"
+  listKind: MdList
 ) => {
   const model = editor.getModel();
   const selection = editor.getSelection();
   if (!model || !editor || !selection || !monaco) return;
 
-  let prefix = "- ";
-  let regexp = /^\s*\-\s*/;
-  if (listType === "ordered") {
-    prefix = "1. ";
-    regexp = /^\s*[0-9]+\.\s*/;
-  } else if (listType === "check") {
-    prefix = "- [x] ";
-    regexp = /^\s*\-\s+\[[\sx]{0,1}\]\s*/;
-  } else if (listType === "quote") {
-    prefix = "> ";
-    regexp = /^\s*\>\s+/;
+  const leftWhitespaceRegexp = /^(\s*)(.*)$/;
+
+  const textList = (text: string) => {
+    let kind: keyof typeof listKinds;
+    for (kind in listKinds) {
+      let match = text.match(listKinds[kind].regexp);
+      if (match) return { text, match, list: listKinds[kind] };
+    }
+    return null;
+  };
+
+  const isMultiline = selection.startLineNumber !== selection.endLineNumber;
+
+  let applyListMultiline = false;
+  if (isMultiline) {
+    applyListMultiline =
+      textList(model.getLineContent(selection.startLineNumber))?.list.prefix !==
+      listKind.prefix;
   }
 
-  const applyList = !model
-    .getLineContent(selection.startLineNumber)
-    .startsWith(prefix);
   for (
     let index = selection.startLineNumber;
     index <= selection.endLineNumber;
     index++
   ) {
     let selectedText = model.getLineContent(index);
-    const lineIsListItem = selectedText.startsWith(prefix);
     const length = selectedText.length;
-    if (applyList) {
-      if (!lineIsListItem) selectedText = prefix + selectedText.trimLeft();
+    let lineList = textList(selectedText);
+    let newText = selectedText;
+    if (isMultiline) {
+      if (applyListMultiline) {
+        if (lineList) {
+          newText = lineList.match[1] + listKind.prefix + lineList.match[3];
+        } else {
+          let spaceMatch = selectedText.match(leftWhitespaceRegexp);
+          if (spaceMatch)
+            newText = spaceMatch[1] + listKind.prefix + spaceMatch[2];
+        }
+      } else {
+        if (lineList) {
+          newText = lineList.match[1] + lineList.match[3];
+        } else {
+          let spaceMatch = selectedText.match(leftWhitespaceRegexp);
+          if (spaceMatch) newText = spaceMatch[1] + spaceMatch[2];
+        }
+      }
     } else {
-      selectedText = selectedText.replace(regexp, "");
+      if (lineList) {
+        if (lineList.list.prefix == listKind.prefix) {
+          newText = lineList.match[1] + lineList.match[3];
+        } else {
+          newText = lineList.match[1] + listKind.prefix + lineList.match[3];
+        }
+      } else {
+        let spaceMatch = selectedText.match(leftWhitespaceRegexp);
+        if (spaceMatch)
+          newText = spaceMatch[1] + listKind.prefix + spaceMatch[2];
+      }
     }
 
-    editor.executeEdits("", [
-      {
-        range: new monaco.Range(index, 1, index, length + 1),
-        text: selectedText,
-      },
-    ]);
+    if (newText !== selectedText) {
+      editor.executeEdits("", [
+        {
+          range: new monaco.Range(index, 1, index, length + 1),
+          text: newText,
+        },
+      ]);
+    }
+    editor.setPosition(
+      new monaco.Position(
+        selection.startLineNumber,
+        model.getLineContent(selection.startLineNumber).length +
+          1 +
+          listKind.prefix.length +
+          1
+      )
+    );
+    editor.focus();
   }
-
-  editor.setPosition(
-    new monaco.Position(selection.startLineNumber, length + 1 + 2)
-  );
-  editor.focus();
 };
 
 const useImageCommand: (opts: {
@@ -818,7 +878,7 @@ export const MarkdownEditor: React.FC<{
             title="Insert List"
             onClick={() => {
               if (monaco && ref.current)
-                toggleMarkdownList(monaco, ref.current, "unordered");
+                toggleMarkdownList(monaco, ref.current, listKinds.unordered);
             }}
           >
             <ListIcon height={16} />
@@ -828,7 +888,11 @@ export const MarkdownEditor: React.FC<{
               <DropDownMenuItem
                 onClick={() => {
                   if (monaco && ref.current)
-                    toggleMarkdownList(monaco, ref.current, "unordered");
+                    toggleMarkdownList(
+                      monaco,
+                      ref.current,
+                      listKinds.unordered
+                    );
                 }}
               >
                 Unordered List
@@ -836,7 +900,7 @@ export const MarkdownEditor: React.FC<{
               <DropDownMenuItem
                 onClick={() => {
                   if (monaco && ref.current)
-                    toggleMarkdownList(monaco, ref.current, "ordered");
+                    toggleMarkdownList(monaco, ref.current, listKinds.ordered);
                 }}
               >
                 Ordered List
@@ -844,7 +908,7 @@ export const MarkdownEditor: React.FC<{
               <DropDownMenuItem
                 onClick={() => {
                   if (monaco && ref.current)
-                    toggleMarkdownList(monaco, ref.current, "check");
+                    toggleMarkdownList(monaco, ref.current, listKinds.check);
                 }}
               >
                 Check List
@@ -856,7 +920,7 @@ export const MarkdownEditor: React.FC<{
           title="Quote"
           onClick={() => {
             if (monaco && ref.current)
-              toggleMarkdownList(monaco, ref.current, "quote");
+              toggleMarkdownList(monaco, ref.current, listKinds.quote);
           }}
         >
           <ChakraIcon.Quote />
