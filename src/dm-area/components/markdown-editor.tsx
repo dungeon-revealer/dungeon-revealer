@@ -4,7 +4,7 @@ import styled from "@emotion/styled/macro";
 import { parseDocument } from "htmlparser2";
 import MonacoEditor, { useMonaco, Monaco } from "@monaco-editor/react";
 import type * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import { Flex, Box, Text } from "@chakra-ui/react";
+import { Flex, Box } from "@chakra-ui/react";
 import * as Button from "../../button";
 import { sendRequest, ISendRequestTask } from "../../http-request";
 import { buildApiUrl } from "../../public-url";
@@ -31,7 +31,6 @@ import { useWindowContext } from "../token-info-aside/token-info-aside";
 import { useCurrent } from "../../hooks/use-current";
 import { useShowSelectNoteModal } from "../select-note-modal";
 import { HtmlContainer } from "./html-container";
-import { string } from "fp-ts";
 
 const insertImageIntoEditor = (
   monaco: Monaco,
