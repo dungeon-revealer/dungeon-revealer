@@ -875,7 +875,10 @@ export const DmMap = (props: {
                       })
                     }
                   >
-                    <Icons.DropletIcon fill size={20} />
+                    <Icons.ChakraIcon.Droplet
+                      fill="currentColor"
+                      boxSize="20px"
+                    />
                     <Icons.Label>Shroud All</Icons.Label>
                   </Toolbar.Button>
                 </Toolbar.Item>
@@ -905,7 +908,7 @@ export const DmMap = (props: {
                       })
                     }
                   >
-                    <Icons.DropletIcon size={20} />
+                    <Icons.ChakraIcon.Droplet boxSize="20px" />
                     <Icons.Label>Clear All</Icons.Label>
                   </Toolbar.Button>
                 </Toolbar.Item>
