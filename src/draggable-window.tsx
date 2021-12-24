@@ -224,7 +224,7 @@ export const DraggableWindow = ({
         ))}
         <div style={{ marginRight: 0 }}>
           <Button.Tertiary small iconOnly onClick={close} title="Close">
-            <Icon.XIcon height={16} />
+            <Icon.ChakraIcon.X boxSize="16px" />
           </Button.Tertiary>
         </div>
       </WindowHeader>

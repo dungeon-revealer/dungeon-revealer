@@ -197,7 +197,7 @@ export const SelectMapModal = ({
         <Modal.Dialog>
           <Modal.Header>
             <Modal.Heading2>
-              <Icons.MapIcon size={28} /> Map Library
+              <Icons.ChakraIcon.Map boxSize="28px" /> Map Library
             </Modal.Heading2>
             <div style={{ flex: 1, textAlign: "right" }}>
               {canClose ? (
@@ -266,7 +266,7 @@ export const SelectMapModal = ({
                     }}
                   >
                     <>
-                      <Icons.PlusIcon height={20} width={20} />{" "}
+                      <Icons.ChakraIcon.Plus boxSize="20px" />{" "}
                       <span>Create New Map</span>
                     </>
                   </CreateNewMapButton>
@@ -305,7 +305,7 @@ export const SelectMapModal = ({
                       });
                     }}
                   >
-                    <Icons.EditIcon size={16} />
+                    <Icons.ChakraIcon.Edit boxSize="16px" />
                   </Button.Tertiary>
                 </div>
                 <div
@@ -343,7 +343,7 @@ export const SelectMapModal = ({
                         });
                       }}
                     >
-                      <Icons.TrashIcon size={20} />
+                      <Icons.ChakraIcon.Trash boxSize="20px" />
                       <span>Delete</span>
                     </Button.Tertiary>
                   </div>
@@ -354,7 +354,7 @@ export const SelectMapModal = ({
                         setLoadedMapId(activeMap.node.id);
                       }}
                     >
-                      <Icons.CheckIcon height={20} width={20} />
+                      <Icons.ChakraIcon.Check boxSize="20px" />
                       <span>Load Map</span>
                     </Button.Primary>
                   </div>
@@ -377,12 +377,12 @@ export const SelectMapModal = ({
               >
                 {maps.length ? (
                   <>
-                    <Icons.Inbox height={75} width={75} fill="#D9E2EC" />
+                    <Icons.ChakraIcon.Inbox boxSize="75px" fill="#D9E2EC" />
                     <h3>Please select a Map from the list on the left.</h3>
                   </>
                 ) : (
                   <>
-                    <Icons.Inbox height={75} width={75} fill="#D9E2EC" />
+                    <Icons.ChakraIcon.Inbox boxSize="75px" fill="#D9E2EC" />
                     <h3 style={{ marginBottom: 20 }}>
                       Your library is currently empty
                     </h3>
@@ -393,7 +393,7 @@ export const SelectMapModal = ({
                       }}
                     >
                       <>
-                        <Icons.MapIcon size={24} />
+                        <Icons.ChakraIcon.Map boxSize="24px" />
                         <span>Create a new Map</span>
                       </>
                     </CreateNewMapButton>

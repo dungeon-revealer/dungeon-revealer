@@ -275,7 +275,7 @@ const PlayerMap = ({
                             controlRef.current?.controls.center();
                           }}
                         >
-                          <Icons.Compass size={20} />
+                          <Icons.ChakraIcon.Compass boxSize="20px" />
                           <Icons.Label>Center Map</Icons.Label>
                         </Toolbar.Button>
                       </Toolbar.Item>
@@ -292,7 +292,7 @@ const PlayerMap = ({
                             return () => clearInterval(interval);
                           }}
                         >
-                          <Icons.ZoomIn size={20} />
+                          <Icons.ChakraIcon.ZoomIn boxSize="20px" />
                           <Icons.Label>Zoom In</Icons.Label>
                         </Toolbar.LongPressButton>
                       </Toolbar.Item>
@@ -309,7 +309,7 @@ const PlayerMap = ({
                             return () => clearInterval(interval);
                           }}
                         >
-                          <Icons.ZoomOut size={20} />
+                          <Icons.ChakraIcon.ZoomOut boxSize="20px" />
                           <Icons.Label>Zoom Out</Icons.Label>
                         </Toolbar.LongPressButton>
                       </Toolbar.Item>
@@ -323,7 +323,7 @@ const PlayerMap = ({
                             );
                           }}
                         >
-                          <Icons.BookOpen size={20} />
+                          <Icons.ChakraIcon.BookOpen boxSize="20px" />
                           <Icons.Label>Notes</Icons.Label>
                         </Toolbar.LongPressButton>
                       </Toolbar.Item>

@@ -62,7 +62,7 @@ export const StepInput = (props: {
         </div>
         <div>
           <Button.Tertiary {...plusLongPressProps} onClick={plusHandler} small>
-            <Icons.PlusIcon />
+            <Icons.ChakraIcon.Plus />
           </Button.Tertiary>
         </div>
         <div>
@@ -71,7 +71,7 @@ export const StepInput = (props: {
             onClick={minusHandler}
             small
           >
-            <Icons.MinusIcon />
+            <Icons.ChakraIcon.Minus />
           </Button.Tertiary>
         </div>
       </div>

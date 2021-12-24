@@ -304,9 +304,9 @@ const WindowRenderer = (props: {
             onClick: () => setIsEditMode((isEditMode) => !isEditMode),
             title: isEditMode ? "Save" : "Edit",
             icon: isEditMode ? (
-              <Icon.SaveIcon size={16} />
+              <Icon.ChakraIcon.Save boxSize="16px" />
             ) : (
-              <Icon.EditIcon size={16} />
+              <Icon.ChakraIcon.Edit boxSize="16px" />
             ),
             isDisabled: props.noteId === null || !data.data,
           },
@@ -333,7 +333,7 @@ const WindowRenderer = (props: {
               });
             },
             title: "Delete note",
-            icon: <Icon.TrashIcon size={16} />,
+            icon: <Icon.ChakraIcon.Trash boxSize="16px" />,
             isDisabled: props.noteId === null || !data.data,
           },
           {
@@ -349,7 +349,7 @@ const WindowRenderer = (props: {
               );
             },
             title: "Edit access",
-            icon: <Icon.EyeIcon size={16} />,
+            icon: <Icon.ChakraIcon.Eye boxSize="16px" />,
             isDisabled: props.noteId === null || !data.data,
           },
         ]
@@ -365,7 +365,7 @@ const WindowRenderer = (props: {
                 })
               : () => undefined,
           title: "Share",
-          icon: <Icon.Share size={16} />,
+          icon: <Icon.ChakraIcon.Share boxSize="16px" />,
           isDisabled: props.noteId === null || !data.data,
         },
       ]
@@ -420,7 +420,7 @@ const WindowRenderer = (props: {
                 iconOnly
                 onClick={() => setShowLibrary((showLibrary) => !showLibrary)}
               >
-                <Icon.BookOpen size={16} />
+                <Icon.ChakraIcon.BookOpen boxSize="16px" />
               </Button.Tertiary>
             </Tooltip>
             {isDm ? (
@@ -432,7 +432,7 @@ const WindowRenderer = (props: {
                     createNewNote();
                   }}
                 >
-                  <Icon.FilePlus size={16} />
+                  <Icon.ChakraIcon.FilePlus boxSize="16px" />
                 </Button.Tertiary>
               </Tooltip>
             ) : null}
@@ -444,7 +444,7 @@ const WindowRenderer = (props: {
               disabled={!props.navigateBack}
               style={{ paddingLeft: 4, paddingRight: 4 }}
             >
-              <Icon.ChevronLeftIcon size={16} />
+              <Icon.ChakraIcon.ChevronLeft boxSize="16px" />
             </Button.Tertiary>
             <Button.Tertiary
               small
@@ -453,7 +453,7 @@ const WindowRenderer = (props: {
               disabled={!props.navigateNext}
               style={{ paddingLeft: 4, paddingRight: 4 }}
             >
-              <Icon.ChevronRightIcon size={16} />
+              <Icon.ChakraIcon.ChevronRight boxSize="16px" />
             </Button.Tertiary>
           </>
         }
@@ -515,7 +515,7 @@ const WindowRenderer = (props: {
                               createNewNote();
                             }}
                           >
-                            <Icon.FilePlus size={16} />
+                            <Icon.ChakraIcon.FilePlus boxSize="16px" />
                             <span>Create new note</span>
                           </Button.Primary>
                         </Box>

@@ -57,7 +57,7 @@ export const SharableImage: React.FC<{ id: string }> = (props) => {
             iconOnly
             onClick={() => splashShareImage(props.id)}
           >
-            <Icon.Share size={16} />
+            <Icon.ChakraIcon.Share boxSize="16px" />
           </Button.Primary>
         ) : null}
         <Button.Primary
@@ -66,7 +66,7 @@ export const SharableImage: React.FC<{ id: string }> = (props) => {
           iconOnly
           onClick={() => shareImage(props.id)}
         >
-          <Icon.MessageCircleIcon size={16} />
+          <Icon.ChakraIcon.MessageCircle boxSize="16px" />
         </Button.Primary>
         <Button.Primary
           small
@@ -74,7 +74,7 @@ export const SharableImage: React.FC<{ id: string }> = (props) => {
           iconOnly
           onClick={() => setShowLightBoxImage(true)}
         >
-          <Icon.Maximize height={16} />
+          <Icon.ChakraIcon.Maximize boxSize="16px" />
         </Button.Primary>
       </Menu>
       {showLightboxImage ? (

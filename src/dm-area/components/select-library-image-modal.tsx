@@ -190,7 +190,7 @@ export const SelectLibraryImageModal: React.FC<{
       <Content onClick={(ev) => ev.stopPropagation()} tabIndex={1}>
         <Modal.Header>
           <Modal.Heading2>
-            <Icons.ImageIcon size={28} /> Media Library
+            <Icons.ChakraIcon.Image boxSize="28px" /> Media Library
           </Modal.Heading2>
         </Modal.Header>
         <Modal.Body
