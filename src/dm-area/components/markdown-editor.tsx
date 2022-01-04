@@ -17,6 +17,8 @@ import {
   ListIcon,
   Link,
   ChakraIcon,
+  DiceIcon,
+  GridIcon,
 } from "../../feather-icons";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
 import { useAccessToken } from "../../hooks/use-access-token";
@@ -52,6 +54,152 @@ const insertImageIntoEditor = (
       text: placeholderTemplate,
     },
   ]);
+};
+
+const wrapMarkdownSelection = (
+  editor: monacoEditor.editor.IStandaloneCodeEditor,
+  wrapper: { left: string; right: string },
+  replace: { regexp: RegExp; replace: string }
+) => {
+  const model = editor?.getModel();
+  const selection = editor?.getSelection();
+  if (!model || !editor || !selection) return;
+  const selectedText = model.getValueInRange(selection);
+  if (
+    selectedText.trim().startsWith(wrapper.left) &&
+    selectedText.trim().endsWith(wrapper.right)
+  ) {
+    editor.executeEdits("", [
+      {
+        range: selection,
+        text: model
+          .getValueInRange(selection)
+          .replace(replace.regexp, replace.replace),
+      },
+    ]);
+  } else {
+    editor.executeEdits("", [
+      {
+        range: selection,
+        text: `${wrapper.left}${model.getValueInRange(selection)}${
+          wrapper.right
+        }`,
+      },
+    ]);
+  }
+  editor.focus();
+};
+
+type MdList = { prefix: string; regexp: RegExp };
+
+const listKinds: { [listKind: string]: MdList } = {
+  check: {
+    prefix: "- [x] ",
+    regexp: /^(\s*)(\-\s+\[[\sx]{0,1}\]\s)(.*)$/,
+  },
+  unordered: {
+    prefix: "- ",
+    // (whitespace)(prefix)(content)
+    regexp: /^(\s*)(\-\s)(.*)$/,
+  },
+  ordered: {
+    prefix: "1. ",
+    regexp: /^(\s*)([0-9]+\.\s)(.*)$/,
+  },
+  quote: {
+    prefix: "> ",
+    regexp: /^(\s*)(\>\s)(.*)$/,
+  },
+};
+
+const toggleMarkdownList = (
+  monaco: Monaco,
+  editor: monacoEditor.editor.IStandaloneCodeEditor,
+  listKind: MdList
+) => {
+  const model = editor.getModel();
+  const selection = editor.getSelection();
+  if (!model || !editor || !selection || !monaco) return;
+
+  const leftWhitespaceRegexp = /^(\s*)(.*)$/;
+
+  const textList = (text: string) => {
+    let kind: keyof typeof listKinds;
+    for (kind in listKinds) {
+      let match = text.match(listKinds[kind].regexp);
+      if (match) return { text, match, list: listKinds[kind] };
+    }
+    return null;
+  };
+
+  const isMultiline = selection.startLineNumber !== selection.endLineNumber;
+
+  let applyListMultiline = false;
+  if (isMultiline) {
+    applyListMultiline =
+      textList(model.getLineContent(selection.startLineNumber))?.list.prefix !==
+      listKind.prefix;
+  }
+
+  for (
+    let index = selection.startLineNumber;
+    index <= selection.endLineNumber;
+    index++
+  ) {
+    let selectedText = model.getLineContent(index);
+    const length = selectedText.length;
+    let lineList = textList(selectedText);
+    let newText = selectedText;
+    if (isMultiline) {
+      if (applyListMultiline) {
+        if (lineList) {
+          newText = lineList.match[1] + listKind.prefix + lineList.match[3];
+        } else {
+          let spaceMatch = selectedText.match(leftWhitespaceRegexp);
+          if (spaceMatch)
+            newText = spaceMatch[1] + listKind.prefix + spaceMatch[2];
+        }
+      } else {
+        if (lineList) {
+          newText = lineList.match[1] + lineList.match[3];
+        } else {
+          let spaceMatch = selectedText.match(leftWhitespaceRegexp);
+          if (spaceMatch) newText = spaceMatch[1] + spaceMatch[2];
+        }
+      }
+    } else {
+      if (lineList) {
+        if (lineList.list.prefix == listKind.prefix) {
+          newText = lineList.match[1] + lineList.match[3];
+        } else {
+          newText = lineList.match[1] + listKind.prefix + lineList.match[3];
+        }
+      } else {
+        let spaceMatch = selectedText.match(leftWhitespaceRegexp);
+        if (spaceMatch)
+          newText = spaceMatch[1] + listKind.prefix + spaceMatch[2];
+      }
+    }
+
+    if (newText !== selectedText) {
+      editor.executeEdits("", [
+        {
+          range: new monaco.Range(index, 1, index, length + 1),
+          text: newText,
+        },
+      ]);
+    }
+    editor.setPosition(
+      new monaco.Position(
+        selection.startLineNumber,
+        model.getLineContent(selection.startLineNumber).length +
+          1 +
+          listKind.prefix.length +
+          1
+      )
+    );
+    editor.focus();
+  }
 };
 
 const useImageCommand: (opts: {
@@ -597,119 +745,184 @@ export const MarkdownEditor: React.FC<{
     <Container>
       <TextToolBar>
         <ToolBarButton
-          title="Bold"
+          title="Heading"
           onClick={() => {
             const editor = ref.current;
             const model = editor?.getModel();
             const selection = editor?.getSelection();
-            if (!model || !editor || !selection || !monaco) return;
-            const selectedText = model.getValueInRange(selection);
             if (
-              selectedText.trim().startsWith("**") &&
-              selectedText.trim().endsWith("**")
-            ) {
-              editor.executeEdits("", [
-                {
-                  range: new monaco.Range(
-                    selection.startLineNumber,
-                    selection.startColumn,
-                    selection.endLineNumber,
-                    selection.endColumn
-                  ),
-                  text: model.getValueInRange(selection).replace(/\*\*/g, ""),
-                },
-              ]);
-            } else {
-              editor.executeEdits("", [
-                {
-                  range: new monaco.Range(
-                    selection.startLineNumber,
-                    selection.startColumn,
-                    selection.endLineNumber,
-                    selection.endColumn
-                  ),
-                  text: `**` + model.getValueInRange(selection) + `**`,
-                },
-              ]);
-            }
-            editor.focus();
-          }}
-        >
-          <BoldIcon height={16} />
-        </ToolBarButton>
-        <ToolBarButton
-          onClick={() => {
-            const editor = ref.current;
-            const model = editor?.getModel();
-            const selection = editor?.getSelection();
-            if (!model || !editor || !selection || !monaco) return;
-            const selectedText = model.getValueInRange(selection);
-            if (
-              selectedText.trim().startsWith("*") &&
-              selectedText.trim().endsWith("*")
-            ) {
-              editor.executeEdits("", [
-                {
-                  range: new monaco.Range(
-                    selection.startLineNumber,
-                    selection.startColumn,
-                    selection.endLineNumber,
-                    selection.endColumn
-                  ),
-                  text: model.getValueInRange(selection).replace(/\*/g, ""),
-                },
-              ]);
-            } else {
-              editor.executeEdits("", [
-                {
-                  range: new monaco.Range(
-                    selection.startLineNumber,
-                    selection.startColumn,
-                    selection.endLineNumber,
-                    selection.endColumn
-                  ),
-                  text: `*` + model.getValueInRange(selection) + `*`,
-                },
-              ]);
-            }
-            editor.focus();
-          }}
-        >
-          <ItalicIcon height={16} />
-        </ToolBarButton>
-        <ToolBarButton
-          title="Insert List"
-          onClick={() => {
-            const editor = ref.current;
-            const model = editor?.getModel();
-            const selection = editor?.getSelection();
-            if (!model || !editor || !selection || !monaco) return;
+              !model ||
+              !editor ||
+              !selection ||
+              !monaco ||
+              selection.startLineNumber !== selection.endLineNumber
+            )
+              return;
             let selectedText = model.getLineContent(selection.startLineNumber);
-            const length = selectedText.length;
-            if (selectedText.startsWith("-")) {
-              selectedText = selectedText.replace(/- /, "");
-            } else {
-              selectedText = "- " + selectedText.trimLeft();
+            let result = selectedText.match(/^(#+)(.*)$/);
+            let newText = `# ${selectedText.trimLeft()}`;
+            if (result) {
+              let headerLevel = (result[1].length + 1) % 5;
+              newText = `${"#".repeat(headerLevel)}${result[2]}`;
             }
-
             editor.executeEdits("", [
               {
                 range: new monaco.Range(
                   selection.startLineNumber,
                   1,
                   selection.startLineNumber,
-                  length + 1
+                  selectedText.length + 1
                 ),
-                text: selectedText,
+                text: newText,
               },
             ]);
-            editor.setPosition(
-              new monaco.Position(selection.startLineNumber, length + 1 + 2)
-            );
-            editor.focus();
           }}
         >
-          <ListIcon height={16} />
+          <ChakraIcon.Heading />
+        </ToolBarButton>
+        <ToolBarButton
+          title="Bold"
+          onClick={() => {
+            const editor = ref.current;
+            if (editor) {
+              wrapMarkdownSelection(
+                editor,
+                { left: "**", right: "**" },
+                { regexp: /\*\*/g, replace: "" }
+              );
+            }
+          }}
+        >
+          <BoldIcon height={16} />
+        </ToolBarButton>
+        <ToolBarButton
+          title="Italicize"
+          onClick={() => {
+            const editor = ref.current;
+            if (editor) {
+              wrapMarkdownSelection(
+                editor,
+                { left: "_", right: "_" },
+                { regexp: /_/g, replace: "" }
+              );
+            }
+          }}
+        >
+          <ItalicIcon height={16} />
+        </ToolBarButton>
+        <ToolBarButton
+          title="Strikethrough"
+          onClick={() => {
+            const editor = ref.current;
+            if (editor) {
+              wrapMarkdownSelection(
+                editor,
+                { left: "~~", right: "~~" },
+                { regexp: /~~/g, replace: "" }
+              );
+            }
+          }}
+        >
+          <ChakraIcon.Strikethrough />
+        </ToolBarButton>
+        <ToolBarButton
+          title="Code"
+          onClick={() => {
+            const editor = ref.current;
+            const model = editor?.getModel();
+            let selection = editor?.getSelection();
+            if (!model || !editor || !selection || !monaco) return;
+            let multiline =
+              selection.startLineNumber !== selection.endLineNumber;
+            if (multiline) {
+              if (
+                selection.startLineNumber > 1 &&
+                model.getLineContent(selection.startLineNumber - 1).trim() ===
+                  "```" &&
+                model.getLineContent(selection.endLineNumber + 1).trim() ===
+                  "```"
+              ) {
+                let newRange = new monaco.Range(
+                  selection.startLineNumber - 1,
+                  1,
+                  selection.endLineNumber + 1,
+                  model.getLineContent(selection.endLineNumber + 1).length + 1
+                );
+                editor.setSelection(newRange);
+                wrapMarkdownSelection(
+                  editor,
+                  { left: "```\n", right: "\n```" },
+                  { regexp: /\n{0,1}\`\`\`\n{0,1}/g, replace: "" }
+                );
+              } else {
+                wrapMarkdownSelection(
+                  editor,
+                  { left: "```\n", right: "\n```" },
+                  { regexp: /\n{0,1}\`\`\`\n{0,1}/g, replace: "" }
+                );
+              }
+            } else {
+              wrapMarkdownSelection(
+                editor,
+                { left: "`", right: "`" },
+                { regexp: /\`/g, replace: "" }
+              );
+            }
+          }}
+        >
+          <ChakraIcon.Code />
+        </ToolBarButton>
+        <ToolBarButtonDropDown>
+          <ToolBarButton
+            title="Insert List"
+            onClick={() => {
+              if (monaco && ref.current)
+                toggleMarkdownList(monaco, ref.current, listKinds.unordered);
+            }}
+          >
+            <ListIcon height={16} />
+          </ToolBarButton>
+          <DropDownMenu data-menu>
+            <DropDownMenuInner>
+              <DropDownMenuItem
+                onClick={() => {
+                  if (monaco && ref.current)
+                    toggleMarkdownList(
+                      monaco,
+                      ref.current,
+                      listKinds.unordered
+                    );
+                }}
+              >
+                Unordered List
+              </DropDownMenuItem>
+              <DropDownMenuItem
+                onClick={() => {
+                  if (monaco && ref.current)
+                    toggleMarkdownList(monaco, ref.current, listKinds.ordered);
+                }}
+              >
+                Ordered List
+              </DropDownMenuItem>
+              <DropDownMenuItem
+                onClick={() => {
+                  if (monaco && ref.current)
+                    toggleMarkdownList(monaco, ref.current, listKinds.check);
+                }}
+              >
+                Check List
+              </DropDownMenuItem>
+            </DropDownMenuInner>
+          </DropDownMenu>
+        </ToolBarButtonDropDown>
+        <ToolBarButton
+          title="Quote"
+          onClick={() => {
+            if (monaco && ref.current)
+              toggleMarkdownList(monaco, ref.current, listKinds.quote);
+          }}
+        >
+          <ChakraIcon.Quote />
         </ToolBarButton>
         <ToolBarButtonDropDown>
           <ToolBarButton title="Insert Image" onClick={onClickImageButton}>
@@ -730,25 +943,65 @@ export const MarkdownEditor: React.FC<{
           title="Insert Link"
           onClick={() => {
             const editor = ref.current;
-            const model = editor?.getModel();
-            const selection = editor?.getSelection();
-            if (!model || !editor || !selection || !monaco) return;
-
-            editor.executeEdits("", [
-              {
-                range: new monaco.Range(
-                  selection.startLineNumber,
-                  selection.startColumn,
-                  selection.endLineNumber,
-                  selection.endColumn
-                ),
-                text: `[` + model.getValueInRange(selection) + `]()`,
-              },
-            ]);
-            editor.focus();
+            if (editor) {
+              wrapMarkdownSelection(
+                editor,
+                { left: "[", right: "]()" },
+                { regexp: /\[(.*)\]\(.*\)/g, replace: "$1" }
+              );
+            }
           }}
         >
           <Link height={16} />
+        </ToolBarButton>
+        <ToolBarButton
+          title="Dice macro"
+          onClick={() => {
+            const editor = ref.current;
+            const model = editor?.getModel();
+            const selection = editor?.getSelection();
+            if (!model || !editor || !selection) return;
+
+            let message = model.getValueInRange(selection);
+            let wrapLeft = '<ChatMacro message="';
+            if (!message) {
+              wrapLeft +=
+                "Chat message with dice rolls [1d20] makes [2d6] damage";
+            }
+
+            wrapMarkdownSelection(
+              editor,
+              { left: wrapLeft, right: '">\n  Button Text\n</ChatMacro>' },
+              {
+                regexp: /\<ChatMacro.*message="(.*)".*\<\/ChatMacro\>/gs,
+                replace: "$1",
+              }
+            );
+          }}
+        >
+          <DiceIcon height={16} />
+        </ToolBarButton>
+        <ToolBarButton
+          title="Insert Table"
+          onClick={() => {
+            const editor = ref.current;
+            const model = editor?.getModel();
+            const selection = editor?.getSelection();
+            if (!model || !editor || !selection) return;
+
+            if (model.getValueInRange(selection)) return;
+
+            const tableTemplate = `| Header 1 | Header 2 | Header 3 |\n| :------: | :------: | :------: |\n|  entry 1 |  entry 2 |  entry 3 |`;
+
+            editor.executeEdits("", [
+              {
+                range: selection,
+                text: tableTemplate,
+              },
+            ]);
+          }}
+        >
+          <GridIcon size={16} />
         </ToolBarButton>
         <ToolBarButton
           style={{ marginLeft: "auto" }}

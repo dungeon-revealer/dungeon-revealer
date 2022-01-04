@@ -999,6 +999,33 @@ export const ChakraIcon = {
     },
     path: <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" />,
   }),
+  Heading: createIcon({
+    displayName: "Heading",
+    viewBox: "0 0 24 24",
+    defaultProps: {
+      fill: "none",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    path: <path d="M5.5 20V4M18.5 20V4M5.5 12h13" stroke="currentColor" />,
+  }),
+  Strikethrough: createIcon({
+    displayName: "Strikethrough",
+    viewBox: "0 0 24 24",
+    defaultProps: {
+      fill: "none",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    path: (
+      <>
+        <path d="M16 8a4 4 0 1 0-4 4 4 4 0 1 1-4 4" stroke="currentColor" />
+        <path d="M5.5 12h13" stroke="currentColor" />
+      </>
+    ),
+  }),
   Right: createIcon({
     displayName: "Right",
     viewBox: "0 0 24 24",
@@ -1023,6 +1050,40 @@ export const ChakraIcon = {
       <>
         <circle cx={12} cy={12} r={10} stroke="currentColor" />
         <path d="M12 16v-4M12 8h.01" stroke="currentColor" />
+      </>
+    ),
+  }),
+  Quote: createIcon({
+    displayName: "Quote",
+    viewBox: "0 0 24 24",
+    defaultProps: {
+      fill: "none",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    path: (
+      <>
+        <path
+          d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+          stroke="currentColor"
+        />
+      </>
+    ),
+  }),
+  Code: createIcon({
+    displayName: "Code",
+    viewBox: "0 0 24 24",
+    defaultProps: {
+      fill: "none",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    path: (
+      <>
+        <polyline points="16 18 22 12 16 6" stroke="currentColor" />
+        <polyline points="8 6 2 12 8 18" stroke="currentColor" />
       </>
     ),
   }),
