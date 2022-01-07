@@ -2,7 +2,7 @@ import * as React from "react";
 import useAsyncEffect from "@n1ru4l/use-async-effect";
 import styled from "@emotion/styled/macro";
 import { darken } from "polished";
-import * as Icons from "../../feather-icons";
+import * as Icon from "../../feather-icons";
 import * as Button from "../../button";
 import { Modal } from "../../modal";
 import { buildApiUrl } from "../../public-url";
@@ -190,7 +190,7 @@ export const SelectLibraryImageModal: React.FC<{
       <Content onClick={(ev) => ev.stopPropagation()} tabIndex={1}>
         <Modal.Header>
           <Modal.Heading2>
-            <Icons.ChakraIcon.Image boxSize="28px" /> Media Library
+            <Icon.Image boxSize="28px" /> Media Library
           </Modal.Heading2>
         </Modal.Header>
         <Modal.Body

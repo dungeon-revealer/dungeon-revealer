@@ -168,7 +168,7 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
                     onClick={() => setShowSearch(true)}
                     style={{ marginRight: 8, pointerEvents: "all" }}
                   >
-                    <Icon.ChakraIcon.Search boxSize="20px" />
+                    <Icon.Search boxSize="20px" />
                   </IconButton>
                   <ChatToggleButton
                     hasUnreadMessages={hasUnreadMessages}

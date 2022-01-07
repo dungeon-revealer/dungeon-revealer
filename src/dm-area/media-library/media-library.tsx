@@ -283,7 +283,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
       >
         <Modal.Header>
           <Modal.Heading2>
-            <Icon.ChakraIcon.Image boxSize="28px" /> Media Library
+            <Icon.Image boxSize="28px" /> Media Library
           </Modal.Heading2>
           <div style={{ flex: 1, textAlign: "right" }}>
             <Button.Tertiary
@@ -317,7 +317,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onClose }) => {
             <Modal.ActionGroup>
               <div>
                 <Button.Primary onClick={showSelectFileDialog} role="button">
-                  <Icon.ChakraIcon.Plus boxSize="24px" />
+                  <Icon.Plus boxSize="24px" />
                   <span>Upload new File</span>
                 </Button.Primary>
               </div>
@@ -353,7 +353,7 @@ const Item: React.FC<{
           iconOnly
           onClick={() => setShowEditModal(true)}
         >
-          <Icon.ChakraIcon.Edit boxSize="16px" />
+          <Icon.Edit boxSize="16px" />
         </Button.Primary>
         <Button.Primary
           small
@@ -361,7 +361,7 @@ const Item: React.FC<{
           iconOnly
           onClick={() => splashShareImage(item.id)}
         >
-          <Icon.ChakraIcon.Share boxSize="16px" />
+          <Icon.Share boxSize="16px" />
         </Button.Primary>
         <Button.Primary
           small
@@ -369,7 +369,7 @@ const Item: React.FC<{
           iconOnly
           onClick={() => shareImage(item.id)}
         >
-          <Icon.ChakraIcon.MessageCircle boxSize="16px" />
+          <Icon.MessageCircle boxSize="16px" />
         </Button.Primary>
         <Button.Primary
           small
@@ -377,7 +377,7 @@ const Item: React.FC<{
           iconOnly
           onClick={() => setShowLightBoxImage(true)}
         >
-          <Icon.ChakraIcon.Maximize boxSize="16px" />
+          <Icon.Maximize boxSize="16px" />
         </Button.Primary>
       </Menu>
       {showLightboxImage ? (
@@ -435,7 +435,7 @@ const EditImageModal: React.FC<{
             <Modal.ActionGroup left>
               <div>
                 <Button.Tertiary onClick={onDelete} type="button" danger>
-                  <Icon.ChakraIcon.Trash boxSize="18px" />
+                  <Icon.Trash boxSize="18px" />
                   <span>Delete</span>
                 </Button.Tertiary>
               </div>

@@ -297,7 +297,7 @@ export const TokenInfoSideBar = (props: {
         <InputGroup size="sm">
           <InputLeftElement
             pointerEvents="none"
-            children={<Icon.ChakraIcon.Search stroke="gray" boxSize="16px" />}
+            children={<Icon.Search stroke="gray" boxSize="16px" />}
           />
           <Input
             placeholder="Search Note"

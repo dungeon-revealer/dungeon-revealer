@@ -16,7 +16,7 @@ import * as E from "fp-ts/Either";
 import * as Json from "fp-ts/Json";
 import { ThemedLevaPanel } from "../../themed-leva-panel";
 import { useMessageAddMutation } from "../../chat/message-add-mutation";
-import { ChakraIcon } from "../../feather-icons";
+import * as Icon from "../../feather-icons";
 import { TemplateContext } from "./html-container";
 
 const PartialSelectVariableModel = t.intersection([
@@ -246,10 +246,7 @@ const ComplexChatMessageButton = (props: {
       {props.controls.size > 0 ? (
         <Popover placement="right">
           <PopoverTrigger>
-            <IconButton
-              aria-label="Apply options"
-              icon={<ChakraIcon.Right />}
-            />
+            <IconButton aria-label="Apply options" icon={<Icon.Right />} />
           </PopoverTrigger>
           <Portal>
             <PopoverContent maxWidth={200}>

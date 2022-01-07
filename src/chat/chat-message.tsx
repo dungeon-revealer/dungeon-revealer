@@ -25,7 +25,7 @@ import {
 } from "@chakra-ui/react";
 import { useNoteWindowActions } from "../dm-area/token-info-aside";
 import { SharableImage } from "../dm-area/components/sharable-image";
-import { ChakraIcon } from "../feather-icons";
+import * as Icon from "../feather-icons";
 import * as Button from "../button";
 import { chatMessageComponents } from "../user-content-components";
 import type { chatMessage_message } from "./__generated__/chatMessage_message.graphql";
@@ -155,7 +155,7 @@ const UserMessageRenderer = ({
               <PopoverTrigger>
                 <IconButton
                   aria-label="Show Info"
-                  icon={<ChakraIcon.Info />}
+                  icon={<Icon.Info />}
                   size="sm"
                   variant="unstyled"
                 />

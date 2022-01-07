@@ -23,7 +23,7 @@ import {
 } from "@chakra-ui/react";
 import graphql from "babel-plugin-relay/macro";
 import { ReactRelayContext, useFragment, useMutation } from "relay-hooks";
-import * as Icons from "../feather-icons";
+import * as Icon from "../feather-icons";
 import { Toolbar } from "../toolbar";
 import type { MapTool } from "../map-tools/map-tool";
 import { DragPanZoomMapTool } from "../map-tools/drag-pan-zoom-map-tool";
@@ -129,12 +129,12 @@ const BrushSettings = (): React.ReactElement => {
         options: [
           {
             value: BrushShape.square,
-            icon: <Icons.ChakraIcon.Square boxSize="20px" />,
+            icon: <Icon.Square boxSize="20px" />,
             label: "Square",
           },
           {
             value: BrushShape.circle,
-            icon: <Icons.ChakraIcon.Circle boxSize="20px" />,
+            icon: <Icon.Circle boxSize="20px" />,
             label: "Circle",
           },
         ],
@@ -215,8 +215,8 @@ const ShroudRevealSettings = (): React.ReactElement => {
             setState((state) => ({ ...state, fogMode: FogMode.clear }))
           }
         >
-          <Icons.ChakraIcon.Eye boxSize="20px" />
-          <Icons.Label>Reveal</Icons.Label>
+          <Icon.Eye boxSize="20px" />
+          <Icon.Label>Reveal</Icon.Label>
         </Toolbar.Button>
       </Toolbar.Item>
       <Toolbar.Item isActive={state.fogMode === FogMode.shroud}>
@@ -225,8 +225,8 @@ const ShroudRevealSettings = (): React.ReactElement => {
             setState((state) => ({ ...state, fogMode: FogMode.shroud }))
           }
         >
-          <Icons.ChakraIcon.EyeOff boxSize="20px" />
-          <Icons.Label>Shroud</Icons.Label>
+          <Icon.EyeOff boxSize="20px" />
+          <Icon.Label>Shroud</Icon.Label>
         </Toolbar.Button>
       </Toolbar.Item>
     </>
@@ -305,7 +305,7 @@ const ShowGridSettingsPopup = React.memo(
             <Box>
               <Button.Tertiary small onClick={props.enterConfigureGridMode}>
                 <span>Edit Grid </span>
-                <Icons.ChakraIcon.Settings boxSize="12px" />
+                <Icon.Settings boxSize="12px" />
               </Button.Tertiary>
             </Box>
           </HStack>
@@ -398,8 +398,8 @@ const GridSettingButton = (props: {
           }
         }}
       >
-        <Icons.ChakraIcon.Grid boxSize="20px" />
-        <Icons.Label>Grid</Icons.Label>
+        <Icon.Grid boxSize="20px" />
+        <Icon.Label>Grid</Icon.Label>
       </Toolbar.Button>
       {showMenu && map.grid ? (
         <ShowGridSettingsPopup
@@ -526,31 +526,31 @@ const TokenMarkerSettings = (): React.ReactElement => {
 const dmTools: Array<ToolMapRecord> = [
   {
     name: "Move",
-    icon: <Icons.ChakraIcon.Move boxSize="20px" />,
+    icon: <Icon.Move boxSize="20px" />,
     tool: DragPanZoomMapTool,
     MenuComponent: null,
   },
   {
     name: "Brush",
-    icon: <Icons.ChakraIcon.Pen boxSize="20px" />,
+    icon: <Icon.Pen boxSize="20px" />,
     tool: BrushMapTool,
     MenuComponent: BrushSettings,
   },
   {
     name: "Area",
-    icon: <Icons.ChakraIcon.Crop boxSize="20px" />,
+    icon: <Icon.Crop boxSize="20px" />,
     tool: AreaSelectMapTool,
     MenuComponent: AreaSelectSettings,
   },
   {
     name: "Mark",
-    icon: <Icons.ChakraIcon.Crosshair boxSize="20px" />,
+    icon: <Icon.Crosshair boxSize="20px" />,
     tool: MarkAreaMapTool,
     MenuComponent: null,
   },
   {
     name: "Token",
-    icon: <Icons.ChakraIcon.Target boxSize="20px" />,
+    icon: <Icon.Target boxSize="20px" />,
     tool: TokenMarkerMapTool,
     MenuComponent: TokenMarkerSettings,
   },
@@ -875,11 +875,8 @@ export const DmMap = (props: {
                       })
                     }
                   >
-                    <Icons.ChakraIcon.Droplet
-                      fill="currentColor"
-                      boxSize="20px"
-                    />
-                    <Icons.Label>Shroud All</Icons.Label>
+                    <Icon.Droplet fill="currentColor" boxSize="20px" />
+                    <Icon.Label>Shroud All</Icon.Label>
                   </Toolbar.Button>
                 </Toolbar.Item>
                 <Toolbar.Item isActive>
@@ -908,8 +905,8 @@ export const DmMap = (props: {
                       })
                     }
                   >
-                    <Icons.ChakraIcon.Droplet boxSize="20px" />
-                    <Icons.Label>Clear All</Icons.Label>
+                    <Icon.Droplet boxSize="20px" />
+                    <Icon.Label>Clear All</Icon.Label>
                   </Toolbar.Button>
                 </Toolbar.Item>
               </Toolbar.Group>
@@ -930,8 +927,8 @@ export const DmMap = (props: {
                       props.showMapModal();
                     }}
                   >
-                    <Icons.ChakraIcon.Map boxSize="20px" />
-                    <Icons.Label>Map Library</Icons.Label>
+                    <Icon.Map boxSize="20px" />
+                    <Icon.Label>Map Library</Icon.Label>
                   </Toolbar.Button>
                 </Toolbar.Item>
                 <Toolbar.Item isActive>
@@ -940,8 +937,8 @@ export const DmMap = (props: {
                       props.openMediaLibrary();
                     }}
                   >
-                    <Icons.ChakraIcon.Image boxSize="20px" />
-                    <Icons.Label>Media Library</Icons.Label>
+                    <Icon.Image boxSize="20px" />
+                    <Icon.Label>Media Library</Icon.Label>
                   </Toolbar.Button>
                 </Toolbar.Item>
                 <Toolbar.Item isActive>
@@ -950,8 +947,8 @@ export const DmMap = (props: {
                       props.openNotes();
                     }}
                   >
-                    <Icons.ChakraIcon.BookOpen boxSize="20px" />
-                    <Icons.Label>Notes</Icons.Label>
+                    <Icon.BookOpen boxSize="20px" />
+                    <Icon.Label>Notes</Icon.Label>
                   </Toolbar.Button>
                 </Toolbar.Item>
               </Toolbar.Group>
@@ -968,7 +965,7 @@ export const DmMap = (props: {
                       </Toolbar.Button>
                     )}
                   >
-                    <Icons.ChakraIcon.Pause
+                    <Icon.Pause
                       stroke={
                         props.liveMapId !== null
                           ? "hsl(360, 83%, 62%)"
@@ -976,7 +973,7 @@ export const DmMap = (props: {
                       }
                       boxSize="20px"
                     />
-                    <Icons.Label
+                    <Icon.Label
                       color={
                         props.liveMapId !== null
                           ? "hsl(360, 83%, 62%)"
@@ -984,41 +981,30 @@ export const DmMap = (props: {
                       }
                     >
                       Stop Sharing
-                    </Icons.Label>
+                    </Icon.Label>
                   </ConditionalWrap>
                 </Toolbar.Item>
                 {isCurrentMapLive ? (
                   <Toolbar.Item>
-                    <Icons.ChakraIcon.Radio
-                      stroke="hsl(160, 51%, 49%)"
-                      boxSize="20px"
-                    />
-                    <Icons.Label color="hsl(160, 51%, 49%)">Live</Icons.Label>
+                    <Icon.Radio stroke="hsl(160, 51%, 49%)" boxSize="20px" />
+                    <Icon.Label color="hsl(160, 51%, 49%)">Live</Icon.Label>
                   </Toolbar.Item>
                 ) : isOtherMapLive ? (
                   <Toolbar.Item>
-                    <Icons.ChakraIcon.Radio
-                      stroke="hsl(48, 94%, 68%)"
-                      boxSize="20px"
-                    />
-                    <Icons.Label color="hsl(48, 94%, 68%)">Live</Icons.Label>
+                    <Icon.Radio stroke="hsl(48, 94%, 68%)" boxSize="20px" />
+                    <Icon.Label color="hsl(48, 94%, 68%)">Live</Icon.Label>
                   </Toolbar.Item>
                 ) : (
                   <Toolbar.Item>
-                    <Icons.ChakraIcon.Radio
-                      stroke="hsl(211, 27%, 70%)"
-                      boxSize="20px"
-                    />
-                    <Icons.Label color="hsl(211, 27%, 70%)">
-                      Not Live
-                    </Icons.Label>
+                    <Icon.Radio stroke="hsl(211, 27%, 70%)" boxSize="20px" />
+                    <Icon.Label color="hsl(211, 27%, 70%)">Not Live</Icon.Label>
                   </Toolbar.Item>
                 )}
                 {asyncClipBoardApi ? (
                   <Toolbar.Item isActive>
                     <Toolbar.Button onClick={copyMapToClipboard}>
-                      <Icons.ChakraIcon.Clipboard boxSize="20px" />
-                      <Icons.Label>Clipboard</Icons.Label>
+                      <Icon.Clipboard boxSize="20px" />
+                      <Icon.Label>Clipboard</Icon.Label>
                     </Toolbar.Button>
                   </Toolbar.Item>
                 ) : null}
@@ -1032,8 +1018,8 @@ export const DmMap = (props: {
                       props.sendLiveMap(context.fogCanvas);
                     }}
                   >
-                    <Icons.ChakraIcon.Send boxSize="20px" />
-                    <Icons.Label>Send</Icons.Label>
+                    <Icon.Send boxSize="20px" />
+                    <Icon.Label>Send</Icon.Label>
                   </Toolbar.Button>
                 </Toolbar.Item>
               </Toolbar.Group>
@@ -1109,7 +1095,7 @@ const MenuItemRenderer = (props: {
         }}
       >
         {props.record.icon}
-        <Icons.Label>{props.record.name} </Icons.Label>
+        <Icon.Label>{props.record.name} </Icon.Label>
       </Toolbar.Button>
       {props.record.MenuComponent && props.isActive && showMenu ? (
         <Toolbar.Popup>
@@ -1268,7 +1254,7 @@ const GridConfigurator = (props: {
             onClick={props.onAbort}
             danger
           >
-            <Icons.ChakraIcon.X boxSize="20px" /> <span>Abort</span>
+            <Icon.X boxSize="20px" /> <span>Abort</span>
           </Button.Tertiary>
         </div>
         <div>
@@ -1295,8 +1281,7 @@ const GridConfigurator = (props: {
               });
             }}
           >
-            <span>Confirm</span>{" "}
-            <Icons.ChakraIcon.ChevronRight boxSize="20px" />
+            <span>Confirm</span> <Icon.ChevronRight boxSize="20px" />
           </Button.Primary>
         </div>
       </div>

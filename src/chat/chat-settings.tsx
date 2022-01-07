@@ -42,7 +42,7 @@ const ChatSettingsRenderer: React.FC<{ data: chatSettings_data }> = ({
         small
         style={{ marginTop: 8, marginLeft: "auto" }}
       >
-        <Icon.ChakraIcon.Check boxSize="16px" />
+        <Icon.Check boxSize="16px" />
         <span>Save</span>
       </Button.Primary>
       <div style={{ height: 24 }} />
