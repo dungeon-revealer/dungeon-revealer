@@ -10,16 +10,7 @@ import { sendRequest, ISendRequestTask } from "../../http-request";
 import { buildApiUrl } from "../../public-url";
 import { SelectLibraryImageModal } from "./select-library-image-modal";
 import { transparentize } from "polished";
-import {
-  BoldIcon,
-  ItalicIcon,
-  ImageIcon,
-  ListIcon,
-  Link,
-  ChakraIcon,
-  DiceIcon,
-  GridIcon,
-} from "../../feather-icons";
+import { ChakraIcon } from "../../feather-icons";
 import { useSelectFileDialog } from "../../hooks/use-select-file-dialog";
 import { useAccessToken } from "../../hooks/use-access-token";
 import graphql from "babel-plugin-relay/macro";
@@ -589,7 +580,8 @@ const AsideSelectNote: React.FC<{
   return (
     <>
       <SideMenuTitle>
-        <Link height={16} style={{ marginBottom: "-2px" }} /> Linked Note
+        <ChakraIcon.Link boxSize="16px" style={{ marginBottom: "-2px" }} />{" "}
+        Linked Note
       </SideMenuTitle>
       {!props.noteId || isValidNoteIdWithoutResult ? (
         <>
@@ -793,7 +785,7 @@ export const MarkdownEditor: React.FC<{
             }
           }}
         >
-          <BoldIcon height={16} />
+          <ChakraIcon.Bold boxSize="16px" />
         </ToolBarButton>
         <ToolBarButton
           title="Italicize"
@@ -808,7 +800,7 @@ export const MarkdownEditor: React.FC<{
             }
           }}
         >
-          <ItalicIcon height={16} />
+          <ChakraIcon.Italic boxSize="16px" />
         </ToolBarButton>
         <ToolBarButton
           title="Strikethrough"
@@ -880,7 +872,7 @@ export const MarkdownEditor: React.FC<{
                 toggleMarkdownList(monaco, ref.current, listKinds.unordered);
             }}
           >
-            <ListIcon height={16} />
+            <ChakraIcon.List boxSize="16px" />
           </ToolBarButton>
           <DropDownMenu data-menu>
             <DropDownMenuInner>
@@ -926,7 +918,7 @@ export const MarkdownEditor: React.FC<{
         </ToolBarButton>
         <ToolBarButtonDropDown>
           <ToolBarButton title="Insert Image" onClick={onClickImageButton}>
-            <ImageIcon size={16} />
+            <ChakraIcon.Image boxSize="16px" />
           </ToolBarButton>
           <DropDownMenu data-menu>
             <DropDownMenuInner>
@@ -952,7 +944,7 @@ export const MarkdownEditor: React.FC<{
             }
           }}
         >
-          <Link height={16} />
+          <ChakraIcon.Link boxSize="16px" />
         </ToolBarButton>
         <ToolBarButton
           title="Dice macro"
@@ -979,7 +971,7 @@ export const MarkdownEditor: React.FC<{
             );
           }}
         >
-          <DiceIcon height={16} />
+          <ChakraIcon.Dice boxSize="16px" />
         </ToolBarButton>
         <ToolBarButton
           title="Insert Table"
@@ -1001,7 +993,7 @@ export const MarkdownEditor: React.FC<{
             ]);
           }}
         >
-          <GridIcon size={16} />
+          <ChakraIcon.Grid boxSize="16px" />
         </ToolBarButton>
         <ToolBarButton
           style={{ marginLeft: "auto" }}
@@ -1117,8 +1109,11 @@ export const MarkdownEditor: React.FC<{
               {menu.type === "image" ? (
                 <>
                   <SideMenuTitle>
-                    <Link height={16} style={{ marginBottom: "-2px" }} /> Linked
-                    Image
+                    <ChakraIcon.Link
+                      boxSize="16px"
+                      style={{ marginBottom: "-2px" }}
+                    />{" "}
+                    Linked Image
                   </SideMenuTitle>
                   <SideMenuImage src={buildApiUrl(`/images/${menu.data.id}`)} />
                   <Button.Primary

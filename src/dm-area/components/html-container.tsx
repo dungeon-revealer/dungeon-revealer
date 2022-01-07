@@ -9,6 +9,7 @@ import {
   ListItem,
   Text,
   Divider,
+  Checkbox,
 } from "@chakra-ui/react";
 import _sanitizeHtml from "sanitize-html";
 import { StyleSheet } from "@emotion/sheet";
@@ -46,6 +47,7 @@ const components = {
   ChatMessage: ChatMessageButton,
   ChatMacro: ChatMessageButton,
   Link: NoteLink,
+  Checkbox: Checkbox,
   h1: H1,
   h2: H2,
   h3: H3,
@@ -65,6 +67,7 @@ const allowedTags = [
   "span",
   "em",
   "strong",
+  "del",
   "pre",
   "code",
   "h1",
@@ -176,6 +179,7 @@ const sanitizeHtml = (html: string) =>
       // alias for ChatMessage
       ChatMessage: ["message", "templateId", "var-*"],
       Link: ["id"],
+      Checkbox: ["isReadOnly", "isChecked", "verticalAlign", "spacing"],
       div: ["style", "class"],
       span: ["style", "class"],
       a: ["target", "rel", "href", "id", "class"],
@@ -184,7 +188,7 @@ const sanitizeHtml = (html: string) =>
     nonTextTags: ["script", "textarea", "option", "noscript"],
     allowedSchemes: ["http", "https"],
     allowedSchemesAppliedToAttributes: ["href"],
-    selfClosing: ["Image"],
+    selfClosing: ["Image", "input"],
     parser: {
       lowerCaseTags: false,
       lowerCaseAttributeNames: false,
@@ -209,6 +213,27 @@ const sanitizeHtml = (html: string) =>
           } as { [key: string]: string },
         };
       },
+      input: (name, attribs) => {
+        if (attribs.type === "checkbox") {
+          return {
+            tagName: "Checkbox",
+            attribs: {
+              verticalAlign: "middle",
+              spacing: "0.2rem",
+              // TODO: remove read-only when the checkbox is togglable
+              isReadOnly: "true",
+              isChecked: attribs.checked !== undefined ? "true" : "",
+            } as { [key: string]: string },
+          };
+        } else {
+          return {
+            tagName: "input",
+            attribs: {
+              ...attribs,
+            } as { [key: string]: string },
+          };
+        }
+      },
     },
   });
 
@@ -224,9 +249,9 @@ const HtmlContainerStyled = styled.div`
   }
 
   blockquote {
-    margin-left: 0;
-    border-left: gray 12px solid;
-    padding-left: 24px;
+    padding: 0 1em;
+    background-color: rgba(0, 0, 0, 0.04);
+    border-left: 7px solid #bcccdc;
   }
 
   img {
@@ -244,7 +269,8 @@ const HtmlContainerStyled = styled.div`
     max-width: 40em;
   }
 
-  pre {
+  pre,
+  code {
     border: 0.5px solid lightgray;
     border-radius: 2px;
     padding: 4px;
@@ -260,6 +286,13 @@ const HtmlContainerStyled = styled.div`
     border: 1px solid #999;
     padding: 0.5rem;
     text-align: left;
+  }
+
+  pre > code {
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    background: none;
   }
 `;
 
@@ -297,6 +330,8 @@ export const HtmlContainer = React.memo(
             options={{
               simpleLineBreaks: true,
               tables: true,
+              tasklists: true,
+              strikethrough: true,
             }}
           />
         </HtmlContainerStyled>

@@ -16,6 +16,7 @@ const monacoFiles = [
   "vs/basic-languages/css/css.js",
   "vs/loader.js",
   "vs/base/worker/workerMain.js",
+  "vs/base/browser/ui/codicons/codicon/codicon.ttf",
 ].map((file) => path.join(...file.split("/")));
 
 const publicPath = path.join(
