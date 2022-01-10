@@ -1,5 +1,5 @@
 import * as React from "react";
-import * as Icons from "./feather-icons";
+import * as Icon from "./feather-icons";
 import * as Button from "./button";
 import { Input } from "./input";
 import { useLongPress } from "./hooks/use-long-press";
@@ -62,7 +62,7 @@ export const StepInput = (props: {
         </div>
         <div>
           <Button.Tertiary {...plusLongPressProps} onClick={plusHandler} small>
-            <Icons.PlusIcon />
+            <Icon.Plus />
           </Button.Tertiary>
         </div>
         <div>
@@ -71,7 +71,7 @@ export const StepInput = (props: {
             onClick={minusHandler}
             small
           >
-            <Icons.MinusIcon />
+            <Icon.Minus />
           </Button.Tertiary>
         </div>
       </div>

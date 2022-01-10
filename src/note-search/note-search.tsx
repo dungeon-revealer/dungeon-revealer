@@ -149,7 +149,7 @@ export const NoteSearch = (props: {
     >
       <InputLabel>
         <IconContainer>
-          <Icon.SearchIcon size={25} />
+          <Icon.Search boxSize="25px" />
         </IconContainer>
         <NoteSearchInput
           autoFocus

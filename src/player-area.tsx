@@ -4,7 +4,7 @@ import { ReactRelayContext, useMutation, useQuery } from "relay-hooks";
 import graphql from "babel-plugin-relay/macro";
 import styled from "@emotion/styled/macro";
 import { Toolbar } from "./toolbar";
-import * as Icons from "./feather-icons";
+import * as Icon from "./feather-icons";
 import { SplashScreen } from "./splash-screen";
 import { AuthenticationScreen } from "./authentication-screen";
 import { buildApiUrl } from "./public-url";
@@ -275,8 +275,8 @@ const PlayerMap = ({
                             controlRef.current?.controls.center();
                           }}
                         >
-                          <Icons.Compass size={20} />
-                          <Icons.Label>Center Map</Icons.Label>
+                          <Icon.Compass boxSize="20px" />
+                          <Icon.Label>Center Map</Icon.Label>
                         </Toolbar.Button>
                       </Toolbar.Item>
                       <Toolbar.Item isActive>
@@ -292,8 +292,8 @@ const PlayerMap = ({
                             return () => clearInterval(interval);
                           }}
                         >
-                          <Icons.ZoomIn size={20} />
-                          <Icons.Label>Zoom In</Icons.Label>
+                          <Icon.ZoomIn boxSize="20px" />
+                          <Icon.Label>Zoom In</Icon.Label>
                         </Toolbar.LongPressButton>
                       </Toolbar.Item>
                       <Toolbar.Item isActive>
@@ -309,8 +309,8 @@ const PlayerMap = ({
                             return () => clearInterval(interval);
                           }}
                         >
-                          <Icons.ZoomOut size={20} />
-                          <Icons.Label>Zoom Out</Icons.Label>
+                          <Icon.ZoomOut boxSize="20px" />
+                          <Icon.Label>Zoom Out</Icon.Label>
                         </Toolbar.LongPressButton>
                       </Toolbar.Item>
                       <Toolbar.Item isActive>
@@ -323,8 +323,8 @@ const PlayerMap = ({
                             );
                           }}
                         >
-                          <Icons.BookOpen size={20} />
-                          <Icons.Label>Notes</Icons.Label>
+                          <Icon.BookOpen boxSize="20px" />
+                          <Icon.Label>Notes</Icon.Label>
                         </Toolbar.LongPressButton>
                       </Toolbar.Item>
                     </Toolbar.Group>

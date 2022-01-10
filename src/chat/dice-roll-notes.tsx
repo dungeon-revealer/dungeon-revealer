@@ -170,9 +170,9 @@ export const DiceRollNotes: React.FC<{ close: () => void }> = ({ close }) => {
           title: mode === "read" ? "Edit" : "Save",
           icon:
             mode === "read" ? (
-              <Icon.EditIcon size={16} />
+              <Icon.Edit boxSize="16px" />
             ) : (
-              <Icon.SaveIcon size={16} />
+              <Icon.Save boxSize="16px" />
             ),
         },
       ]}

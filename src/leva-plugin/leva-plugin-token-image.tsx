@@ -27,7 +27,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import graphql from "babel-plugin-relay/macro";
-import { ChakraIcon } from "../feather-icons";
+import * as Icon from "../feather-icons";
 import { usePagination, useQuery } from "relay-hooks";
 import { levaPluginTokenImage_TokenImagesFragment$key } from "./__generated__/levaPluginTokenImage_TokenImagesFragment.graphql";
 import { levaPluginTokenImage_TokenImagesQuery } from "./__generated__/levaPluginTokenImage_TokenImagesQuery.graphql";
@@ -198,7 +198,7 @@ const TokenImageList = (props: {
             <InputGroup size="xs">
               <InputLeftElement
                 pointerEvents="none"
-                children={<ChakraIcon.Filter color="gray.300" />}
+                children={<Icon.Filter color="gray.300" />}
               />
               <Input
                 variant="flushed"
@@ -215,7 +215,7 @@ const TokenImageList = (props: {
                     onClick={() => props.setTitleFilter("")}
                     variant="unstyled"
                   >
-                    <ChakraIcon.X color="black" />
+                    <Icon.X color="black" />
                   </Button>
                 ) : null}
               </InputRightElement>

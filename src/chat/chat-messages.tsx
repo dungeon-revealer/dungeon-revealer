@@ -6,7 +6,7 @@ import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { chatMessages_chat } from "./__generated__/chatMessages_chat.graphql";
 import { ChatMessage } from "./chat-message";
 import { ButtonBadge, IconButton } from "../chat-toggle-button";
-import { ChevronDownIcon } from "../feather-icons";
+import * as Icon from "../feather-icons";
 
 const ChatMessageContainer = styled.div`
   position: relative;
@@ -119,7 +119,7 @@ const ChatMessagesRenderer: React.FC<{ chat: chatMessages_chat }> = ({
             })
           }
         >
-          <ChevronDownIcon />
+          <Icon.ChevronDown />
           {hasNewMessage ? <ButtonBadge /> : null}
         </IconButton>
       </FollowButtonContainer>

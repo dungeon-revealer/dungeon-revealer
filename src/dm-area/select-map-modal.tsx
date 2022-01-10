@@ -3,7 +3,7 @@ import graphql from "babel-plugin-relay/macro";
 import { useMutation, useQuery } from "relay-hooks";
 import { ConnectionHandler } from "relay-runtime";
 import { Modal, ModalDialogSize } from "../modal";
-import * as Icons from "../feather-icons";
+import * as Icon from "../feather-icons";
 import { Input, InputGroup } from "../input";
 import * as Button from "../button";
 import * as ScrollableList from "./components/scrollable-list";
@@ -197,7 +197,7 @@ export const SelectMapModal = ({
         <Modal.Dialog>
           <Modal.Header>
             <Modal.Heading2>
-              <Icons.MapIcon size={28} /> Map Library
+              <Icon.Map boxSize="28px" /> Map Library
             </Modal.Heading2>
             <div style={{ flex: 1, textAlign: "right" }}>
               {canClose ? (
@@ -266,8 +266,7 @@ export const SelectMapModal = ({
                     }}
                   >
                     <>
-                      <Icons.PlusIcon height={20} width={20} />{" "}
-                      <span>Create New Map</span>
+                      <Icon.Plus boxSize="20px" /> <span>Create New Map</span>
                     </>
                   </CreateNewMapButton>
                 </Modal.Footer>
@@ -305,7 +304,7 @@ export const SelectMapModal = ({
                       });
                     }}
                   >
-                    <Icons.EditIcon size={16} />
+                    <Icon.Edit boxSize="16px" />
                   </Button.Tertiary>
                 </div>
                 <div
@@ -343,7 +342,7 @@ export const SelectMapModal = ({
                         });
                       }}
                     >
-                      <Icons.TrashIcon size={20} />
+                      <Icon.Trash boxSize="20px" />
                       <span>Delete</span>
                     </Button.Tertiary>
                   </div>
@@ -354,7 +353,7 @@ export const SelectMapModal = ({
                         setLoadedMapId(activeMap.node.id);
                       }}
                     >
-                      <Icons.CheckIcon height={20} width={20} />
+                      <Icon.Check boxSize="20px" />
                       <span>Load Map</span>
                     </Button.Primary>
                   </div>
@@ -377,12 +376,20 @@ export const SelectMapModal = ({
               >
                 {maps.length ? (
                   <>
-                    <Icons.Inbox height={75} width={75} fill="#D9E2EC" />
+                    <Icon.Inbox
+                      boxSize="75px"
+                      stroke="#D9E2EC"
+                      fill="#D9E2EC"
+                    />
                     <h3>Please select a Map from the list on the left.</h3>
                   </>
                 ) : (
                   <>
-                    <Icons.Inbox height={75} width={75} fill="#D9E2EC" />
+                    <Icon.Inbox
+                      boxSize="75px"
+                      stroke="#D9E2EC"
+                      fill="#D9E2EC"
+                    />
                     <h3 style={{ marginBottom: 20 }}>
                       Your library is currently empty
                     </h3>
@@ -393,7 +400,7 @@ export const SelectMapModal = ({
                       }}
                     >
                       <>
-                        <Icons.MapIcon size={24} />
+                        <Icon.Map boxSize="24px" />
                         <span>Create a new Map</span>
                       </>
                     </CreateNewMapButton>

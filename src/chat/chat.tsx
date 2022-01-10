@@ -264,7 +264,7 @@ export const Chat: React.FC<{
           fullWidth
           onClick={() => setMode("chat")}
         >
-          <Icon.MessageCircleIcon size={12} />
+          <Icon.MessageCircle boxSize="12px" />
           <span>Chat</span>
         </HorizontalNavigation.Button>
         <HorizontalNavigation.Button
@@ -273,7 +273,7 @@ export const Chat: React.FC<{
           fullWidth
           onClick={() => setMode("user")}
         >
-          <Icon.UsersIcon height={12} width={12} />
+          <Icon.Users boxSize="12px" />
           <span>
             Users (<ChatOnlineUserIndicator data={data} />)
           </span>
@@ -284,7 +284,7 @@ export const Chat: React.FC<{
           fullWidth
           onClick={() => setMode("settings")}
         >
-          <Icon.SettingsIcon size={12} />
+          <Icon.Settings boxSize="12px" />
           <span>Settings</span>
         </HorizontalNavigation.Button>
       </HorizontalNavigation.Group>
@@ -298,7 +298,7 @@ export const Chat: React.FC<{
             onClick={toggleShowDiceRollNotes}
             style={{ marginTop: 8 }}
           >
-            <Icon.DiceIcon height={16} /> <span> Dice Roll Notes</span>
+            <Icon.Dice boxSize="16px" /> <span> Dice Roll Notes</span>
           </Button.Tertiary>
         </Stack>
       ) : mode === "user" ? (
