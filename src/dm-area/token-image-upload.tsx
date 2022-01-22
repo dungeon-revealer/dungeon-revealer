@@ -62,24 +62,24 @@ const TokenImageCreateMutation = graphql`
  * Hook for creating TokenImage from a File with cropping etc.
  */
 export const useTokenImageUpload = () => {
-  const [cropTokenImageState, setCropTokenImageState] =
-    React.useState<{
-      imageUrl: string;
-      sourceImageHash: string;
-      onConfirm: (
-        params:
-          | {
-              type: "File";
-              file: File;
-              title: string;
-            }
-          | {
-              type: "TokenImage";
-              tokenImageId: string;
-            }
-      ) => unknown;
-      onClose: () => void;
-    } | null>(null);
+  const [cropTokenImageState, setCropTokenImageState] = React.useState<{
+    imageUrl: string;
+    fileName: string;
+    sourceImageHash: string;
+    onConfirm: (
+      params:
+        | {
+            type: "File";
+            file: File;
+            title: string;
+          }
+        | {
+            type: "TokenImage";
+            tokenImageId: string;
+          }
+    ) => unknown;
+    onClose: () => void;
+  } | null>(null);
 
   const objectUrlCleanupRef = React.useRef<null | (() => void)>(null);
   React.useEffect(
@@ -176,10 +176,13 @@ export const useTokenImageUpload = () => {
     const objectUrl = window.URL.createObjectURL(file);
     objectUrlCleanupRef.current = () => window.URL.revokeObjectURL(objectUrl);
 
+    const fileName = file.name.substring(0, file.name.lastIndexOf("."));
+
     generateSHA256FileHash(file)
       .then(async (sourceImageHash) => {
         setCropTokenImageState({
           imageUrl: objectUrl,
+          fileName,
           sourceImageHash,
           onConfirm: async (params) => {
             if (params.type === "File") {
@@ -210,6 +213,7 @@ export const useTokenImageUpload = () => {
         <TokenImageCropper
           key={cropTokenImageState.imageUrl}
           imageUrl={cropTokenImageState.imageUrl}
+          initialImageTitle={cropTokenImageState.fileName}
           sourceImageHash={cropTokenImageState.sourceImageHash}
           onConfirm={cropTokenImageState.onConfirm}
           onClose={cropTokenImageState.onClose}
