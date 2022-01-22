@@ -42,6 +42,20 @@ export const decodeNote: (
   E.chain(NoteModel.decode)
 );
 
+const MaybeUnknownRecord = t.union(
+  [t.null, t.undefined, t.UnknownRecord],
+  "MaybeUnknownRecord"
+);
+
+export const decodeMaybeNote: (
+  input: unknown
+) => E.Either<DecodeError, NoteModelType | null> = flow(
+  MaybeUnknownRecord.decode,
+  E.chain((value) =>
+    value == null ? E.right(null) : NoteModel.decode(camelCaseKeys(value))
+  )
+);
+
 const decodeNoteList: (
   input: unknown
 ) => E.Either<DecodeError, NodeModelListType> = flow(
@@ -78,6 +92,35 @@ export const getNoteById =
         E.toError
       ),
       TE.chainW(flow(decodeNote, TE.fromEither))
+    );
+
+export const getMaybeNoteById =
+  (
+    id: string
+  ): RTE.ReaderTaskEither<Dependencies, DecodeError, NoteModelType | null> =>
+  ({ db }) =>
+    pipe(
+      TE.tryCatch(
+        () =>
+          db.get(
+            /* SQL */ `
+          SELECT
+            "id",
+            "title",
+            "content",
+            "type",
+            "is_entry_point",
+            "created_at",
+            "updated_at"
+          FROM "notes"
+          WHERE
+            "id" = ?;
+        `,
+            id
+          ),
+        E.toError
+      ),
+      TE.chainW(flow(decodeMaybeNote, TE.fromEither))
     );
 
 export const getPaginatedNotes =

@@ -34,24 +34,39 @@ const sanitizeNoteContent = (content: string) => {
   return sanitizedContent;
 };
 
+const applyNoteVisibility = (note: db.NoteModelType) => {
+  switch (note.type) {
+    case "admin":
+      return pipe(
+        auth.requireAdmin(),
+        RTE.rightReaderTask,
+        RTE.map(() => note)
+      );
+    case "public":
+      return RTE.right(note);
+    default:
+      return RTE.left(new Error("Insufficient permissions."));
+  }
+};
+
 export const getNoteById = (id: string) =>
   pipe(
     auth.requireAuth(),
     RTE.rightReaderTask,
     RTE.chainW(() => db.getNoteById(id)),
+    RTE.chainW(applyNoteVisibility)
+  );
+
+export const getMaybeNoteById = (id: string) =>
+  pipe(
+    auth.requireAuth(),
+    RTE.rightReaderTask,
+    RTE.chainW(() => db.getMaybeNoteById(id)),
     RTE.chainW((note) => {
-      switch (note.type) {
-        case "admin":
-          return pipe(
-            auth.requireAdmin(),
-            RTE.rightReaderTask,
-            RTE.map(() => note)
-          );
-        case "public":
-          return RTE.right(note);
-        default:
-          return RTE.left(new Error("Insufficient permissions."));
+      if (note) {
+        return applyNoteVisibility(note);
       }
+      return RTE.of(null);
     })
   );
 

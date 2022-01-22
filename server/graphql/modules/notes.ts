@@ -163,9 +163,7 @@ const resolvePaginatedNotes = ({
       })
     ),
     RTE.fold(
-      (err) => {
-        return () => () => Promise.reject(err);
-      },
+      (err) => () => () => Promise.reject(err),
       (obj) => RT.of(obj)
     )
   );
@@ -173,9 +171,15 @@ const resolvePaginatedNotes = ({
 export const resolveNote = flow(
   notes.getNoteById,
   RTE.fold(
-    (err) => {
-      throw err;
-    },
+    (err) => () => () => Promise.reject(err),
+    (obj) => RT.of(obj)
+  )
+);
+
+export const resolveMaybeNote = flow(
+  notes.getMaybeNoteById,
+  RTE.fold(
+    (err) => () => () => Promise.reject(err),
     (obj) => RT.of(obj)
   )
 );
@@ -365,7 +369,7 @@ export const queryFields = [
       },
     },
     resolve: (_, args, context) =>
-      RT.run(resolveNote(args.documentId), context),
+      RT.run(resolveMaybeNote(args.documentId), context),
   }),
 ];
 
