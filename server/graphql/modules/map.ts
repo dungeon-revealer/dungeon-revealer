@@ -393,7 +393,7 @@ export const mutationFields = [
       input: t.arg(t.NonNullInput(GraphQLMapPingInputType)),
     },
     resolve: (_, args, context) => {
-      context.mapPubSub.publish("mapPing", args.input.mapId, {
+      context.pubSub.publish("mapPing", args.input.mapId, {
         x: args.input.x,
         y: args.input.y,
         id: randomUUID(),
@@ -764,6 +764,6 @@ export const subscriptionFields = [
       mapId: t.arg(t.NonNullInput(t.ID)),
     },
     subscribe: (_, args, context) =>
-      context.mapPubSub.subscribe("mapPing", args.mapId),
+      context.pubSub.subscribe("mapPing", args.mapId),
   }),
 ];

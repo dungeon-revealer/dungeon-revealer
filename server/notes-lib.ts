@@ -4,10 +4,11 @@ import { flow, pipe } from "fp-ts/lib/function";
 import { randomUUID } from "crypto";
 import sanitizeHtml from "sanitize-html";
 import showdown from "showdown";
+import type { PubSub } from "@graphql-yoga/subscription";
+import { map, filter } from "@graphql-yoga/subscription";
 import * as db from "./notes-db";
 import * as noteImport from "./note-import";
 import type { SocketSessionRecord } from "./socket-session-store";
-import * as AsyncIterator from "./util/async-iterator";
 import { invalidateResources } from "./live-query-store";
 import * as auth from "./auth";
 
@@ -200,7 +201,10 @@ const publishNotesUpdate = (payload: NotesUpdatesPayload) =>
     RTE.ask<NotesUpdatesDependency>(),
     RTE.chainW((deps) =>
       pipe(
-        E.tryCatch(() => deps.notesUpdates.publish(payload), E.toError),
+        E.tryCatch(
+          () => deps.pubSub.publish("notesUpdates", payload),
+          E.toError
+        ),
         RTE.fromEither
       )
     )
@@ -368,13 +372,12 @@ export type NotesUpdatesPayload =
   | NotesDeletedNotePayload
   | NotesCreatedNotePayload;
 
-export interface NotesUpdates {
-  subscribe: () => AsyncIterableIterator<NotesUpdatesPayload>;
-  publish: (payload: NotesUpdatesPayload) => void;
-}
+export type NotesPubSubConfig = {
+  notesUpdates: [NotesUpdatesPayload];
+};
 
 interface NotesUpdatesDependency {
-  notesUpdates: NotesUpdates;
+  pubSub: PubSub<NotesPubSubConfig>;
 }
 
 interface NoteCursor {
@@ -414,10 +417,10 @@ export const subscribeToNotesUpdates = (params: {
     ),
     RTE.map((deps) =>
       pipe(
-        deps.notesUpdates.subscribe(),
+        deps.pubSub.subscribe("notesUpdates"),
         // skip all events that are after our last cursor
         // as those notes are not relevant for the client
-        AsyncIterator.filter(
+        filter(
           (payload) =>
             !isAfterCursor(
               {
@@ -427,7 +430,7 @@ export const subscribeToNotesUpdates = (params: {
               params.cursor
             ) || !params.hasNextPage
         ),
-        AsyncIterator.map((payload) => {
+        map((payload) => {
           const hasAccess =
             (payload.access === "admin" && deps.session.role === "admin") ||
             payload.access === "public";
@@ -537,7 +540,7 @@ export const subscribeToNotesUpdates = (params: {
           }
         }),
         // micro optimization for not sending empty payloads where every field is null to the client.
-        AsyncIterator.filter(
+        filter(
           (value): value is typeof value =>
             value.addedNodeId !== null ||
             value.removedNoteId !== null ||

@@ -7,7 +7,6 @@ import type { MapEntity, MapGridEntity, Maps } from "./maps";
 import * as auth from "./auth";
 import type { Settings } from "./settings";
 import { invalidateResourcesRT } from "./live-query-store";
-import { createChannelPubSub } from "./pubsub";
 
 type MapsDependency = {
   maps: Maps;
@@ -308,10 +307,6 @@ export type MapPing = {
   y: number;
 };
 
-type MapPubSub = {
+export type MapPubSubConfig = {
   mapPing: [id: string, mapPing: MapPing];
 };
-
-export const createMapPubSub = () => createChannelPubSub<MapPubSub>();
-
-export type MapPub = ReturnType<typeof createMapPubSub>;

@@ -1,10 +1,11 @@
 import { createTypesFactory, buildGraphQLSchema } from "gqtx";
 import type { Socket as IOSocket, Server as IOServer } from "socket.io";
-import type { createChat } from "../chat";
-import type { createUser } from "../user";
-import type { NotesUpdates } from "../notes-lib";
+import type { ChatPubSubConfig, createChat } from "../chat";
+import type { createUser, UserPubSubConfig } from "../user";
+import type { PubSub } from "@graphql-yoga/subscription";
 import type { TokenImageUploadRegister } from "../token-image-lib";
-import type { MapImageUploadRegister, MapPub } from "../map-lib";
+import type { MapImageUploadRegister, MapPubSubConfig } from "../map-lib";
+import type { NotesPubSubConfig } from "../notes-lib";
 
 import type { SocketSessionRecord } from "../socket-session-store";
 import type { Database } from "sqlite";
@@ -13,6 +14,11 @@ import { GraphQLLiveDirective } from "@n1ru4l/graphql-live-query";
 import type { SplashImageState } from "../splash-image-state";
 import type { Maps } from "../maps";
 import type { Settings } from "../settings";
+
+export type PubSubConfig = MapPubSubConfig &
+  UserPubSubConfig &
+  NotesPubSubConfig &
+  ChatPubSubConfig;
 
 export type GraphQLContextType = {
   chat: ReturnType<typeof createChat>;
@@ -23,14 +29,13 @@ export type GraphQLContextType = {
   splashImageState: SplashImageState;
   socket: IOSocket;
   socketServer: IOServer;
-  notesUpdates: NotesUpdates;
+  pubSub: PubSub<PubSubConfig>;
   publicUrl: string;
   tokenImageUploadRegister: TokenImageUploadRegister;
   mapImageUploadRegister: MapImageUploadRegister;
   fileStoragePath: string;
   maps: Maps;
   settings: Settings;
-  mapPubSub: MapPub;
 };
 
 export const t = createTypesFactory<GraphQLContextType>();

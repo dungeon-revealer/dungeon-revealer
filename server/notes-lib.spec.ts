@@ -1,7 +1,8 @@
 import * as E from "fp-ts/lib/Either";
+import type { PubSub } from "@graphql-yoga/subscription";
 import * as lib from "./notes-lib";
 
-const createNotesUpdates = (...events: Array<lib.NotesUpdatesPayload>) => {
+const createPubSub = (...events: Array<lib.NotesUpdatesPayload>) => {
   return {
     publish: () => {},
     subscribe: () => {
@@ -17,7 +18,7 @@ const createNotesUpdates = (...events: Array<lib.NotesUpdatesPayload>) => {
 
       return iterator;
     },
-  } as any as lib.NotesUpdates;
+  } as any as PubSub<lib.NotesPubSubConfig>;
 };
 
 const createSession = (
@@ -63,7 +64,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession(),
-        notesUpdates: createNotesUpdates(),
+        pubSub: createPubSub(),
       })()
       .catch((err) => err);
 
@@ -77,7 +78,7 @@ describe("subscribeToNotesUpdates", () => {
       hasNextPage: false,
     })({
       session: createSession("user"),
-      notesUpdates: createNotesUpdates(),
+      pubSub: createPubSub(),
     })();
     expect(E.isRight(result)).toEqual(true);
   });
@@ -89,7 +90,7 @@ describe("subscribeToNotesUpdates", () => {
       hasNextPage: false,
     })({
       session: createSession("admin"),
-      notesUpdates: createNotesUpdates(),
+      pubSub: createPubSub(),
     })();
     expect(E.isRight(result)).toEqual(true);
   });
@@ -102,7 +103,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
@@ -128,7 +129,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ACCESS",
           access: "public",
           noteId: "1",
@@ -154,7 +155,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ACCESS",
           access: "public",
           noteId: "1",
@@ -173,7 +174,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
@@ -195,7 +196,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
@@ -214,7 +215,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ACCESS",
           access: "public",
           noteId: "1",
@@ -240,7 +241,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
@@ -259,7 +260,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
@@ -285,7 +286,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ACCESS",
           access: "admin",
           noteId: "1",
@@ -304,7 +305,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ACCESS",
           access: "public",
           noteId: "1",
@@ -326,7 +327,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
@@ -344,7 +345,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
@@ -362,7 +363,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
@@ -380,7 +381,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
@@ -398,7 +399,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
@@ -416,7 +417,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
@@ -434,7 +435,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
@@ -452,7 +453,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
@@ -472,7 +473,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
@@ -497,7 +498,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
@@ -522,7 +523,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
@@ -540,7 +541,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
@@ -558,7 +559,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
@@ -583,7 +584,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "public",
           noteId: "1",
@@ -608,7 +609,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
@@ -633,7 +634,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_ENTRY_POINT",
           access: "admin",
           noteId: "1",
@@ -660,7 +661,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
@@ -685,7 +686,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "admin",
           noteId: "1",
@@ -703,7 +704,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
@@ -728,7 +729,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "admin",
           noteId: "1",
@@ -755,7 +756,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
@@ -780,7 +781,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "admin",
           noteId: "1",
@@ -798,7 +799,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
@@ -816,7 +817,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("user"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
@@ -834,7 +835,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
@@ -853,7 +854,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
@@ -878,7 +879,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "admin",
           noteId: "1",
@@ -896,7 +897,7 @@ describe("subscribeToNotesUpdates", () => {
         hasNextPage: false,
       })({
         session: createSession("admin"),
-        notesUpdates: createNotesUpdates({
+        pubSub: createPubSub({
           type: "NOTE_CHANGE_TITLE",
           access: "public",
           noteId: "1",
@@ -925,7 +926,7 @@ describe("subscribeToNotesUpdates", () => {
       hasNextPage: true,
     })({
       session: createSession("admin"),
-      notesUpdates: createNotesUpdates({
+      pubSub: createPubSub({
         type: "NOTE_CHANGE_TITLE",
         access: "public",
         noteId: "a",
@@ -946,7 +947,7 @@ describe("subscribeToNotesUpdates", () => {
       hasNextPage: false,
     })({
       session: createSession("admin"),
-      notesUpdates: createNotesUpdates({
+      pubSub: createPubSub({
         type: "NOTE_CHANGE_TITLE",
         access: "public",
         noteId: "a",

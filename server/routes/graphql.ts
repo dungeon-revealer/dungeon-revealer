@@ -3,8 +3,9 @@ import path from "path";
 import fs from "fs-extra";
 import { EventEmitter } from "events";
 import type { Server as IOServer, Socket as IOSocket } from "socket.io";
+import { createPubSub, map } from "@graphql-yoga/subscription";
 import { flow } from "fp-ts/lib/function";
-import { schema, GraphQLContextType } from "../graphql";
+import { schema, GraphQLContextType, PubSubConfig } from "../graphql";
 import { createChat } from "../chat";
 import { createUser } from "../user";
 import type { Database } from "sqlite";
@@ -16,14 +17,11 @@ import { ExecutionResult, subscribe as originalSubscribe } from "graphql";
 import { registerSocketIOGraphQLServer } from "@n1ru4l/socket-io-graphql-server";
 import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
 import { applyLiveQueryJSONDiffPatchGenerator } from "@n1ru4l/graphql-live-query-patch-jsondiffpatch";
-import { createSplashImageState } from "../splash-image-state";
-import { createPubSub } from "../pubsub";
-import { NotesUpdatesPayload } from "../notes-lib";
-import { createTokenImageUploadRegister } from "../token-image-lib";
-import * as AsyncIteratorUtil from "../util/async-iterator";
 import { isAsyncIterable } from "@n1ru4l/push-pull-async-iterable-iterator";
+import { createSplashImageState } from "../splash-image-state";
+import { createTokenImageUploadRegister } from "../token-image-lib";
 import type { Maps } from "../maps";
-import { createMapImageUploadRegister, createMapPubSub } from "../map-lib";
+import { createMapImageUploadRegister } from "../map-lib";
 import type { Settings } from "../settings";
 
 type MaybePromise<T> = Promise<T> | T;
@@ -50,15 +48,19 @@ export default ({
   settings,
   emitter,
 }: Dependencies) => {
-  const chat = createChat();
+  const pubSub = createPubSub<PubSubConfig>();
+
+  const chat = createChat({ pubSub });
+
   const user = createUser({
     sendUserConnectedMessage: ({ name }) =>
       chat.addOperationalMessage({ content: `**${name}** connected.` }),
     sendUserDisconnectedMessage: ({ name }) =>
       chat.addOperationalMessage({ content: `**${name}** disconnected.` }),
+    pubSub,
   });
+
   const splashImageState = createSplashImageState();
-  const mapPubSub = createMapPubSub();
 
   const router = Router();
 
@@ -76,7 +78,6 @@ export default ({
     liveQueryStore.invalidate(ev);
   });
 
-  const notesUpdates = createPubSub<NotesUpdatesPayload>();
   const tokenImageUploadRegister = createTokenImageUploadRegister();
   const mapImageUploadRegister = createMapImageUploadRegister();
 
@@ -99,7 +100,7 @@ export default ({
         result: AsyncIterableIterator<T> | T
       ): AsyncIterableIterator<T> | MaybePromise<T> => {
         if (isAsyncIterable(result)) {
-          return AsyncIteratorUtil.map(apply)(result);
+          return map(apply)(result);
         } else {
           return apply(result);
         }
@@ -131,14 +132,13 @@ export default ({
         splashImageState,
         socket,
         socketServer,
-        notesUpdates,
+        pubSub,
         fileStoragePath,
         tokenImageUploadRegister,
         publicUrl,
         maps,
         mapImageUploadRegister,
         settings,
-        mapPubSub,
       };
 
       return {
