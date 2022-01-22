@@ -41,6 +41,7 @@ const TokenLibraryImagesQuery = graphql`
 
 export const TokenImageCropper = (props: {
   imageUrl: string;
+  initialImageTitle: string;
   sourceImageHash: string;
   onConfirm: (
     params:
@@ -62,7 +63,7 @@ export const TokenImageCropper = (props: {
   const [croppedAreaPixels, setCroppedAreaPixels] = React.useState<Area | null>(
     null
   );
-  const [title, setTitle] = React.useState("New Token Image");
+  const [title, setTitle] = React.useState(props.initialImageTitle);
   const data = useQuery<tokenImageCropper_TokenLibraryImagesQuery>(
     TokenLibraryImagesQuery,
     useStaticRef(() => ({
