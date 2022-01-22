@@ -2,7 +2,7 @@ import { createTypesFactory, buildGraphQLSchema } from "gqtx";
 import type { Socket as IOSocket, Server as IOServer } from "socket.io";
 import type { ChatPubSubConfig, createChat } from "../chat";
 import type { createUser, UserPubSubConfig } from "../user";
-import type { ChannelPubSub } from "../pubsub";
+import type { PubSub } from "@graphql-yoga/subscription";
 import type { TokenImageUploadRegister } from "../token-image-lib";
 import type { MapImageUploadRegister, MapPubSubConfig } from "../map-lib";
 import type { NotesPubSubConfig } from "../notes-lib";
@@ -29,7 +29,7 @@ export type GraphQLContextType = {
   splashImageState: SplashImageState;
   socket: IOSocket;
   socketServer: IOServer;
-  pubSub: ChannelPubSub<PubSubConfig>;
+  pubSub: PubSub<PubSubConfig>;
   publicUrl: string;
   tokenImageUploadRegister: TokenImageUploadRegister;
   mapImageUploadRegister: MapImageUploadRegister;

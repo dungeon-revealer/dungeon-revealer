@@ -4,13 +4,13 @@ import { flow, pipe } from "fp-ts/lib/function";
 import { randomUUID } from "crypto";
 import sanitizeHtml from "sanitize-html";
 import showdown from "showdown";
+import type { PubSub } from "@graphql-yoga/subscription";
+import { map, filter } from "@graphql-yoga/subscription";
 import * as db from "./notes-db";
 import * as noteImport from "./note-import";
 import type { SocketSessionRecord } from "./socket-session-store";
-import * as AsyncIterator from "./util/async-iterator";
 import { invalidateResources } from "./live-query-store";
 import * as auth from "./auth";
-import type { ChannelPubSub } from "./pubsub";
 
 export type NoteModelType = db.NoteModelType;
 export const decodeNote = db.decodeNote;
@@ -377,7 +377,7 @@ export type NotesPubSubConfig = {
 };
 
 interface NotesUpdatesDependency {
-  pubSub: ChannelPubSub<NotesPubSubConfig>;
+  pubSub: PubSub<NotesPubSubConfig>;
 }
 
 interface NoteCursor {
@@ -420,7 +420,7 @@ export const subscribeToNotesUpdates = (params: {
         deps.pubSub.subscribe("notesUpdates"),
         // skip all events that are after our last cursor
         // as those notes are not relevant for the client
-        AsyncIterator.filter(
+        filter(
           (payload) =>
             !isAfterCursor(
               {
@@ -430,7 +430,7 @@ export const subscribeToNotesUpdates = (params: {
               params.cursor
             ) || !params.hasNextPage
         ),
-        AsyncIterator.map((payload) => {
+        map((payload) => {
           const hasAccess =
             (payload.access === "admin" && deps.session.role === "admin") ||
             payload.access === "public";
@@ -540,7 +540,7 @@ export const subscribeToNotesUpdates = (params: {
           }
         }),
         // micro optimization for not sending empty payloads where every field is null to the client.
-        AsyncIterator.filter(
+        filter(
           (value): value is typeof value =>
             value.addedNodeId !== null ||
             value.removedNoteId !== null ||

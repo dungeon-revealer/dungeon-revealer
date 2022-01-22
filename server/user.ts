@@ -1,5 +1,5 @@
 import { setTimeout } from "timers";
-import { ChannelPubSub } from "./pubsub";
+import { PubSub } from "@graphql-yoga/subscription";
 
 export type UserRecord = {
   id: string;
@@ -31,7 +31,7 @@ export const createUser = ({
 }: {
   sendUserConnectedMessage: ({ name }: { name: string }) => void;
   sendUserDisconnectedMessage: ({ name }: { name: string }) => void;
-  pubSub: ChannelPubSub<UserPubSubConfig>;
+  pubSub: PubSub<UserPubSubConfig>;
 }) => {
   const users = new Map<string, UserRecord>();
 

@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { roll } from "@airjp73/dice-notation";
 import { Liquid, LiquidError } from "liquidjs";
 import type { Json } from "fp-ts/lib/Json";
-import type { ChannelPubSub } from "./pubsub";
+import type { PubSub } from "@graphql-yoga/subscription";
 import { DiceRollResult, isDiceRollResult, tryRoll } from "./roll-dice";
 
 type SharedResourceType =
@@ -162,7 +162,7 @@ export type ChatPubSubConfig = {
 export const createChat = ({
   pubSub,
 }: {
-  pubSub: ChannelPubSub<ChatPubSubConfig>;
+  pubSub: PubSub<ChatPubSubConfig>;
 }) => {
   const templateEngine = createTemplateEngine();
   let state: Array<ApplicationRecordSchema> = [];

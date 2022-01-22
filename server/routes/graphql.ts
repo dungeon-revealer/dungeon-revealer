@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs-extra";
 import { EventEmitter } from "events";
 import type { Server as IOServer, Socket as IOSocket } from "socket.io";
+import { createPubSub, map } from "@graphql-yoga/subscription";
 import { flow } from "fp-ts/lib/function";
 import { schema, GraphQLContextType, PubSubConfig } from "../graphql";
 import { createChat } from "../chat";
@@ -18,9 +19,7 @@ import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
 import { applyLiveQueryJSONDiffPatchGenerator } from "@n1ru4l/graphql-live-query-patch-jsondiffpatch";
 import { isAsyncIterable } from "@n1ru4l/push-pull-async-iterable-iterator";
 import { createSplashImageState } from "../splash-image-state";
-import { createChannelPubSub } from "../pubsub";
 import { createTokenImageUploadRegister } from "../token-image-lib";
-import * as AsyncIteratorUtil from "../util/async-iterator";
 import type { Maps } from "../maps";
 import { createMapImageUploadRegister } from "../map-lib";
 import type { Settings } from "../settings";
@@ -49,7 +48,7 @@ export default ({
   settings,
   emitter,
 }: Dependencies) => {
-  const pubSub = createChannelPubSub<PubSubConfig>();
+  const pubSub = createPubSub<PubSubConfig>();
 
   const chat = createChat({ pubSub });
 
@@ -101,7 +100,7 @@ export default ({
         result: AsyncIterableIterator<T> | T
       ): AsyncIterableIterator<T> | MaybePromise<T> => {
         if (isAsyncIterable(result)) {
-          return AsyncIteratorUtil.map(apply)(result);
+          return map(apply)(result);
         } else {
           return apply(result);
         }

@@ -1,6 +1,6 @@
 import * as E from "fp-ts/lib/Either";
+import type { PubSub } from "@graphql-yoga/subscription";
 import * as lib from "./notes-lib";
-import type { ChannelPubSub } from "./pubsub";
 
 const createPubSub = (...events: Array<lib.NotesUpdatesPayload>) => {
   return {
@@ -18,7 +18,7 @@ const createPubSub = (...events: Array<lib.NotesUpdatesPayload>) => {
 
       return iterator;
     },
-  } as any as ChannelPubSub<lib.NotesPubSubConfig>;
+  } as any as PubSub<lib.NotesPubSubConfig>;
 };
 
 const createSession = (
