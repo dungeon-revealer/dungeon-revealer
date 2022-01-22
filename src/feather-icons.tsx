@@ -96,11 +96,7 @@ export const Dice = createIcon({
     </>
   ),
   defaultProps: {
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 2,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
+    fill: "currentColor",
     boxSize: "30px",
   },
 });
