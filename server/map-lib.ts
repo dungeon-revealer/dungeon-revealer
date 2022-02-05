@@ -84,7 +84,7 @@ export const addManyMapToken = (params: {
     RT.map(() => null)
   );
 
-export const getPaginatedMaps = (_params: {
+export const getPaginatedMaps = (params: {
   /* amount of items to fetch */
   first: number;
   /* cursor which can be used to fetch more. */
@@ -98,7 +98,20 @@ export const getPaginatedMaps = (_params: {
   pipe(
     auth.requireAdmin(),
     RT.chainW(() => RT.ask<MapsDependency>()),
-    RT.chainW((deps) => () => async () => deps.maps.getAll())
+    RT.chainW((deps) => () => async () => {
+      const allMaps = deps.maps.getAll();
+      let index = -1;
+
+      if (params.cursor) {
+        const lastId = params.cursor.lastId;
+        index = allMaps.findIndex((map) => map.id === lastId);
+      }
+
+      index = index + 1;
+
+      const batch = allMaps.slice(index, index + params.first);
+      return batch;
+    })
   );
 
 type MapImageUploadRegisterRecord = {
