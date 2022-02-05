@@ -94,12 +94,23 @@ export const getPaginatedMaps = (params: {
     /* id of the item after which items should be fetched */
     lastId: string;
   };
+  /**
+   * filter maps via title
+   * TODO: should this be part of the cursor?
+   * */
+  titleNeedle: string | null;
 }) =>
   pipe(
     auth.requireAdmin(),
     RT.chainW(() => RT.ask<MapsDependency>()),
     RT.chainW((deps) => () => async () => {
-      const allMaps = deps.maps.getAll();
+      let allMaps = deps.maps.getAll();
+      if (params.titleNeedle) {
+        const titleNeedle = params.titleNeedle.toLowerCase();
+        allMaps = allMaps.filter((map) =>
+          map.title.toLowerCase().includes(titleNeedle)
+        );
+      }
       let index = -1;
 
       if (params.cursor) {
