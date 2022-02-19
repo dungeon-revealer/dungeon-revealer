@@ -320,7 +320,6 @@ const Content = ({
             setMode({ title: "EDIT_MAP" });
             setLoadedMapId(loadedMapId);
           }}
-          dmPassword={dmPassword}
         />
       ) : null}
       {mode.title === "MEDIA_LIBRARY" ? (

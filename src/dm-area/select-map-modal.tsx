@@ -1,13 +1,12 @@
 import * as React from "react";
 import graphql from "babel-plugin-relay/macro";
-import { useMutation, useQuery } from "relay-hooks";
+import { useFragment, useMutation, usePagination, useQuery } from "relay-hooks";
 import { ConnectionHandler } from "relay-runtime";
 import { Modal, ModalDialogSize } from "../modal";
 import * as Icon from "../feather-icons";
 import { Input, InputGroup } from "../input";
 import * as Button from "../button";
 import * as ScrollableList from "./components/scrollable-list";
-import { buildApiUrl } from "../public-url";
 import { generateSHA256FileHash } from "../crypto";
 import { useSelectFileDialog } from "../hooks/use-select-file-dialog";
 import { selectMapModal_MapsQuery } from "./__generated__/selectMapModal_MapsQuery.graphql";
@@ -15,6 +14,10 @@ import { selectMapModal_MapCreateMutation } from "./__generated__/selectMapModal
 import { selectMapModal_MapImageRequestUploadMutation } from "./__generated__/selectMapModal_MapImageRequestUploadMutation.graphql";
 import { selectMapModal_MapDeleteMutation } from "./__generated__/selectMapModal_MapDeleteMutation.graphql";
 import { selectMapModal_MapUpdateTitleMutation } from "./__generated__/selectMapModal_MapUpdateTitleMutation.graphql";
+import { selectMapModal_MapList_MapsFragment$key } from "./__generated__/selectMapModal_MapList_MapsFragment.graphql";
+import { useInvokeOnScrollEnd } from "../hooks/use-invoke-on-scroll-end";
+import { selectMapModal_ActiveMap_MapFragment$key } from "./__generated__/selectMapModal_ActiveMap_MapFragment.graphql";
+import { selectMapModal_ActiveMapQuery } from "./__generated__/selectMapModal_ActiveMapQuery.graphql";
 
 type CreateNewMapButtonProps = {
   children: React.ReactChild;
@@ -71,21 +74,11 @@ type SelectMapModalProps = {
   liveMapId: null | string;
   loadedMapId: null | string;
   canClose: boolean;
-  dmPassword: string;
 };
 
 const SelectMapModal_MapsQuery = graphql`
-  query selectMapModal_MapsQuery {
-    maps {
-      __id
-      edges {
-        node {
-          id
-          title
-          mapImageUrl
-        }
-      }
-    }
+  query selectMapModal_MapsQuery($titleNeedle: String!) {
+    ...selectMapModal_MapList_MapsFragment @arguments(titleNeedle: $titleNeedle)
   }
 `;
 
@@ -136,19 +129,209 @@ const SelectMapModal_MapUpdateTitleMutation = graphql`
   }
 `;
 
+const SelectMapModal_MapList_MapsFragment = graphql`
+  fragment selectMapModal_MapList_MapsFragment on Query
+  @argumentDefinitions(
+    first: { type: "Int", defaultValue: 20 }
+    after: { type: "String" }
+    titleNeedle: { type: "String!" }
+  )
+  @refetchable(queryName: "selectMapModal_MapList_MoreMapsQuery") {
+    maps(first: $first, after: $after, titleNeedle: $titleNeedle)
+      @connection(key: "selectMapModal_MapList_maps") {
+      __id
+      edges {
+        node {
+          id
+          title
+          mapImageUrl
+        }
+      }
+    }
+  }
+`;
+
+const MapList = (props: {
+  activeMapId: string | null;
+  liveMapId: string | null;
+  setActiveMapId: (mapId: string) => void;
+  filter: string;
+  maps: selectMapModal_MapList_MapsFragment$key;
+  reportMapsConnectionId: (mapsConnectionId: string) => void;
+}): React.ReactElement => {
+  const { data, isLoading, hasNext, loadNext } = usePagination(
+    SelectMapModal_MapList_MapsFragment,
+    props.maps
+  );
+  const onScroll = useInvokeOnScrollEnd(() => {
+    if (isLoading || !hasNext) {
+      return;
+    }
+    loadNext(20);
+  });
+
+  React.useEffect(() => props.reportMapsConnectionId(data.maps.__id));
+
+  return (
+    <ScrollableList.List onScroll={onScroll}>
+      {data.maps.edges.map((item) => (
+        <ScrollableList.ListItem key={item.node.id}>
+          <ScrollableList.ListItemButton
+            tabIndex={1}
+            isActive={item.node.id === props.activeMapId}
+            onClick={() => {
+              props.setActiveMapId(item.node.id);
+            }}
+          >
+            {item.node.title}{" "}
+            {item.node.id === props.liveMapId ? "(live)" : null}
+          </ScrollableList.ListItemButton>
+        </ScrollableList.ListItem>
+      ))}
+    </ScrollableList.List>
+  );
+};
+
+const SelectMapModal_ActiveMap_MapFragment = graphql`
+  fragment selectMapModal_ActiveMap_MapFragment on Map {
+    id
+    title
+    mapImageUrl
+  }
+`;
+
+const ActiveMap = (props: {
+  activeMap: selectMapModal_ActiveMap_MapFragment$key;
+  setModalState: React.Dispatch<React.SetStateAction<ModalStates | null>>;
+  setLoadedMapId: (loadedMapId: string) => void;
+}): React.ReactElement => {
+  const activeMap = useFragment(
+    SelectMapModal_ActiveMap_MapFragment,
+    props.activeMap
+  );
+
+  return (
+    <Modal.Content>
+      <div
+        style={{
+          display: "flex",
+          paddingLeft: 16,
+          paddingRight: 16,
+          paddingTop: 8,
+          paddingBottom: 16,
+          alignItems: "center",
+        }}
+      >
+        <h3
+          style={{
+            margin: `0.5rem 16px 0.5rem 0`,
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {activeMap.title}
+        </h3>
+        <Button.Tertiary
+          iconOnly
+          small
+          onClick={() => {
+            props.setModalState({
+              type: ModalType.EDIT_TITLE,
+              data: { mapId: activeMap.id },
+            });
+          }}
+        >
+          <Icon.Edit boxSize="16px" />
+        </Button.Tertiary>
+      </div>
+      <div
+        style={{
+          height: "100%",
+          width: "100%",
+          overflowY: "scroll",
+        }}
+      >
+        <img src={activeMap.mapImageUrl} style={{ width: "100%" }} />
+      </div>
+      <div
+        style={{
+          display: "flex",
+          paddingLeft: 16,
+          paddingRight: 16,
+          paddingTop: 20,
+          paddingBottom: 16,
+        }}
+      >
+        <div>
+          <Button.Tertiary
+            tabIndex={2}
+            onClick={() => {
+              props.setModalState({
+                type: ModalType.DELETE_MAP,
+                data: { mapId: activeMap.id },
+              });
+            }}
+          >
+            <Icon.Trash boxSize="20px" />
+            <span>Delete</span>
+          </Button.Tertiary>
+        </div>
+        <div style={{ marginLeft: "auto" }}>
+          <Button.Primary
+            tabIndex={1}
+            onClick={() => {
+              props.setLoadedMapId(activeMap.id);
+            }}
+          >
+            <Icon.Check boxSize="20px" />
+            <span>Load Map</span>
+          </Button.Primary>
+        </div>
+      </div>
+    </Modal.Content>
+  );
+};
+
+const SelectMapModal_ActiveMapQuery = graphql`
+  query selectMapModal_ActiveMapQuery($activeMapId: ID!) {
+    map(id: $activeMapId) {
+      ...selectMapModal_ActiveMap_MapFragment
+    }
+  }
+`;
+
 export const SelectMapModal = ({
   closeModal,
   setLoadedMapId,
   liveMapId,
   loadedMapId,
   canClose,
-  dmPassword,
-}: SelectMapModalProps) => {
+}: SelectMapModalProps): React.ReactElement => {
   const [activeMapId, setActiveMapId] = React.useState(loadedMapId);
   const [modalState, setModalState] = React.useState<ModalStates | null>(null);
   const [filter, setFilterValue] = React.useState("");
 
-  const response = useQuery<selectMapModal_MapsQuery>(SelectMapModal_MapsQuery);
+  const response = useQuery<selectMapModal_MapsQuery>(
+    SelectMapModal_MapsQuery,
+    React.useMemo(
+      () => ({
+        titleNeedle: filter,
+      }),
+      [filter]
+    )
+  );
+  const activeMapResponse = useQuery<selectMapModal_ActiveMapQuery>(
+    SelectMapModal_ActiveMapQuery,
+    React.useMemo(
+      () => ({
+        activeMapId: activeMapId ?? "",
+      }),
+      [activeMapId]
+    ),
+    { skip: !activeMapId }
+  );
+
   const [mapImageRequestUpload] =
     useMutation<selectMapModal_MapImageRequestUploadMutation>(
       SelectMapModal_MapImageRequestUploadMutation
@@ -170,15 +353,8 @@ export const SelectMapModal = ({
     [setFilterValue]
   );
 
-  const maps = response.data?.maps.edges ?? [];
-
-  const activeMap = React.useMemo(
-    () =>
-      activeMapId
-        ? maps.find((map) => map.node.id === activeMapId) || null
-        : null,
-    [activeMapId, maps]
-  );
+  // TODO: find a better way of propagating the inner relay id to his level :)
+  const mapsConnectionIdRef = React.useRef("");
 
   const beforeCreateMap = React.useCallback((file) => {
     setModalState({ type: ModalType.CREATE_MAP, data: { file } });
@@ -212,202 +388,62 @@ export const SelectMapModal = ({
             </div>
           </Modal.Header>
           <Modal.Body style={{ display: "flex", height: "80vh" }} noPadding>
-            {maps.length ? (
-              <Modal.Aside>
-                <div
-                  style={{
-                    paddingLeft: 12,
-                    paddingRight: 12,
-                    paddingTop: 10,
-                    paddingBottom: 10,
-                  }}
-                >
-                  <Input
-                    tabIndex={1}
-                    placeholder="Filter"
-                    value={filter}
-                    onChange={onChangeFilter}
-                    onKeyDown={(ev) => {
-                      if (ev.keyCode === 27 && filter !== "") {
-                        ev.stopPropagation();
-                        setFilterValue("");
-                      }
-                    }}
-                  />
-                </div>
-                <ScrollableList.List>
-                  {maps
-                    .filter(
-                      (item) =>
-                        filter === "" ||
-                        item.node.title.toLowerCase().includes(filter)
-                    )
-                    .map((item) => (
-                      <ScrollableList.ListItem key={item.node.id}>
-                        <ScrollableList.ListItemButton
-                          tabIndex={1}
-                          isActive={item.node.id === activeMapId}
-                          onClick={() => {
-                            setActiveMapId(item.node.id);
-                          }}
-                        >
-                          {item.node.title}{" "}
-                          {item.node.id === liveMapId ? "(live)" : null}
-                        </ScrollableList.ListItemButton>
-                      </ScrollableList.ListItem>
-                    ))}
-                </ScrollableList.List>
-                <Modal.Footer>
-                  <CreateNewMapButton
-                    tabIndex={1}
-                    fullWidth
-                    onSelectFile={(file) => {
-                      beforeCreateMap(file);
-                    }}
-                  >
-                    <>
-                      <Icon.Plus boxSize="20px" /> <span>Create New Map</span>
-                    </>
-                  </CreateNewMapButton>
-                </Modal.Footer>
-              </Modal.Aside>
-            ) : null}
-            {activeMap ? (
-              <Modal.Content>
-                <div
-                  style={{
-                    display: "flex",
-                    paddingLeft: 16,
-                    paddingRight: 16,
-                    paddingTop: 8,
-                    paddingBottom: 16,
-                    alignItems: "center",
-                  }}
-                >
-                  <h3
-                    style={{
-                      margin: `0.5rem 16px 0.5rem 0`,
-                      overflow: "hidden",
-                      whiteSpace: "nowrap",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {activeMap.node.title}
-                  </h3>
-                  <Button.Tertiary
-                    iconOnly
-                    small
-                    onClick={() => {
-                      setModalState({
-                        type: ModalType.EDIT_TITLE,
-                        data: { mapId: activeMap.node.id },
-                      });
-                    }}
-                  >
-                    <Icon.Edit boxSize="16px" />
-                  </Button.Tertiary>
-                </div>
-                <div
-                  style={{
-                    height: "100%",
-                    width: "100%",
-                    overflowY: "scroll",
-                  }}
-                >
-                  {/* eslint-disable-next-line jsx-a11y/alt-text */}
-                  <img
-                    src={buildApiUrl(
-                      // prettier-ignore
-                      `/map/${activeMap.node.id}/map?authorization=${encodeURIComponent(dmPassword)}`
-                    )}
-                    style={{ width: "100%" }}
-                  />
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    paddingLeft: 16,
-                    paddingRight: 16,
-                    paddingTop: 20,
-                    paddingBottom: 16,
-                  }}
-                >
-                  <div>
-                    <Button.Tertiary
-                      tabIndex={2}
-                      onClick={() => {
-                        setModalState({
-                          type: ModalType.DELETE_MAP,
-                          data: { mapId: activeMap.node.id },
-                        });
-                      }}
-                    >
-                      <Icon.Trash boxSize="20px" />
-                      <span>Delete</span>
-                    </Button.Tertiary>
-                  </div>
-                  <div style={{ marginLeft: "auto" }}>
-                    <Button.Primary
-                      tabIndex={1}
-                      onClick={() => {
-                        setLoadedMapId(activeMap.node.id);
-                      }}
-                    >
-                      <Icon.Check boxSize="20px" />
-                      <span>Load Map</span>
-                    </Button.Primary>
-                  </div>
-                </div>
-              </Modal.Content>
-            ) : (
+            <Modal.Aside>
               <div
                 style={{
-                  flex: 1,
-                  display: "flex",
-                  paddingLeft: 16,
-                  paddingRight: 16,
-                  paddingTop: 8,
-                  paddingBottom: 16,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  textAlign: "center",
-                  flexDirection: "column",
+                  paddingLeft: 12,
+                  paddingRight: 12,
+                  paddingTop: 10,
+                  paddingBottom: 10,
                 }}
               >
-                {maps.length ? (
-                  <>
-                    <Icon.Inbox
-                      boxSize="75px"
-                      stroke="#D9E2EC"
-                      fill="#D9E2EC"
-                    />
-                    <h3>Please select a Map from the list on the left.</h3>
-                  </>
-                ) : (
-                  <>
-                    <Icon.Inbox
-                      boxSize="75px"
-                      stroke="#D9E2EC"
-                      fill="#D9E2EC"
-                    />
-                    <h3 style={{ marginBottom: 20 }}>
-                      Your library is currently empty
-                    </h3>
-                    <CreateNewMapButton
-                      big
-                      onSelectFile={(file) => {
-                        beforeCreateMap(file);
-                      }}
-                    >
-                      <>
-                        <Icon.Map boxSize="24px" />
-                        <span>Create a new Map</span>
-                      </>
-                    </CreateNewMapButton>
-                  </>
-                )}
+                <Input
+                  tabIndex={1}
+                  placeholder="Filter"
+                  value={filter}
+                  onChange={onChangeFilter}
+                  onKeyDown={(ev) => {
+                    if (ev.keyCode === 27 && filter !== "") {
+                      ev.stopPropagation();
+                      setFilterValue("");
+                    }
+                  }}
+                />
               </div>
-            )}
+              {response.data ? (
+                <MapList
+                  activeMapId={activeMapId}
+                  liveMapId={liveMapId}
+                  setActiveMapId={setActiveMapId}
+                  filter={filter}
+                  maps={response.data}
+                  reportMapsConnectionId={(mapsConnectionId) => {
+                    mapsConnectionIdRef.current = mapsConnectionId;
+                  }}
+                />
+              ) : null}
+
+              <Modal.Footer>
+                <CreateNewMapButton
+                  tabIndex={1}
+                  fullWidth
+                  onSelectFile={(file) => {
+                    beforeCreateMap(file);
+                  }}
+                >
+                  <>
+                    <Icon.Plus boxSize="20px" /> <span>Create New Map</span>
+                  </>
+                </CreateNewMapButton>
+              </Modal.Footer>
+            </Modal.Aside>
+            {activeMapResponse.data?.map ? (
+              <ActiveMap
+                activeMap={activeMapResponse.data.map}
+                setLoadedMapId={setLoadedMapId}
+                setModalState={setModalState}
+              />
+            ) : null}
           </Modal.Body>
         </Modal.Dialog>
       </Modal>
@@ -429,28 +465,29 @@ export const SelectMapModal = ({
         ) : modalState.type === ModalType.DELETE_MAP ? (
           <DeleteMapModal
             closeModal={() => setModalState(null)}
-            deleteMap={() =>
+            deleteMap={() => {
+              const mapId = modalState.data.mapId;
               mapDelete({
                 variables: {
                   input: {
-                    mapId: modalState.data.mapId,
+                    mapId,
                   },
                 },
                 updater: (store) => {
-                  const mapsConnection = store.get(response.data!.maps.__id);
+                  const mapsConnection = store.get(mapsConnectionIdRef.current);
                   if (mapsConnection == null) {
                     return;
                   }
-                  ConnectionHandler.deleteNode(
-                    mapsConnection,
-                    modalState.data.mapId
-                  );
+                  ConnectionHandler.deleteNode(mapsConnection, mapId);
                 },
                 onCompleted: () => {
                   setModalState(null);
+                  setActiveMapId((activeMapId) =>
+                    activeMapId === mapId ? null : activeMapId
+                  );
                 },
-              })
-            }
+              });
+            }}
           />
         ) : modalState.type === ModalType.CREATE_MAP ? (
           <CreateNewMapModal
@@ -502,7 +539,7 @@ export const SelectMapModal = ({
                     return;
                   }
 
-                  const mapsConnection = store.get(response.data!.maps.__id);
+                  const mapsConnection = store.get(mapsConnectionIdRef.current);
                   if (mapsConnection == null) {
                     return;
                   }
@@ -553,7 +590,7 @@ const CreateNewMapModal = ({
   closeModal: () => void;
   file: File;
   createMap: (title: string) => void;
-}) => {
+}): React.ReactElement => {
   const [inputValue, setInputValue] = React.useState(() =>
     extractDefaultTitleFromFileName(file.name)
   );
@@ -616,7 +653,7 @@ const CreateNewMapModal = ({
 const ChangeMapTitleModal: React.FC<{
   closeModal: () => void;
   updateMapTitle: (newTitle: string) => void;
-}> = ({ closeModal, updateMapTitle: updateMap }) => {
+}> = ({ closeModal, updateMapTitle: updateMap }): React.ReactElement => {
   const [inputValue, setInputValue] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const onChangeInputValue = React.useCallback(
@@ -672,7 +709,7 @@ const ChangeMapTitleModal: React.FC<{
 const DeleteMapModal: React.FC<{
   closeModal: () => void;
   deleteMap: () => void;
-}> = ({ closeModal, deleteMap }) => {
+}> = ({ closeModal, deleteMap }): React.ReactElement => {
   return (
     <Modal onClickOutside={closeModal} onPressEscape={closeModal}>
       <Modal.Dialog size={ModalDialogSize.SMALL}>
