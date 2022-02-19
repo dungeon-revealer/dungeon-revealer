@@ -676,15 +676,17 @@ const encodeMapsConnectionCursor = ({
 const resolvePaginatedMaps = ({
   first,
   cursor,
+  titleNeedle,
 }: {
   first: number;
   cursor: null | {
     lastCreatedAt: number;
     lastId: string;
   };
+  titleNeedle: string | null;
 }) =>
   pipe(
-    lib.getPaginatedMaps({ first: first + 1, cursor }),
+    lib.getPaginatedMaps({ first: first + 1, cursor, titleNeedle }),
     RT.map((maps) =>
       Relay.buildConnectionObject<MapEntity>({
         listData: maps,
@@ -702,6 +704,7 @@ export const queryFields = [
     args: {
       first: t.arg(t.Int, "The amount of items to fetch."),
       after: t.arg(t.String, "Cursor after which items should be fetched."),
+      titleNeedle: t.arg(t.String, "Needle for filtering the items."),
     },
     resolve: (_, args, context) =>
       RT.run(
@@ -714,6 +717,7 @@ export const queryFields = [
             resolvePaginatedMaps({
               first,
               cursor,
+              titleNeedle: args.titleNeedle ?? null,
             })
           )
         ),

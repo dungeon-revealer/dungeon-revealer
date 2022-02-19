@@ -153,6 +153,11 @@ type Query {
     Cursor after which items should be fetched.
     """
     after: String
+
+    """
+    Needle for filtering the items.
+    """
+    titleNeedle: String
   ): MapsConnection!
 
   """
