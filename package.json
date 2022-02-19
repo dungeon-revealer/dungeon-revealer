@@ -48,7 +48,7 @@
   ],
   "dependencies": {
     "@airjp73/dice-notation": "2.2.2",
-    "@graphql-yoga/subscription": "0.2.0-canary-38b11e0.0",
+    "@graphql-yoga/subscription": "0.0.2-canary-7506883.0",
     "@n1ru4l/graphql-live-query": "0.9.0",
     "@n1ru4l/graphql-live-query-patch-jsondiffpatch": "0.7.0",
     "@n1ru4l/in-memory-live-query-store": "0.8.0",
