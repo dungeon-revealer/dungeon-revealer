@@ -115,6 +115,7 @@ const MAXIMUM_CHAT_SIZE = 500;
 
 const createTemplateEngine = () => {
   const templateEngine = new Liquid({
+    relativeReference: false,
     fs: {
       exists: () => Promise.reject(new Error("Not supported.")),
       readFile: () => Promise.reject(new Error("Not supported.")),
