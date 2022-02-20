@@ -22,7 +22,7 @@ if (exec.status !== 0) {
   const gitDesc = exec.stdout.toString().replace("\n", "");
   const gdArray = gitDesc.split("-");
   version.tag = gdArray[0];
-  if (gitDesc.slice(1) === version.appversion) {
+  if (gitDesc.slice(1) === version.appVersion) {
     version.status = "release";
   } else {
     version.status = "development";
