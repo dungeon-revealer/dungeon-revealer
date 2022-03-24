@@ -1,0 +1,31 @@
+
+{% set name = "dungeon-revealer" %}
+{% set version = "1.17.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+build:
+  number: 0
+
+source:
+  url: https://github.com/{{ name }}/{{ name }}/archive/refs/tags/v{{ version }}.tar.gz
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - git
+    - nodejs
+    - libstdcxx-ng
+    - libgcc-ng
+  run:
+    - nodejs
+    - libstdcxx-ng
+    - libgcc-ng
+
+about:
+  home: https://github.com/dungeon-revealer/dungeon-revealer
+  license: ISC
