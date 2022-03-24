@@ -1,0 +1,7 @@
+name: dungeon-revealer
+version: X
+installer_type: all
+channels:
+  - http://repo.anaconda.com/pkgs/main/
+specs:
+  - python
