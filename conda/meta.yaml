@@ -19,12 +19,8 @@ requirements:
   build:
     - git
     - nodejs>=16
-    - libstdcxx-ng
-    - libgcc-ng
   run:
     - nodejs>=16
-    - libstdcxx-ng
-    - libgcc-ng
 
 about:
   home: https://github.com/dungeon-revealer/dungeon-revealer
