@@ -32,7 +32,9 @@ jobs:
         with:
           activate-environment: dr
 
-      - run: |
+      - name: Conda stuff
+        shell: bash -l {0}
+        run: |
           conda activate dr
           conda install conda-build conda-verify constructor
           cd conda
