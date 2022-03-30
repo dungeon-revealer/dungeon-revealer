@@ -1,0 +1,45 @@
+name: Node.js CI
+
+on:
+  push:
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [16.x]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: dr
+
+      - name: Conda stuff
+        shell: bash -l {0}
+        run: |
+          conda activate dr
+          conda install conda-build conda-verify constructor
+          cd conda
+          conda build . --output-folder /tmp/conda-build
+          constructor .   
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: artifact-constructor-${{ matrix.os }}
+          path: conda/dungeon-revealer*.*       
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build image
+        uses: docker/build-push-action@v2
+        with:
+          push: false

@@ -27,24 +27,6 @@ jobs:
       - run: npm run test
         env:
           CI: true
-      
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          activate-environment: dr
-
-      - name: Conda stuff
-        shell: bash -l {0}
-        run: |
-          conda activate dr
-          conda install conda-build conda-verify constructor
-          cd conda
-          conda build . --output-folder /tmp/conda-build
-          constructor .   
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: artifact-constructor-${{ matrix.os }}
-          path: conda/dungeon-revealer*.sh       
 
   docker:
     runs-on: ubuntu-latest
