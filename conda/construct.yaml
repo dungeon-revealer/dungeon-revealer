@@ -1,6 +1,6 @@
 name: dungeon-revealer
 version: 1.17.1
-installer_type: sh
+installer_type: all
 channels:
   - https://conda.anaconda.org/conda-forge/
 channels_remap:
