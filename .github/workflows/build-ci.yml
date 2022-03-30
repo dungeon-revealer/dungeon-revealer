@@ -32,9 +32,9 @@ jobs:
         with:
           activate-environment: dr
 
-      - run: conda install conda-build conda-verify constructor
-      - run: conda env export
       - run: |
+          conda activate dr
+          conda install conda-build conda-verify constructor
           cd conda
           conda build . --output-folder /tmp/conda-build
           constructor .   
