@@ -18,11 +18,11 @@ build:
 requirements:
   build:
     - git
-    - nodejs
+    - nodejs>=16
     - libstdcxx-ng
     - libgcc-ng
   run:
-    - nodejs
+    - nodejs>=16
     - libstdcxx-ng
     - libgcc-ng
 

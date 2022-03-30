@@ -1,0 +1,11 @@
+name: dungeon-revealer
+version: 1.17.1
+installer_type: sh
+channels:
+  - https://conda.anaconda.org/conda-forge/
+channels_remap:
+  -
+    src: file:///tmp/conda-build
+    dest: https://conda.anaconda.org/conda-forge/
+specs:
+  - dungeon-revealer
