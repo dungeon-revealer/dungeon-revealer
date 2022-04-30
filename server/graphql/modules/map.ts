@@ -523,7 +523,9 @@ const GraphQLMapType = t.objectType<MapEntity>({
       description: "The URL of the map image.",
       type: t.NonNull(t.String),
       resolve: (source, _, context) =>
-        `/api/map/${source.id}/map?authorization=${encodeURIComponent(
+        `${context.publicUrl}/api/map/${
+          source.id
+        }/map?authorization=${encodeURIComponent(
           (context.session.role === "admin"
             ? process.env["DM_PASSWORD"]
             : context.session.role === "user"
@@ -537,7 +539,9 @@ const GraphQLMapType = t.objectType<MapEntity>({
         "The URL of the fog progress image that is only accessible to the DM.",
       type: t.String,
       resolve: (source, _, context) =>
-        `/api/map/${source.id}/fog?authorization=${encodeURIComponent(
+        `${context.publicUrl}/api/map/${
+          source.id
+        }/fog?authorization=${encodeURIComponent(
           (context.session.role === "admin"
             ? process.env["DM_PASSWORD"]
             : context.session.role === "user"
@@ -550,7 +554,9 @@ const GraphQLMapType = t.objectType<MapEntity>({
       description: "The URL of the fog live image, that is shown to players.",
       type: t.String,
       resolve: (source, _, context) =>
-        `/api/map/${source.id}/fog-live?authorization=${encodeURIComponent(
+        `${context.publicUrl}/api/map/${
+          source.id
+        }/fog-live?authorization=${encodeURIComponent(
           (context.session.role === "admin"
             ? process.env["DM_PASSWORD"]
             : context.session.role === "user"
