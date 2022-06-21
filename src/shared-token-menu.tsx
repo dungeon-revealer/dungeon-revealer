@@ -337,6 +337,34 @@ const MultiTokenPanel = (props: { currentMapId: string }) => {
             });
           },
         },
+        isLight: {
+          type: LevaInputs.BOOLEAN,
+          label: "Set as Light",
+          value: firstItem.get("isLight"),
+          onChange: (
+            isLight: boolean,
+            _,
+            { initial, fromPanel }
+          ) => {
+            if (initial || !fromPanel) {
+              return;
+            }
+            for (const store of allSelectedItemsRef.current.values()) {
+              store.set({ isLight }, false);
+            }
+            mutate({
+              variables: {
+                input: {
+                  mapId: props.currentMapId,
+                  tokenIds: Array.from(allSelectedItemsRef.current.keys()),
+                  properties: {
+                    isLight,
+                  },
+                },
+              },
+            });
+          },
+        },
         tokenImageId: levaPluginTokenImage({
           value: tokenImageId,
           onChange: (

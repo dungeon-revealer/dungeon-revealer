@@ -43,7 +43,7 @@ import {
 } from "../map-tools/configure-grid-map-tool";
 import { MapControlInterface } from "../map-view";
 import { ConditionalWrap } from "../util";
-import { BrushShape, FogMode } from "../canvas-draw-utilities";
+import { BrushShape, FogMode, Wall } from "../canvas-draw-utilities";
 import {
   AreaSelectContext,
   AreaSelectContextProvider,
@@ -227,6 +227,16 @@ const ShroudRevealSettings = (): React.ReactElement => {
         >
           <Icon.EyeOff boxSize="20px" />
           <Icon.Label>Shroud</Icon.Label>
+        </Toolbar.Button>
+      </Toolbar.Item>
+      <Toolbar.Item isActive={state.wall === Wall}>
+        <Toolbar.Button
+          onClick={() =>
+            setState((state) => ({ ...state, wall: !state.wall}))
+          }
+        >
+          <Icon.Wall boxSize="20px" />
+          <Icon.Label>Wall</Icon.Label>
         </Toolbar.Button>
       </Toolbar.Item>
     </>
@@ -615,7 +625,9 @@ export const DmMap = (props: {
   openNotes: () => void;
   openMediaLibrary: () => void;
   sendLiveMap: (image: HTMLCanvasElement) => void;
+  sendLiveWall: (image: HTMLCanvasElement) => void;
   saveFogProgress: (image: HTMLCanvasElement) => void;
+  saveWallProgress: (image: HTMLCanvasElement) => void;
   updateToken: (
     id: string,
     changes: Omit<Partial<MapTokenEntity>, "id">
@@ -649,11 +661,13 @@ export const DmMap = (props: {
     if (!controlRef.current || !asyncClipBoardApi) {
       return;
     }
-    const { mapCanvas, fogCanvas } = controlRef.current.getContext();
+    const { mapCanvas, fogCanvas, wallCanvas } = controlRef.current.getContext();
     const canvas = new OffscreenCanvas(mapCanvas.width, mapCanvas.height);
     const context = canvas.getContext("2d")!;
     context.drawImage(mapCanvas, 0, 0);
     context.drawImage(fogCanvas, 0, 0);
+    context.drawImage(wallCanvas, 0, 0);
+
 
     const { clipboard, ClipboardItem } = asyncClipBoardApi;
     canvas.convertToBlob().then((blob) => {
@@ -676,8 +690,11 @@ export const DmMap = (props: {
     });
   };
 
+
   const isConfiguringGrid = userSelectedTool === ConfigureGridMapTool;
   const isConfiguringGridRef = React.useRef(isConfiguringGrid);
+
+
   React.useEffect(() => {
     isConfiguringGridRef.current = isConfiguringGrid;
   });
@@ -711,6 +728,7 @@ export const DmMap = (props: {
               return;
             }
             props.sendLiveMap(context.fogCanvas);
+            props.sendLiveWall(context.wallCanvas);
           }
           break;
         }
@@ -722,7 +740,6 @@ export const DmMap = (props: {
   }, []);
 
   const [confirmDialogNode, showDialog] = useConfirmationDialog();
-
   const [configureGridMapToolState, setConfigureGridMapToolState] =
     useResetState<ConfigureMapToolState>(
       () => ({
@@ -768,7 +785,12 @@ export const DmMap = (props: {
           {
             onDrawEnd: (canvas) => {
               // TODO: toggle between instant send and incremental send
-              props.saveFogProgress(canvas);
+              const wallState = JSON.parse(localStorage.getItem('brushTool')).wall
+              if (wallState) {
+                props.saveWallProgress(canvas);
+              } else {
+                props.saveFogProgress(canvas);
+              }
             },
           },
         ] as ComponentWithPropsTuple<
@@ -825,6 +847,7 @@ export const DmMap = (props: {
             SharedTokenStateStoreContext,
           ]}
           fogOpacity={0.5}
+          wallOpacity={0.5}
         />
       </React.Suspense>
 
@@ -857,20 +880,38 @@ export const DmMap = (props: {
                         body: "Do you really want to shroud the whole map?",
                         onConfirm: () => {
                           // TODO: this should be less verbose
+
+
                           const context = controlRef.current?.getContext();
                           if (!context) {
                             return;
                           }
-                          const canvasContext =
-                            context.fogCanvas.getContext("2d")!;
-                          applyFogRectangle(
-                            FogMode.shroud,
-                            [0, 0],
-                            [context.fogCanvas.width, context.fogCanvas.height],
-                            canvasContext
-                          );
-                          context.fogTexture.needsUpdate = true;
-                          props.saveFogProgress(context.fogCanvas);
+                          const wallState = JSON.parse(localStorage.getItem('brushTool')).wall
+                          if (wallState) {
+                            const canvasContext =
+                              context.wallCanvas.getContext("2d")!;
+                            applyFogRectangle(
+                              FogMode.shroud,
+                              true,
+                              [0, 0],
+                              [context.wallCanvas.width, context.wallCanvas.height],
+                              canvasContext
+                            );
+                            context.wallTexture.needsUpdate = true;
+                            props.saveWallProgress(context.wallCanvas);
+                          } else {
+                            const canvasContext =
+                              context.fogCanvas.getContext("2d")!;
+                            applyFogRectangle(
+                              FogMode.shroud,
+                              false,
+                              [0, 0],
+                              [context.fogCanvas.width, context.fogCanvas.height],
+                              canvasContext
+                            );
+                            context.fogTexture.needsUpdate = true;
+                            props.saveFogProgress(context.fogCanvas);
+                          }
                         },
                       })
                     }
@@ -891,16 +932,33 @@ export const DmMap = (props: {
                           if (!context) {
                             return;
                           }
-                          const canvasContext =
-                            context.fogCanvas.getContext("2d")!;
-                          applyFogRectangle(
-                            FogMode.clear,
-                            [0, 0],
-                            [context.fogCanvas.width, context.fogCanvas.height],
-                            canvasContext
-                          );
-                          context.fogTexture.needsUpdate = true;
-                          props.saveFogProgress(context.fogCanvas);
+
+                          const wallState = JSON.parse(localStorage.getItem('brushTool')).wall
+                          if (wallState) {
+                            const canvasContext =
+                              context.wallCanvas.getContext("2d")!;
+                            applyFogRectangle(
+                              FogMode.clear,
+                              false,
+                              [0, 0],
+                              [context.wallCanvas.width, context.wallCanvas.height],
+                              canvasContext
+                            );
+                            context.wallTexture.needsUpdate = true;
+                            props.saveWallProgress(context.wallCanvas);
+                          } else {
+                            const canvasContext =
+                              context.fogCanvas.getContext("2d")!;
+                            applyFogRectangle(
+                              FogMode.clear,
+                              false,
+                              [0, 0],
+                              [context.fogCanvas.width, context.fogCanvas.height],
+                              canvasContext
+                            );
+                            context.fogTexture.needsUpdate = true;
+                            props.saveFogProgress(context.fogCanvas);
+                          }
                         },
                       })
                     }
@@ -1016,6 +1074,7 @@ export const DmMap = (props: {
                         return;
                       }
                       props.sendLiveMap(context.fogCanvas);
+                      props.sendLiveWall(context.wallCanvas);
                     }}
                   >
                     <Icon.Send boxSize="20px" />

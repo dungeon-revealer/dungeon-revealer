@@ -41,6 +41,7 @@ const MapFragment = graphql`
       radius
       isVisibleForPlayers
       isMovableByPlayers
+      isLight
       isLocked
       tokenImage {
         id
@@ -120,6 +121,7 @@ export const ContextMenuRenderer = (props: {
             radius: token.radius,
             isVisibleForPlayers: token.isVisibleForPlayers,
             isMovableByPlayers: token.isMovableByPlayers,
+            isLight: token.isLight,
             isLocked: token.isLocked,
             tokenImageId: token.tokenImageId,
           });

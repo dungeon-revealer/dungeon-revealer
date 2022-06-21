@@ -244,6 +244,7 @@ const PlayerMap = ({
                   UpdateTokenContext,
                 ]}
                 fogOpacity={1}
+                wallOpacity={0}
               />
             </React.Suspense>
           ) : null}

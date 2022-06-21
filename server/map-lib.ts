@@ -23,6 +23,7 @@ export const updateManyMapToken = (params: {
     color: string | undefined;
     isVisibleForPlayers: boolean | undefined;
     isMovableByPlayers: boolean | undefined;
+    isLight: boolean | undefined;
     tokenImageId: string | null | undefined;
     rotation: number | undefined;
   };
@@ -36,6 +37,7 @@ export const updateManyMapToken = (params: {
           color: params.props.color,
           isVisibleForPlayers: params.props.isVisibleForPlayers,
           isMovableByPlayers: params.props.isMovableByPlayers,
+          isLight: params.props.isLight,
           tokenImageId: params.props.tokenImageId,
           rotation: params.props.rotation,
         })
@@ -71,6 +73,7 @@ export const addManyMapToken = (params: {
     isLocked?: boolean | null;
     isVisibleForPlayers?: boolean | null;
     isMovableByPlayers?: boolean | null;
+    isLight?: boolean | null;
     tokenImageId?: null | string;
   }>;
 }) =>

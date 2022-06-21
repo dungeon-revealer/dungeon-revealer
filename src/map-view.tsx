@@ -50,18 +50,20 @@ import { mapView_MapPingRenderer_MapFragment$key } from "./__generated__/mapView
 import { mapView_MapPingSubscription } from "./__generated__/mapView_MapPingSubscription.graphql";
 import { UpdateTokenContext } from "./update-token-context";
 import { IsDungeonMasterContext } from "./is-dungeon-master-context";
-
+import { WallsMaker, lightDrawer, hexToRGB } from "./shadows";
 type Vector2D = [number, number];
 
 enum LayerRenderOrder {
   map = 0,
   mapGrid = 1,
-  token = 2,
-  tokenTextBackground = 3,
-  tokenText = 4,
-  tokenGesture = 5,
-  marker = 6,
-  outline = 7,
+  shadows = 2,
+  token = 3,
+  tokenTextBackground = 4,
+  tokenText = 5,
+  tokenGesture = 6,
+  marker = 7,
+  outline = 8,
+
 }
 
 // convert image relative to three.js
@@ -141,7 +143,7 @@ const SharedMapState = React.createContext<SharedMapToolState>(
 
 type TokenPartialChanges = Omit<Partial<MapTokenEntity>, "id">;
 
-const TokenListRendererFragment = graphql`
+export const TokenListRendererFragment = graphql`
   fragment mapView_TokenListRendererFragment on Map {
     tokens {
       id
@@ -152,6 +154,77 @@ const TokenListRendererFragment = graphql`
     }
   }
 `;
+
+const ShadowsRenderer = ( props: {
+  width: number;
+  height: number;
+  map: mapView_TokenListRendererFragment$key;
+  shadowOpacity: number;
+  shadowOjbects: HTMLImageElement|null;
+  }
+)=>{
+  var tokenItem: any = {};
+  const lightTokens: mapView_TokenRendererMapTokenFragment$key[] = [];
+  const tokens = useFragment(TokenListRendererFragment, props.map);
+  if ( !props.shadowOjbects ){
+    return null
+  }
+  const sfX = props.shadowOjbects.height/props.height
+  const sfY = props.shadowOjbects.width/props.width
+
+  tokens.tokens.map((token) => {
+    tokenItem = useFragment(TokenRendererMapTokenFragment, token);
+    if (tokenItem.isLight) {
+      lightTokens.push(tokenItem)
+    }
+  })
+  if ( lightTokens.length <= 0 ) {
+    return null
+  };
+
+  const shadows = WallsMaker({
+    width: props.width,
+    height: props.height,
+    image: props.shadowOjbects,
+    sfX: sfX,
+    sfY: sfY
+  });
+
+  if (!shadows){
+    return null
+  }
+
+  // const bind = useGesture<{
+  //   onWheel: PointerEvent;
+  // }>({
+  //   onWheel: (args) => {
+  //     console.log("test");
+  //   }});
+
+  const lightsArray: Array<React.ReactElement> = []
+
+
+  lightTokens.forEach( token => {
+    var light = lightDrawer(
+      new THREE.Vector3(token.x/sfX, -token.y/sfY, 0.1),
+      hexToRGB(token.color),
+      10,
+      token.radius/10,
+      1)
+    lightsArray.push(light);
+  });
+
+  const position = new THREE.Vector3((-props.width/2), (props.height/2), 0)
+
+  return (
+    <animated.group
+    position={position}
+    >
+      {[shadows]}
+      {lightsArray}
+    </animated.group>)
+}
+
 
 const TokenListRenderer = (props: {
   map: mapView_TokenListRendererFragment$key;
@@ -171,7 +244,7 @@ const TokenListRenderer = (props: {
   );
 };
 
-const TokenRendererMapTokenFragment = graphql`
+export const TokenRendererMapTokenFragment = graphql`
   fragment mapView_TokenRendererMapTokenFragment on MapToken {
     id
     x
@@ -183,6 +256,7 @@ const TokenRendererMapTokenFragment = graphql`
     isLocked
     isMovableByPlayers
     isVisibleForPlayers
+    isLight
     tokenImage {
       id
       title
@@ -414,6 +488,20 @@ const TokenRenderer = (props: {
         },
         transient: false,
       },
+      isLight: {
+        type: LevaInputs.BOOLEAN,
+        label: "Light mode",
+        value: token.isLight,
+        onChange: (isLight: boolean, _, { initial, fromPanel }) => {
+          if (initial || !fromPanel) {
+            return;
+          }
+          updateToken(props.id, {
+            isLight,
+          });
+        },
+        transient: false,
+      },
       referenceId: levaPluginNoteReference({
         value: token.referenceId ?? null,
         onChange: (referenceId: string | null, _, { initial, fromPanel }) => {
@@ -457,6 +545,7 @@ const TokenRenderer = (props: {
       isLocked: token.isLocked,
       isMovableByPlayers: token.isMovableByPlayers,
       isVisibleForPlayers: token.isVisibleForPlayers,
+      isLight: token.isLight,
       referenceId: token.referenceId,
       tokenImageId: token.tokenImage?.id ?? null,
     };
@@ -485,6 +574,7 @@ const TokenRenderer = (props: {
     token.color,
     token.isMovableByPlayers,
     token.isVisibleForPlayers,
+    token.isLight,
     token.referenceId,
     token.tokenImage?.id,
     token.rotation,
@@ -526,7 +616,6 @@ const TokenRenderer = (props: {
   const tokenSelection = useTokenSelection(props.id);
 
   const firstTimeStamp = React.useRef<null | number>(null);
-
   const dragProps = useGesture<{
     onClick: PointerEvent;
     onContextMenu: PointerEvent;
@@ -1261,25 +1350,52 @@ const FogRenderer = React.memo(
   }
 );
 
+const WallRenderer = React.memo(
+  (props: {
+    width: number;
+    height: number;
+    wallTexture: THREE.Texture;
+    wallOpacity: number;
+  }) => {
+    return (
+      <mesh>
+        <planeBufferGeometry
+          attach="geometry"
+          args={[props.width, props.height]}
+        />
+        <meshBasicMaterial
+          attach="material"
+          map={props.wallTexture}
+          transparent={true}
+          opacity={props.wallOpacity}
+        />
+      </mesh>
+    );
+  }
+);
+
 const MapRenderer = (props: {
   map: mapView_MapRendererFragment$key;
   mapImage: HTMLImageElement;
   mapImageTexture: THREE.Texture;
   fogTexture: THREE.Texture;
+  wallTexture: THREE.Texture;
+  wallImage: HTMLImageElement | null;
   viewport: ViewportData;
   scale: SpringValue<[number, number, number]>;
   factor: number;
   dimensions: Dimensions;
   fogOpacity: number;
+  wallOpacity: number;
   markerRadius: number;
 }) => {
   const map = useFragment(MapRendererFragment, props.map);
   const isDungeonMaster = React.useContext(IsDungeonMasterContext);
-
   return (
     <>
       <group renderOrder={LayerRenderOrder.map}>
-        <mesh>
+        <mesh
+        receiveShadow={true}>
           <planeBufferGeometry
             attach="geometry"
             args={[props.dimensions.width, props.dimensions.height]}
@@ -1301,6 +1417,19 @@ const MapRenderer = (props: {
           height={props.dimensions.height}
           fogOpacity={props.fogOpacity}
           fogTexture={props.fogTexture}
+        />
+        <WallRenderer
+          width={props.dimensions.width}
+          height={props.dimensions.height}
+          wallOpacity={props.wallOpacity}
+          wallTexture={props.wallTexture}
+        />
+        <ShadowsRenderer
+          width={props.dimensions.width}
+          height={props.dimensions.height}
+          map={map}
+          shadowOpacity={.5}
+          shadowOjbects={props.wallImage}
         />
       </group>
       <TokenListRenderer map={map} />
@@ -1333,9 +1462,11 @@ const MapViewRenderer = (props: {
   map: mapView_MapViewRendererFragment$key;
   mapImage: HTMLImageElement;
   fogImage: HTMLImageElement | null;
+  wallImage: HTMLImageElement | null;
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
   activeTool: MapTool | null;
   fogOpacity: number;
+  wallOpacity: number;
 }): React.ReactElement => {
   const map = useFragment(MapViewRendererFragment, props.map);
   const three = useThree();
@@ -1376,8 +1507,16 @@ const MapViewRenderer = (props: {
     return canvas;
   });
 
+  const [wallCanvas] = React.useState(() => {
+    const canvas = window.document.createElement("canvas");
+    canvas.width = optimalDimensions.width;
+    canvas.height = optimalDimensions.height;
+    return canvas;
+  });
+
   const [mapTexture] = React.useState(() => new THREE.CanvasTexture(mapCanvas));
   const [fogTexture] = React.useState(() => new THREE.CanvasTexture(fogCanvas));
+  const [wallTexture] = React.useState(() => new THREE.CanvasTexture(wallCanvas));
 
   React.useEffect(() => {
     set({
@@ -1407,6 +1546,26 @@ const MapViewRenderer = (props: {
   }, [optimalDimensions, fogCanvas, maximumSideLength, props.fogImage]);
 
   React.useEffect(() => {
+    if (props.wallImage) {
+      wallCanvas.width = optimalDimensions.width;
+      wallCanvas.height = optimalDimensions.height;
+      const context = wallCanvas.getContext("2d")!;
+      context.clearRect(0, 0, wallCanvas.width, wallCanvas.height);
+      context.drawImage(
+        props.wallImage,
+        0,
+        0,
+        wallCanvas.width,
+        wallCanvas.height
+      );
+    } else {
+      const context = wallCanvas.getContext("2d")!;
+      context.clearRect(0, 0, wallCanvas.width, wallCanvas.height);
+    }
+    wallTexture.needsUpdate = true;
+  }, [optimalDimensions, wallCanvas, maximumSideLength, props.wallImage]);
+
+  React.useEffect(() => {
     mapCanvas.width = optimalDimensions.width;
     mapCanvas.height = optimalDimensions.height;
     const context = mapCanvas.getContext("2d")!;
@@ -1431,7 +1590,10 @@ const MapViewRenderer = (props: {
 
   const isAltPressed = useIsKeyPressed("Alt");
 
-  const { size, raycaster, scene, camera } = useThree();
+  const { size, raycaster, scene, camera, gl } = useThree();
+
+  gl.shadowMap.enabled = true;
+  gl.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const planeRef = React.useRef<THREE.Mesh | null>(null);
 
@@ -1489,7 +1651,9 @@ const MapViewRenderer = (props: {
     return {
       mapCanvas,
       fogCanvas,
+      wallCanvas,
       fogTexture,
+      wallTexture,
       mapState: spring,
       setMapState: set,
       dimensions,
@@ -1526,6 +1690,7 @@ const MapViewRenderer = (props: {
     fogCanvas,
     mapCanvas,
     fogTexture,
+    wallTexture,
     spring,
     set,
     dimensions,
@@ -1537,6 +1702,7 @@ const MapViewRenderer = (props: {
     isAltPressed,
     raycaster,
     scene,
+    gl
   ]);
 
   React.useEffect(() => {
@@ -1595,7 +1761,6 @@ const MapViewRenderer = (props: {
     onPointerMove: (args) => {
       const position = toolContext.mapState.position.get();
       const scale = toolContext.mapState.scale.get();
-
       pointerPosition.set([
         (args.event.point.x - position[0]) / scale[0],
         (args.event.point.y - position[1]) / scale[1],
@@ -1629,6 +1794,8 @@ const MapViewRenderer = (props: {
           mapImage={props.mapImage}
           mapImageTexture={mapTexture}
           fogTexture={fogTexture}
+          wallTexture={wallTexture}
+          wallImage={props.wallImage}
           viewport={viewport}
           markerRadius={20}
           scale={spring.scale}
@@ -1637,6 +1804,7 @@ const MapViewRenderer = (props: {
             dimensions.width / props.mapImage.width / optimalDimensions.ratio
           }
           fogOpacity={props.fogOpacity}
+          wallOpacity={props.wallOpacity}
         />
         {props.activeTool ? (
           <MapToolRenderer
@@ -1662,6 +1830,8 @@ const MapFragment = graphql`
     mapImageUrl
     fogProgressImageUrl
     fogLiveImageUrl
+    wallProgressImageUrl
+    wallLiveImageUrl
     ...mapView_MapViewRendererFragment
   }
 `;
@@ -1673,6 +1843,7 @@ export const MapView = (props: {
   /* List of contexts that need to be proxied into R3F */
   sharedContexts: Array<React.Context<any>>;
   fogOpacity: number;
+  wallOpacity: number;
 }): React.ReactElement | null => {
   const ContextBridge = useContextBridge(...props.sharedContexts);
 
@@ -1685,8 +1856,13 @@ export const MapView = (props: {
     map.id,
   ]);
 
+  const [wallImage, setWallImage] = useResetState<HTMLImageElement | null>(null, [
+    map.id,
+  ]);
+
   const cleanupMapImage = React.useRef<() => void>(() => {});
   const cleanupFogImage = React.useRef<() => void>(() => {});
+  const cleanupWallImage = React.useRef<() => void>(() => {});
 
   const isDungeonMaster = React.useContext(IsDungeonMasterContext);
 
@@ -1712,20 +1888,29 @@ export const MapView = (props: {
 
   React.useEffect(() => {
     let fogImageTask: ReturnType<typeof loadImage> | null = null;
+    let wallImageTask: ReturnType<typeof loadImage> | null = null;
+
     if (isDungeonMaster) {
+
       if (initialFog.current === true) {
         return;
       }
       const url = map.fogProgressImageUrl ?? map.fogLiveImageUrl;
+      const wallUrl = map.wallProgressImageUrl ?? map.wallLiveImageUrl;
+
       if (url) {
         fogImageTask = loadImage(url);
+      }
+      if (wallUrl) {
+        wallImageTask = loadImage(wallUrl);
       }
       initialFog.current = true;
     } else if (map.fogLiveImageUrl) {
       fogImageTask = loadImage(map.fogLiveImageUrl);
     }
 
-    if (fogImageTask === null) {
+
+    if (fogImageTask === null || wallImageTask === null) {
       return;
     }
 
@@ -1733,16 +1918,28 @@ export const MapView = (props: {
       fogImageTask?.cancel();
     };
 
+    cleanupWallImage.current = () => {
+      wallImageTask?.cancel();
+    };
+
     fogImageTask.promise
       .then((fogImage) => {
-        setFogImage(fogImage ?? null);
+        setFogImage(fogImage ?? null)
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+
+    wallImageTask.promise
+      .then((wallImage) => {
+        setWallImage(wallImage ?? null);
       })
       .catch((err) => {
         console.error(err);
       });
 
     return () => cleanupFogImage.current();
-  }, [map.fogLiveImageUrl, map.fogProgressImageUrl, isDungeonMaster]);
+  }, [map.fogLiveImageUrl, map.fogProgressImageUrl, map.wallLiveImageUrl, map.wallProgressImageUrl, isDungeonMaster]);
 
   return mapImage ? (
     <MapCanvasContainer>
@@ -1777,7 +1974,7 @@ export const MapView = (props: {
           },
         }}
       >
-        <ambientLight intensity={1} />
+        <ambientLight intensity={0.1} />
         <ContextBridge>
           <MapViewRenderer
             key={map.id}
@@ -1785,8 +1982,10 @@ export const MapView = (props: {
             activeTool={props.activeTool}
             mapImage={mapImage}
             fogImage={fogImage}
+            wallImage={wallImage}
             controlRef={props.controlRef}
             fogOpacity={props.fogOpacity}
+            wallOpacity={props.wallOpacity}
           />
         </ContextBridge>
       </Canvas>

@@ -30,12 +30,14 @@ const BrushToolStateModel = io.type({
     io.literal(BrushShape.square),
   ]),
   fogMode: io.union([io.literal(FogMode.clear), io.literal(FogMode.shroud)]),
+  wall: io.boolean ?? false,
 });
 
 export type BrushToolState = {
   brushSize: SpringValue<number>;
   brushShape: BrushShape;
   fogMode: FogMode;
+  wall: boolean;
 };
 
 export const brushToolStateModel: PersistedStateModel<BrushToolState> = {
@@ -67,6 +69,7 @@ const createDefaultValue = (): BrushToolState => ({
   brushSize: new SpringValue({ from: 50 }),
   brushShape: BrushShape.circle,
   fogMode: FogMode.clear,
+  wall: false,
 });
 
 export type BrushToolContextValue = {
@@ -161,7 +164,6 @@ export const BrushToolContextProvider = (props: {
   // TODO: after AnimatedValue got changed we should queue a debounced brushToolStateModel save
   // Maybe we should also just use zustand to avoid re-renders in a lot of components
   const [state, setState] = usePersistedState("brushTool", brushToolStateModel);
-
   const handlers = React.useMemo(
     () => ({
       onDrawEnd: props.onDrawEnd,
@@ -205,16 +207,21 @@ export const BrushMapTool: MapTool = {
           props.mapContext.pointerPosition.get()[1],
         ];
 
-        const canvasContext = props.mapContext.fogCanvas.getContext("2d")!;
+        const fogCanvasContext = props.mapContext.fogCanvas.getContext("2d");
+        const wallCanvasContext = props.mapContext.wallCanvas.getContext("2d");
+
+        const canvasContext = brushContext.state.wall? wallCanvasContext: fogCanvasContext;
 
         applyInitialFog(
           brushContext.state.fogMode,
+          brushContext.state.wall,
           brushContext.state.brushShape,
           brushContext.state.brushSize.get(),
           props.mapContext.helper.coordinates.threeToCanvas(position),
           canvasContext!
         );
         props.mapContext.fogTexture.needsUpdate = true;
+        props.mapContext.wallTexture.needsUpdate = true;
         localState.lastPointerPosition = position;
       },
       onPointerUp: () => {
@@ -222,31 +229,38 @@ export const BrushMapTool: MapTool = {
           return;
         }
         localState.lastPointerPosition = null;
-        brushContext.handlers.onDrawEnd(props.mapContext.fogCanvas);
+
+        const canvas = brushContext.state.wall? props.mapContext.wallCanvas : props.mapContext.fogCanvas;
+        brushContext.handlers.onDrawEnd(canvas);
       },
+
       onPointerMove: () => {
         if (props.mapContext.isAltPressed) {
           return;
         }
         if (localState.lastPointerPosition) {
-          const canvasContext = props.mapContext.fogCanvas.getContext("2d")!;
+          const fogCanvasContext = props.mapContext.fogCanvas.getContext("2d");
+          const wallCanvasContext = props.mapContext.wallCanvas.getContext("2d");
+
+          const canvasContext = brushContext.state.wall? wallCanvasContext: fogCanvasContext;
 
           const position: [number, number] = [
             props.mapContext.pointerPosition.get()[0],
             props.mapContext.pointerPosition.get()[1],
           ];
-
           applyFog(
             brushContext.state.fogMode,
+            brushContext.state.wall,
             brushContext.state.brushShape,
             brushContext.state.brushSize.get(),
             props.mapContext.helper.coordinates.threeToCanvas(
               localState.lastPointerPosition
             ),
             props.mapContext.helper.coordinates.threeToCanvas(position),
-            canvasContext
+            canvasContext!
           );
           props.mapContext.fogTexture.needsUpdate = true;
+          props.mapContext.wallTexture.needsUpdate = true;
           localState.lastPointerPosition = position;
         }
       },

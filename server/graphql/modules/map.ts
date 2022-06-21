@@ -35,6 +35,11 @@ const GraphQLMapTokenUpdateManyPropertiesInput = t.inputObjectType({
       description:
         "Color to be updated. Will not be updated if null is provided.",
     },
+    isLight: {
+      type: t.Boolean,
+      description:
+        "Set light properties to token.",
+    },
     tokenImageId: {
       type: t.ID,
       description:
@@ -92,6 +97,7 @@ const GraphQLMapTokenAddManyTokenInput = t.inputObjectType({
     rotation: t.arg(t.Float),
     isVisibleForPlayers: t.arg(t.Boolean),
     isMovableByPlayers: t.arg(t.Boolean),
+    isLigth: t.arg(t.Boolean),
     isLocked: t.arg(t.Boolean),
     tokenImageId: t.arg(t.ID),
   }),
@@ -292,6 +298,8 @@ export const mutationFields = [
               input.properties.isVisibleForPlayers ?? undefined,
             isMovableByPlayers:
               input.properties.isMovableByPlayers ?? undefined,
+            isLight:
+              input.properties.isLight ?? undefined,
             tokenImageId: input.properties.tokenImageId,
             rotation: input.properties.rotation ?? undefined,
           },
@@ -470,6 +478,10 @@ const GraphQLMapTokenType = t.objectType<MapTokenEntity>({
       type: t.NonNull(t.Boolean),
     }),
     t.field({
+      name: "isLight",
+      type: t.NonNull(t.Boolean),
+    }),
+    t.field({
       name: "isLocked",
       type: t.NonNull(t.Boolean),
     }),
@@ -563,6 +575,37 @@ const GraphQLMapType = t.objectType<MapEntity>({
             ? process.env["PC_PASSWORD"]
             : null) ?? ""
         )}&cache_buster=${source.fogLiveRevision}`,
+    }),
+    t.field({
+      name: "wallProgressImageUrl",
+      description:
+        "The URL of the wall progress image that is only accessible to the DM.",
+      type: t.String,
+      resolve: (source, _, context) =>
+        `${context.publicUrl}/api/map/${
+          source.id
+        }/wall?authorization=${encodeURIComponent(
+          (context.session.role === "admin"
+            ? process.env["DM_PASSWORD"]
+            : context.session.role === "user"
+            ? process.env["PC_PASSWORD"]
+            : null) ?? ""
+        )}&cache_buster=${source.wallProgressRevision}`,
+    }),
+    t.field({
+      name: "wallLiveImageUrl",
+      description: "The URL of the wall live image, that is shown to players.",
+      type: t.String,
+      resolve: (source, _, context) =>
+        `${context.publicUrl}/api/map/${
+          source.id
+        }/wall-live?authorization=${encodeURIComponent(
+          (context.session.role === "admin"
+            ? process.env["DM_PASSWORD"]
+            : context.session.role === "user"
+            ? process.env["PC_PASSWORD"]
+            : null) ?? ""
+        )}&cache_buster=${source.wallLiveRevision}`,
     }),
     t.field({
       name: "grid",

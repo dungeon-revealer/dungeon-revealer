@@ -308,6 +308,16 @@ type Map {
   fogLiveImageUrl: String
 
   """
+  The URL of the wall progress image that is only accessible to the DM.
+  """
+  wallProgressImageUrl: String
+
+  """
+  The URL of the wall live image, that is shown to players.
+  """
+  wallLiveImageUrl: String
+
+  """
   The grid of the map. Is 'null' if no grid has been configured.
   """
   grid: MapGrid
@@ -337,6 +347,7 @@ type MapToken {
   label: String!
   isVisibleForPlayers: Boolean!
   isMovableByPlayers: Boolean!
+  isLight: Boolean!
   isLocked: Boolean!
   tokenImage: TokenImage
   referenceId: ID
@@ -582,6 +593,10 @@ input MapTokenUpdateManyPropertiesInput {
   Color to be updated. Will not be updated if null is provided.
   """
   isMovableByPlayers: Boolean
+  """
+  Token get light properties for using shadows
+  """
+  isLight: Boolean
 
   """
   Token image id to be updated. Will be updated if null is provided.
@@ -620,6 +635,7 @@ input MapTokenAddManyTokenInput {
   rotation: Float
   isVisibleForPlayers: Boolean
   isMovableByPlayers: Boolean
+  isLight: Boolean
   isLocked: Boolean
   tokenImageId: ID
 }

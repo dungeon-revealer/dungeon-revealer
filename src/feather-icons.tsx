@@ -752,6 +752,7 @@ export const Map = createIcon({
     boxSize: "30px",
   },
 });
+
 export const EyeOff = createIcon({
   displayName: "EyeOff",
   viewBox: "0 0 24 24",
@@ -787,6 +788,51 @@ export const Eye = createIcon({
     boxSize: "30px",
   },
 });
+
+export const Wall = createIcon({
+  displayName: "Eye",
+  viewBox: "0 0 24 24",
+  path: (
+    <>
+      <path d="M21 10L3 10" />
+      <path d="M21 6L3 6" />
+      <path d="M21 14L3 14" />
+      <path d="M21 18L3 18" />
+    </>
+  ),
+  defaultProps: {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    boxSize: "30px",
+  },
+});
+
+export const NoWall = createIcon({
+  displayName: "Eye",
+  viewBox: "0 0 24 24",
+  path: (
+    <>
+      <path d="M21 10L3 10" />
+      <path d="M21 6L3 6" />
+      <path d="M21 14L3 14" />
+      <path d="M21 18L3 18" />
+      <path d="M1 1l22 22" />
+    </>
+  ),
+  defaultProps: {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    boxSize: "30px",
+  },
+});
+
+
 export const Pen = createIcon({
   displayName: "Pen",
   viewBox: "0 0 24 24",

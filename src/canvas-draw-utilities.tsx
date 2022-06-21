@@ -10,10 +10,13 @@ export enum BrushShape {
   circle = "circle",
 }
 
+export let Wall = true;
+
 type Vector2D = [number, number];
 
 const setCompositeMode = (
   fogMode: FogMode,
+  wall: typeof Wall,
   context: CanvasRenderingContext2D
 ): void => {
   switch (fogMode) {
@@ -26,17 +29,25 @@ const setCompositeMode = (
       break;
     }
   }
+  if (wall) {
+    context.fillStyle = "red";
+    context.strokeStyle = "red";
+  } else {
+    context.fillStyle = "black";
+    context.strokeStyle = "black";
+  }
 };
 
 export const applyInitialFog = (
   fogMode: FogMode,
+  wall: typeof Wall,
   brushShape: BrushShape,
   brushSize: number,
   coordinates: Vector2D,
   context: CanvasRenderingContext2D
 ) => {
   context.lineWidth = 2;
-  setCompositeMode(fogMode, context);
+  setCompositeMode(fogMode, wall, context);
 
   context.beginPath();
   switch (brushShape) {
@@ -66,11 +77,12 @@ export const applyInitialFog = (
 
 export const applyFogRectangle = (
   fogMode: FogMode,
+  wall: typeof Wall,
   p1: Vector2D,
   p2: Vector2D,
   context: CanvasRenderingContext2D
 ) => {
-  setCompositeMode(fogMode, context);
+  setCompositeMode(fogMode, wall, context);
   context.beginPath();
   context.rect(p1[0], p1[1], p2[0] - p1[0], p2[1] - p1[1]);
   context.fill();
@@ -86,13 +98,14 @@ export const midBetweenPoints = (
 
 export const applyFog = (
   fogMode: FogMode,
+  wall: typeof Wall,
   brushShape: BrushShape,
   brushSize: number,
   from: Vector2D,
   to: Vector2D,
   context: CanvasRenderingContext2D
 ) => {
-  setCompositeMode(fogMode, context);
+  setCompositeMode(fogMode, wall, context);
   switch (brushShape) {
     case BrushShape.circle: {
       context.lineWidth = brushSize;

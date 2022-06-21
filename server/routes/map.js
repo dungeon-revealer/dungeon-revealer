@@ -82,6 +82,28 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
     return res.sendFile(path.join(maps.getBasePath(map), map.fogProgressPath));
   });
 
+  router.get("/map/:id/wall", roleMiddleware.dm, (req, res) => {
+    const map = maps.get(req.params.id);
+    if (!map) {
+      return res.status(404).json({
+        data: null,
+        error: {
+          message: `Map with id '${req.params.id}' does not exist.`,
+          code: "ERR_MAP_DOES_NOT_EXIST",
+        },
+      });
+    } else if (!map.wallProgressPath) {
+      return res.status(404).json({
+        data: null,
+        error: {
+          message: `Map with id '${req.params.id}' does not have a wall image yet.`,
+          code: "ERR_MAP_NO_WALL",
+        },
+      });
+    }
+    return res.sendFile(path.join(maps.getBasePath(map), map.wallProgressPath));
+  });
+
   router.get("/map/:id/fog-live", roleMiddleware.pc, (req, res) => {
     const map = maps.get(req.params.id);
     if (!map) {
@@ -103,6 +125,29 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
     }
 
     return res.sendFile(path.join(maps.getBasePath(map), map.fogLivePath));
+  });
+
+  router.get("/map/:id/wall-live", roleMiddleware.pc, (req, res) => {
+    const map = maps.get(req.params.id);
+    if (!map) {
+      return res.status(404).json({
+        data: null,
+        error: {
+          message: `Map with id '${req.params.id}' does not exist.`,
+          code: "ERR_MAP_DOES_NOT_EXIST",
+        },
+      });
+    } else if (!map.wallLivePath) {
+      return res.status(404).json({
+        data: null,
+        error: {
+          message: `Map with id '${req.params.id}' does not have a wall image yet.`,
+          code: "ERR_MAP_NO_WALL",
+        },
+      });
+    }
+
+    return res.sendFile(path.join(maps.getBasePath(map), map.wallLivePath));
   });
 
   router.post("/map/:id/map", roleMiddleware.dm, (req, res) => {
@@ -162,12 +207,39 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
     });
   });
 
+  router.post("/map/:id/wall", roleMiddleware.dm, (req, res) => {
+    const tmpFile = getTmpFile();
+    let writeStream = null;
+    req.pipe(req.busboy);
+
+    req.busboy.once("file", (fieldname, file) => {
+      writeStream = fs.createWriteStream(tmpFile);
+      file.pipe(writeStream);
+    });
+
+    req.once("end", () => {
+      if (writeStream !== null) return;
+      res.status(422).json({ data: null, error: "No file was sent." });
+    });
+
+    req.busboy.once("finish", () => {
+      maps
+        .updateWallProgressImage(req.params.id, tmpFile)
+        .then((map) => {
+          emitter.emit("invalidate", `Map:${map.id}`);
+          res.status(200).json({
+            error: null,
+            data: mapMap(map),
+          });
+        })
+        .catch(handleUnexpectedError(res));
+    });
+  });
+
   router.post("/map/:id/send", roleMiddleware.dm, (req, res) => {
     const tmpFile = getTmpFile();
     let writeStream = null;
-
     req.pipe(req.busboy);
-
     req.busboy.once("file", (_, file) => {
       writeStream = fs.createWriteStream(tmpFile);
       file.pipe(writeStream);
@@ -181,6 +253,34 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
     req.busboy.once("finish", () => {
       maps
         .updateFogLiveImage(req.params.id, tmpFile)
+        .then((map) => {
+          settings.set("currentMapId", map.id);
+          emitter.emit("invalidate", "Query.activeMap");
+          res.json({ error: null, data: mapMap(map) });
+        })
+        .catch(handleUnexpectedError(res));
+    });
+  });
+
+  router.post("/map/:id/sendWall", roleMiddleware.dm, (req, res) => {
+    const tmpFile = getTmpFile();
+    let writeStream = null;
+
+    req.pipe(req.busboy);
+    console.log(req.form);
+    req.busboy.once("file", (_, file) => {
+      writeStream = fs.createWriteStream(tmpFile);
+      file.pipe(writeStream);
+    });
+
+    req.once("end", () => {
+      if (writeStream !== null) return;
+      res.status(422).json({ data: null, error: "No file was sent." });
+    });
+
+    req.busboy.once("finish", () => {
+      maps
+        .updateWallLiveImage(req.params.id, tmpFile)
         .then((map) => {
           settings.set("currentMapId", map.id);
           emitter.emit("invalidate", "Query.activeMap");
@@ -292,7 +392,8 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
       req.role === "DM" ||
       (req.role === "PC" &&
         token.isLocked === false &&
-        token.isMovableByPlayers === true)
+        token.isMovableByPlayers === true &&
+        token.isLight === true)
     ) {
       updates = { ...updates, x: req.body.x, y: req.body.y };
     }
@@ -308,6 +409,7 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
         isVisibleForPlayers: req.body.isVisibleForPlayers,
         isLocked: req.body.isLocked,
         isMovableByPlayers: req.body.isMovableByPlayers,
+        isLight: req.body.isLight,
         title: req.body.title,
         description: req.body.description,
         reference: req.body.reference,

@@ -16,6 +16,7 @@ export type MapTokenEntity = {
   y: number;
   isVisibleForPlayers: boolean;
   isMovableByPlayers: boolean;
+  isLight: boolean;
   isLocked: boolean;
   reference: null | {
     type: "note";
