@@ -94,6 +94,7 @@ type LegacyMapEntity = {
   fogLivePath: string;
   wallLivePath: string;
   wallProgressPath: string;
+  light: boolean;
   mapPath: string;
   showGrid?: boolean;
   showGridToPlayers?: boolean;
@@ -121,6 +122,7 @@ export type MapEntity = {
   wallLivePath: string | null;
   wallProgressRevision: string;
   wallProgressPath: string | null;
+  light: boolean;
 };
 
 export class Maps {
@@ -173,6 +175,7 @@ export class Maps {
         wallProgressPath: rawMap.wallProgressPath ?? null,
         wallLivePath: rawMap.wallLivePath ?? null,
         showGrid: rawMap.showGrid ?? false,
+        light: rawMap.light ?? true,
         showGridToPlayers: rawMap.showGridToPlayers ?? false,
         grid: prepareGrid(
           rawMap.grid,
@@ -188,9 +191,7 @@ export class Maps {
             ? rawMap.fogProgressRevision
             : randomUUID(),
         wallLiveRevision:
-          "wallLiveRevision" in rawMap
-            ? rawMap.wallLiveRevision
-            : randomUUID(),
+          "wallLiveRevision" in rawMap ? rawMap.wallLiveRevision : randomUUID(),
         wallProgressRevision:
           "wallProgressRevision" in rawMap
             ? rawMap.wallProgressRevision
@@ -235,6 +236,7 @@ export class Maps {
         fogLivePath: null,
         wallProgressPath: null,
         wallLivePath: null,
+        light: true,
         mapPath,
         grid: null,
         showGrid: false,
@@ -242,8 +244,8 @@ export class Maps {
         tokens: [],
         fogProgressRevision: randomUUID(),
         fogLiveRevision: randomUUID(),
-        wallLiveRevision:  randomUUID(),
-        wallProgressRevision:  randomUUID(),
+        wallLiveRevision: randomUUID(),
+        wallProgressRevision: randomUUID(),
       };
 
       await fs.move(filePath, path.join(this._buildMapFolderPath(id), mapPath));

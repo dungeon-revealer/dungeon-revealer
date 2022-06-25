@@ -318,6 +318,10 @@ type Map {
   wallLiveImageUrl: String
 
   """
+  The URL of the wall live image, that is shown to players.
+  """
+  light: Boolean!
+  """
   The grid of the map. Is 'null' if no grid has been configured.
   """
   grid: MapGrid

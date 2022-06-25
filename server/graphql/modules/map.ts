@@ -37,8 +37,7 @@ const GraphQLMapTokenUpdateManyPropertiesInput = t.inputObjectType({
     },
     isLight: {
       type: t.Boolean,
-      description:
-        "Set light properties to token.",
+      description: "Set light properties to token.",
     },
     tokenImageId: {
       type: t.ID,
@@ -298,8 +297,7 @@ export const mutationFields = [
               input.properties.isVisibleForPlayers ?? undefined,
             isMovableByPlayers:
               input.properties.isMovableByPlayers ?? undefined,
-            isLight:
-              input.properties.isLight ?? undefined,
+            isLight: input.properties.isLight ?? undefined,
             tokenImageId: input.properties.tokenImageId,
             rotation: input.properties.rotation ?? undefined,
           },
@@ -615,6 +613,10 @@ const GraphQLMapType = t.objectType<MapEntity>({
     }),
     t.field({
       name: "showGrid",
+      type: t.NonNull(t.Boolean),
+    }),
+    t.field({
+      name: "light",
       type: t.NonNull(t.Boolean),
     }),
     t.field({
