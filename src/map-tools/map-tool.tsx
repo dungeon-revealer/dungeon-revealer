@@ -66,6 +66,7 @@ export type MapToolMapGestureHandlers = Handlers<{
   onPointerMove: PointerEvent;
   onDrag: PointerEvent;
   onClick: PointerEvent;
+  onWheelEnd: WheelEvent;
 }>;
 
 /**

@@ -35,8 +35,7 @@ export const lightDrawer = (
   position: THREE.Vector3,
   color: string,
   intensity: number,
-  distance: number,
-  decay: number
+  distance: number
 ) => {
   return (
     <pointLight
@@ -45,10 +44,10 @@ export const lightDrawer = (
       color={color}
       intensity={intensity}
       distance={distance}
-      decay={decay}
+      decay={0.5}
       castShadow={true}
-      shadowMapWidth={50}
-      shadowMapHeight={50}
+      shadowMapWidth={150}
+      shadowMapHeight={150}
       shadowCameraNear={0.01}
     />
   );
@@ -111,7 +110,7 @@ const shapesDraw = (objects: number[][][], sfX: number, sfy: number) => {
   });
   const extrudeSettings = {
     steps: 1,
-    depth: 0.1,
+    depth: 0.2,
     bevelEnabled: true,
     bevelThickness: 1,
     bevelSize: 0,
@@ -135,6 +134,7 @@ const shapesDraw = (objects: number[][][], sfX: number, sfy: number) => {
           attach="material"
           color="rgb(0, 0, 0)"
           transparent={false}
+          opacity={0}
         />
       </mesh>
     );

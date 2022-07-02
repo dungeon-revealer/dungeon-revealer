@@ -154,57 +154,49 @@ const TokenListRendererFragment = graphql`
   }
 `;
 
-const LightsTokensRenderer = (props: {
-  width: number;
-  height: number;
-  map: mapView_TokenListRendererFragment$key;
-  sfX: number;
-  sfY: number;
+const LightTokensRenderer = (props: {
+  x: number;
+  y: number;
+  radius: number;
+  color: string;
 }) => {
-  var tokenItem: any = {};
-  const lightTokens: mapView_TokenRendererMapTokenFragment$key[] = [];
-  const tokens = useFragment(TokenListRendererFragment, props.map);
-  const lightsArray: Array<React.ReactElement> = [];
-
   const sharedMapState = React.useContext(SharedMapState);
 
-  const [scale, setScale] = React.useState(1);
+  const [lightScale, setlightScale] = React.useState(1);
 
-  const onZoomHandler = React.useCallback(() => {
-    setScale(sharedMapState.mapState.scale.get()[0]);
+  const onZoomHandlerIn = React.useCallback(() => {
+    var scaledDIstance = sharedMapState.mapState.scale.get()[0] * 1.35;
+    setlightScale(scaledDIstance);
+  }, []);
+
+  const onZoomHandlerOut = React.useCallback(() => {
+    var scaledDIstance = sharedMapState.mapState.scale.get()[0] / 1.35;
+    setlightScale(scaledDIstance);
   }, []);
 
   React.useEffect(() => {
-    window.document.addEventListener("mapToolStateIsUpdated", onZoomHandler);
+    window.document.addEventListener("wheelScrollIn", onZoomHandlerIn);
     return () => {
-      window.document.removeEventListener(
-        "mapToolStateIsUpdated",
-        onZoomHandler
-      );
+      window.document.removeEventListener("wheelScrollIn", onZoomHandlerIn);
     };
   });
 
-  tokens.tokens.map((token) => {
-    tokenItem = useFragment(TokenRendererMapTokenFragment, token);
-    if (tokenItem.isLight) {
-      lightTokens.push(tokenItem);
-    }
+  React.useEffect(() => {
+    window.document.addEventListener("wheelScrollOut", onZoomHandlerOut);
+    return () => {
+      window.document.removeEventListener("wheelScrollIn", onZoomHandlerOut);
+    };
   });
 
-  lightTokens.forEach((token) => {
-    var light = lightDrawer(
-      new THREE.Vector3(token.x / props.sfX, -token.y / props.sfY, 0.1),
-      hexToRGB(token.color),
-      5,
-      scale + (0.5 * token.radius) / 20,
-      1
-    );
-    lightsArray.push(light);
-  });
-
-  const position = new THREE.Vector3(-props.width / 2, props.height / 2, 0);
-
-  return <group position={position}>{lightsArray}</group>;
+  // const gesture = new WheelGesture(el, (state) => {
+  // };
+  const light = lightDrawer(
+    new THREE.Vector3(0, 0, 0.1),
+    hexToRGB(props.color),
+    5,
+    (lightScale * props.radius) / 38
+  );
+  return light;
 };
 
 const ShadowsRenderer = (props: {
@@ -240,7 +232,11 @@ const ShadowsRenderer = (props: {
 
   const position = new THREE.Vector3(-props.width / 2, props.height / 2, 0);
 
-  return <group position={position}>{[shadows]}</group>;
+  return (
+    <group renderOrder={LayerRenderOrder.shadows} position={position}>
+      {[shadows]}
+    </group>
+  );
 };
 
 const TokenListRenderer = (props: {
@@ -829,6 +825,14 @@ const TokenRenderer = (props: {
             </mesh>
           </>
         )}
+        {values.isLight ? (
+          <LightTokensRenderer
+            x={token.x}
+            y={token.y}
+            radius={token.radius}
+            color={token.color}
+          />
+        ) : null}
         {tokenSelection.isSelected ? (
           <mesh renderOrder={LayerRenderOrder.outline}>
             <ringBufferGeometry
@@ -1442,20 +1446,13 @@ const MapRenderer = (props: {
         <WallRenderer
           width={props.dimensions.width}
           height={props.dimensions.height}
-          wallOpacity={0.1}
+          wallOpacity={isDungeonMaster ? 0.1 : 0}
           wallTexture={props.wallTexture}
         />
         <ShadowsRenderer
           width={props.dimensions.width}
           height={props.dimensions.height}
           shadowOjbects={props.wallImage}
-          sfX={sfX}
-          sfY={sfY}
-        />
-        <LightsTokensRenderer
-          width={props.dimensions.width}
-          height={props.dimensions.height}
-          map={map}
           sfX={sfX}
           sfY={sfY}
         />
@@ -1747,14 +1744,18 @@ const MapViewRenderer = (props: {
           zoomIn: () => {
             const scale = spring.scale.get();
             set({
-              scale: [scale[0] * 1.1, scale[1] * 1.1, 1],
+              scale: [scale[0] * 1.35, scale[1] * 1.35, 1],
             });
+            var wheelScrollIn = new Event("wheelScrollIn");
+            window.document.dispatchEvent(wheelScrollIn);
           },
           zoomOut: () => {
             const scale = spring.scale.get();
             set({
-              scale: [scale[0] / 1.1, scale[1] / 1.1, 1],
+              scale: [scale[0] / 1.35, scale[1] / 1.35, 1],
             });
+            var wheelScrollOut = new Event("wheelScrollOut");
+            window.document.dispatchEvent(wheelScrollOut);
           },
         },
         getContext: () => toolContext,
@@ -1782,6 +1783,7 @@ const MapViewRenderer = (props: {
     onPointerMove: PointerEvent;
     onClick: PointerEvent;
     onKeyDown: KeyboardEvent;
+    onWheelEnd: WheelEvent;
   }>({
     onPointerDown: (args) => {
       clearTokenSelection();
@@ -1808,6 +1810,15 @@ const MapViewRenderer = (props: {
     onClick: (args) => {
       clearTokenSelection();
       return toolRef.current?.handlers?.onClick?.(args);
+    },
+    onWheelEnd: (args) => {
+      if (args.direction[1] < 0) {
+        var wheelScrollIn = new Event("wheelScrollIn");
+        window.document.dispatchEvent(wheelScrollIn);
+      } else if (args.direction[1] > 0) {
+        var wheelScrollOut = new Event("wheelScrollOut");
+        window.document.dispatchEvent(wheelScrollOut);
+      }
     },
   });
 

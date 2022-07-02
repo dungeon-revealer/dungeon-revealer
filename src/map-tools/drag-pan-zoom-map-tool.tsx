@@ -14,6 +14,7 @@ export const usePinchWheelZoom = (mapToolState: SharedMapToolState) => {
   }) => {
     const position = mapToolState.mapState.position.get();
     const [scale] = mapToolState.mapState.scale.get();
+
     const { imageWidth, imageHeight, imageTopLeftY, imageTopLeftX } =
       calculateScreenPosition({
         imageDimensions: mapToolState.dimensions,
