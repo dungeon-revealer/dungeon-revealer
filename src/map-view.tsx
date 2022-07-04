@@ -157,7 +157,7 @@ const TokenListRendererFragment = graphql`
 const LightTokensRenderer = (props: {
   x: number;
   y: number;
-  radius: number;
+  lightRadius: number;
   color: string;
 }) => {
   const sharedMapState = React.useContext(SharedMapState);
@@ -194,7 +194,7 @@ const LightTokensRenderer = (props: {
     new THREE.Vector3(0, 0, 0.1),
     hexToRGB(props.color),
     5,
-    (lightScale * props.radius) / 38
+    lightScale * props.lightRadius
   );
   return light;
 };
@@ -270,6 +270,7 @@ export const TokenRendererMapTokenFragment = graphql`
     isMovableByPlayers
     isVisibleForPlayers
     isLight
+    lightRadius
     tokenImage {
       id
       title
@@ -304,6 +305,7 @@ const TokenRenderer = (props: {
   const editingStateRef = React.useRef({
     position: 0,
     radius: 0,
+    lightRadius: 0,
     color: 0,
     rotation: 0,
   }).current;
@@ -514,6 +516,32 @@ const TokenRenderer = (props: {
           });
         },
         transient: false,
+      },
+      lightRadius: {
+        type: LevaInputs.NUMBER,
+        label: "Light Radius",
+        min: 0,
+        step: 0.1,
+        value: token.lightRadius,
+        onChange: (lightRadius: number, _, { initial, fromPanel }) => {
+          if (initial) {
+            return;
+          }
+          if (!fromPanel) {
+            return;
+          }
+
+          pendingChangesRef.current.lightRadius = lightRadius;
+          enqueueSave();
+        },
+        onEditStart: () => {
+          editingStateRef.lightRadius++;
+        },
+        onEditEnd: (value) => {
+          editingStateRef.lightRadius--;
+          pendingChangesRef.current.lightRadius = value;
+          enqueueSave();
+        },
       },
       referenceId: levaPluginNoteReference({
         value: token.referenceId ?? null,
@@ -829,7 +857,7 @@ const TokenRenderer = (props: {
           <LightTokensRenderer
             x={token.x}
             y={token.y}
-            radius={token.radius}
+            lightRadius={token.lightRadius}
             color={token.color}
           />
         ) : null}
@@ -1873,6 +1901,7 @@ const MapFragment = graphql`
     fogLiveImageUrl
     wallProgressImageUrl
     wallLiveImageUrl
+    light
     ...mapView_MapViewRendererFragment
   }
 `;
@@ -1902,6 +1931,8 @@ export const MapView = (props: {
     [map.id]
   );
 
+  const [lightValue, setlightValue] = useResetState<number>(1);
+
   const cleanupMapImage = React.useRef<() => void>(() => {});
   const cleanupFogImage = React.useRef<() => void>(() => {});
   const cleanupWallImage = React.useRef<() => void>(() => {});
@@ -1928,6 +1959,20 @@ export const MapView = (props: {
 
   const initialFog = React.useRef<boolean>(false);
 
+  React.useEffect(() =>{
+    if (isDungeonMaster) {
+      var lightValue = map.light ? 0.0 : 1;
+    } else {
+      var lightValue = map.light ? 0.0 : 1;
+    }
+    setlightValue(lightValue);
+  },[
+    isDungeonMaster,
+    map.light
+  ]
+
+  )
+
   React.useEffect(() => {
     let fogImageTask: ReturnType<typeof loadImage> | null = null;
     let wallImageTask: ReturnType<typeof loadImage> | null = null;
@@ -1938,6 +1983,7 @@ export const MapView = (props: {
       }
       const url = map.fogProgressImageUrl ?? map.fogLiveImageUrl;
       const wallUrl = map.wallProgressImageUrl ?? map.wallLiveImageUrl;
+
 
       if (url) {
         fogImageTask = loadImage(url);
@@ -1953,6 +1999,7 @@ export const MapView = (props: {
       if (map.wallLiveImageUrl) {
         wallImageTask = loadImage(map.wallLiveImageUrl);
       }
+
     }
 
     if (fogImageTask === null || wallImageTask === null) {
@@ -1989,7 +2036,7 @@ export const MapView = (props: {
     map.fogProgressImageUrl,
     map.wallLiveImageUrl,
     map.wallProgressImageUrl,
-    isDungeonMaster,
+    isDungeonMaster
   ]);
 
   return mapImage ? (
@@ -2025,7 +2072,7 @@ export const MapView = (props: {
           },
         }}
       >
-        <ambientLight intensity={0.1} />
+        <ambientLight intensity={lightValue} />
         <ContextBridge>
           <MapViewRenderer
             key={map.id}

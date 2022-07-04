@@ -20,7 +20,9 @@ export const WallsMaker = (props: {
     return;
   }
 
+  loadOpenCV();
   const objects = objectFinder(props.image);
+
   const sfX = props.image.height / props.height;
   const sfY = props.image.width / props.width;
   if (objects.length <= 0) {
@@ -29,6 +31,7 @@ export const WallsMaker = (props: {
 
   var shapeItem = shapesDraw(objects, sfX, sfY) ?? undefined;
   return shapeItem;
+
 };
 
 export const lightDrawer = (
@@ -44,17 +47,17 @@ export const lightDrawer = (
       color={color}
       intensity={intensity}
       distance={distance}
-      decay={0.5}
+      decay={2}
       castShadow={true}
-      shadowMapWidth={150}
-      shadowMapHeight={150}
+      shadowMapWidth={512}
+      shadowMapHeight={512}
       shadowCameraNear={0.01}
     />
   );
 };
 
 export const objectFinder = (image: HTMLImageElement | HTMLCanvasElement) => {
-  // cv['onRuntimeInitialized']=()=>{
+
   let src = cv.imread(image);
   let dst = new cv.Mat();
   let contours = new cv.MatVector();
@@ -92,7 +95,6 @@ export const objectFinder = (image: HTMLImageElement | HTMLCanvasElement) => {
   }
 
   return points;
-  // };
 };
 
 const shapesDraw = (objects: number[][][], sfX: number, sfy: number) => {
@@ -127,13 +129,12 @@ const shapesDraw = (objects: number[][][], sfX: number, sfy: number) => {
       <mesh
         key={Math.random().toString(36).substr(2, 9)}
         geometry={geometry}
-        receiveShadow={true}
         castShadow={true}
       >
-        <meshBasicMaterial
+        <meshStandardMaterial
           attach="material"
           color="rgb(0, 0, 0)"
-          transparent={false}
+          transparent={true}
           opacity={0}
         />
       </mesh>
@@ -141,3 +142,10 @@ const shapesDraw = (objects: number[][][], sfX: number, sfy: number) => {
   });
   return items;
 };
+
+
+const loadOpenCV = () => {
+  return new Promise(resolve => {
+    cv.onRuntimeInitialized=()=> resolve
+})
+}

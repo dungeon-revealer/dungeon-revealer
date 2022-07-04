@@ -352,6 +352,7 @@ type MapToken {
   isVisibleForPlayers: Boolean!
   isMovableByPlayers: Boolean!
   isLight: Boolean!
+  lightRadius: Float!
   isLocked: Boolean!
   tokenImage: TokenImage
   referenceId: ID
@@ -408,6 +409,11 @@ type Mutation {
   Update the grid of a map.
   """
   mapUpdateGrid(input: MapUpdateGridInput!): MapUpdateGridResult!
+
+  """
+  Update the light of a map.
+  """
+  mapUpdateLight(input: MapUpdateLightInput!): MapUpdateLightResult!
 
   """
   Ping a point on the map.
@@ -601,6 +607,10 @@ input MapTokenUpdateManyPropertiesInput {
   Token get light properties for using shadows
   """
   isLight: Boolean
+  """
+  Token get light properties for using shadows
+  """
+  lightRadius: Float
 
   """
   Token image id to be updated. Will be updated if null is provided.
@@ -640,6 +650,7 @@ input MapTokenAddManyTokenInput {
   isVisibleForPlayers: Boolean
   isMovableByPlayers: Boolean
   isLight: Boolean
+  lightRadius: Float
   isLocked: Boolean
   tokenImageId: ID
 }
@@ -709,11 +720,21 @@ type MapUpdateGridResult {
   updatedMap: Map!
 }
 
+type MapUpdateLightResult {
+  updatedMap: Map!
+}
+
 input MapUpdateGridInput {
   mapId: ID!
   grid: GridInput!
   showGrid: Boolean!
   showGridToPlayers: Boolean!
+}
+
+
+input MapUpdateLightInput {
+  mapId: ID!
+  light: Boolean!
 }
 
 input GridInput {

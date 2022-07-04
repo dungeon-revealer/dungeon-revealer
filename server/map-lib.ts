@@ -24,6 +24,7 @@ export const updateManyMapToken = (params: {
     isVisibleForPlayers: boolean | undefined;
     isMovableByPlayers: boolean | undefined;
     isLight: boolean | undefined;
+    lightRadius: number | undefined;
     tokenImageId: string | null | undefined;
     rotation: number | undefined;
   };
@@ -38,6 +39,7 @@ export const updateManyMapToken = (params: {
           isVisibleForPlayers: params.props.isVisibleForPlayers,
           isMovableByPlayers: params.props.isMovableByPlayers,
           isLight: params.props.isLight,
+          lightRadius: params.props.lightRadius,
           tokenImageId: params.props.tokenImageId,
           rotation: params.props.rotation,
         })
@@ -74,6 +76,7 @@ export const addManyMapToken = (params: {
     isVisibleForPlayers?: boolean | null;
     isMovableByPlayers?: boolean | null;
     isLight?: boolean | null;
+    lightRadius?: null | number;
     tokenImageId?: null | string;
   }>;
 }) =>
@@ -271,6 +274,10 @@ export type MapUpdateGridResult = {
   updatedMap: MapEntity;
 };
 
+export type MapUpdateLightResult = {
+  updatedMap: MapEntity;
+};
+
 export const mapUpdateGrid = (params: {
   mapId: string;
   grid: MapGridEntity | null;
@@ -286,6 +293,28 @@ export const mapUpdateGrid = (params: {
           grid: params.grid ? params.grid : null,
           showGrid: params.showGrid,
           showGridToPlayers: params.showGridToPlayers,
+        })
+    ),
+    RT.chainW((map) =>
+      pipe(
+        invalidateResourcesRT([`Map:${map.id}`]),
+        RT.map(() => map)
+      )
+    ),
+    RT.map((updatedMap): MapUpdateTitleResult => ({ updatedMap }))
+  );
+
+export const mapUpdateLight = (params: {
+  mapId: string;
+  light: boolean;
+}) =>
+  pipe(
+    auth.requireAdmin(),
+    RT.chainW(() => RT.ask<MapsDependency>()),
+    RT.chain(
+      (deps) => () => () =>
+        deps.maps.updateMapSettings(params.mapId, {
+          light: params.light,
         })
     ),
     RT.chainW((map) =>

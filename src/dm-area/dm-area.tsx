@@ -475,6 +475,7 @@ const Content = ({
                         isVisibleForPlayers: false,
                         isMovableByPlayers: false,
                         isLight: false,
+                        lightRadius: 0,
                         isLocked: false,
                         tokenImageId,
                         label: "",

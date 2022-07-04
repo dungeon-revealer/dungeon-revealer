@@ -90,6 +90,7 @@ import { dmMap_ShowGridSettingsPopupMapFragment$key } from "./__generated__/dmMa
 import { dmMap_ShowGridSettingsPopupGridFragment$key } from "./__generated__/dmMap_ShowGridSettingsPopupGridFragment.graphql";
 import { dmMap_GridSettingButton_MapFragment$key } from "./__generated__/dmMap_GridSettingButton_MapFragment.graphql";
 import { dmMap_mapUpdateGridMutation } from "./__generated__/dmMap_mapUpdateGridMutation.graphql";
+import { dmMap_mapUpdateLightMutation } from "./__generated__/dmMap_mapUpdateLightMutation.graphql";
 import { dmMap_GridConfigurator_MapFragment$key } from "./__generated__/dmMap_GridConfigurator_MapFragment.graphql";
 import { dmMap_MapPingMutation } from "./__generated__/dmMap_MapPingMutation.graphql";
 import { UpdateTokenContext } from "../update-token-context";
@@ -243,6 +244,7 @@ const ShroudRevealSettings = (): React.ReactElement => {
   );
 };
 
+
 const ShowGridSettingsPopupMapFragment = graphql`
   fragment dmMap_ShowGridSettingsPopupMapFragment on Map {
     id
@@ -268,6 +270,60 @@ const MapUpdateGridMutation = graphql`
     }
   }
 `;
+
+const LightMapFragment = graphql`
+  fragment dmMap_LightMapFragment on Map {
+    id
+    light
+  }
+`;
+
+const MapUpdateLightMutation = graphql`
+  mutation dmMap_mapUpdateLightMutation($input: MapUpdateLightInput!) {
+    mapUpdateLight(input: $input) {
+      __typename
+    }
+  }
+`;
+
+
+const SwitchLightButton = React.memo(
+  (props: {
+    map: dmMap_DMMapFragment$key;
+  }) => {
+    const map = useFragment(LightMapFragment, props.map);
+    const [mapUpdateLight] = useMutation<dmMap_mapUpdateLightMutation>(
+      MapUpdateLightMutation
+    );
+    const [light, setLight] = useResetState(map.light, []);
+    const syncState = useDebounceCallback(() => {
+      mapUpdateLight({
+        variables: {
+          input: {
+            mapId: map.id,
+            light: light
+          },
+        },
+      });
+    }, 300);
+
+    return (
+      <Toolbar.Item isActive={light === false}>
+        <Toolbar.Button
+          onClick={() => {
+            setLight(!light);
+            syncState();
+          }
+          }
+        >
+          <Icon.Light boxSize="20px" />
+          <Icon.Label>Light</Icon.Label>
+        </Toolbar.Button>
+      </Toolbar.Item>
+    )
+  }
+);
+
 
 const ShowGridSettingsPopup = React.memo(
   (props: {
@@ -603,6 +659,7 @@ const MapPingMutation = graphql`
 const DMMapFragment = graphql`
   fragment dmMap_DMMapFragment on Map {
     id
+    light
     grid {
       offsetX
       offsetY
@@ -613,6 +670,7 @@ const DMMapFragment = graphql`
     ...mapContextMenuRenderer_MapFragment
     ...dmMap_GridSettingButton_MapFragment
     ...dmMap_GridConfigurator_MapFragment
+    ...dmMap_LightMapFragment
   }
 `;
 
@@ -870,6 +928,9 @@ export const DmMap = (props: {
               </Toolbar.Group>
               <Toolbar.Group divider>
                 <ShroudRevealSettings />
+              </Toolbar.Group>
+              <Toolbar.Group divider>
+                <SwitchLightButton map = {map}/>
               </Toolbar.Group>
               <Toolbar.Group divider>
                 <Toolbar.Item isActive>

@@ -39,6 +39,10 @@ const GraphQLMapTokenUpdateManyPropertiesInput = t.inputObjectType({
       type: t.Boolean,
       description: "Set light properties to token.",
     },
+    lightRadius: {
+      type: t.Float,
+      description: "Set light radius properties to token.",
+    },
     tokenImageId: {
       type: t.ID,
       description:
@@ -97,6 +101,7 @@ const GraphQLMapTokenAddManyTokenInput = t.inputObjectType({
     isVisibleForPlayers: t.arg(t.Boolean),
     isMovableByPlayers: t.arg(t.Boolean),
     isLigth: t.arg(t.Boolean),
+    lightRadius: t.arg(t.Float),
     isLocked: t.arg(t.Boolean),
     tokenImageId: t.arg(t.ID),
   }),
@@ -264,6 +269,28 @@ const GraphQLMapUpdateGridInputType = t.inputObjectType({
   }),
 });
 
+const GraphQLMapUpdateLightResultType = t.objectType<lib.MapUpdateLightResult>({
+  name: "MapUpdateLightResult",
+  fields: () => [
+    t.field({
+      name: "updatedMap",
+      type: t.NonNull(GraphQLMapType),
+    }),
+  ],
+});
+
+const GraphQLMapUpdateLightInputType = t.inputObjectType({
+  name: "MapUpdateLightInput",
+  fields: () => ({
+    mapId: {
+      type: t.NonNullInput(t.ID),
+    },
+    light: {
+      type: t.NonNullInput(t.Boolean),
+    },
+  }),
+});
+
 const GraphQLMapPingInputType = t.inputObjectType({
   name: "MapPingInput",
   fields: () => ({
@@ -298,6 +325,7 @@ export const mutationFields = [
             isMovableByPlayers:
               input.properties.isMovableByPlayers ?? undefined,
             isLight: input.properties.isLight ?? undefined,
+            lightRadius: input.properties.lightRadius?? undefined,
             tokenImageId: input.properties.tokenImageId,
             rotation: input.properties.rotation ?? undefined,
           },
@@ -392,6 +420,16 @@ export const mutationFields = [
       RT.run(lib.mapUpdateGrid(input), context),
   }),
   t.field({
+    name: "mapUpdateLight",
+    description: "Update the light of a map.",
+    type: t.NonNull(GraphQLMapUpdateLightResultType),
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapUpdateLightInputType)),
+    },
+    resolve: (_, { input }, context) =>
+      RT.run(lib.mapUpdateLight(input), context),
+  }),
+  t.field({
     name: "mapPing",
     description: "Ping a point on the map.",
     type: t.Boolean,
@@ -478,6 +516,10 @@ const GraphQLMapTokenType = t.objectType<MapTokenEntity>({
     t.field({
       name: "isLight",
       type: t.NonNull(t.Boolean),
+    }),
+    t.field({
+      name: "lightRadius",
+      type: t.NonNull(t.Float),
     }),
     t.field({
       name: "isLocked",

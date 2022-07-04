@@ -24,6 +24,9 @@ const prepareToken = (token: { [key: string]: unknown }) => {
   if (token.isLight === undefined) {
     token.isLight = true;
   }
+  if (token.lightRadius === undefined) {
+    token.lightRadius = 0;
+  }
   if (token.rotation === undefined) {
     token.rotation = 0;
   }
@@ -56,6 +59,7 @@ export type MapTokenEntity = {
   isVisibleForPlayers: boolean;
   isMovableByPlayers: boolean;
   isLight: boolean;
+  lightRadius: number;
   isLocked: boolean;
   reference: null | {
     type: "note";
@@ -94,7 +98,7 @@ type LegacyMapEntity = {
   fogLivePath: string;
   wallLivePath: string;
   wallProgressPath: string;
-  light: boolean;
+  light?: boolean;
   mapPath: string;
   showGrid?: boolean;
   showGridToPlayers?: boolean;
@@ -454,6 +458,7 @@ export class Maps {
       isVisibleForPlayers?: boolean | null;
       isMovableByPlayers?: boolean | null;
       isLight?: boolean | null;
+      lightRadius?: null | number;
       type?: "entity" | null;
       tokenImageId?: null | string;
       rotation?: number | null;
@@ -479,6 +484,7 @@ export class Maps {
             isVisibleForPlayers: props.isVisibleForPlayers ?? false,
             isMovableByPlayers: props.isMovableByPlayers ?? false,
             isLight: props.isLight ?? false,
+            lightRadius: props.lightRadius ?? 0,
             isLocked: props.isLocked ?? false,
             type: props.type ?? "entity",
             tokenImageId: props.tokenImageId ?? null,
@@ -514,6 +520,7 @@ export class Maps {
       isLocked,
       isMovableByPlayers,
       isLight,
+      lightRadius,
       title,
       description,
       reference,
@@ -530,6 +537,7 @@ export class Maps {
       isLocked?: boolean;
       isMovableByPlayers?: boolean;
       isLight?: boolean;
+      lightRadius?: number,
       title?: string;
       description?: string;
       reference?:
@@ -594,6 +602,9 @@ export class Maps {
         if (isLight !== undefined) {
           token.isLight = isLight;
         }
+        if (lightRadius !== undefined) {
+          token.lightRadius = lightRadius;
+        }
         if (reference !== undefined) {
           if (reference === null) {
             token.reference = null;
@@ -631,6 +642,7 @@ export class Maps {
       isVisibleForPlayers: boolean | undefined;
       isMovableByPlayers: boolean | undefined;
       isLight: boolean | undefined;
+      lightRadius: number | undefined;
       tokenImageId: string | null | undefined;
       rotation: number | undefined;
     }
@@ -665,6 +677,9 @@ export class Maps {
         }
         if (props.isLight != null) {
           token.isLight = props.isLight;
+        }
+        if (props.lightRadius != null) {
+          token.lightRadius = props.lightRadius;
         }
         if (props.tokenImageId !== undefined) {
           token.tokenImageId = props.tokenImageId;

@@ -410,6 +410,7 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
         isLocked: req.body.isLocked,
         isMovableByPlayers: req.body.isMovableByPlayers,
         isLight: req.body.isLight,
+        lightRadius: req.body.lightRadius,
         title: req.body.title,
         description: req.body.description,
         reference: req.body.reference,
