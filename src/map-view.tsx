@@ -1959,19 +1959,14 @@ export const MapView = (props: {
 
   const initialFog = React.useRef<boolean>(false);
 
-  React.useEffect(() =>{
+  React.useEffect(() => {
     if (isDungeonMaster) {
-      var lightValue = map.light ? 0.0 : 1;
+      var lightValue = map.light ? 1 : 0.1;
     } else {
-      var lightValue = map.light ? 0.0 : 1;
+      var lightValue = map.light ? 1 : 0.0;
     }
     setlightValue(lightValue);
-  },[
-    isDungeonMaster,
-    map.light
-  ]
-
-  )
+  }, [isDungeonMaster, map.light]);
 
   React.useEffect(() => {
     let fogImageTask: ReturnType<typeof loadImage> | null = null;
@@ -1983,7 +1978,6 @@ export const MapView = (props: {
       }
       const url = map.fogProgressImageUrl ?? map.fogLiveImageUrl;
       const wallUrl = map.wallProgressImageUrl ?? map.wallLiveImageUrl;
-
 
       if (url) {
         fogImageTask = loadImage(url);
@@ -1999,7 +1993,6 @@ export const MapView = (props: {
       if (map.wallLiveImageUrl) {
         wallImageTask = loadImage(map.wallLiveImageUrl);
       }
-
     }
 
     if (fogImageTask === null || wallImageTask === null) {
@@ -2036,7 +2029,7 @@ export const MapView = (props: {
     map.fogProgressImageUrl,
     map.wallLiveImageUrl,
     map.wallProgressImageUrl,
-    isDungeonMaster
+    isDungeonMaster,
   ]);
 
   return mapImage ? (

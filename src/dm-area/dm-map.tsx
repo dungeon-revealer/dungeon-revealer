@@ -232,9 +232,7 @@ const ShroudRevealSettings = (): React.ReactElement => {
       </Toolbar.Item>
       <Toolbar.Item isActive={state.wall === Wall}>
         <Toolbar.Button
-          onClick={() =>
-            setState((state) => ({ ...state, wall: !state.wall}))
-          }
+          onClick={() => setState((state) => ({ ...state, wall: !state.wall }))}
         >
           <Icon.Wall boxSize="20px" />
           <Icon.Label>Wall</Icon.Label>
@@ -243,7 +241,6 @@ const ShroudRevealSettings = (): React.ReactElement => {
     </>
   );
 };
-
 
 const ShowGridSettingsPopupMapFragment = graphql`
   fragment dmMap_ShowGridSettingsPopupMapFragment on Map {
@@ -286,11 +283,8 @@ const MapUpdateLightMutation = graphql`
   }
 `;
 
-
 const SwitchLightButton = React.memo(
-  (props: {
-    map: dmMap_DMMapFragment$key;
-  }) => {
+  (props: { map: dmMap_DMMapFragment$key }) => {
     const map = useFragment(LightMapFragment, props.map);
     const [mapUpdateLight] = useMutation<dmMap_mapUpdateLightMutation>(
       MapUpdateLightMutation
@@ -301,29 +295,27 @@ const SwitchLightButton = React.memo(
         variables: {
           input: {
             mapId: map.id,
-            light: light
+            light: light,
           },
         },
       });
     }, 300);
 
     return (
-      <Toolbar.Item isActive={light === false}>
+      <Toolbar.Item isActive={light === true}>
         <Toolbar.Button
           onClick={() => {
             setLight(!light);
             syncState();
-          }
-          }
+          }}
         >
           <Icon.Light boxSize="20px" />
           <Icon.Label>Light</Icon.Label>
         </Toolbar.Button>
       </Toolbar.Item>
-    )
+    );
   }
 );
-
 
 const ShowGridSettingsPopup = React.memo(
   (props: {
@@ -719,13 +711,13 @@ export const DmMap = (props: {
     if (!controlRef.current || !asyncClipBoardApi) {
       return;
     }
-    const { mapCanvas, fogCanvas, wallCanvas } = controlRef.current.getContext();
+    const { mapCanvas, fogCanvas, wallCanvas } =
+      controlRef.current.getContext();
     const canvas = new OffscreenCanvas(mapCanvas.width, mapCanvas.height);
     const context = canvas.getContext("2d")!;
     context.drawImage(mapCanvas, 0, 0);
     context.drawImage(fogCanvas, 0, 0);
     context.drawImage(wallCanvas, 0, 0);
-
 
     const { clipboard, ClipboardItem } = asyncClipBoardApi;
     canvas.convertToBlob().then((blob) => {
@@ -748,10 +740,8 @@ export const DmMap = (props: {
     });
   };
 
-
   const isConfiguringGrid = userSelectedTool === ConfigureGridMapTool;
   const isConfiguringGridRef = React.useRef(isConfiguringGrid);
-
 
   React.useEffect(() => {
     isConfiguringGridRef.current = isConfiguringGrid;
@@ -843,7 +833,9 @@ export const DmMap = (props: {
           {
             onDrawEnd: (canvas) => {
               // TODO: toggle between instant send and incremental send
-              const wallState = JSON.parse(localStorage.getItem('brushTool')).wall
+              const wallState = JSON.parse(
+                localStorage.getItem("brushTool")
+              ).wall;
               if (wallState) {
                 props.saveWallProgress(canvas);
               } else {
@@ -930,7 +922,7 @@ export const DmMap = (props: {
                 <ShroudRevealSettings />
               </Toolbar.Group>
               <Toolbar.Group divider>
-                <SwitchLightButton map = {map}/>
+                <SwitchLightButton map={map} />
               </Toolbar.Group>
               <Toolbar.Group divider>
                 <Toolbar.Item isActive>
@@ -942,12 +934,13 @@ export const DmMap = (props: {
                         onConfirm: () => {
                           // TODO: this should be less verbose
 
-
                           const context = controlRef.current?.getContext();
                           if (!context) {
                             return;
                           }
-                          const wallState = JSON.parse(localStorage.getItem('brushTool')).wall
+                          const wallState = JSON.parse(
+                            localStorage.getItem("brushTool")
+                          ).wall;
                           if (wallState) {
                             const canvasContext =
                               context.wallCanvas.getContext("2d")!;
@@ -955,7 +948,10 @@ export const DmMap = (props: {
                               FogMode.shroud,
                               true,
                               [0, 0],
-                              [context.wallCanvas.width, context.wallCanvas.height],
+                              [
+                                context.wallCanvas.width,
+                                context.wallCanvas.height,
+                              ],
                               canvasContext
                             );
                             context.wallTexture.needsUpdate = true;
@@ -967,7 +963,10 @@ export const DmMap = (props: {
                               FogMode.shroud,
                               false,
                               [0, 0],
-                              [context.fogCanvas.width, context.fogCanvas.height],
+                              [
+                                context.fogCanvas.width,
+                                context.fogCanvas.height,
+                              ],
                               canvasContext
                             );
                             context.fogTexture.needsUpdate = true;
@@ -994,7 +993,9 @@ export const DmMap = (props: {
                             return;
                           }
 
-                          const wallState = JSON.parse(localStorage.getItem('brushTool')).wall
+                          const wallState = JSON.parse(
+                            localStorage.getItem("brushTool")
+                          ).wall;
                           if (wallState) {
                             const canvasContext =
                               context.wallCanvas.getContext("2d")!;
@@ -1002,7 +1003,10 @@ export const DmMap = (props: {
                               FogMode.clear,
                               false,
                               [0, 0],
-                              [context.wallCanvas.width, context.wallCanvas.height],
+                              [
+                                context.wallCanvas.width,
+                                context.wallCanvas.height,
+                              ],
                               canvasContext
                             );
                             context.wallTexture.needsUpdate = true;
@@ -1014,7 +1018,10 @@ export const DmMap = (props: {
                               FogMode.clear,
                               false,
                               [0, 0],
-                              [context.fogCanvas.width, context.fogCanvas.height],
+                              [
+                                context.fogCanvas.width,
+                                context.fogCanvas.height,
+                              ],
                               canvasContext
                             );
                             context.fogTexture.needsUpdate = true;
