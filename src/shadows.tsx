@@ -31,7 +31,6 @@ export const WallsMaker = (props: {
 
   var shapeItem = shapesDraw(objects, sfX, sfY) ?? undefined;
   return shapeItem;
-
 };
 
 export const lightDrawer = (
@@ -57,7 +56,6 @@ export const lightDrawer = (
 };
 
 export const objectFinder = (image: HTMLImageElement | HTMLCanvasElement) => {
-
   let src = cv.imread(image);
   let dst = new cv.Mat();
   let contours = new cv.MatVector();
@@ -143,9 +141,8 @@ const shapesDraw = (objects: number[][][], sfX: number, sfy: number) => {
   return items;
 };
 
-
 const loadOpenCV = () => {
-  return new Promise(resolve => {
-    cv.onRuntimeInitialized=()=> resolve
-})
-}
+  return new Promise((resolve) => {
+    cv.onRuntimeInitialized = () => resolve;
+  });
+};
