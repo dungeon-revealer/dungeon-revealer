@@ -100,7 +100,7 @@ const GraphQLMapTokenAddManyTokenInput = t.inputObjectType({
     rotation: t.arg(t.Float),
     isVisibleForPlayers: t.arg(t.Boolean),
     isMovableByPlayers: t.arg(t.Boolean),
-    isLigth: t.arg(t.Boolean),
+    isLight: t.arg(t.Boolean),
     lightRadius: t.arg(t.Float),
     isLocked: t.arg(t.Boolean),
     tokenImageId: t.arg(t.ID),
@@ -325,7 +325,7 @@ export const mutationFields = [
             isMovableByPlayers:
               input.properties.isMovableByPlayers ?? undefined,
             isLight: input.properties.isLight ?? undefined,
-            lightRadius: input.properties.lightRadius?? undefined,
+            lightRadius: input.properties.lightRadius ?? undefined,
             tokenImageId: input.properties.tokenImageId,
             rotation: input.properties.rotation ?? undefined,
           },

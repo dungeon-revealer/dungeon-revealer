@@ -318,14 +318,11 @@ type Map {
   wallLiveImageUrl: String
 
   """
-  The URL of the wall live image, that is shown to players.
-  """
-  light: Boolean!
-  """
   The grid of the map. Is 'null' if no grid has been configured.
   """
   grid: MapGrid
   showGrid: Boolean!
+  light: Boolean!
   showGridToPlayers: Boolean!
   tokens: [MapToken!]!
 }
@@ -603,12 +600,14 @@ input MapTokenUpdateManyPropertiesInput {
   Color to be updated. Will not be updated if null is provided.
   """
   isMovableByPlayers: Boolean
+
   """
-  Token get light properties for using shadows
+  Set light properties to token.
   """
   isLight: Boolean
+
   """
-  Token get light properties for using shadows
+  Set light radius properties to token.
   """
   lightRadius: Float
 
@@ -720,21 +719,11 @@ type MapUpdateGridResult {
   updatedMap: Map!
 }
 
-type MapUpdateLightResult {
-  updatedMap: Map!
-}
-
 input MapUpdateGridInput {
   mapId: ID!
   grid: GridInput!
   showGrid: Boolean!
   showGridToPlayers: Boolean!
-}
-
-
-input MapUpdateLightInput {
-  mapId: ID!
-  light: Boolean!
 }
 
 input GridInput {
@@ -743,6 +732,15 @@ input GridInput {
   offsetY: Float!
   columnWidth: Float!
   columnHeight: Float!
+}
+
+type MapUpdateLightResult {
+  updatedMap: Map!
+}
+
+input MapUpdateLightInput {
+  mapId: ID!
+  light: Boolean!
 }
 
 input MapPingInput {
