@@ -9,6 +9,15 @@ export const hexToRGB = (hex: string) => {
   return `rgba(${r}, ${g}, ${b})`;
 };
 
+const waitForCV = async () => {
+  let promise = new Promise((resolve) => {
+    cv.onRuntimeInitialized = () => resolve("opencv is ready");
+  });
+
+  let result = await promise;
+  console.log(result);
+};
+
 export const WallsMaker = (props: {
   image: HTMLImageElement | HTMLCanvasElement;
   width: number;
@@ -20,7 +29,8 @@ export const WallsMaker = (props: {
     return;
   }
 
-  loadOpenCV();
+  waitForCV();
+
   const objects = objectFinder(props.image);
 
   const sfX = props.image.height / props.height;
@@ -51,6 +61,7 @@ export const lightDrawer = (
       shadowMapWidth={512}
       shadowMapHeight={512}
       shadowCameraNear={0.01}
+      shadowBias={-0.00001}
     />
   );
 };
@@ -133,16 +144,10 @@ const shapesDraw = (objects: number[][][], sfX: number, sfy: number) => {
           attach="material"
           color="rgb(0, 0, 0)"
           transparent={true}
-          opacity={0}
+          opacity={0.0}
         />
       </mesh>
     );
   });
   return items;
-};
-
-const loadOpenCV = () => {
-  return new Promise((resolve) => {
-    cv.onRuntimeInitialized = () => resolve;
-  });
 };
