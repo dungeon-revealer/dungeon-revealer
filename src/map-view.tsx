@@ -1435,6 +1435,7 @@ const MapViewRenderer = (props: {
 
   const planeRef = React.useRef<THREE.Mesh | null>(null);
 
+  // toolContext!
   const toolContext = React.useMemo<SharedMapToolState>(() => {
     const factor = dimensions.width / mapCanvas.width;
 
@@ -1616,6 +1617,7 @@ const MapViewRenderer = (props: {
     },
   });
 
+  // main entrypoint?
   return (
     <SharedMapState.Provider value={toolContext}>
       <Plane
@@ -1816,6 +1818,7 @@ const MapToolRenderer = <
     };
   });
 
+  // here the context is passed to the tool
   return (
     <props.tool.Component
       mapContext={props.handlerContext}

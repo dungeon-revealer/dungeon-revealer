@@ -21,7 +21,10 @@ import {
   ComponentWithPropsTuple,
   FlatContextProvider,
 } from "./flat-context-provider";
-import { MarkAreaToolContext } from "./map-tools/mark-area-map-tool";
+import {
+  MarkAreaMapTool,
+  MarkAreaToolContext,
+} from "./map-tools/mark-area-map-tool";
 import {
   NoteWindowActionsContext,
   useNoteWindowActions,
@@ -30,6 +33,13 @@ import { playerArea_PlayerMap_ActiveMapQuery } from "./__generated__/playerArea_
 import { playerArea_MapPingMutation } from "./__generated__/playerArea_MapPingMutation.graphql";
 import { UpdateTokenContext } from "./update-token-context";
 import { LazyLoadedMapView } from "./lazy-loaded-map-view";
+import { RulerMapTool } from "./map-tools/ruler-map-tool";
+import { DragPanZoomMapTool } from "./map-tools/drag-pan-zoom-map-tool";
+import {
+  LeftToolbarContainer,
+  MenuItemRenderer,
+  ToolMapRecord,
+} from "./dm-area/dm-map";
 
 const ToolbarContainer = styled(animated.div)`
   position: absolute;
@@ -72,6 +82,27 @@ const MapPingMutation = graphql`
     mapPing(input: $input)
   }
 `;
+
+const playerTools: Array<ToolMapRecord> = [
+  {
+    name: "Move",
+    icon: <Icon.Move boxSize="20px" />,
+    tool: DragPanZoomMapTool,
+    MenuComponent: null,
+  },
+  {
+    name: "Ruler",
+    icon: <Icon.Dice boxSize="20px" />,
+    tool: RulerMapTool,
+    MenuComponent: null,
+  },
+  {
+    name: "Mark",
+    icon: <Icon.Crosshair boxSize="20px" />,
+    tool: MarkAreaMapTool,
+    MenuComponent: null,
+  },
+];
 
 const PlayerMap = ({
   fetch,
@@ -140,6 +171,17 @@ const PlayerMap = ({
   }));
 
   const [showItems, setShowItems] = React.useState(true);
+
+  const [activeToolId, setActiveToolId] = React.useState(
+    playerTools[0].tool.id
+  );
+
+  const userSelectedTool = React.useMemo(() => {
+    return (
+      playerTools.find((tool) => tool.tool.id === activeToolId) ??
+      playerTools[0]
+    ).tool;
+  }, [activeToolId]);
 
   const isDraggingRef = React.useRef(false);
 
@@ -235,13 +277,14 @@ const PlayerMap = ({
             <React.Suspense fallback={null}>
               <LazyLoadedMapView
                 map={currentMap.data.activeMap}
-                activeTool={PlayerMapTool}
+                activeTool={userSelectedTool}
                 controlRef={controlRef}
                 sharedContexts={[
                   MarkAreaToolContext,
                   NoteWindowActionsContext,
                   ReactRelayContext,
                   UpdateTokenContext,
+                  // toolContext
                 ]}
                 fogOpacity={1}
               />
@@ -252,6 +295,23 @@ const PlayerMap = ({
       {!showSplashScreen ? (
         isMapOnly ? null : (
           <>
+            <LeftToolbarContainer>
+              <Toolbar>
+                <Toolbar.Logo />
+                <Toolbar.Group divider>
+                  {playerTools.map((record) => (
+                    <MenuItemRenderer
+                      key={record.tool.id}
+                      record={record}
+                      isActive={record.tool === userSelectedTool}
+                      setActiveTool={() => {
+                        setActiveToolId(record.tool.id);
+                      }}
+                    />
+                  ))}
+                </Toolbar.Group>
+              </Toolbar>
+            </LeftToolbarContainer>
             <ToolbarContainer
               style={{
                 transform: to(

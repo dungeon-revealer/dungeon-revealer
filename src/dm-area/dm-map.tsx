@@ -95,8 +95,9 @@ import { dmMap_MapPingMutation } from "./__generated__/dmMap_MapPingMutation.gra
 import { UpdateTokenContext } from "../update-token-context";
 import { IsDungeonMasterContext } from "../is-dungeon-master-context";
 import { LazyLoadedMapView } from "../lazy-loaded-map-view";
+import { RulerMapTool } from "../map-tools/ruler-map-tool";
 
-type ToolMapRecord = {
+export type ToolMapRecord = {
   name: string;
   icon: React.ReactElement;
   tool: MapTool;
@@ -541,6 +542,12 @@ const dmTools: Array<ToolMapRecord> = [
     icon: <Icon.Crop boxSize="20px" />,
     tool: AreaSelectMapTool,
     MenuComponent: AreaSelectSettings,
+  },
+  {
+    name: "Ruler",
+    icon: <Icon.Dice boxSize="20px" />,
+    tool: RulerMapTool,
+    MenuComponent: null,
   },
   {
     name: "Mark",
@@ -1044,7 +1051,7 @@ export const DmMap = (props: {
   );
 };
 
-const LeftToolbarContainer = styled.div`
+export const LeftToolbarContainer = styled.div`
   display: flex;
   align-items: center;
   position: absolute;
@@ -1075,7 +1082,7 @@ const MarginLeftDiv = styled.div`
   }
 `;
 
-const MenuItemRenderer = (props: {
+export const MenuItemRenderer = (props: {
   record: ToolMapRecord;
   setActiveTool: () => void;
   isActive: boolean;
