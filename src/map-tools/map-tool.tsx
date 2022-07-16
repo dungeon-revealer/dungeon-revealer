@@ -3,6 +3,11 @@ import type { SpringValue, SpringStartFn } from "react-spring";
 import type { Dimensions } from "../map-view";
 import type { ViewportData, PointerEvent } from "react-three-fiber";
 import type { Handlers } from "react-use-gesture/dist/types";
+import {
+  mapView_GridRendererFragment,
+  mapView_GridRendererFragment$key,
+} from "../__generated__/mapView_GridRendererFragment.graphql";
+import { MapGridEntity } from "../map-typings";
 
 type Vector2D = [number, number];
 type Vector3D = [number, number, number];
@@ -56,6 +61,7 @@ export type SharedMapToolState = {
       screenToImage: (vector: Vector2D) => Vector2D;
     };
   };
+  grid: MapGridEntity;
 };
 
 export type MapToolMapGestureHandlers = Handlers<{

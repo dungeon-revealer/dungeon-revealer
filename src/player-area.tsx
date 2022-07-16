@@ -72,10 +72,25 @@ const PlayerMap_ActiveMapQuery = graphql`
   query playerArea_PlayerMap_ActiveMapQuery @live {
     activeMap {
       id
+      grid {
+        offsetX
+        offsetY
+        columnWidth
+        columnHeight
+      }
       ...mapView_MapFragment
     }
   }
 `;
+
+/*const PlayerMap_MapGridQuery = graphql`
+  query playerArea_PlayerMap_MapGridQuery @live {
+    activeMap {
+      id
+      ...mapView_MapFragment
+    }
+  }
+`;*/
 
 const MapPingMutation = graphql`
   mutation playerArea_MapPingMutation($input: MapPingInput!) {
@@ -117,6 +132,7 @@ const PlayerMap = ({
     PlayerMap_ActiveMapQuery
   );
   const [mapPing] = useMutation<playerArea_MapPingMutation>(MapPingMutation);
+  // const grid = useQuery<>()
 
   const mapId = currentMap?.data?.activeMap?.id ?? null;
   const showSplashScreen = mapId === null;
@@ -230,6 +246,7 @@ const PlayerMap = ({
     }
   );
   const noteWindowActions = useNoteWindowActions();
+  // const grid = useFragment(ShowGridSettingsPopupGridFragment, props.grid);
   return (
     <>
       <div
@@ -277,6 +294,7 @@ const PlayerMap = ({
             <React.Suspense fallback={null}>
               <LazyLoadedMapView
                 map={currentMap.data.activeMap}
+                grid={currentMap.data.activeMap.grid}
                 activeTool={userSelectedTool}
                 controlRef={controlRef}
                 sharedContexts={[
@@ -284,7 +302,6 @@ const PlayerMap = ({
                   NoteWindowActionsContext,
                   ReactRelayContext,
                   UpdateTokenContext,
-                  // toolContext
                 ]}
                 fogOpacity={1}
               />

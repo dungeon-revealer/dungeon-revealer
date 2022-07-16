@@ -96,6 +96,7 @@ import { UpdateTokenContext } from "../update-token-context";
 import { IsDungeonMasterContext } from "../is-dungeon-master-context";
 import { LazyLoadedMapView } from "../lazy-loaded-map-view";
 import { RulerMapTool } from "../map-tools/ruler-map-tool";
+import { mapView_GridRendererFragment$key } from "../__generated__/mapView_GridRendererFragment.graphql";
 
 export type ToolMapRecord = {
   name: string;
@@ -816,6 +817,7 @@ export const DmMap = (props: {
       <React.Suspense fallback={null}>
         <LazyLoadedMapView
           map={map}
+          grid={map.grid}
           activeTool={activeTool}
           controlRef={controlRef}
           sharedContexts={[
