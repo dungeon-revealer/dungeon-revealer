@@ -203,6 +203,7 @@ const ShadowsRenderer = (props: {
   width: number;
   height: number;
   shadowOjbects: HTMLImageElement | null;
+  isDungeonMaster: boolean;
   sfX: number;
   sfY: number;
 }) => {
@@ -213,22 +214,24 @@ const ShadowsRenderer = (props: {
       WallsMaker({
         width: props.width,
         height: props.height,
-        image: sharedMapState.wallCanvas,
+        image: props.isDungeonMaster
+          ? sharedMapState.wallCanvas
+          : props.shadowOjbects,
         sfX: props.sfX,
         sfY: props.sfY,
       }),
     [{ image: sharedMapState.wallCanvas }]
   );
 
-  if (!shadows) {
-    var shadows = WallsMaker({
-      width: props.width,
-      height: props.height,
-      image: props.shadowOjbects,
-      sfX: props.sfX,
-      sfY: props.sfY,
-    });
-  }
+  // if (!shadows) {
+  //   var shadows = WallsMaker({
+  //     width: props.width,
+  //     height: props.height,
+  //     image: props.shadowOjbects,
+  //     sfX: props.sfX,
+  //     sfY: props.sfY,
+  //   });
+  // }
 
   const position = new THREE.Vector3(-props.width / 2, props.height / 2, 0);
 
@@ -1481,6 +1484,7 @@ const MapRenderer = (props: {
           width={props.dimensions.width}
           height={props.dimensions.height}
           shadowOjbects={props.wallImage}
+          isDungeonMaster={isDungeonMaster}
           sfX={sfX}
           sfY={sfY}
         />
