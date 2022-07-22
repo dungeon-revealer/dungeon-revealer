@@ -53,7 +53,7 @@ const FloatingTextBox = (props: {
       /> */}
       <CanvasText
         fontSize={0.1}
-        color="black"
+        color={props.color}
         font={buildUrl("/fonts/Roboto-Bold.ttf")}
         anchorX="center"
         anchorY="middle"
@@ -175,12 +175,13 @@ export const RulerMapTool: MapTool = {
                 (it) => it.animation.from as [number, number, number]
               ) || [[0, 0, 0]]
             }
+            color={props.mapContext.grid.color}
           />
           {distance != undefined && (
             <FloatingTextBox
               position={props.mapContext.pointerPosition}
-              width={1}
-              color="red"
+              width={2}
+              color={props.mapContext.grid.color}
               value={distance + ""}
             ></FloatingTextBox>
           )}

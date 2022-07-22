@@ -602,6 +602,7 @@ const DMMapFragment = graphql`
   fragment dmMap_DMMapFragment on Map {
     id
     grid {
+      color
       offsetX
       offsetY
       columnWidth
