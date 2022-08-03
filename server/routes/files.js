@@ -19,7 +19,8 @@ module.exports = ({ roleMiddleware, fileStorage }) => {
 
     req.pipe(req.busboy);
 
-    req.busboy.once("file", (fieldname, file, filename) => {
+    req.busboy.once("file", (fieldname, file, info) => {
+      const { filename, encoding, mimeType } = info;
       fileExtension = parseFileExtension(filename);
       writeStream = fs.createWriteStream(tmpFile);
       fileName = filename;
