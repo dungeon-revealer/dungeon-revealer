@@ -79,7 +79,7 @@ export default ({ db, roleMiddleware }: Dependencies) => {
     request.busboy.once(
       "file",
       (fieldname: string, file: fs.ReadStream, info: any) => {
-        const { filename, encoding, mimeType } = info;
+        const filename = info.filename;
         hasFile = true;
         let amountOfImportedRecords = 0;
         let amountOfFailedRecords = 0;

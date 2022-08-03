@@ -113,7 +113,7 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
     req.pipe(req.busboy);
 
     req.busboy.once("file", (fieldname, file, info) => {
-      const { filename, encoding, mimeType } = info;
+      const filename = info.filename;
       fileExtension = parseFileExtension(filename);
       writeStream = fs.createWriteStream(tmpFile);
       file.pipe(writeStream);

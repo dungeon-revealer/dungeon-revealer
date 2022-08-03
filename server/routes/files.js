@@ -20,7 +20,7 @@ module.exports = ({ roleMiddleware, fileStorage }) => {
     req.pipe(req.busboy);
 
     req.busboy.once("file", (fieldname, file, info) => {
-      const { filename, encoding, mimeType } = info;
+      const filename = info.filename;
       fileExtension = parseFileExtension(filename);
       writeStream = fs.createWriteStream(tmpFile);
       fileName = filename;
