@@ -32,7 +32,7 @@ module.exports = ({ roleMiddleware, fileStorage }) => {
       res.status(422).json({ data: null, error: "No file was sent." });
     });
 
-    req.busboy.once("finish", () => {
+    req.busboy.once("close", () => {
       fileStorage
         .store({ filePath: tmpFile, fileExtension, fileName })
         .then((record) => {

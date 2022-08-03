@@ -124,7 +124,7 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
       res.status(422).json({ data: null, error: "No file was sent." });
     });
 
-    req.busboy.once("finish", () => {
+    req.busboy.once("close", () => {
       maps
         .updateMapImage(req.params.id, { filePath: tmpFile, fileExtension })
         .then((map) => {
@@ -149,7 +149,7 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
       res.status(422).json({ data: null, error: "No file was sent." });
     });
 
-    req.busboy.once("finish", () => {
+    req.busboy.once("close", () => {
       maps
         .updateFogProgressImage(req.params.id, tmpFile)
         .then((map) => {
@@ -179,7 +179,7 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
       res.status(422).json({ data: null, error: "No file was sent." });
     });
 
-    req.busboy.once("finish", () => {
+    req.busboy.once("close", () => {
       maps
         .updateFogLiveImage(req.params.id, tmpFile)
         .then((map) => {

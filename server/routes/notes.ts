@@ -156,7 +156,7 @@ export default ({ db, roleMiddleware }: Dependencies) => {
       }
     );
 
-    request.busboy.once("finish", () => {
+    request.busboy.once("close", () => {
       if (hasFile) {
         return;
       }
