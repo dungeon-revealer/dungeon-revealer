@@ -30,7 +30,10 @@ export const WallsMaker = (props: {
   }
 
   waitForCV();
-
+  if (!cv.Mat) {
+    // make sure openCV is loaded properly
+    return;
+  }
   const objects = objectFinder(props.image);
 
   const sfX = props.image.height / props.height;
