@@ -9,6 +9,7 @@ import { globalStyles } from "./global-styles";
 import { Modal } from "./modal";
 import * as UserStyleSheetOrchestrator from "./user-style-sheet-orchestrator";
 import { registerSoundPlayback } from "./register-sound-playback";
+import cv from "opencv-ts";
 
 loader.config({
   paths: {
@@ -69,4 +70,6 @@ const main = async () => {
 };
 
 registerSoundPlayback();
-main();
+cv.onRuntimeInitialized = () => {
+  main();
+};

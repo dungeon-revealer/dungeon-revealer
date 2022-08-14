@@ -9,15 +9,6 @@ export const hexToRGB = (hex: string) => {
   return `rgba(${r}, ${g}, ${b})`;
 };
 
-const waitForCV = async () => {
-  let promise = new Promise((resolve) => {
-    cv.onRuntimeInitialized = () => resolve("opencv is ready");
-  });
-
-  let result = await promise;
-  console.log(result);
-};
-
 export const WallsMaker = (props: {
   image: HTMLImageElement | HTMLCanvasElement;
   width: number;
@@ -29,11 +20,6 @@ export const WallsMaker = (props: {
     return;
   }
 
-  waitForCV();
-  if (!cv.Mat) {
-    // make sure openCV is loaded properly
-    return;
-  }
   const objects = objectFinder(props.image);
 
   const sfX = props.image.height / props.height;
