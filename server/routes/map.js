@@ -157,7 +157,8 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
 
     req.pipe(req.busboy);
 
-    req.busboy.once("file", (fieldname, file, filename) => {
+    req.busboy.once("file", (fieldname, file, info) => {
+      const filename = info.filename;
       fileExtension = parseFileExtension(filename);
       writeStream = fs.createWriteStream(tmpFile);
       file.pipe(writeStream);
@@ -168,7 +169,7 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
       res.status(422).json({ data: null, error: "No file was sent." });
     });
 
-    req.busboy.once("finish", () => {
+    req.busboy.once("close", () => {
       maps
         .updateMapImage(req.params.id, { filePath: tmpFile, fileExtension })
         .then((map) => {
@@ -193,7 +194,7 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
       res.status(422).json({ data: null, error: "No file was sent." });
     });
 
-    req.busboy.once("finish", () => {
+    req.busboy.once("close", () => {
       maps
         .updateFogProgressImage(req.params.id, tmpFile)
         .then((map) => {
@@ -250,7 +251,7 @@ module.exports = ({ roleMiddleware, maps, settings, emitter }) => {
       res.status(422).json({ data: null, error: "No file was sent." });
     });
 
-    req.busboy.once("finish", () => {
+    req.busboy.once("close", () => {
       maps
         .updateFogLiveImage(req.params.id, tmpFile)
         .then((map) => {
