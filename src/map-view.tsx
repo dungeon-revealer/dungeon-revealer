@@ -15,7 +15,7 @@ import { useGesture } from "react-use-gesture";
 import styled from "@emotion/styled/macro";
 import { darken, lighten } from "polished";
 import debounce from "lodash/debounce";
-import { getOptimalDimensions, loadImage } from "./util";
+import { getOptimalDimensions, loadImage, loadVideo } from "./util";
 import { useStaticRef } from "./hooks/use-static-ref";
 import { buildUrl } from "./public-url";
 import { CanvasText, CanvasTextRef } from "./canvas-text";
@@ -1263,8 +1263,8 @@ const FogRenderer = React.memo(
 
 const MapRenderer = (props: {
   map: mapView_MapRendererFragment$key;
-  mapImage: HTMLImageElement;
-  mapImageTexture: THREE.Texture;
+  mapImage: HTMLImageElement | HTMLVideoElement;
+  mapImageTexture: THREE.Texture | THREE.VideoTexture;
   fogTexture: THREE.Texture;
   viewport: ViewportData;
   scale: SpringValue<[number, number, number]>;
@@ -1275,6 +1275,14 @@ const MapRenderer = (props: {
 }) => {
   const map = useFragment(MapRendererFragment, props.map);
   const isDungeonMaster = React.useContext(IsDungeonMasterContext);
+
+  if (props.mapFileType == "mp4") {
+    var naturalWidth = props.mapImage.videoWidth;
+    var naturalHeight = props.mapImage.videoHeight;
+  } else {
+    var naturalWidth = props.mapImage.naturalWidth;
+    var naturalHeight = props.mapImage.naturalHeight;
+  }
 
   return (
     <>
@@ -1292,8 +1300,8 @@ const MapRenderer = (props: {
             grid={map.grid}
             dimensions={props.dimensions}
             factor={props.factor}
-            imageHeight={props.mapImage.naturalHeight}
-            imageWidth={props.mapImage.naturalWidth}
+            imageHeight={naturalWidth}
+            imageWidth={naturalHeight}
           />
         ) : null}
         <FogRenderer
@@ -1331,9 +1339,10 @@ const MapViewRendererFragment = graphql`
 
 const MapViewRenderer = (props: {
   map: mapView_MapViewRendererFragment$key;
-  mapImage: HTMLImageElement;
-  fogImage: HTMLImageElement | null;
+  mapImage: HTMLImageElement | HTMLVideoElement;
+  fogImage: HTMLImageElement | HTMLVideoElement | null;
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
+  mapFileType: string;
   activeTool: MapTool | null;
   fogOpacity: number;
 }): React.ReactElement => {
@@ -1351,12 +1360,19 @@ const MapViewRenderer = (props: {
   const maximumSideLength = React.useMemo(() => {
     return Math.sqrt(maximumTextureSize * 1024);
   }, [maximumTextureSize]);
-
+  // console.log(mapFileType);
+  if (props.mapFileType == "mp4") {
+    var naturalWidth = props.mapImage.videoWidth;
+    var naturalHeight = props.mapImage.videoHeight;
+  } else {
+    var naturalWidth = props.mapImage.naturalWidth;
+    var naturalHeight = props.mapImage.naturalHeight;
+  }
   const optimalDimensions = React.useMemo(
     () =>
       getOptimalDimensions(
-        props.mapImage.naturalWidth,
-        props.mapImage.naturalHeight,
+        naturalWidth,
+        naturalHeight,
         maximumSideLength,
         maximumSideLength
       ),
@@ -1376,7 +1392,13 @@ const MapViewRenderer = (props: {
     return canvas;
   });
 
-  const [mapTexture] = React.useState(() => new THREE.CanvasTexture(mapCanvas));
+  if (props.mapFileType == "mp4") {
+    var [mapTexture] = React.useState(
+      () => new THREE.VideoTexture(props.mapImage)
+    );
+  } else {
+    var [mapTexture] = React.useState(() => new THREE.CanvasTexture(mapCanvas));
+  }
   const [fogTexture] = React.useState(() => new THREE.CanvasTexture(fogCanvas));
 
   React.useEffect(() => {
@@ -1416,8 +1438,8 @@ const MapViewRenderer = (props: {
 
   const dimensions = React.useMemo(() => {
     return getOptimalDimensions(
-      props.mapImage.naturalWidth,
-      props.mapImage.naturalHeight,
+      naturalWidth,
+      naturalHeight,
       viewport.width * 0.95,
       viewport.height * 0.95
     );
@@ -1660,6 +1682,7 @@ const MapFragment = graphql`
   fragment mapView_MapFragment on Map {
     id
     mapImageUrl
+    mapPath
     fogProgressImageUrl
     fogLiveImageUrl
     ...mapView_MapViewRendererFragment
@@ -1678,20 +1701,27 @@ export const MapView = (props: {
 
   const map = useFragment(MapFragment, props.map);
 
-  const [mapImage, setMapImage] = useResetState<HTMLImageElement | null>(null, [
-    map.id,
-  ]);
-  const [fogImage, setFogImage] = useResetState<HTMLImageElement | null>(null, [
-    map.id,
-  ]);
+  const [mapImage, setMapImage] = useResetState<
+    HTMLImageElement | HTMLVideoElement | null
+  >(null, [map.id]);
+
+  const [fogImage, setFogImage] = useResetState<
+    HTMLImageElement | HTMLVideoElement | null
+  >(null, [map.id]);
 
   const cleanupMapImage = React.useRef<() => void>(() => {});
   const cleanupFogImage = React.useRef<() => void>(() => {});
 
   const isDungeonMaster = React.useContext(IsDungeonMasterContext);
 
+  const mapFileType = map.mapPath.split(".")[1];
+
   React.useEffect(() => {
-    const mapImageTask = loadImage(map.mapImageUrl);
+    if (mapFileType == "mp4") {
+      var mapImageTask = loadVideo(map.mapImageUrl);
+    } else {
+      var mapImageTask = loadImage(map.mapImageUrl);
+    }
 
     cleanupMapImage.current = () => {
       mapImageTask.cancel();
@@ -1785,6 +1815,7 @@ export const MapView = (props: {
             activeTool={props.activeTool}
             mapImage={mapImage}
             fogImage={fogImage}
+            mapFileType={mapFileType}
             controlRef={props.controlRef}
             fogOpacity={props.fogOpacity}
           />

@@ -298,6 +298,11 @@ type Map {
   mapImageUrl: String!
 
   """
+  The URL of the map image.
+  """
+  mapPath: String!
+
+  """
   The URL of the fog progress image that is only accessible to the DM.
   """
   fogProgressImageUrl: String

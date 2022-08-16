@@ -534,6 +534,11 @@ const GraphQLMapType = t.objectType<MapEntity>({
         )}`,
     }),
     t.field({
+      name: "mapPath",
+      description: "The URL of the map image.",
+      type: t.NonNull(t.String),
+    }),
+    t.field({
       name: "fogProgressImageUrl",
       description:
         "The URL of the fog progress image that is only accessible to the DM.",

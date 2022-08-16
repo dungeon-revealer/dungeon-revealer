@@ -18,24 +18,61 @@ export const loadImage = (src: string) => {
     image.src = "";
   };
 
-  const promise = new Promise<HTMLImageElement>((resolve, reject) => {
-    image.src = src;
-    const removeEventListeners = () => {
-      image.removeEventListener("load", loadListener);
-      image.removeEventListener("error", errorListener);
-    };
-    const loadListener = () => {
-      removeEventListeners();
-      isLoaded = true;
-      resolve(image);
-    };
-    const errorListener = (err: unknown) => {
-      removeEventListeners();
-      reject(err);
-    };
-    image.addEventListener("load", loadListener);
-    image.addEventListener("error", errorListener);
-  });
+  const promise = new Promise<HTMLImageElement | HTMLVideoElement>(
+    (resolve, reject) => {
+      image.src = src;
+      const removeEventListeners = () => {
+        image.removeEventListener("load", loadListener);
+        image.removeEventListener("error", errorListener);
+      };
+      const loadListener = () => {
+        removeEventListeners();
+        isLoaded = true;
+        resolve(image);
+      };
+      const errorListener = (err: unknown) => {
+        removeEventListeners();
+        reject(err);
+      };
+      image.addEventListener("load", loadListener);
+      image.addEventListener("error", errorListener);
+    }
+  );
+
+  return { promise, cancel };
+};
+
+export const loadVideo = (src: string) => {
+  const video = document.createElement("video");
+
+  let isLoaded = false;
+
+  const cancel = () => {
+    if (isLoaded) {
+      return;
+    }
+    video.src = "";
+  };
+
+  const promise = new Promise<HTMLImageElement | HTMLVideoElement>(
+    (resolve, reject) => {
+      video.src = src;
+      video.autoplay = true;
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.controls = true;
+      video.load();
+
+      video.addEventListener("canplaythrough", function () {
+        resolve(video);
+      });
+
+      video.addEventListener("error", function () {
+        reject(video);
+      });
+    }
+  );
 
   return { promise, cancel };
 };
