@@ -197,6 +197,7 @@ const SelectMapModal_ActiveMap_MapFragment = graphql`
     id
     title
     mapImageUrl
+    mapPath
   }
 `;
 
@@ -209,6 +210,17 @@ const ActiveMap = (props: {
     SelectMapModal_ActiveMap_MapFragment,
     props.activeMap
   );
+
+  const mapFileType = activeMap.mapPath.split(".")[1];
+  if (mapFileType == "mp4") {
+    var previewBlock = (
+      <video src={activeMap.mapImageUrl} style={{ width: "100%" }} />
+    );
+  } else {
+    var previewBlock = (
+      <img src={activeMap.mapImageUrl} style={{ width: "100%" }} />
+    );
+  }
 
   return (
     <Modal.Content>
@@ -252,7 +264,7 @@ const ActiveMap = (props: {
           overflowY: "scroll",
         }}
       >
-        <img src={activeMap.mapImageUrl} style={{ width: "100%" }} />
+        {previewBlock}
       </div>
       <div
         style={{

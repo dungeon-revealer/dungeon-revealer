@@ -24,7 +24,7 @@ export const useSelectFileDialog = (
     () => (
       <input
         type="file"
-        accept=".jpeg,.jpg,.svg,.png"
+        accept=".jpeg,.jpg,.svg,.png,.mp4"
         ref={ref}
         onChange={onChange}
         style={{ display: "none" }}
