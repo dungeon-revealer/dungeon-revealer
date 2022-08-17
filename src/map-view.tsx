@@ -1277,14 +1277,6 @@ const MapRenderer = (props: {
   const map = useFragment(MapRendererFragment, props.map);
   const isDungeonMaster = React.useContext(IsDungeonMasterContext);
 
-  if (props.mapFileType == "mp4") {
-    var naturalWidth = props.mapImage.videoWidth;
-    var naturalHeight = props.mapImage.videoHeight;
-  } else {
-    var naturalWidth = props.mapImage.naturalWidth;
-    var naturalHeight = props.mapImage.naturalHeight;
-  }
-
   return (
     <>
       <group renderOrder={LayerRenderOrder.map}>
@@ -1301,8 +1293,8 @@ const MapRenderer = (props: {
             grid={map.grid}
             dimensions={props.dimensions}
             factor={props.factor}
-            imageHeight={naturalWidth}
-            imageWidth={naturalHeight}
+            imageHeight={props.mapImage.height}
+            imageWidth={props.mapImage.width}
           />
         ) : null}
         <FogRenderer
@@ -1361,19 +1353,12 @@ const MapViewRenderer = (props: {
   const maximumSideLength = React.useMemo(() => {
     return Math.sqrt(maximumTextureSize * 1024);
   }, [maximumTextureSize]);
-  // console.log(mapFileType);
-  if (props.mapFileType == "mp4") {
-    var naturalWidth = props.mapImage.videoWidth;
-    var naturalHeight = props.mapImage.videoHeight;
-  } else {
-    var naturalWidth = props.mapImage.naturalWidth;
-    var naturalHeight = props.mapImage.naturalHeight;
-  }
+
   const optimalDimensions = React.useMemo(
     () =>
       getOptimalDimensions(
-        naturalWidth,
-        naturalHeight,
+        props.mapImage.width,
+        props.mapImage.height,
         maximumSideLength,
         maximumSideLength
       ),
@@ -1439,8 +1424,8 @@ const MapViewRenderer = (props: {
 
   const dimensions = React.useMemo(() => {
     return getOptimalDimensions(
-      naturalWidth,
-      naturalHeight,
+      props.mapImage.width,
+      props.mapImage.height,
       viewport.width * 0.95,
       viewport.height * 0.95
     );
