@@ -1272,6 +1272,7 @@ const MapRenderer = (props: {
   dimensions: Dimensions;
   fogOpacity: number;
   markerRadius: number;
+  mapFileType: string;
 }) => {
   const map = useFragment(MapRendererFragment, props.map);
   const isDungeonMaster = React.useContext(IsDungeonMasterContext);
@@ -1655,6 +1656,7 @@ const MapViewRenderer = (props: {
           markerRadius={20}
           scale={spring.scale}
           dimensions={dimensions}
+          mapFileType={props.mapFileType}
           factor={
             dimensions.width / props.mapImage.width / optimalDimensions.ratio
           }
@@ -1729,6 +1731,10 @@ export const MapView = (props: {
 
     mapImageTask.promise
       .then((mapImage) => {
+        if (mapFileType == "mp4") {
+          mapImage.width = mapImage.videoWidth;
+          mapImage.height = mapImage.videoHeight;
+        }
         setMapImage(mapImage);
       })
       .catch((err) => {
