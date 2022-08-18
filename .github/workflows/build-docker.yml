@@ -2,7 +2,7 @@ name: Build Docker
 
 on:
   push:
-    branches: [master, feature/*]
+    branches: [master]
     tags:
       - "v*"
 
