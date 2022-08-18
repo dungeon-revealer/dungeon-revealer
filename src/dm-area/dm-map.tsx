@@ -593,6 +593,7 @@ const MapPingMutation = graphql`
 const DMMapFragment = graphql`
   fragment dmMap_DMMapFragment on Map {
     id
+    mapPath
     grid {
       offsetX
       offsetY
@@ -733,6 +734,14 @@ export const DmMap = (props: {
       }),
       [map.grid]
     );
+
+  var mapFileType = map.mapPath.split(".")[1];
+  if (mapFileType == "mp4") {
+    var videoControls = true;
+  }
+
+  const [videoState, setVideoState] = React.useState(true);
+  const [videoVolume, setVideoVolume] = React.useState(0.2);
 
   return (
     <FlatContextProvider
@@ -1024,6 +1033,55 @@ export const DmMap = (props: {
                 </Toolbar.Item>
               </Toolbar.Group>
             </Toolbar>
+            <MarginLeftDiv />
+            {videoControls ? (
+              <Toolbar horizontal>
+                <Toolbar.Group>
+                  <Toolbar.Item isActive={videoState}>
+                    <Toolbar.Button
+                      onClick={() => {
+                        setVideoState(!videoState);
+                        if (videoState) {
+                          var playpauseEvent = new CustomEvent("videoControl", {
+                            detail: { pause: true },
+                          });
+                        } else {
+                          var playpauseEvent = new CustomEvent("videoControl", {
+                            detail: { play: true },
+                          });
+                        }
+                        document.dispatchEvent(playpauseEvent);
+                      }}
+                    >
+                      <Icon.Play boxSize="20px" />
+                      <Icon.Label>Play</Icon.Label>
+                    </Toolbar.Button>
+                  </Toolbar.Item>
+                  <Toolbar.Item isActive>
+                    <input
+                      style={{
+                        height: "25%",
+                        WebkitAppearance: "auto",
+                        margin: 0,
+                      }}
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.02}
+                      value={videoVolume}
+                      onChange={(event) => {
+                        const volume = new CustomEvent("videoControl", {
+                          detail: { volume: event.target.valueAsNumber },
+                        });
+                        document.dispatchEvent(volume);
+                        setVideoVolume(event.target.valueAsNumber);
+                      }}
+                    />
+                    <Icon.Label>Volume</Icon.Label>
+                  </Toolbar.Item>
+                </Toolbar.Group>
+              </Toolbar>
+            ) : null}
           </BottomToolbarContainer>
         </>
       ) : (

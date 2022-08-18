@@ -1719,6 +1719,8 @@ export const MapView = (props: {
         if (mapFileType == "mp4") {
           mapImage.width = mapImage.videoWidth;
           mapImage.height = mapImage.videoHeight;
+          const volume = window.localStorage.getItem("volume");
+          mapImage.volume = volume ?? 0.1;
         }
         setMapImage(mapImage);
       })
@@ -1728,6 +1730,26 @@ export const MapView = (props: {
 
     return () => cleanupMapImage.current();
   }, [map.mapImageUrl]);
+
+  const videoControlHendler = React.useCallback(
+    (ev) => {
+      if (mapImage) {
+        if (ev.detail.volume) {
+          mapImage.volume = ev.detail.volume;
+        }
+        if (ev.detail.pause) {
+          mapImage.pause();
+        }
+        if (ev.detail.play) {
+          mapImage.play();
+        }
+        setMapImage(mapImage);
+      }
+    },
+    [mapImage]
+  );
+
+  document.addEventListener("videoControl", videoControlHendler);
 
   const initialFog = React.useRef<boolean>(false);
 

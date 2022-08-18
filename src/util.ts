@@ -57,12 +57,13 @@ export const loadVideo = (src: string) => {
   const promise = new Promise<HTMLImageElement | HTMLVideoElement>(
     (resolve, reject) => {
       video.src = src;
+      video.load();
+
       video.autoplay = true;
-      video.muted = true;
+      video.muted = false;
       video.loop = true;
       video.playsInline = true;
       video.controls = true;
-      video.load();
 
       video.addEventListener("canplaythrough", function () {
         resolve(video);
