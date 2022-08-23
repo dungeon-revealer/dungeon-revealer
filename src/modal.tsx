@@ -292,6 +292,27 @@ const ActionGroup = styled.div<{ left?: boolean }>`
   display: flex;
 `;
 
+const ProgressBar = (props: { bgcolor: string; completed: number }) => {
+  const fillerStyles = {
+    height: "100%",
+    width: `${props.completed}%`,
+    backgroundColor: props.bgcolor,
+    borderRadius: "5px",
+    TextAlign: "right",
+  };
+
+  const labelStyles = {
+    padding: 5,
+    color: "white",
+  };
+
+  return (
+    <div style={fillerStyles}>
+      <span style={labelStyles}>{`${props.completed}%`}</span>
+    </div>
+  );
+};
+
 export const Modal = Object.assign(ModalPortal, {
   Dialog,
   Header,
@@ -304,4 +325,5 @@ export const Modal = Object.assign(ModalPortal, {
   Actions,
   ActionGroup,
   Provider,
+  ProgressBar,
 });

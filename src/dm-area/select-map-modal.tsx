@@ -18,6 +18,7 @@ import { selectMapModal_MapList_MapsFragment$key } from "./__generated__/selectM
 import { useInvokeOnScrollEnd } from "../hooks/use-invoke-on-scroll-end";
 import { selectMapModal_ActiveMap_MapFragment$key } from "./__generated__/selectMapModal_ActiveMap_MapFragment.graphql";
 import { selectMapModal_ActiveMapQuery } from "./__generated__/selectMapModal_ActiveMapQuery.graphql";
+import ProgressBar from "react-bootstrap/ProgressBar";
 
 type CreateNewMapButtonProps = {
   children: React.ReactChild;
@@ -313,6 +314,36 @@ const SelectMapModal_ActiveMapQuery = graphql`
   }
 `;
 
+const uploadMap = (
+  method: string,
+  url: string,
+  document: any,
+  progressHandler: any
+) => {
+  return new Promise(function (resolve, reject) {
+    let xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = progressHandler;
+    xhr.open(method, url);
+    xhr.onload = function () {
+      if (this.status >= 200 && this.status < 300) {
+        resolve(xhr.response);
+      } else {
+        reject({
+          status: this.status,
+          statusText: xhr.statusText,
+        });
+      }
+    };
+    xhr.onerror = function () {
+      reject({
+        status: this.status,
+        statusText: xhr.statusText,
+      });
+    };
+    xhr.send(document);
+  });
+};
+
 export const SelectMapModal = ({
   closeModal,
   setLoadedMapId,
@@ -378,6 +409,15 @@ export const SelectMapModal = ({
     }
     closeModal();
   }, [closeModal, canClose]);
+
+  const [mapUploadComplited, setMapUploadComplited] = React.useState(0);
+
+  const progressHandler = React.useCallback((ev: ProgressEvent) => {
+    if (ev.loaded > 0) {
+      var progres = Math.round((100 * ev.loaded) / ev.total);
+      setMapUploadComplited(progres);
+    }
+  }, []);
 
   return (
     <>
@@ -507,6 +547,7 @@ export const SelectMapModal = ({
               setModalState(null);
             }}
             file={modalState.data.file}
+            mapUploadComplited={mapUploadComplited}
             createMap={async (title) => {
               const hash = await generateSHA256FileHash(modalState.data.file);
               // 1. request file upload
@@ -520,24 +561,15 @@ export const SelectMapModal = ({
               });
 
               // 2. upload file
-              const uploadResponse = await fetch(
+
+              await uploadMap(
+                "PUT",
                 result.mapImageRequestUpload.uploadUrl,
-                {
-                  method: "PUT",
-                  body: modalState.data.file,
-                }
+                modalState.data.file,
+                progressHandler
               );
-
-              if (uploadResponse.status !== 200) {
-                const body = await uploadResponse.text();
-                throw new Error(
-                  "Received invalid response code: " +
-                    uploadResponse.status +
-                    "\n\n" +
-                    body
-                );
-              }
-
+              //reset counter
+              setMapUploadComplited(0);
               // 3. create map
               await mapCreate({
                 variables: {
@@ -598,10 +630,12 @@ const CreateNewMapModal = ({
   closeModal,
   file,
   createMap,
+  mapUploadComplited,
 }: {
   closeModal: () => void;
   file: File;
   createMap: (title: string) => void;
+  mapUploadComplited: number;
 }): React.ReactElement => {
   const [inputValue, setInputValue] = React.useState(() =>
     extractDefaultTitleFromFileName(file.name)
@@ -630,6 +664,7 @@ const CreateNewMapModal = ({
             onChange={onChangeInputValue}
             error={error}
           />
+          <Modal.ProgressBar bgcolor="#0a6c74" completed={mapUploadComplited} />
         </Modal.Body>
         <Modal.Footer>
           <Modal.Actions>
@@ -642,13 +677,15 @@ const CreateNewMapModal = ({
               <div>
                 <Button.Primary
                   type="submit"
+                  id="mapSubmit"
                   onClick={() => {
                     if (inputValue.trim().length === 0) {
                       setError("Please enter a map name.");
                       return;
                     }
                     createMap(inputValue);
-                    closeModal();
+                    //prevert many upload requests
+                    document.getElementById("mapSubmit").disabled = true;
                   }}
                 >
                   Create Map
