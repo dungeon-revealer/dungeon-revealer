@@ -596,7 +596,7 @@ export class Maps {
         throw new Error(`Map with id "${id}" not found.`);
       }
       this._maps.splice(mapIndex, 1);
-      await fs.remove(this._buildMapFolderPath(id));
+      fs.removeSync(this._buildMapFolderPath(id));
     });
   }
 }
