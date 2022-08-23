@@ -18,7 +18,6 @@ import { selectMapModal_MapList_MapsFragment$key } from "./__generated__/selectM
 import { useInvokeOnScrollEnd } from "../hooks/use-invoke-on-scroll-end";
 import { selectMapModal_ActiveMap_MapFragment$key } from "./__generated__/selectMapModal_ActiveMap_MapFragment.graphql";
 import { selectMapModal_ActiveMapQuery } from "./__generated__/selectMapModal_ActiveMapQuery.graphql";
-import ProgressBar from "react-bootstrap/ProgressBar";
 
 type CreateNewMapButtonProps = {
   children: React.ReactChild;
