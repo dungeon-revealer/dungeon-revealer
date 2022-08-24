@@ -1379,9 +1379,11 @@ const MapViewRenderer = (props: {
   });
 
   if (props.mapFileType == "mp4") {
+    const anisotropy = three.gl.getMaxAnisotropy();
     var [mapTexture] = React.useState(
       () => new THREE.VideoTexture(props.mapImage)
     );
+    mapTexture.anisotropy = anisotropy;
   } else {
     var [mapTexture] = React.useState(() => new THREE.CanvasTexture(mapCanvas));
   }
