@@ -16,10 +16,12 @@ export type SharedMapToolState = {
   mapState: {
     position: SpringValue<Vector3D>;
     scale: SpringValue<Vector3D>;
+    rotate: SpringValue<number>;
   };
   setMapState: SpringStartFn<{
     position: Vector3D;
     scale: Vector3D;
+    rotate: number;
   }>;
   dimensions: Dimensions;
   viewport: ViewportData;

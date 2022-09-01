@@ -31,6 +31,7 @@ export const Rectangle = (props: {
   p1: Point;
   p2: Point;
   borderColor: string;
+  rotation: number;
 }): React.ReactElement => {
   const getPoints = React.useCallback<
     () => Array<[number, number, number]>
@@ -54,6 +55,7 @@ export const Rectangle = (props: {
   });
   return (
     <ThreeLine
+      rotation={[0, 0, (props.rotation * Math.PI) / 180]}
       points={points}
       color={props.borderColor}
       ref={ref}
@@ -322,6 +324,7 @@ export const AreaSelectMapTool: MapTool = {
             p1={localState.lastPointerPosition}
             p2={props.mapContext.pointerPosition}
             borderColor="red"
+            rotation={0}
           />
         </>
       );

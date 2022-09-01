@@ -47,6 +47,28 @@ export const RotateCCW = createIcon({
     boxSize: "30px",
   },
 });
+export const RotateCW = createIcon({
+  displayName: "RotateCW",
+  viewBox: "0 0 24 24",
+  path: (
+    <>
+      <path d="M1 4v6h6" transform="scale(-1, 1)" transform-origin="center" />
+      <path
+        d="M3.51 15a9 9 0 102.13-9.36L1 10"
+        transform="scale(-1, 1)"
+        transform-origin="center"
+      />
+    </>
+  ),
+  defaultProps: {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    boxSize: "30px",
+  },
+});
 export const Shield = createIcon({
   displayName: "Shield",
   viewBox: "0 0 24 24",

@@ -262,3 +262,15 @@ export const calculateSquareCoordinates = (
 export const distanceBetweenPoints = (point1: Vector2D, point2: Vector2D) => {
   return Math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2);
 };
+
+export const RotationMath = (
+  x: number,
+  y: number,
+  deg: number
+): [number, number] => {
+  const a = (deg * Math.PI) / 180;
+  const xN = x * Math.cos(a) - y * Math.sin(a);
+  const yN = x * Math.sin(a) + y * Math.cos(a);
+
+  return [xN, yN];
+};

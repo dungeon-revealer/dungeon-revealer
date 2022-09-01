@@ -3,6 +3,7 @@ import { usePinchWheelZoom } from "./drag-pan-zoom-map-tool";
 import type { MapTool } from "./map-tool";
 import { ThreeLine } from "../three-line";
 import { Rectangle } from "./area-select-map-tool";
+import { RotationMath } from "../canvas-draw-utilities";
 
 export type ConfigureMapToolState = {
   offsetY: number;
@@ -72,11 +73,13 @@ export const ConfigureGridMapTool: MapTool = {
           columnWidth={columnWidth}
           columnHeight={columnHeight}
           dimensions={props.mapContext.dimensions}
+          rotation={props.mapContext.mapState.rotate.get()}
         />
         <Rectangle
           p1={[offsetX, offsetY, 0]}
           p2={[offsetX + columnWidth, offsetY - columnHeight, 0]}
           borderColor="red"
+          rotation={props.mapContext.mapState.rotate.get()}
         />
       </>
     );
@@ -87,6 +90,7 @@ const CompleteGrid = (props: {
   position: [number, number, number];
   columnHeight: number;
   columnWidth: number;
+  rotation: number;
   dimensions: {
     width: number;
     height: number;
@@ -104,6 +108,7 @@ const CompleteGrid = (props: {
       i++;
       elements.push(
         <ThreeLine
+          rotation={[0, 0, (props.rotation * Math.PI) / 180]}
           key={String(i)}
           points={[
             [(-1 * props.dimensions.width) / 2, currentY, 0],
@@ -122,6 +127,7 @@ const CompleteGrid = (props: {
       i++;
       elements.push(
         <ThreeLine
+          rotation={[0, 0, (props.rotation * Math.PI) / 180]}
           key={String(i)}
           points={[
             [(-1 * props.dimensions.width) / 2, currentY, 0],
@@ -139,6 +145,7 @@ const CompleteGrid = (props: {
       i++;
       elements.push(
         <ThreeLine
+          rotation={[0, 0, (props.rotation * Math.PI) / 180]}
           key={String(i)}
           points={[
             [currentX, (-1 * props.dimensions.height) / 2, 0],
@@ -157,6 +164,7 @@ const CompleteGrid = (props: {
       i++;
       elements.push(
         <ThreeLine
+          rotation={[0, 0, (props.rotation * Math.PI) / 180]}
           key={String(i)}
           points={[
             [currentX, (-1 * props.dimensions.height) / 2, 0],

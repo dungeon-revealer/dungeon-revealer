@@ -1271,6 +1271,7 @@ const MapRenderer = (props: {
   factor: number;
   dimensions: Dimensions;
   fogOpacity: number;
+  rotate: SpringValue<number>;
   markerRadius: number;
 }) => {
   const map = useFragment(MapRendererFragment, props.map);
@@ -1278,7 +1279,15 @@ const MapRenderer = (props: {
 
   return (
     <>
-      <group renderOrder={LayerRenderOrder.map}>
+      <animated.group
+        renderOrder={LayerRenderOrder.map}
+        // @ts-expect-error:
+        rotation={props.rotate.to<[number, number, number]>((value) => [
+          0,
+          0,
+          (-value * Math.PI) / 180,
+        ])}
+      >
         <mesh>
           <planeBufferGeometry
             attach="geometry"
@@ -1302,7 +1311,7 @@ const MapRenderer = (props: {
           fogOpacity={props.fogOpacity}
           fogTexture={props.fogTexture}
         />
-      </group>
+      </animated.group>
       <TokenListRenderer map={map} />
       <MapPingRenderer
         map={map}
@@ -1319,6 +1328,7 @@ export type MapControlInterface = {
     center: () => void;
     zoomIn: () => void;
     zoomOut: () => void;
+    rotate: (angle: number) => void;
   };
   getContext: () => SharedMapToolState;
 };
@@ -1345,6 +1355,7 @@ const MapViewRenderer = (props: {
   const [spring, set] = useSpring(() => ({
     scale: [1, 1, 1] as [number, number, number],
     position: [0, 0, 0] as [number, number, number],
+    rotate: 0 as number,
   }));
 
   // maximumSideLength * maximumSideLength = MAXIMUM_TEXTURE_SIZE * 1024
@@ -1383,6 +1394,7 @@ const MapViewRenderer = (props: {
     set({
       scale: [1, 1, 1],
       position: [0, 0, 0],
+      rotate: 0,
     });
   }, [mapTexture, set]);
 
@@ -1560,6 +1572,11 @@ const MapViewRenderer = (props: {
               scale: [scale[0] / 1.1, scale[1] / 1.1, 1],
             });
           },
+          rotate: (angle: number) => {
+            set({
+              rotate: Math.round(spring.rotate.get() + angle),
+            });
+          },
         },
         getContext: () => toolContext,
       };
@@ -1632,6 +1649,7 @@ const MapViewRenderer = (props: {
           viewport={viewport}
           markerRadius={20}
           scale={spring.scale}
+          rotate={spring.rotate}
           dimensions={dimensions}
           factor={
             dimensions.width / props.mapImage.width / optimalDimensions.ratio
