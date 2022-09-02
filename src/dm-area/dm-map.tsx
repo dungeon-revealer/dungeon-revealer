@@ -915,20 +915,24 @@ export const DmMap = (props: {
           <BottomToolbarContainer>
             <Toolbar horizontal>
               <Toolbar.Group>
-                <Toolbar.Item>
+                <Toolbar.Item isActive>
                   <Toolbar.Button
                     onClick={() => {
-                      controlRef.current?.controls.rotate(-90);
-                      // fix for drawing tools
                       const context = controlRef.current?.getContext();
+                      if (!context) {
+                        return;
+                      }
+                      context?.mapState.rotate.finish();
+                      controlRef.current?.controls.rotate(+90);
+                      // fix for drawing tools
                       if (context?.fogCanvas) {
-                        const fogCanvas = context?.fogCanvas;
+                        const fogCanvas = context.fogCanvas;
                         const fogCanvasContext = fogCanvas.getContext("2d");
                         fogCanvasContext?.translate(
                           fogCanvas.width / 2,
                           fogCanvas.height / 2
                         );
-                        fogCanvasContext?.rotate((-90 * Math.PI) / 180);
+                        fogCanvasContext?.rotate((+90 * Math.PI) / 180);
                         fogCanvasContext?.translate(
                           -fogCanvas.width / 2,
                           -fogCanvas.height / 2
@@ -940,20 +944,24 @@ export const DmMap = (props: {
                     <Icon.Label>Rotate</Icon.Label>
                   </Toolbar.Button>
                 </Toolbar.Item>
-                <Toolbar.Item>
+                <Toolbar.Item isActive>
                   <Toolbar.Button
                     onClick={() => {
-                      controlRef.current?.controls.rotate(+90);
+                      const context = controlRef.current?.getContext();
+                      if (!context) {
+                        return;
+                      }
+                      context?.mapState.rotate.finish();
+                      controlRef.current?.controls.rotate(-90);
                       // fix for drawing tools
-                      if (controlRef.current?.getContext().fogCanvas) {
-                        const fogCanvas =
-                          controlRef.current.getContext().fogCanvas;
+                      if (context?.fogCanvas) {
+                        const fogCanvas = context.fogCanvas;
                         const fogCanvasContext = fogCanvas.getContext("2d");
                         fogCanvasContext?.translate(
                           fogCanvas.width / 2,
                           fogCanvas.height / 2
                         );
-                        fogCanvasContext?.rotate((+90 * Math.PI) / 180);
+                        fogCanvasContext?.rotate((-90 * Math.PI) / 180);
                         fogCanvasContext?.translate(
                           -fogCanvas.width / 2,
                           -fogCanvas.height / 2

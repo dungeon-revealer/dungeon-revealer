@@ -1285,7 +1285,7 @@ const MapRenderer = (props: {
         rotation={props.rotate.to<[number, number, number]>((value) => [
           0,
           0,
-          (-value * Math.PI) / 180,
+          (value * Math.PI) / 180,
         ])}
       >
         <mesh>
