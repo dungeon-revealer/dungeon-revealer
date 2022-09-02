@@ -863,6 +863,8 @@ export const DmMap = (props: {
                           }
                           const canvasContext =
                             context.fogCanvas.getContext("2d")!;
+                          const transform = canvasContext.getTransform();
+                          canvasContext.resetTransform();
                           applyFogRectangle(
                             FogMode.shroud,
                             [0, 0],
@@ -871,6 +873,7 @@ export const DmMap = (props: {
                           );
                           context.fogTexture.needsUpdate = true;
                           props.saveFogProgress(context.fogCanvas);
+                          canvasContext.setTransform(transform);
                         },
                       })
                     }
@@ -891,8 +894,12 @@ export const DmMap = (props: {
                           if (!context) {
                             return;
                           }
+
                           const canvasContext =
                             context.fogCanvas.getContext("2d")!;
+
+                          const transform = canvasContext.getTransform();
+                          canvasContext.resetTransform();
                           applyFogRectangle(
                             FogMode.clear,
                             [0, 0],
@@ -901,6 +908,7 @@ export const DmMap = (props: {
                           );
                           context.fogTexture.needsUpdate = true;
                           props.saveFogProgress(context.fogCanvas);
+                          canvasContext.setTransform(transform);
                         },
                       })
                     }
