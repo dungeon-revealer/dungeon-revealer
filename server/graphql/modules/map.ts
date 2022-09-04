@@ -274,6 +274,33 @@ const GraphQLMapPingInputType = t.inputObjectType({
   }),
 });
 
+const GraphQLPositionInputType = t.inputObjectType({
+  name: "PositionInput",
+  fields: () => ({
+    x: {
+      type: t.NonNullInput(t.Float),
+    },
+    y: {
+      type: t.NonNullInput(t.Float),
+    },
+  }),
+});
+
+const GraphQLMapMoveInputType = t.inputObjectType({
+  name: "MapMoveInput",
+  fields: () => ({
+    mapId: {
+      type: t.NonNullInput(t.ID),
+    },
+    scale: {
+      type: t.NonNullInput(t.Float),
+    },
+    position: {
+      type: t.NonNullInput(GraphQLPositionInputType),
+    },
+  }),
+});
+
 export const mutationFields = [
   t.field({
     name: "mapTokenUpdateMany",
@@ -396,6 +423,29 @@ export const mutationFields = [
       context.pubSub.publish("mapPing", args.input.mapId, {
         x: args.input.x,
         y: args.input.y,
+        id: randomUUID(),
+      });
+      return null;
+    },
+  }),
+  t.field({
+    name: "mapMove",
+    description: "DM move or zoom map to update clients.",
+    type: t.Boolean,
+    args: {
+      input: t.arg(t.NonNullInput(GraphQLMapMoveInputType)),
+    },
+    resolve: (_, args, context) => {
+      if (context.session.role !== "admin") {
+        return null;
+      }
+
+      context.pubSub.publish("mapMove", args.input.mapId, {
+        scale: args.input.scale,
+        position: {
+          x: args.input.position.x,
+          y: args.input.position.y,
+        },
         id: randomUUID(),
       });
       return null;
@@ -766,6 +816,38 @@ const GraphQLMapPingType = t.objectType<lib.MapPing>({
   ],
 });
 
+const GraphQLMapPositionType = t.objectType<lib.MapPosition>({
+  name: "MapPosition",
+  fields: () => [
+    t.field({
+      name: "x",
+      type: t.NonNull(t.Float),
+    }),
+    t.field({
+      name: "y",
+      type: t.NonNull(t.Float),
+    }),
+  ],
+});
+
+const GraphQLMapMoveType = t.objectType<lib.MapMove>({
+  name: "mapMove",
+  fields: () => [
+    t.field({
+      name: "id",
+      type: t.NonNull(t.ID),
+    }),
+    t.field({
+      name: "scale",
+      type: t.NonNull(t.Float),
+    }),
+    t.field({
+      name: "position",
+      type: t.NonNull(GraphQLMapPositionType),
+    }),
+  ],
+});
+
 export const subscriptionFields = [
   t.subscriptionField({
     name: "mapPing",
@@ -775,5 +857,14 @@ export const subscriptionFields = [
     },
     subscribe: (_, args, context) =>
       context.pubSub.subscribe("mapPing", args.mapId),
+  }),
+  t.subscriptionField({
+    name: "mapMove",
+    type: t.NonNull(GraphQLMapMoveType),
+    args: {
+      mapId: t.arg(t.NonNullInput(t.ID)),
+    },
+    subscribe: (_, args, context) =>
+      context.pubSub.subscribe("mapMove", args.mapId),
   }),
 ];

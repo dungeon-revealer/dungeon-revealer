@@ -2,16 +2,18 @@ import * as React from "react";
 
 interface GameSettings {
   autoSendMapUpdates: boolean;
+  clientsFollowDM: boolean;
 }
 
 const defaultGameSettings: GameSettings = {
   autoSendMapUpdates: false,
+  clientsFollowDM: false,
 };
 
 const getGameSettings = (): GameSettings => {
   const foundGameSettings = window.localStorage.getItem("settings.game");
   if (foundGameSettings) {
-    return JSON.parse(foundGameSettings);
+    return Object.assign(defaultGameSettings, JSON.parse(foundGameSettings));
   }
   return defaultGameSettings;
 };

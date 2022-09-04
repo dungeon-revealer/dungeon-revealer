@@ -11,7 +11,19 @@ export const SettingsModal = (props: {
   let gameSettings = useGameSettings();
 
   const changeAutoPush = (event: React.ChangeEvent<HTMLInputElement>) => {
-    gameSettings.setValue({ autoSendMapUpdates: event.target.checked });
+    gameSettings.setValue(
+      Object.assign(gameSettings.value, {
+        autoSendMapUpdates: event.target.checked,
+      })
+    );
+  };
+
+  const changeDMFollow = (event: React.ChangeEvent<HTMLInputElement>) => {
+    gameSettings.setValue(
+      Object.assign(gameSettings.value, {
+        clientsFollowDM: event.target.checked,
+      })
+    );
   };
 
   return (
@@ -26,6 +38,12 @@ export const SettingsModal = (props: {
             onChange={changeAutoPush}
           >
             Automatically push fog updates to clients
+          </Checkbox>
+          <Checkbox
+            isChecked={gameSettings.value.clientsFollowDM}
+            onChange={changeDMFollow}
+          >
+            Set clients to follow any screen movements the DM makes.
           </Checkbox>
         </Modal.Body>
         <Modal.Footer>

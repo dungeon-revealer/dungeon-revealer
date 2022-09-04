@@ -398,6 +398,11 @@ type Mutation {
   Ping a point on the map.
   """
   mapPing(input: MapPingInput!): Boolean
+
+  """
+  Send the DM's current position and scale to the players.
+  """
+  mapMove(input: MapMoveInput!): Boolean
 }
 
 type LogInResult {
@@ -710,6 +715,17 @@ input MapPingInput {
   y: Float!
 }
 
+input MapPositionInput {
+  x: Float!
+  y: Float!
+}
+
+input MapMoveInput {
+  mapId: ID!
+  scale: Float!
+  position: MapPositionInput!
+}
+
 type Subscription {
   userUpdate: UserUpdateSubscription!
   chatMessagesAdded: ChatMessagesAddedSubscription!
@@ -719,6 +735,7 @@ type Subscription {
     hasNextPage: Boolean!
   ): NotesUpdates!
   mapPing(mapId: ID!): MapPing!
+  mapMove(mapId: ID!): MapMove!
 }
 
 union UserUpdateSubscription =
@@ -783,4 +800,15 @@ type MapPing {
   id: ID!
   x: Float!
   y: Float!
+}
+
+type MapPosition {
+  x: Float!
+  y: Float!
+}
+
+type MapMove {
+  id: ID!
+  scale: Float!
+  position: MapPosition!
 }

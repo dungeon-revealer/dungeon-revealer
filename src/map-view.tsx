@@ -29,7 +29,7 @@ import { MapGridEntity, MapTokenEntity } from "./map-typings";
 import { useIsKeyPressed } from "./hooks/use-is-key-pressed";
 import { TextureLoader } from "three";
 import { ReactEventHandlers } from "react-use-gesture/dist/types";
-import { useFragment, useSubscription } from "relay-hooks";
+import { useFragment, useMutation, useSubscription } from "relay-hooks";
 import { buttonGroup, useControls, useCreateStore, LevaInputs } from "leva";
 import { levaPluginNoteReference } from "./leva-plugin/leva-plugin-note-reference";
 import { levaPluginTokenImage } from "./leva-plugin/leva-plugin-token-image";
@@ -48,8 +48,16 @@ import { mapView_MapRendererFragment$key } from "./__generated__/mapView_MapRend
 import { mapView_GridRendererFragment$key } from "./__generated__/mapView_GridRendererFragment.graphql";
 import { mapView_MapPingRenderer_MapFragment$key } from "./__generated__/mapView_MapPingRenderer_MapFragment.graphql";
 import { mapView_MapPingSubscription } from "./__generated__/mapView_MapPingSubscription.graphql";
+import {
+  mapView_MapMoveSubscription,
+  mapView_MapMoveSubscriptionResponse,
+} from "./__generated__/mapView_MapMoveSubscription.graphql";
 import { UpdateTokenContext } from "./update-token-context";
 import { IsDungeonMasterContext } from "./is-dungeon-master-context";
+import { ISendRequestTask } from "./http-request";
+import { useGameSettings } from "./game-settings";
+import { useViewerRole } from "./authenticated-app-shell";
+import { mapView_MapMoveMutation } from "./__generated__/mapView_MapMoveMutation.graphql";
 
 type Vector2D = [number, number];
 
@@ -1168,6 +1176,25 @@ const MapPingSubscription = graphql`
   }
 `;
 
+const MapMoveMutation = graphql`
+  mutation mapView_MapMoveMutation($input: MapMoveInput!) {
+    mapMove(input: $input)
+  }
+`;
+
+const MapMoveSubscription = graphql`
+  subscription mapView_MapMoveSubscription($mapId: ID!) {
+    mapMove(mapId: $mapId) {
+      id
+      scale
+      position {
+        x
+        y
+      }
+    }
+  }
+`;
+
 const MapPingRenderer_MapFragment = graphql`
   fragment mapView_MapPingRenderer_MapFragment on Map {
     id
@@ -1325,6 +1352,7 @@ export type MapControlInterface = {
 
 const MapViewRendererFragment = graphql`
   fragment mapView_MapViewRendererFragment on Map {
+    id
     ...mapView_MapRendererFragment
   }
 `;
@@ -1336,16 +1364,79 @@ const MapViewRenderer = (props: {
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
   activeTool: MapTool | null;
   fogOpacity: number;
+  role: string | null;
 }): React.ReactElement => {
   const map = useFragment(MapViewRendererFragment, props.map);
   const three = useThree();
   const viewport = three.viewport;
   const maximumTextureSize = three.gl.capabilities.maxTextureSize;
+  const [mapMove] = useMutation<mapView_MapMoveMutation>(MapMoveMutation);
+  const gameSettings = useGameSettings();
+
+  const sendLiveMapPositionTaskRef = React.useRef<null | ISendRequestTask>(
+    null
+  );
+  const sendLiveMapPosition = () => {
+    const scale = spring.scale.get();
+    const position = spring.position.get();
+    if (sendLiveMapPositionTaskRef.current) {
+      sendLiveMapPositionTaskRef.current.abort();
+    }
+
+    mapMove({
+      variables: {
+        input: {
+          mapId: map.id,
+          scale: scale[0],
+          position: {
+            x: position[0],
+            y: position[1],
+          },
+        },
+      },
+    });
+  };
+
+  //Todo: determine if needed
+  const positionChangeWait = useStaticRef(() =>
+    debounce(() => {
+      sendLiveMapPosition();
+    }, 25)
+  );
 
   const [spring, set] = useSpring(() => ({
     scale: [1, 1, 1] as [number, number, number],
     position: [0, 0, 0] as [number, number, number],
+    onChange: () => {
+      if (props.role === "DM" && gameSettings.value.clientsFollowDM) {
+        sendLiveMapPosition();
+        //TODO: If this is too much traffic over the sockets we can introduce this debounce again
+        // positionChangeWait();
+      }
+    },
   }));
+
+  const moveToSubPosition = (data: mapView_MapMoveSubscriptionResponse) => {
+    set({
+      scale: [data.mapMove.scale, data.mapMove.scale, 1],
+      position: [data.mapMove.position.x, data.mapMove.position.y, 0],
+    });
+  };
+
+  useSubscription<mapView_MapMoveSubscription>(
+    React.useMemo(
+      () => ({
+        subscription: MapMoveSubscription,
+        variables: { mapId: map.id },
+        onNext: (data) => {
+          if (data && props.role !== "DM") {
+            moveToSubPosition(data);
+          }
+        },
+      }),
+      [map.id]
+    )
+  );
 
   // maximumSideLength * maximumSideLength = MAXIMUM_TEXTURE_SIZE * 1024
   const maximumSideLength = React.useMemo(() => {
@@ -1678,6 +1769,8 @@ export const MapView = (props: {
 
   const map = useFragment(MapFragment, props.map);
 
+  const role = useViewerRole();
+
   const [mapImage, setMapImage] = useResetState<HTMLImageElement | null>(null, [
     map.id,
   ]);
@@ -1787,6 +1880,7 @@ export const MapView = (props: {
             fogImage={fogImage}
             controlRef={props.controlRef}
             fogOpacity={props.fogOpacity}
+            role={role}
           />
         </ContextBridge>
       </Canvas>
