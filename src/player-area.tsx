@@ -316,6 +316,9 @@ const PlayerMap = ({
                       <Toolbar.Item isActive>
                         <Toolbar.Button
                           onClick={() => {
+                            controlRef.current
+                              ?.getContext()
+                              .mapState.rotate.finish();
                             controlRef.current?.controls.rotate(-90);
                           }}
                         >
@@ -326,6 +329,9 @@ const PlayerMap = ({
                       <Toolbar.Item isActive>
                         <Toolbar.Button
                           onClick={() => {
+                            controlRef.current
+                              ?.getContext()
+                              .mapState.rotate.finish();
                             controlRef.current?.controls.rotate(+90);
                           }}
                         >
