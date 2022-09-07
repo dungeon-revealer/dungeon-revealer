@@ -1196,6 +1196,7 @@ const MapPingRenderer = (props: {
   factor: number;
   dimensions: Dimensions;
   markerRadius: number;
+  rotate: SpringValue<number>;
 }) => {
   const map = useFragment(MapPingRenderer_MapFragment, props.map);
   const [markedAreas, setMarkedAreas] = React.useState<
@@ -1222,7 +1223,15 @@ const MapPingRenderer = (props: {
   );
 
   return (
-    <group renderOrder={LayerRenderOrder.marker}>
+    <animated.group
+      renderOrder={LayerRenderOrder.marker}
+      // @ts-expect-error:
+      rotation={props.rotate.to<[number, number, number]>((value) => [
+        0,
+        0,
+        (value * Math.PI) / 180, // Convert degrees to radians
+      ])}
+    >
       {markedAreas.map((markedArea) => (
         <MarkedAreaRenderer
           key={markedArea.id}
@@ -1238,7 +1247,7 @@ const MapPingRenderer = (props: {
           radius={props.markerRadius}
         />
       ))}
-    </group>
+    </animated.group>
   );
 };
 
@@ -1331,6 +1340,7 @@ const MapRenderer = (props: {
       </animated.group>
       <TokenListRenderer map={map} rotate={props.rotate} />
       <MapPingRenderer
+        rotate={props.rotate}
         map={map}
         dimensions={props.dimensions}
         factor={props.factor}
