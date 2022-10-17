@@ -29,10 +29,10 @@ jobs:
             output: dungeon-revealer-windows.exe
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: 16
 
@@ -52,7 +52,7 @@ jobs:
           npx caxa -i compile -o ${{ matrix.output }} -- "{{caxa}}/node_modules/.bin/node" "{{caxa}}/server-build/index.js" "--caxa"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: artifact-${{ matrix.output }}
           path: "${{ matrix.output }}"
@@ -74,11 +74,11 @@ jobs:
             output: dungeon-revealer-linux-arm64
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up QEMU
         id: qemu
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.docker_platform }}
 
@@ -100,7 +100,7 @@ jobs:
           docker run --rm --platform ${{ matrix.docker_platform }} -v $PWD:/caxa ${{ matrix.docker_image }} sh -c "$CMD"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: artifact-${{ matrix.output }}
           path: ${{ matrix.output }}
@@ -111,7 +111,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Get branch names
         id: branch-name
@@ -128,7 +128,7 @@ jobs:
           echo "version_string=${{ steps.branch-name.outputs.tag }}" >> $GITHUB_ENV
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           path: bin/
 
@@ -150,7 +150,7 @@ jobs:
           done
 
       - name: Upload Zip Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: dungeon-revealer-zips-${{ env.version_string }}
           path: "bin/*.zip"
