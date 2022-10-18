@@ -7,43 +7,12 @@ on:
       - "v*"
 
 jobs:
-  build-app:
-    name: Build app
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v3
-        with:
-          node-version: "16.x"
-
-      - name: Install
-        run: |
-          npm install
-          npm run build
-
-      - name: Upload Build App
-        uses: actions/upload-artifact@v3
-        with:
-          name: built-app
-          path: |
-            build/**/*
-            server-build/**/*
-
   deploy:
     name: Deploy Images
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      - name: Download built app
-        uses: actions/download-artifact@v3
-        with:
-          name: built-app
 
       - name: Set environment
         run: |
@@ -51,6 +20,16 @@ jobs:
           echo "GH_TAG=$TAG" >> $GITHUB_ENV
           echo "COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16.x"
+
+      - name: Node Install
+        run: |
+          npm install
+          npm run build
 
       - name: Set up QEMU
         id: qemu
