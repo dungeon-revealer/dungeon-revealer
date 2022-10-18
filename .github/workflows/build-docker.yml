@@ -7,136 +7,12 @@ on:
       - "v*"
 
 jobs:
-  build-app:
-    name: Build app
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v2
-        with:
-          node-version: "16.x"
-
-      - name: Install
-        run: |
-          npm install
-          npm run build
-
-      - name: Upload Build App
-        uses: actions/upload-artifact@v2
-        with:
-          name: built-app
-          path: |
-            build/**/*
-            server-build/**/*
-  build:
-    name: Build
-    needs: build-app
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: [linux/amd64, linux/arm/v7, linux/arm64]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Download built app
-        uses: actions/download-artifact@v2
-        with:
-          name: built-app
-
-      - name: Set environment
-        run: |
-          export PLATFORM=${{ matrix.platform }}
-          echo "PLATFORM_DASH=${PLATFORM////-}" >> $GITHUB_ENV
-          echo "BUILD_FAIL=true" >> $GITHUB_ENV
-
-        # ${foo////-} replaces slashes with dashes
-        # foo='linux/arm/v7'
-        # ${foo////-} -> linux-arm-v7
-
-      - name: Set up QEMU
-        id: qemu
-        uses: docker/setup-qemu-action@v1
-        with:
-          platforms: ${{ matrix.platform }}
-
-      - name: Available platforms
-        run: echo ${{ steps.qemu.outputs.platforms }}
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Login to DockerHub Registry
-        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-
-      - name: Run Buildx cache from registry
-        continue-on-error: true
-        run: |
-          docker buildx build \
-            --platform ${{ matrix.platform }} \
-            --output "type=image,push=false" \
-            --build-arg SKIP_BUILD="true" \
-            --cache-from=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH \
-            . && echo "BUILD_FAIL=false" >> $GITHUB_ENV
-
-      - name: Run Buildx local build cache
-        if: env.BUILD_FAIL == 'true'
-        continue-on-error: true
-        run: |
-          docker buildx build \
-            --platform ${{ matrix.platform }} \
-            --output "type=image,push=false" \
-            --build-arg SKIP_BUILD="true" \
-            . && echo "BUILD_FAIL=false" >> $GITHUB_ENV
-
-      - name: Run Buildx no cache
-        if: env.BUILD_FAIL == 'true'
-        run: |
-          docker buildx build \
-            --platform ${{ matrix.platform }} \
-            --output "type=image,push=false" \
-            --build-arg SKIP_BUILD="true" \
-            --no-cache .
-
-      - name: Cache to registry
-        continue-on-error: true
-        run: |
-          docker buildx build \
-            --platform ${{ matrix.platform }} \
-            --build-arg SKIP_BUILD="true" \
-            --cache-from=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH \
-            --cache-to=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH,mode=max .
-
-      - name: Cache to local
-        run: |
-          docker buildx build \
-            --platform ${{ matrix.platform }} \
-            --build-arg SKIP_BUILD="true" \
-            --cache-from=type=registry,ref=${{ secrets.DOCKER_REPO }}:build-cache-$PLATFORM_DASH \
-            --cache-to=type=local,dest=docker-cache/${{ matrix.platform }},mode=max .
-
-      - name: Upload local cache to artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: docker-cache
-          path: docker-cache
-
   deploy:
     name: Deploy Images
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Download built app
-        uses: actions/download-artifact@v2
-        with:
-          name: built-app
+        uses: actions/checkout@v3
 
       - name: Set environment
         run: |
@@ -145,9 +21,19 @@ jobs:
           echo "COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16.x"
+
+      - name: Node Install
+        run: |
+          npm install
+          npm run build
+
       - name: Set up QEMU
         id: qemu
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
         with:
           platforms: all
 
@@ -156,16 +42,10 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to DockerHub Registry
         run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-
-      - name: Download local cache artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: docker-cache
-          path: docker-cache
 
       - name: Run Buildx Dev
         if: startsWith(github.ref, 'refs/heads/') # Just the branches
@@ -173,9 +53,6 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/arm/v7,linux/arm64 \
             --output "type=image,push=true" \
-            --cache-from=type=local,src=docker-cache/linux/amd64 \
-            --cache-from=type=local,src=docker-cache/linux/arm/v7 \
-            --cache-from=type=local,src=docker-cache/linux/arm64 \
             --build-arg SKIP_BUILD="true" \
             -t ${{ secrets.DOCKER_REPO }}:dev \
             -t ${{ secrets.DOCKER_REPO }}:$COMMIT \
@@ -198,9 +75,6 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/arm/v7,linux/arm64 \
             --output "type=image,push=true" \
-            --cache-from=type=local,src=docker-cache/linux/amd64 \
-            --cache-from=type=local,src=docker-cache/linux/arm/v7 \
-            --cache-from=type=local,src=docker-cache/linux/arm64 \
             --build-arg SKIP_BUILD="true" \
             -t ${{ secrets.DOCKER_REPO }}:release \
             -t ${{ secrets.DOCKER_REPO }}:$GH_TAG \
