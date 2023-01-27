@@ -19,7 +19,8 @@ module.exports = ({ roleMiddleware, fileStorage }) => {
 
     req.pipe(req.busboy);
 
-    req.busboy.once("file", (fieldname, file, filename) => {
+    req.busboy.once("file", (fieldname, file, info) => {
+      const filename = info.filename;
       fileExtension = parseFileExtension(filename);
       writeStream = fs.createWriteStream(tmpFile);
       fileName = filename;
@@ -31,7 +32,7 @@ module.exports = ({ roleMiddleware, fileStorage }) => {
       res.status(422).json({ data: null, error: "No file was sent." });
     });
 
-    req.busboy.once("finish", () => {
+    req.busboy.once("close", () => {
       fileStorage
         .store({ filePath: tmpFile, fileExtension, fileName })
         .then((record) => {

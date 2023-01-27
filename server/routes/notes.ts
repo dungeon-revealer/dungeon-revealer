@@ -76,83 +76,87 @@ export default ({ db, roleMiddleware }: Dependencies) => {
 
     let hasFile = false;
 
-    request.busboy.once("file", (_, file: fs.ReadStream, filename: string) => {
-      hasFile = true;
-      let amountOfImportedRecords = 0;
-      let amountOfFailedRecords = 0;
+    request.busboy.once(
+      "file",
+      (fieldname: string, file: fs.ReadStream, info: any) => {
+        const filename = info.filename;
+        hasFile = true;
+        let amountOfImportedRecords = 0;
+        let amountOfFailedRecords = 0;
 
-      if (filename.endsWith(".md")) {
-        const chunks = [] as Uint8Array[];
-        file.on("data", (chunk) => {
-          chunks.push(
-            new Uint8Array(
-              typeof chunk === "string" ? Buffer.from(chunk) : chunk
-            )
-          );
-        });
+        if (filename.endsWith(".md")) {
+          const chunks = [] as Uint8Array[];
+          file.on("data", (chunk) => {
+            chunks.push(
+              new Uint8Array(
+                typeof chunk === "string" ? Buffer.from(chunk) : chunk
+              )
+            );
+          });
 
-        file.on("end", () => {
-          const noteContents = Buffer.concat(chunks).toString();
-          importNoteWithReport(filename)(noteContents)({ db })().then(
-            (result) => {
-              if (result.error === null) {
-                amountOfImportedRecords = amountOfImportedRecords + 1;
-              } else {
-                amountOfFailedRecords = amountOfFailedRecords + 1;
+          file.on("end", () => {
+            const noteContents = Buffer.concat(chunks).toString();
+            importNoteWithReport(filename)(noteContents)({ db })().then(
+              (result) => {
+                if (result.error === null) {
+                  amountOfImportedRecords = amountOfImportedRecords + 1;
+                } else {
+                  amountOfFailedRecords = amountOfFailedRecords + 1;
+                }
+
+                response.write(
+                  `\n` +
+                    JSON.stringify({
+                      amountOfImportedRecords,
+                      amountOfFailedRecords,
+                      latest: result,
+                    })
+                );
+                response.end();
               }
+            );
+          });
+        } else if (filename.endsWith(".zip")) {
+          const tmpFile = util.getTmpFile(".zip");
+          file.pipe(fs.createWriteStream(tmpFile)).on("finish", async () => {
+            const unzipStream = unzipper.Parse({ forceStream: true });
 
-              response.write(
-                `\n` +
-                  JSON.stringify({
-                    amountOfImportedRecords,
-                    amountOfFailedRecords,
-                    latest: result,
-                  })
-              );
-              response.end();
-            }
-          );
-        });
-      } else if (filename.endsWith(".zip")) {
-        const tmpFile = util.getTmpFile(".zip");
-        file.pipe(fs.createWriteStream(tmpFile)).on("finish", async () => {
-          const unzipStream = unzipper.Parse({ forceStream: true });
+            const contentIterator = iterateStream<unzipper.Entry>(unzipStream);
 
-          const contentIterator = iterateStream<unzipper.Entry>(unzipStream);
+            fs.createReadStream(tmpFile).pipe(unzipStream);
 
-          fs.createReadStream(tmpFile).pipe(unzipStream);
+            for await (const entry of contentIterator) {
+              if (entry.type === "File" && entry.path.endsWith(".md")) {
+                const noteContents = await resolveStreamContentString(entry);
 
-          for await (const entry of contentIterator) {
-            if (entry.type === "File" && entry.path.endsWith(".md")) {
-              const noteContents = await resolveStreamContentString(entry);
-
-              const result = await importNoteWithReport(entry.path)(
-                noteContents
-              )({ db })();
-              if (result.error === null) {
-                amountOfImportedRecords = amountOfImportedRecords + 1;
+                const result = await importNoteWithReport(entry.path)(
+                  noteContents
+                )({ db })();
+                if (result.error === null) {
+                  amountOfImportedRecords = amountOfImportedRecords + 1;
+                } else {
+                  amountOfFailedRecords = amountOfFailedRecords + 1;
+                }
+                response.write(
+                  `\n` +
+                    JSON.stringify({
+                      amountOfImportedRecords,
+                      amountOfFailedRecords,
+                      latest: result,
+                    })
+                );
               } else {
-                amountOfFailedRecords = amountOfFailedRecords + 1;
+                entry.autodrain();
               }
-              response.write(
-                `\n` +
-                  JSON.stringify({
-                    amountOfImportedRecords,
-                    amountOfFailedRecords,
-                    latest: result,
-                  })
-              );
-            } else {
-              entry.autodrain();
             }
-          }
-          response.end();
-          await fs.unlink(tmpFile);
-        });
+            response.end();
+            await fs.unlink(tmpFile);
+          });
+        }
       }
-    });
+    );
 
-    request.busboy.once("finish", () => {
+    request.busboy.once("close", () => {
       if (hasFile) {
         return;
       }

@@ -1,31 +1,37 @@
-"use strict";
+import express from "express";
+import path from "path";
+import favicon from "serve-favicon";
+import logger from "morgan";
+import bodyParser from "body-parser";
+import fs from "fs-extra";
+import http from "http";
+import { Server as SocketIOServer } from "socket.io";
+import busboy from "connect-busboy";
+import createFilesRouter from "./routes/files";
+import createMapRouter from "./routes/map";
+import { Maps } from "./maps";
+import { Settings } from "./settings";
+import { FileStorage } from "./file-storage";
+import { createResourceTaskProcessor } from "./util";
+import { initialize } from "./database";
+import { createSocketSessionStore } from "./socket-session-store";
+import { EventEmitter } from "events";
+import type { getEnv } from "./env";
+import createGraphQLRouter from "./routes/graphql";
+import createNotesRouter from "./routes/notes";
+import type {
+  ErrorRequestHandler,
+  RequestHandler,
+  Request,
+} from "express-serve-static-core";
 
-const express = require("express");
-const path = require("path");
-const favicon = require("serve-favicon");
-const logger = require("morgan");
-const bodyParser = require("body-parser");
-const fs = require("fs-extra");
-const http = require("http");
-const { Server: SocketIOServer } = require("socket.io");
-const busboy = require("connect-busboy");
-const createFilesRouter = require("./routes/files");
-const createMapRouter = require("./routes/map");
-const createGraphQLRouter = require("./routes/graphql").default;
-const createNotesRouter = require("./routes/notes").default;
+type RequestWithRole = Request & { role: string | null };
+type ErrorWithStatus = Error & { status: number };
 
-const { Maps } = require("./maps");
-const { Settings } = require("./settings");
-const { FileStorage } = require("./file-storage");
-const { createResourceTaskProcessor } = require("./util");
-const database = require("./database");
-const { createSocketSessionStore } = require("./socket-session-store");
-const { EventEmitter } = require("events");
-
-const bootstrapServer = async (env) => {
+export const bootstrapServer = async (env: ReturnType<typeof getEnv>) => {
   fs.mkdirpSync(env.DATA_DIRECTORY);
 
-  const db = await database.initialize({
+  const db = await initialize({
     dataPath: env.DATA_DIRECTORY,
     databasePath: path.join(env.DATA_DIRECTORY, `db.sqlite`),
   });
@@ -59,7 +65,7 @@ const bootstrapServer = async (env) => {
   app.use(bodyParser.json({ limit: "50mb" }));
   app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-  const getRole = (password) => {
+  const getRole = (password: string) => {
     let role = null;
     if (env.PC_PASSWORD) {
       if (password === env.PC_PASSWORD) {
@@ -78,26 +84,28 @@ const bootstrapServer = async (env) => {
     return role;
   };
 
-  const authorizationMiddleware = (req, res, next) => {
+  const authorizationMiddleware: RequestHandler = (req, res, next) => {
     const authHeader = req.headers.authorization;
     const authParam = req.query.authorization;
     let token = null;
 
     if (authHeader) {
-      token = req.headers.authorization.split(" ")[1];
+      token = req.headers.authorization!.split(" ")[1];
     } else if (authParam) {
       token = authParam;
     }
 
-    req.role = getRole(token);
+    (req as RequestWithRole).role = getRole(token as string);
     next();
   };
 
-  const requiresPcRole = (req, res, next) => {
-    if (req.role === "DM" || req.role === "PC") {
+  const requiresPcRole: RequestHandler = (req, res, next) => {
+    const { role } = req as RequestWithRole;
+    if (role === "DM" || role === "PC") {
       next();
       return;
     }
+
     res.status(401).json({
       data: null,
       error: {
@@ -107,8 +115,8 @@ const bootstrapServer = async (env) => {
     });
   };
 
-  const requiresDmRole = (req, res, next) => {
-    if (req.role === "DM") {
+  const requiresDmRole: RequestHandler = (req, res, next) => {
+    if ((req as RequestWithRole).role === "DM") {
       next();
       return;
     }
@@ -133,7 +141,7 @@ const bootstrapServer = async (env) => {
   apiRouter.get("/auth", (req, res) => {
     return res.status(200).json({
       data: {
-        role: req.role,
+        role: (req as RequestWithRole).role,
       },
     });
   });
@@ -234,7 +242,7 @@ const bootstrapServer = async (env) => {
   // catch 404 and forward to error handler
   app.use((req, res, next) => {
     const err = new Error("Not Found");
-    err.status = 404;
+    (err as ErrorWithStatus).status = 404;
     next(err);
   });
 
@@ -243,25 +251,25 @@ const bootstrapServer = async (env) => {
   // development error handler
   // will print stacktrace
   if (app.get("env") === "development") {
-    app.use((err, _, res) => {
+    app.use(((err, _, res) => {
       res.status(err.status || 500);
       res.render("error", {
         message: err.message,
         error: err,
       });
-    });
+    }) as ErrorRequestHandler);
   }
 
   // production error handler
   // no stacktraces leaked to user
-  app.use((err, req, res) => {
+  app.use(((err, req, res) => {
     console.log(err);
     res.status(err.status || 500);
     res.render("error", {
       message: err.message,
       error: {},
     });
-  });
+  }) as ErrorRequestHandler);
 
   const authenticatedSockets = new Set();
 
@@ -307,5 +315,3 @@ const bootstrapServer = async (env) => {
 
   return { app, httpServer, io };
 };
-
-module.exports = { bootstrapServer };
