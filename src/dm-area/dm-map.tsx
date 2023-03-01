@@ -546,7 +546,7 @@ const dmTools: Array<ToolMapRecord> = [
   },
   {
     name: "Ruler",
-    icon: <Icon.Dice boxSize="20px" />,
+    icon: <Icon.Ruler boxSize="20px" />,
     tool: RulerMapTool,
     MenuComponent: null,
   },
