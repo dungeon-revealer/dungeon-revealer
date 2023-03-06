@@ -571,6 +571,7 @@ const ActiveDmMapToolModel = io.union([
   io.literal(AreaSelectMapTool.id),
   io.literal(MarkAreaMapTool.id),
   io.literal(TokenMarkerMapTool.id),
+  io.literal(RulerMapTool.id),
 ]);
 
 const activeDmMapToolIdModel: PersistedStateModel<
