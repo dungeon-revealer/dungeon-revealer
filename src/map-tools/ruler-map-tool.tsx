@@ -19,45 +19,14 @@ const FloatingTextBox = (props: {
   color: string;
   value: string;
 }): React.ReactElement => {
-  // const [initialWidth] = React.useState(() =>
-  // isAnimatableValue(props.width) ? props.width.get() : props.width
-  // );
-
-  // const points = React.useMemo(() => {
-  //   const points = calculateSquareCoordinates([0, 0], initialWidth).map(
-  //     (p) => [...p, 0] as [number, number, number]
-  //   );
-  //   points.push(points[0]);
-  //   return points;
-  // }, [initialWidth]);
-
   return (
-    <animated.group
-      position={props.position}
-      scale={
-        undefined
-        // isAnimatableValue(props.width)
-        //   ? props.width.to((value) => [
-        //       value / initialWidth,
-        //       value / initialWidth,
-        //       1,
-        //     ])
-        // : undefined
-      }
-    >
-      {/* <ThreeLine
-        color={props.color}
-        points={points}
-        transparent
-        lineWidth={0.5}
-      /> */}
+    <animated.group position={props.position} scale={undefined}>
       <CanvasText
         fontSize={0.1}
         color={props.color}
         font={buildUrl("/fonts/Roboto-Bold.ttf")}
         anchorX="center"
         anchorY="middle"
-        // position={props.position}
         renderOrder={0}
       >
         {props.value}
@@ -69,7 +38,6 @@ const FloatingTextBox = (props: {
 export const RulerMapTool: MapTool = {
   id: "ruler-map-tool",
   Component: (props) => {
-    const brushContext = React.useContext(BrushToolContext);
     // const gridContext = React.useContext(ConfigureGridMapToolContext);
     // const grid = useFragment(GridRendererFragment, props.mapContext.grid);
 
@@ -111,16 +79,14 @@ export const RulerMapTool: MapTool = {
       },
       onPointerUp: (args) => {},
       onPointerMove: (args) => {
-        if (args.dragging) {
-          const point = getCurrentPosition(props.mapContext, args.event.point);
+        const point = getCurrentPosition(props.mapContext, args.event.point);
 
-          const points = localState.points || [];
-          points.splice(points.length - 1, 1, point);
-          setLocalState((state) => ({
-            ...state,
-            points: points,
-          }));
-        }
+        const points = localState.points || [];
+        points.splice(points.length - 1, 1, point);
+        setLocalState((state) => ({
+          ...state,
+          points: points,
+        }));
       },
     });
 
@@ -133,37 +99,29 @@ export const RulerMapTool: MapTool = {
         (acc, elem) => {
           const [prev, cur] = elem;
           if (isGridConfigured) {
-            const grid = props.mapContext.grid;
-            // console.log(props.mapContext);
-            const threeToCanvas =
-              props.mapContext.helper.coordinates.threeToCanvas;
-            const curCoords = threeToCanvas(cur.get().slice(0, 2) as any);
-            const prevCoords = threeToCanvas(prev.get().slice(0, 2) as any);
-            // console.log("Coordinates: " + curCoords);
-            const dxCells =
-              Math.abs(curCoords[0] - prevCoords[0]) / grid.columnWidth;
-            const dyCells =
-              Math.abs(curCoords[1] - prevCoords[1]) / grid.columnHeight;
-            const distance = max([dxCells, dyCells]) || 0;
-            // console.log("Distance between points is " + distance);
+            const [dxCells, dyCells] = calculateDistanceInCells(
+              cur,
+              prev,
+              props.mapContext
+            );
             return [acc[0] + dxCells, acc[1] + dyCells];
           } else {
             const distance = Math.hypot(
               cur.get()[0] - prev.get()[0],
               cur.get()[1] - prev.get()[1]
             );
-            // console.log("Distance between points is " + distance);
             return [acc[0] + distance, 0];
           }
         },
         [0, 0]
       );
       _distance = max([distanceX, distanceY])?.toFixed(1);
-      // console.log("TOTAL DISTANCE: " + _distance);
     } else {
       _distance = undefined;
     }
-    const distance = _distance;
+    const distance = _distance
+      ? _distance + (isGridConfigured ? " sq." : " px.")
+      : _distance;
 
     let color: string | null;
     if (props.mapContext.grid) {
@@ -187,7 +145,7 @@ export const RulerMapTool: MapTool = {
               position={props.mapContext.pointerPosition}
               width={2}
               color={color}
-              value={distance + ""}
+              value={distance}
             ></FloatingTextBox>
           )}
         </>
@@ -210,4 +168,18 @@ function getCurrentPosition(
       0,
     ] as [number, number, number],
   });
+}
+
+function calculateDistanceInCells(
+  cur: SpringValue<[number, number, number]>,
+  prev: SpringValue<[number, number, number]>,
+  mapContext: SharedMapToolState
+): number[] {
+  const grid = mapContext.grid;
+  const threeToCanvas = mapContext.helper.coordinates.threeToCanvas;
+  const curCoords = threeToCanvas(cur.get().slice(0, 2) as any);
+  const prevCoords = threeToCanvas(prev.get().slice(0, 2) as any);
+  const dxCells = Math.abs(curCoords[0] - prevCoords[0]) / grid.columnWidth;
+  const dyCells = Math.abs(curCoords[1] - prevCoords[1]) / grid.columnHeight;
+  return [dxCells, dyCells];
 }
