@@ -111,7 +111,6 @@ export const RulerMapTool: MapTool = {
       },
       onPointerUp: (args) => {},
       onPointerMove: (args) => {
-        // console.log(args);
         if (args.dragging) {
           const point = getCurrentPosition(props.mapContext, args.event.point);
 
@@ -135,37 +134,43 @@ export const RulerMapTool: MapTool = {
           const [prev, cur] = elem;
           if (isGridConfigured) {
             const grid = props.mapContext.grid;
-            console.log(props.mapContext);
+            // console.log(props.mapContext);
             const threeToCanvas =
               props.mapContext.helper.coordinates.threeToCanvas;
             const curCoords = threeToCanvas(cur.get().slice(0, 2) as any);
             const prevCoords = threeToCanvas(prev.get().slice(0, 2) as any);
-            console.log("Coordinates: " + curCoords);
+            // console.log("Coordinates: " + curCoords);
             const dxCells =
               Math.abs(curCoords[0] - prevCoords[0]) / grid.columnWidth;
             const dyCells =
               Math.abs(curCoords[1] - prevCoords[1]) / grid.columnHeight;
             const distance = max([dxCells, dyCells]) || 0;
-            console.log("Distance between points is " + distance);
+            // console.log("Distance between points is " + distance);
             return [acc[0] + dxCells, acc[1] + dyCells];
           } else {
             const distance = Math.hypot(
               cur.get()[0] - prev.get()[0],
               cur.get()[1] - prev.get()[1]
             );
-            console.log("Distance between points is " + distance);
+            // console.log("Distance between points is " + distance);
             return [acc[0] + distance, 0];
           }
         },
         [0, 0]
       );
       _distance = max([distanceX, distanceY])?.toFixed(1);
-      console.log("TOTAL DISTANCE: " + _distance);
+      // console.log("TOTAL DISTANCE: " + _distance);
     } else {
       _distance = undefined;
     }
     const distance = _distance;
 
+    let color: string | null;
+    if (props.mapContext.grid) {
+      color = props.mapContext.grid.color;
+    } else {
+      color = "black";
+    }
     return (
       <animated.group position={[0, 0, 0]}>
         <>
@@ -175,13 +180,13 @@ export const RulerMapTool: MapTool = {
                 (it) => it.animation.from as [number, number, number]
               ) || [[0, 0, 0]]
             }
-            color={props.mapContext.grid.color}
+            color={color}
           />
           {distance != undefined && (
             <FloatingTextBox
               position={props.mapContext.pointerPosition}
               width={2}
-              color={props.mapContext.grid.color}
+              color={color}
               value={distance + ""}
             ></FloatingTextBox>
           )}
