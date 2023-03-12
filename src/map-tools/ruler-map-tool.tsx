@@ -88,30 +88,28 @@ export const RulerMapTool: MapTool = {
 
     var _distance: string | undefined;
     if (localState.points) {
-      const [distanceX, distanceY] = zip(
+      const distance = zip(
         localState.points?.slice(0, -1),
         localState.points?.slice(1)
-      ).reduce(
-        (acc, elem) => {
-          const [prev, cur] = elem;
-          if (isGridConfigured) {
-            const [dxCells, dyCells] = calculateDistanceInCells(
-              cur,
-              prev,
-              props.mapContext
-            );
-            return [acc[0] + dxCells, acc[1] + dyCells];
-          } else {
-            const distance = Math.hypot(
-              cur.get()[0] - prev.get()[0],
-              cur.get()[1] - prev.get()[1]
-            );
-            return [acc[0] + distance, 0];
-          }
-        },
-        [0, 0]
-      );
-      _distance = max([distanceX, distanceY])?.toFixed(1);
+      ).reduce((acc, elem) => {
+        const [prev, cur] = elem;
+        if (isGridConfigured) {
+          const [dxCells, dyCells] = calculateDistanceInCells(
+            cur,
+            prev,
+            props.mapContext
+          );
+          // Diagonals aren't counted
+          return acc + max([dxCells, dyCells]);
+        } else {
+          const distance = Math.hypot(
+            cur.get()[0] - prev.get()[0],
+            cur.get()[1] - prev.get()[1]
+          );
+          return acc + distance;
+        }
+      }, 0);
+      _distance = distance?.toFixed(1);
     } else {
       _distance = undefined;
     }
