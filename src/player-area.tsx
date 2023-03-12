@@ -73,6 +73,7 @@ const PlayerMap_ActiveMapQuery = graphql`
     activeMap {
       id
       grid {
+        color
         offsetX
         offsetY
         columnWidth
