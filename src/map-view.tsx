@@ -1339,7 +1339,6 @@ const MapViewRenderer = (props: {
   fogOpacity: number;
 }): React.ReactElement => {
   const map = useFragment(MapViewRendererFragment, props.map);
-  // const grid = useFragment(GridRendererFragment, props.grid);
   const three = useThree();
   const viewport = three.viewport;
   const maximumTextureSize = three.gl.capabilities.maxTextureSize;
