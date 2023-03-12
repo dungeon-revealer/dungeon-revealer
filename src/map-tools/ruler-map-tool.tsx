@@ -2,7 +2,6 @@ import React from "react";
 import { animated } from "@react-spring/three";
 import { ThreeLine } from "../three-line";
 import { MapTool, SharedMapToolState } from "./map-tool";
-import { BrushToolContext } from "./brush-map-tool";
 import { SpringValue } from "react-spring";
 import { useGesture } from "react-use-gesture";
 import { usePinchWheelZoom } from "./drag-pan-zoom-map-tool";
@@ -38,9 +37,6 @@ const FloatingTextBox = (props: {
 export const RulerMapTool: MapTool = {
   id: "ruler-map-tool",
   Component: (props) => {
-    // const gridContext = React.useContext(ConfigureGridMapToolContext);
-    // const grid = useFragment(GridRendererFragment, props.mapContext.grid);
-
     const [localState, setLocalState] = React.useState(() => ({
       points: null as null | SpringValue<[number, number, number]>[],
     }));

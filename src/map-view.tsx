@@ -1437,7 +1437,6 @@ const MapViewRenderer = (props: {
 
   const planeRef = React.useRef<THREE.Mesh | null>(null);
 
-  // toolContext!
   const toolContext = React.useMemo<SharedMapToolState>(() => {
     const factor = dimensions.width / mapCanvas.width;
 
@@ -1489,7 +1488,6 @@ const MapViewRenderer = (props: {
       },
     };
 
-    // here all shared map stuff are injected
     return {
       mapCanvas,
       fogCanvas,
@@ -1621,7 +1619,6 @@ const MapViewRenderer = (props: {
     },
   });
 
-  // main entrypoint?
   return (
     <SharedMapState.Provider value={toolContext}>
       <Plane
@@ -1684,8 +1681,6 @@ export const MapView = (props: {
   const ContextBridge = useContextBridge(...props.sharedContexts);
 
   const map = useFragment(MapFragment, props.map);
-  // const grid = useFragment(MapRendererFragment, props.map).grid;
-  // const grid = useFragment(GridRendererFragment, props.grid);
 
   const [mapImage, setMapImage] = useResetState<HTMLImageElement | null>(null, [
     map.id,
@@ -1752,8 +1747,6 @@ export const MapView = (props: {
 
     return () => cleanupFogImage.current();
   }, [map.fogLiveImageUrl, map.fogProgressImageUrl, isDungeonMaster]);
-
-  // const grid = useFragment(GridRendererFragment, props.grid);
 
   return mapImage ? (
     <MapCanvasContainer>
@@ -1828,7 +1821,6 @@ const MapToolRenderer = <
     };
   });
 
-  // here the context is passed to the tool
   return (
     <props.tool.Component
       mapContext={props.handlerContext}
