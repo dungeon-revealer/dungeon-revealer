@@ -58,19 +58,21 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          outputs: type=registry
-          build-args: SKIP_BUILD="true"
-          platforms:
-            - linux/amd64
-            - linux/arm/v7
-            - linux/arm64
-          tags: 
-            - ${{ env.DOCKER_REPO }}:dev
-            - ${{ env.DOCKER_REPO }}:${{ env.COMMIT }}
-            - ${{ env.DOCKER_REPO }}:${{ env.COMMIT_SHORT }}
-          labels:
-            - org.opencontainers.image.source="https://github.com/${{ github.repository }}"
-            - org.opencontainers.image.license=ISC
+          outputs: |
+            type=registry
+          build-args: |
+            SKIP_BUILD="true"
+          platforms: |
+            linux/amd64
+            linux/arm/v7
+            linux/arm64
+          tags: |
+            ${{ env.DOCKER_REPO }}:dev
+            ${{ env.DOCKER_REPO }}:${{ env.COMMIT }}
+            ${{ env.DOCKER_REPO }}:${{ env.COMMIT_SHORT }}
+          labels: |
+            org.opencontainers.image.source="https://github.com/${{ github.repository }}"
+            org.opencontainers.image.license=ISC
 
       # - name: Run Buildx Dev
       #   if: startsWith(github.ref, 'refs/heads/') # Just the branches
