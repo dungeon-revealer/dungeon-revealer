@@ -57,6 +57,7 @@ jobs:
         if: startsWith(github.ref, 'refs/heads/') # Just the branches
         uses: docker/build-push-action@v4
         with:
+          context: .
           push: true
           outputs: |
             type=registry
