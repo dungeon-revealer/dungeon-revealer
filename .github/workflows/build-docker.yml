@@ -59,8 +59,7 @@ jobs:
         with:
           push: true
           outputs: type=registry
-          build-args:
-            - SKIP_BUILD="true"
+          build-args: SKIP_BUILD="true"
           platforms:
             - linux/amd64
             - linux/arm/v7
