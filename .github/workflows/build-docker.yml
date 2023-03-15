@@ -58,8 +58,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          outputs:
-            - type=registry
+          outputs: type=registry
           build-args:
             - SKIP_BUILD="true"
           platforms:
