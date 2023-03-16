@@ -3,7 +3,7 @@
 [![Build Status](https://img.shields.io/github/workflow/status/dungeon-revealer/dungeon-revealer/Node.js%20CI)](https://github.com/dungeon-revealer/dungeon-revealer/actions)
 [![Downloads](https://img.shields.io/github/downloads/dungeon-revealer/dungeon-revealer/total.svg?logo=github)](https://github.com/dungeon-revealer/dungeon-revealer/releases)
 [![Release](https://img.shields.io/github/v/release/dungeon-revealer/dungeon-revealer?logo=github&color=orange)](https://github.com/dungeon-revealer/dungeon-revealer/releases/latest)
-[![Docker](https://img.shields.io/static/v1?label=docker&message=v1.17.1&color=blue&logo=Docker)](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer/tags?page=1&ordering=last_updated&name=v1.17.1)
+[![Docker](https://img.shields.io/static/v1?label=docker&message=v1.17.1&color=blue&logo=Docker)](https://github.com/dungeon-revealer/dungeon-revealer/pkgs/container/dungeon-revealer/versions)
 [![Discord](https://img.shields.io/discord/709687178422386708)](https://discord.gg/dS5khqk)
 
 Dungeon Revealer is an open source self-hosted app for playing pen and paper such as Dungeon and Dragons or Cyberpunk or other tabletop games together.
@@ -29,7 +29,7 @@ You can protect the DM area by setting a password.
 
 ### Getting the app
 
-The easiest way to use dungeon-revealer is to download the app from the [releases](https://github.com/dungeon-revealer/dungeon-revealer/releases) page here on github. There is also a [docker image](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer) that is kept up to date with the releases in this repository.
+The easiest way to use dungeon-revealer is to download the app from the [releases](https://github.com/dungeon-revealer/dungeon-revealer/releases) page here on github. There is also a [docker image](https://ghcr.io/dungeon-revealer/dungeon-revealer) that is kept up to date with the releases in this repository.
 
 #### Prebuilt app
 
@@ -76,8 +76,8 @@ An up to date version of docker is required to make sure the correct image archi
 To create an instance, run the following:
 
 ```
-docker pull dungeonrevealer/dungeon-revealer:v1.17.1
-docker run -e DM_PASSWORD=<password> -e PC_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/data -d dungeonrevealer/dungeon-revealer:latest
+docker pull ghcr.io/dungeon-revealer/dungeon-revealer:v1.17.1
+docker run -e DM_PASSWORD=<password> -e PC_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/data -d ghcr.io/dungeon-revealer/dungeon-revealer:latest
 ```
 
 - Replace `<password>` with your chosen passwords.
