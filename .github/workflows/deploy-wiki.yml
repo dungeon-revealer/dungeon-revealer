@@ -38,5 +38,5 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
           MD_FOLDER: wiki/
-          OWNER: dungeon-revealer
+          OWNER: ${{ github.repository_owner }}
           REPO_NAME: dungeon-revealer
