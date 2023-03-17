@@ -95,8 +95,10 @@ import { dmMap_MapPingMutation } from "./__generated__/dmMap_MapPingMutation.gra
 import { UpdateTokenContext } from "../update-token-context";
 import { IsDungeonMasterContext } from "../is-dungeon-master-context";
 import { LazyLoadedMapView } from "../lazy-loaded-map-view";
+import { RulerMapTool } from "../map-tools/ruler-map-tool";
+import { mapView_GridRendererFragment$key } from "../__generated__/mapView_GridRendererFragment.graphql";
 
-type ToolMapRecord = {
+export type ToolMapRecord = {
   name: string;
   icon: React.ReactElement;
   tool: MapTool;
@@ -543,6 +545,12 @@ const dmTools: Array<ToolMapRecord> = [
     MenuComponent: AreaSelectSettings,
   },
   {
+    name: "Ruler",
+    icon: <Icon.Ruler boxSize="20px" />,
+    tool: RulerMapTool,
+    MenuComponent: null,
+  },
+  {
     name: "Mark",
     icon: <Icon.Crosshair boxSize="20px" />,
     tool: MarkAreaMapTool,
@@ -563,6 +571,7 @@ const ActiveDmMapToolModel = io.union([
   io.literal(AreaSelectMapTool.id),
   io.literal(MarkAreaMapTool.id),
   io.literal(TokenMarkerMapTool.id),
+  io.literal(RulerMapTool.id),
 ]);
 
 const activeDmMapToolIdModel: PersistedStateModel<
@@ -594,6 +603,7 @@ const DMMapFragment = graphql`
   fragment dmMap_DMMapFragment on Map {
     id
     grid {
+      color
       offsetX
       offsetY
       columnWidth
@@ -809,6 +819,7 @@ export const DmMap = (props: {
       <React.Suspense fallback={null}>
         <LazyLoadedMapView
           map={map}
+          grid={map.grid}
           activeTool={activeTool}
           controlRef={controlRef}
           sharedContexts={[
@@ -1044,7 +1055,7 @@ export const DmMap = (props: {
   );
 };
 
-const LeftToolbarContainer = styled.div`
+export const LeftToolbarContainer = styled.div`
   display: flex;
   align-items: center;
   position: absolute;
@@ -1075,7 +1086,7 @@ const MarginLeftDiv = styled.div`
   }
 `;
 
-const MenuItemRenderer = (props: {
+export const MenuItemRenderer = (props: {
   record: ToolMapRecord;
   setActiveTool: () => void;
   isActive: boolean;

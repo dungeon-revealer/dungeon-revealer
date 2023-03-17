@@ -1090,7 +1090,7 @@ const drawGridToContext = (
   }
 };
 
-const GridRendererFragment = graphql`
+export const GridRendererFragment = graphql`
   fragment mapView_GridRendererFragment on MapGrid {
     color
     offsetX
@@ -1331,6 +1331,7 @@ const MapViewRendererFragment = graphql`
 
 const MapViewRenderer = (props: {
   map: mapView_MapViewRendererFragment$key;
+  grid: MapGridEntity;
   mapImage: HTMLImageElement;
   fogImage: HTMLImageElement | null;
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
@@ -1521,6 +1522,7 @@ const MapViewRenderer = (props: {
         vector,
         coordinates,
       },
+      grid: props.grid,
     };
   }, [
     fogCanvas,
@@ -1668,6 +1670,7 @@ const MapFragment = graphql`
 
 export const MapView = (props: {
   map: mapView_MapFragment$key;
+  grid: MapGridEntity;
   controlRef?: React.MutableRefObject<MapControlInterface | null>;
   activeTool: MapTool | null;
   /* List of contexts that need to be proxied into R3F */
@@ -1782,6 +1785,7 @@ export const MapView = (props: {
           <MapViewRenderer
             key={map.id}
             map={map}
+            grid={props.grid}
             activeTool={props.activeTool}
             mapImage={mapImage}
             fogImage={fogImage}
