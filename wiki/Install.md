@@ -1,4 +1,4 @@
-The easiest way to use dungeon-revealer is to download the app from the [releases](https://github.com/dungeon-revealer/dungeon-revealer/releases) page here on github. There is also a [docker image](https://hub.docker.com/r/dungeonrevealer/dungeon-revealer) that is kept up to date with the releases in this repository.
+The easiest way to use dungeon-revealer is to download the app from the [releases](https://github.com/dungeon-revealer/dungeon-revealer/releases) page here on github. There is also a [docker image](https://ghcr.io/dungeon-revealer/dungeon-revealer) that is kept up to date with the releases in this repository.
 
 Running from the command prompt will present connection information and some debugging.
 Optionally, you may set a password for the dungeon master and/or players by setting the environmental variables `DM_PASSWORD` and `PC_PASSWORD` when starting the app. e.g. for linux `PC_PASSWORD='password1' DM_PASSWORD='password2' ./dungeon-revealer-linux`
@@ -40,8 +40,8 @@ An up to date version of docker is required to make sure the correct image archi
 To create an instance, run the following:
 
 ```bash
-docker pull dungeonrevealer/dungeon-revealer:latest
-docker run -e DM_PASSWORD=<password> -e PC_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/data -d dungeonrevealer/dungeon-revealer:latest
+docker pull ghcr.io/dungeon-revealer/dungeon-revealer:latest
+docker run -e DM_PASSWORD=<password> -e PC_PASSWORD=<password> -p <PORT>:3000 -v <DATA_DIR>:/usr/src/app/data -d ghcr.io/dungeon-revealer/dungeon-revealer:latest
 ```
 
 - Replace `<password>` with your chosen passwords.
@@ -56,7 +56,7 @@ Below is an example docker-compose.yml file.
 version: '3'
 services:
   dungeon-revealer:
-    image: dungeonrevealer/dungeon-revealer:latest
+    image: ghcr.io/dungeon-revealer/dungeon-revealer:latest
     container_name: dungeon-revealer
     environment:
       - DM_PASSWORD=<password>
