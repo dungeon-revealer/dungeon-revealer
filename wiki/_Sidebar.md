@@ -23,4 +23,3 @@
 ### [Community Showcase](https://github.com/dungeon-revealer/dungeon-revealer/wiki/Community-Showcase)
 
 ### [Contributing](https://github.com/dungeon-revealer/dungeon-revealer/wiki/Contributing)
-
