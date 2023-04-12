@@ -331,6 +331,18 @@ export type MapPing = {
   y: number;
 };
 
+export type MapPosition = {
+  x: number;
+  y: number;
+};
+
+export type MapMove = {
+  id: string;
+  scale: number;
+  position: MapPosition;
+};
+
 export type MapPubSubConfig = {
   mapPing: [id: string, mapPing: MapPing];
+  mapMove: [id: string, mapMove: MapMove];
 };
