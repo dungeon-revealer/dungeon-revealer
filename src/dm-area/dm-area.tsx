@@ -27,6 +27,7 @@ import { MapControlInterface } from "../map-view";
 import { useTokenImageUpload } from "./token-image-upload";
 import { dmAreaTokenAddManyMutation } from "./__generated__/dmAreaTokenAddManyMutation.graphql";
 import { dmArea_MapQuery } from "./__generated__/dmArea_MapQuery.graphql";
+import { useGameSettings } from "../game-settings";
 
 const useLoadedMapId = () =>
   usePersistedState<string | null>("loadedMapId", {
@@ -120,6 +121,18 @@ const Content = ({
   socket: Socket;
   password: string;
 }): React.ReactElement => {
+  const gameSettings = useGameSettings();
+
+  const refs = React.useRef({
+    gameSettings,
+  });
+
+  React.useEffect(() => {
+    refs.current = {
+      gameSettings,
+    };
+  });
+
   const [loadedMapId, setLoadedMapId] = useLoadedMapId();
 
   const dmAreaResponse = useQuery<dmArea_MapQuery>(
@@ -246,6 +259,11 @@ const Content = ({
           type: "image/png",
         })
       );
+
+      if (refs.current.gameSettings.value.autoSendMapUpdates) {
+        //Non-blocking send in the event it fails the map will still be saved
+        sendLiveMap(canvas).then(() => {});
+      }
 
       const task = sendRequest({
         url: buildApiUrl(`/map/${loadedMapId}/fog`),

@@ -6,6 +6,7 @@ import { useStaticRef } from "./hooks/use-static-ref";
 import { SplashScreen } from "./splash-screen";
 import { ChatToggleButton, IconButton } from "./chat-toggle-button";
 import { Chat } from "./chat";
+import { SettingsModal } from "./settings-modal/settings-modal";
 import { useChatSoundsAndUnreadCount } from "./chat/chat";
 import { useLogInMutation } from "./chat/log-in-mutation";
 import styled from "@emotion/styled/macro";
@@ -109,6 +110,9 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
   }, [logIn]);
 
   const [showSearch, setShowSearch] = React.useState(false);
+  const [showSettings, setShowSettings] = React.useState(false);
+
+  const role = useViewerRole();
 
   React.useEffect(() => {
     if (!isLoggedIn) return;
@@ -170,6 +174,14 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
                   >
                     <Icon.Search boxSize="20px" />
                   </IconButton>
+                  {role === "DM" ? (
+                    <IconButton
+                      onClick={() => setShowSettings(true)}
+                      style={{ marginRight: 8, pointerEvents: "all" }}
+                    >
+                      <Icon.Settings boxSize="20px" />
+                    </IconButton>
+                  ) : null}
                   <ChatToggleButton
                     hasUnreadMessages={hasUnreadMessages}
                     onClick={() => {
@@ -197,6 +209,13 @@ const AuthenticatedAppShellRenderer: React.FC<{ isMapOnly: boolean }> = ({
               <React.Suspense fallback={null}>
                 <DiceRollNotes close={toggleShowDiceRollNotes} />
               </React.Suspense>
+            ) : null}
+            {showSettings ? (
+              <SettingsModal
+                close={() => {
+                  setShowSettings(false);
+                }}
+              ></SettingsModal>
             ) : null}
           </React.Fragment>
         ) : null}
