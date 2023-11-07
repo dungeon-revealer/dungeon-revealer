@@ -72,7 +72,7 @@
     "socket.io": "4.4.0",
     "sqlite": "4.0.23",
     "sqlite3": "^5.0.10",
-    "unzipper": "0.10.11"
+    "unzipper": "0.10.14"
   },
   "devDependencies": {
     "@babel/core": "7.15.8",
@@ -102,7 +102,7 @@
     "@types/showdown": "1.9.4",
     "@types/sqlite3": "3.1.8",
     "@types/three": "0.126.2",
-    "@types/unzipper": "0.10.4",
+    "@types/unzipper": "0.10.9",
     "@vitejs/plugin-react-refresh": "1.3.6",
     "babel-eslint": "10.1.0",
     "babel-jest": "27.3.1",
