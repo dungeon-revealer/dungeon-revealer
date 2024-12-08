@@ -29,7 +29,7 @@ jobs:
             output: dungeon-revealer-windows.exe
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup node
         uses: actions/setup-node@v3
@@ -74,7 +74,7 @@ jobs:
             output: dungeon-revealer-linux-arm64
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up QEMU
         id: qemu
@@ -111,7 +111,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Get branch names
         id: branch-name
