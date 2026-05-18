@@ -89,7 +89,7 @@
     "@types/connect-busboy": "^1.0.0",
     "@types/express": "4.17.13",
     "@types/fs-extra": "9.0.13",
-    "@types/howler": "2.2.7",
+    "@types/howler": "2.2.13",
     "@types/jest": "27.0.2",
     "@types/lodash": "4.14.182",
     "@types/morgan": "^1.9.3",
