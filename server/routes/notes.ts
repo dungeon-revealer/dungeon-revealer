@@ -211,7 +211,14 @@ export default ({ db, roleMiddleware }: Dependencies) => {
               response.end();
             } catch (err) {
               // A single over-large entry must end the request, not the process.
-              if (err instanceof ImportTooLargeError) {
+              // An earlier entry may already have written its progress line,
+              // which sends the response headers: a status code cannot be set
+              // after that (express throws ERR_HTTP_HEADERS_SENT from inside
+              // this async handler, and the rejected promise would take the
+              // process down). End the response in that case.
+              if (response.headersSent) {
+                response.end();
+              } else if (err instanceof ImportTooLargeError) {
                 response.status(413).json({
                   data: null,
                   error: {
