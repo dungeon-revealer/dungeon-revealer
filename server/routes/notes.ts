@@ -42,17 +42,54 @@ const importNoteWithReport = (name: string) =>
     )
   );
 
-export const resolveStreamContentString = (input: Readable) =>
+/**
+ * Upper bound applied to every note this route buffers. connect-busboy is
+ * mounted without `limits`, so busboy's own `fileSize` and `parts` defaults
+ * are Infinity and an uploaded part is as large as the client cares to make
+ * it; the bound therefore has to be enforced here, where the bytes are kept.
+ */
+const MAX_IMPORT_BYTES = 25 * 1024 * 1024;
+
+export class ImportTooLargeError extends Error {
+  constructor(maxBytes: number) {
+    super(`Import exceeds the ${maxBytes} byte limit.`);
+    this.name = "ImportTooLargeError";
+  }
+}
+
+export const resolveStreamContentString = (
+  input: Readable,
+  maxBytes: number = MAX_IMPORT_BYTES
+) =>
   new Promise<string>((resolve, reject) => {
     const chunks: Uint8Array[] = [];
-    input.on("data", (chunk) => {
+    let bytes = 0;
+    let settled = false;
+    input.on("data", (chunk: Uint8Array) => {
+      if (settled) {
+        return;
+      }
+      bytes += chunk.length;
+      if (bytes > maxBytes) {
+        settled = true;
+        chunks.length = 0;
+        reject(new ImportTooLargeError(maxBytes));
+        return;
+      }
       chunks.push(chunk);
     });
     input.on("end", () => {
-      const content = Buffer.concat(chunks).toString();
-      resolve(content);
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve(Buffer.concat(chunks).toString());
     });
     input.on("error", (err) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
       reject(err);
     });
   });
@@ -86,7 +123,18 @@ export default ({ db, roleMiddleware }: Dependencies) => {
 
         if (filename.endsWith(".md")) {
           const chunks = [] as Uint8Array[];
+          let bytes = 0;
+          let tooLarge = false;
           file.on("data", (chunk) => {
+            if (tooLarge) {
+              return;
+            }
+            bytes += chunk.length;
+            if (bytes > MAX_IMPORT_BYTES) {
+              tooLarge = true;
+              chunks.length = 0;
+              return;
+            }
             chunks.push(
               new Uint8Array(
                 typeof chunk === "string" ? Buffer.from(chunk) : chunk
@@ -95,6 +143,16 @@ export default ({ db, roleMiddleware }: Dependencies) => {
           });
 
           file.on("end", () => {
+            if (tooLarge) {
+              response.status(413).json({
+                data: null,
+                error: {
+                  code: "IMPORT_TOO_LARGE",
+                  message: `The imported note exceeds the ${MAX_IMPORT_BYTES} byte limit.`,
+                },
+              });
+              return;
+            }
             const noteContents = Buffer.concat(chunks).toString();
             importNoteWithReport(filename)(noteContents)({ db })().then(
               (result) => {
@@ -125,31 +183,53 @@ export default ({ db, roleMiddleware }: Dependencies) => {
 
             fs.createReadStream(tmpFile).pipe(unzipStream);
 
-            for await (const entry of contentIterator) {
-              if (entry.type === "File" && entry.path.endsWith(".md")) {
-                const noteContents = await resolveStreamContentString(entry);
+            try {
+              for await (const entry of contentIterator) {
+                if (entry.type === "File" && entry.path.endsWith(".md")) {
+                  const noteContents = await resolveStreamContentString(entry);
 
-                const result = await importNoteWithReport(entry.path)(
-                  noteContents
-                )({ db })();
-                if (result.error === null) {
-                  amountOfImportedRecords = amountOfImportedRecords + 1;
+                  const result = await importNoteWithReport(entry.path)(
+                    noteContents
+                  )({ db })();
+                  if (result.error === null) {
+                    amountOfImportedRecords = amountOfImportedRecords + 1;
+                  } else {
+                    amountOfFailedRecords = amountOfFailedRecords + 1;
+                  }
+                  response.write(
+                    `\n` +
+                      JSON.stringify({
+                        amountOfImportedRecords,
+                        amountOfFailedRecords,
+                        latest: result,
+                      })
+                  );
                 } else {
-                  amountOfFailedRecords = amountOfFailedRecords + 1;
+                  entry.autodrain();
                 }
-                response.write(
-                  `\n` +
-                    JSON.stringify({
-                      amountOfImportedRecords,
-                      amountOfFailedRecords,
-                      latest: result,
-                    })
-                );
+              }
+              response.end();
+            } catch (err) {
+              // A single over-large entry must end the request, not the process.
+              if (err instanceof ImportTooLargeError) {
+                response.status(413).json({
+                  data: null,
+                  error: {
+                    code: "IMPORT_TOO_LARGE",
+                    message: `An entry in the archive exceeds the ${MAX_IMPORT_BYTES} byte limit.`,
+                  },
+                });
               } else {
-                entry.autodrain();
+                response.status(422).json({
+                  data: null,
+                  error: {
+                    code: "IMPORT_FAILED",
+                    message:
+                      err instanceof Error ? err.message : "Import failed.",
+                  },
+                });
               }
             }
-            response.end();
             await fs.unlink(tmpFile);
           });
         }
